@@ -1,0 +1,32 @@
+"use client";
+
+import type { ScheduledRaid } from "@/domain/types";
+import { TierBadge, Badge } from "@/components/ui/Badge";
+
+const PASS_LABEL: Record<ScheduledRaid["passType"], string> = {
+  "free-daily": "Free pass",
+  premium: "Premium/Remote",
+  remote: "Remote",
+  "link-charge": "Link Charge",
+};
+
+export function ScheduleRow({ raid, index }: { raid: ScheduledRaid; index: number }) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
+      <span className="mt-0.5 w-6 shrink-0 text-right text-xs text-slate-500">{index}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">{raid.bossName}</span>
+          <TierBadge tier={raid.tier} />
+          <Badge>{PASS_LABEL[raid.passType]}</Badge>
+          {raid.recommendedBuddyMegaName ? (
+            <Badge className="border-gofest-mewtwo/40 text-purple-200">
+              buddy: {raid.recommendedBuddyMegaName}
+            </Badge>
+          ) : null}
+        </div>
+        <p className="mt-0.5 truncate text-xs text-slate-400">{raid.counters.join(" · ")}</p>
+      </div>
+    </div>
+  );
+}
