@@ -163,7 +163,12 @@ export function computeSchedule(
       return x.slotInHour - y.slotInHour;
     });
 
-  const orangePerDay = settings.freeDailyPerDay;
+  // Free Orange passes per day. A Friday pass (collected the night before) is
+  // saved for Saturday, so Saturday gets +1 when the Friday option is on.
+  const orangeCap: Record<EventDay, number> = {
+    sat: settings.freeDailyPerDay + (settings.fridayRemoteRaids ? 1 : 0),
+    sun: settings.freeDailyPerDay,
+  };
   const orangeUsed: Record<EventDay, number> = { sat: 0, sun: 0 };
 
   const raids: ScheduledRaid[] = assigned.map((slot) => {
@@ -176,7 +181,7 @@ export function computeSchedule(
     let passType: PassType;
     if (!local) {
       passType = "remote";
-    } else if (orangeUsed[slot.day] < orangePerDay) {
+    } else if (orangeUsed[slot.day] < orangeCap[slot.day]) {
       passType = "orange";
       orangeUsed[slot.day] += 1;
     } else {
