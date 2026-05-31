@@ -25,11 +25,10 @@ export function BossSelectChip({
       aria-pressed={selected}
       title={label ?? boss.name}
       style={typeBackgroundStyle(boss.types)}
-      className={`enamel relative flex w-[84px] flex-col items-center overflow-hidden rounded-xl transition ${
+      className={`enamel relative flex w-[84px] flex-col items-center rounded-xl transition ${
         selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
       }`}
     >
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
       {isMega ? (
         <MegaGlyph className="pointer-events-none absolute inset-x-0 top-2 z-[1] mx-auto h-11 w-11 text-white/40" />
       ) : null}
