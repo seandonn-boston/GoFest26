@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import type { RaidBoss } from "@/domain/types";
 import { typeBackgroundStyle } from "@/data/typeVisuals";
 import { Sprite } from "@/components/ui/Sprite";
@@ -18,11 +17,6 @@ export function BossSelectChip({
   label?: string;
 }) {
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
-  const delay = ([...boss.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 12) * 0.4;
-  const style = {
-    ...typeBackgroundStyle(boss.types),
-    "--sheen-delay": `${delay}s`,
-  } as CSSProperties;
 
   return (
     <button
@@ -30,9 +24,9 @@ export function BossSelectChip({
       onClick={onToggle}
       aria-pressed={selected}
       title={label ?? boss.name}
-      style={style}
-      className={`enamel enamel-shimmer relative flex w-[84px] flex-col items-center rounded-xl transition ${
-        selected ? "outline outline-2 outline-white outline-offset-1" : "opacity-90 hover:opacity-100"
+      style={typeBackgroundStyle(boss.types)}
+      className={`enamel relative flex w-[84px] flex-col items-center overflow-hidden rounded-xl transition ${
+        selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
       }`}
     >
       <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />

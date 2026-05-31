@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import type { RaidBoss } from "@/domain/types";
 import { typeBackgroundStyle } from "@/data/typeVisuals";
 import { Sprite } from "@/components/ui/Sprite";
@@ -18,15 +17,13 @@ export function MewtwoSelectTile({
   selected: boolean;
   onToggle: () => void;
 }) {
-  const style = { ...typeBackgroundStyle(boss.types), "--sheen-delay": "0.6s" } as CSSProperties;
-
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={selected}
-      style={style}
-      className={`enamel enamel-shimmer relative flex min-h-[136px] flex-col items-center justify-center rounded-2xl transition ${
+      style={typeBackgroundStyle(boss.types)}
+      className={`enamel relative flex min-h-[136px] flex-col items-center justify-center overflow-hidden rounded-2xl transition ${
         selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
       }`}
     >

@@ -42,16 +42,47 @@ export async function decodeMissingnoVoxels(): Promise<Voxel[] | null> {
       const i = (y * w + x) * 4;
       return [data[i], data[i + 1], data[i + 2], data[i + 3]] as const;
     };
-    const empty = (x: number, y: number) => {
+    const whiteish = (x: number, y: number) => {
       const [r, g, b, a] = at(x, y);
       return a < 100 || (r > 235 && g > 235 && b > 235);
     };
 
-    // Content bounding box.
+    // Background = white/transparent pixels connected to the image border
+    // (flood fill). The top-left notch and outer margins are background; white
+    // pixels *enclosed* by the shape are kept as solid white blocks.
+    const bg = new Uint8Array(w * h);
+    const stack: number[] = [];
+    const push = (x: number, y: number) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return;
+      const idx = y * w + x;
+      if (bg[idx] || !whiteish(x, y)) return;
+      bg[idx] = 1;
+      stack.push(idx);
+    };
+    for (let x = 0; x < w; x++) {
+      push(x, 0);
+      push(x, h - 1);
+    }
+    for (let y = 0; y < h; y++) {
+      push(0, y);
+      push(w - 1, y);
+    }
+    while (stack.length) {
+      const idx = stack.pop()!;
+      const x = idx % w;
+      const y = (idx / w) | 0;
+      push(x + 1, y);
+      push(x - 1, y);
+      push(x, y + 1);
+      push(x, y - 1);
+    }
+    const isShape = (x: number, y: number) => bg[y * w + x] === 0;
+
+    // Bounding box of the shape.
     let x0 = w, y0 = h, x1 = -1, y1 = -1;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (!empty(x, y)) {
+        if (isShape(x, y)) {
           if (x < x0) x0 = x;
           if (x > x1) x1 = x;
           if (y < y0) y0 = y;
@@ -109,7 +140,7 @@ export async function decodeMissingnoVoxels(): Promise<Voxel[] | null> {
       for (let c = 0; c < cols; c++) {
         const sx = Math.min(w - 1, Math.round(x0 + (c + 0.5) * cw));
         const sy = Math.min(h - 1, Math.round(y0 + (r + 0.5) * ch));
-        if (empty(sx, sy)) continue;
+        if (!isShape(sx, sy)) continue; // notch + outside skipped; interior whites kept
         const [rr, gg, bb] = at(sx, sy);
         voxels.push({
           position: [c - (cols - 1) / 2, rows - 1 - r - (rows - 1) / 2, 0],
