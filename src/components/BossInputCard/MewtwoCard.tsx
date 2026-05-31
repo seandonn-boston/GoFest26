@@ -39,7 +39,8 @@ export function MewtwoCard({
   const inputX = usePlannerStore((s) => s.inputs[bossX.id]);
   const inputY = usePlannerStore((s) => s.inputs[bossY.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
-  const setVariant = usePlannerStore((s) => s.setVariant);
+  const setCount = usePlannerStore((s) => s.setCount);
+  const setExtraXl = usePlannerStore((s) => s.setExtraXl);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
@@ -54,6 +55,16 @@ export function MewtwoCard({
   const ownerId = selectedX ? bossX.id : bossY.id;
   const owner = selectedX ? inputX : inputY;
   const wantsLeveling = owner.target.level > owner.current.level;
+  const counts = owner.counts ?? { standard: 1, shadow: 0, purified: 0 };
+  const extraXl = owner.extraXl ?? 0;
+
+  // XL/Candy are shared so we store extra XL on the owner only, but the
+  // mega-energy gate (Shadow can't Mega Evolve) reads each form's own counts —
+  // so variant counts are mirrored onto both X and Y.
+  const setCountBoth = (variant: keyof typeof counts, value: number) => {
+    setCount(bossX.id, variant, value);
+    setCount(bossY.id, variant, value);
+  };
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
@@ -94,18 +105,17 @@ export function MewtwoCard({
             <NumberInput label="Target level" value={owner.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(ownerId, v)} />
           </div>
           <div className="mt-3">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-slate-300">Variant</span>
-              <select
-                className="max-w-xs rounded-lg border border-white/10 bg-gofest-bg/60 px-3 py-2 text-sm outline-none focus:border-gofest-accent2"
-                value={owner.variant}
-                onChange={(e) => setVariant(ownerId, e.target.value as typeof owner.variant)}
-              >
-                <option value="standard">Standard (296 XL)</option>
-                <option value="shadow">Shadow (360 XL)</option>
-                <option value="purified">Purified (272 XL)</option>
-              </select>
-            </label>
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">How many to max</div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <NumberInput label="Regular (296)" value={counts.standard} min={0} max={99} onChange={(v) => setCountBoth("standard", v)} />
+              <NumberInput label="Shadow (360)" value={counts.shadow} min={0} max={99} onChange={(v) => setCountBoth("shadow", v)} />
+              <NumberInput label="Purified (272)" value={counts.purified} min={0} max={99} onChange={(v) => setCountBoth("purified", v)} />
+              <NumberInput label="+ Extra XL" value={extraXl} min={0} onChange={(v) => setExtraXl(ownerId, v)} />
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-500">
+              Shadow Mewtwo can&apos;t Mega Evolve, so they add XL Candy but no Mega Energy — only your
+              regular/purified Mewtwo drive the per-form energy below.
+            </p>
           </div>
           {wantsLeveling ? (
             <p className="mt-2 text-xs text-slate-500">

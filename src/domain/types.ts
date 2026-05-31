@@ -100,7 +100,10 @@ export interface RaidBoss {
 export interface BossInput {
   bossId: string;
   selected: boolean;
-  variant: Variant;
+  /** How many of each variant the user wants to take to the target level. */
+  counts: Record<Variant, number>;
+  /** Optional extra XL Candy to bank beyond maxing the counted Pokémon. */
+  extraXl?: number;
   current: {
     candy: number;
     xlCandy: number;

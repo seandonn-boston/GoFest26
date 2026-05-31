@@ -28,7 +28,8 @@ export function BossInputCard({
   planningRaidsPerHour: number;
 }) {
   const input = usePlannerStore((s) => s.inputs[boss.id]);
-  const setVariant = usePlannerStore((s) => s.setVariant);
+  const setCount = usePlannerStore((s) => s.setCount);
+  const setExtraXl = usePlannerStore((s) => s.setExtraXl);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
@@ -43,13 +44,13 @@ export function BossInputCard({
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
   const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
+  const counts = input.counts ?? { standard: 1, shadow: 0, purified: 0 };
+  const extraXl = input.extraXl ?? 0;
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
   const windowSlots = bossWindowSlots(boss, planningRaidsPerHour);
   const overWindow = result.raids.min > windowSlots && windowSlots > 0;
   const needEntries = Object.entries(result.needs) as [Currency, { needed: number; raidsRange: { min: number; max: number } }][];
-
-  const field = "rounded-lg border border-white/10 bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2";
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(boss.types)}>
@@ -103,17 +104,23 @@ export function BossInputCard({
             <NumberInput label="→ Target mega" value={input.target.megaLevel} min={0} max={4} onChange={(v) => setTargetMegaLevel(boss.id, v)} />
           </>
         ) : null}
-        {wantsLeveling ? (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-slate-300">Variant</span>
-            <select className={field} value={input.variant} onChange={(e) => setVariant(boss.id, e.target.value as typeof input.variant)}>
-              <option value="standard">Standard</option>
-              <option value="shadow">Shadow</option>
-              <option value="purified">Purified</option>
-            </select>
-          </label>
-        ) : null}
       </div>
+
+      {/* How many of each variant to take to the target level */}
+      {wantsLeveling ? (
+        <div className="mt-2">
+          <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">How many to max</div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <NumberInput label="Regular (296)" value={counts.standard} min={0} max={99} onChange={(v) => setCount(boss.id, "standard", v)} />
+            <NumberInput label="Shadow (360)" value={counts.shadow} min={0} max={99} onChange={(v) => setCount(boss.id, "shadow", v)} />
+            <NumberInput label="Purified (272)" value={counts.purified} min={0} max={99} onChange={(v) => setCount(boss.id, "purified", v)} />
+            <NumberInput label="+ Extra XL" value={extraXl} min={0} onChange={(v) => setExtraXl(boss.id, v)} />
+          </div>
+          {isMega ? (
+            <p className="mt-1 text-[11px] text-slate-500">Shadow Pokémon can&apos;t Mega Evolve, so they add XL but no Mega Energy.</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-2">
         <PresetPicker boss={boss} activePresetId={input.presetId} onApply={(id) => applyPreset(boss.id, id)} />
