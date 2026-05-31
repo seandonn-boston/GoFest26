@@ -1,4 +1,6 @@
-import type { EventDay } from "@/domain/types";
+import type { EventDay, HabitatWindow, RaidBoss } from "@/domain/types";
+import { GAME_CONFIG } from "./config";
+import { hourLabel } from "@/lib/format";
 
 /**
  * The six GO Fest 2026: Global habitat hour-blocks (three per day). Mega and
@@ -30,4 +32,31 @@ export const HABITATS: Habitat[] = [
 /** Finds the habitat covering a given day + hour, if any. */
 export function habitatAt(day: EventDay, hour: number): Habitat | undefined {
   return HABITATS.find((h) => h.day === day && hour >= h.startHour && hour < h.endHour);
+}
+
+const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
+const DAY_SHORT: Record<EventDay, string> = { sat: "Sat", sun: "Sun" };
+
+/** Human label for one availability window, e.g. "Sat 1:00 PM–4:00 PM · Astral Tides". */
+export function describeWindow(wd: HabitatWindow): string {
+  const start = GAME_CONFIG.event.hourStartLocal;
+  if (wd.startHour === 0 && wd.endHour === GAME_CONFIG.event.hoursPerDay) {
+    return `${DAY_LONG[wd.day]} · all day`;
+  }
+  const hab = HABITATS.find(
+    (h) => h.day === wd.day && h.startHour === wd.startHour && h.endHour === wd.endHour,
+  );
+  const span = `${DAY_SHORT[wd.day]} ${hourLabel(wd.startHour, start)}–${hourLabel(wd.endHour, start)}`;
+  return hab ? `${span} · ${hab.name}` : span;
+}
+
+/** Full availability description across all of a boss's windows. */
+export function describeAvailability(boss: RaidBoss): string {
+  if (!boss.windows.length) return "All weekend";
+  return boss.windows.map(describeWindow).join("  •  ");
+}
+
+/** Max raids obtainable for a boss within its windows at a given raids/hour. */
+export function bossWindowSlots(boss: RaidBoss, raidsPerHour: number): number {
+  return boss.windows.reduce((sum, wd) => sum + (wd.endHour - wd.startHour) * raidsPerHour, 0);
 }
