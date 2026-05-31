@@ -54,17 +54,26 @@ export function LoaderScene({ voxels, onComplete }: { voxels: Voxel[]; onComplet
 
   // Auto-fit: normalize any model (plushie vs. tall MissingNo) to a target size.
   const fit = useMemo(() => {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (const v of voxels) {
-      const [x, y] = v.position;
+      const [x, y, z] = v.position;
       if (x < minX) minX = x;
       if (x > maxX) maxX = x;
       if (y < minY) minY = y;
       if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z;
+      if (z > maxZ) maxZ = z;
     }
     const hgt = Math.max(1, maxY - minY + 1);
     const wid = Math.max(1, maxX - minX + 1);
-    return { scale: Math.min(8.5 / hgt, 7.5 / wid), cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+    // Flat models (MissingNo, depth 1) face the camera; 3D models turn ~30° left.
+    const flat = maxZ - minZ < 1;
+    return {
+      scale: Math.min(8.5 / hgt, 7.5 / wid),
+      cx: (minX + maxX) / 2,
+      cy: (minY + maxY) / 2,
+      baseYaw: flat ? 0 : -Math.PI / 6,
+    };
   }, [voxels]);
 
   // Initialize HP bar cell transforms once.
@@ -94,7 +103,7 @@ export function LoaderScene({ voxels, onComplete }: { voxels: Voxel[]; onComplet
     if (g) {
       const bob = Math.sin(t * 2.3) * 0.18 * (1 - faint);
       g.position.y = 1.5 + bob - faint * 6;
-      g.rotation.y = Math.sin(t * 0.8) * 0.18 * (1 - faint);
+      g.rotation.y = fit.baseYaw + Math.sin(t * 0.8) * 0.18 * (1 - faint);
       g.rotation.z = faint * 1.7;
       g.scale.setScalar(fit.scale * (1 - faint * 0.2));
     }

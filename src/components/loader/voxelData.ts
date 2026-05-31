@@ -6,64 +6,60 @@ export interface Voxel {
   color: string;
 }
 
-// ---------------- Substitute plushie (green, white belly, eared) ----------------
-const SUB_BODY = "#93b86a";
-const SUB_DARK = "#34432a";
-const SUB_BELLY = "#f2f3ea";
-const SUB_HILITE = "#fbfdff";
+// ---------------- Substitute plushie (sage green, white belly, eared) ----------------
+// Palette matched to the Substitute Doll plush references.
+const SUB_BODY = "#9cb877"; // sage green
+const SUB_BELLY = "#eef0e2"; // cream belly
+const SUB_DARK = "#3c4a2e"; // eyes / mouth
+const SUB_HILITE = "#ffffff"; // cheek highlight
 
 function buildSubstitute(): Voxel[] {
   const map = new Map<string, string>();
-  const key = (x: number, y: number, z: number) => `${x},${y},${z}`;
   const add = (x: number, y: number, z: number, c: string) =>
-    map.set(key(Math.round(x), Math.round(y), Math.round(z)), c);
+    map.set(`${Math.round(x)},${Math.round(y)},${Math.round(z)}`, c);
 
-  const rx = 5;
-  const ry = 5;
-  const rz = 4;
+  const rx = 6;
+  const ry = 6;
+  const rz = 5;
 
-  // Rounded body (squashed ellipsoid) with a white belly on the lower front.
+  // Rounded plush body (squashed sphere) + big cream belly on the lower front.
   for (let x = -rx; x <= rx; x++) {
     for (let y = -ry; y <= ry; y++) {
       for (let z = -rz; z <= rz; z++) {
         if ((x * x) / (rx * rx) + (y * y) / (ry * ry) + (z * z) / (rz * rz) <= 1) {
-          const belly = z > rz * 0.25 && (x * x) / 8 + ((y + 2) * (y + 2)) / 10 <= 1 && y <= 0.5;
+          const belly = z > rz * 0.18 && (x * x) / 13 + ((y + 2.5) * (y + 2.5)) / 14 <= 1 && y <= 0.5;
           add(x, y, z, belly ? SUB_BELLY : SUB_BODY);
         }
       }
     }
   }
 
-  // Tapering discs stacked upward → two pointy ears, with depth.
-  const ear = (cx: number) => {
-    const layers = [
-      { y: ry - 1, r: 1.7 },
-      { y: ry, r: 1.3 },
-      { y: ry + 1, r: 0.9 },
-      { y: ry + 2, r: 0.5 },
-    ];
-    for (const L of layers) {
-      for (let x = -2; x <= 2; x++) {
-        for (let z = -2; z <= 2; z++) {
-          if (x * x + z * z <= L.r * L.r) add(cx + x, L.y, z, SUB_BODY);
-        }
-      }
+  // Two pointed ears that rise and lean outward (cat/dino-style).
+  const ear = (sign: number) => {
+    for (let i = 0; i < 6; i++) {
+      const yy = ry - 1 + i;
+      const r = 2.3 - i * 0.4;
+      if (r <= 0) continue;
+      const cx = sign * 3 + sign * i * 0.4;
+      for (let x = -3; x <= 3; x++)
+        for (let z = -2; z <= 2; z++)
+          if (x * x + z * z <= r * r) add(cx + x, yy, z, SUB_BODY);
     }
   };
-  ear(-3);
-  ear(3);
+  ear(-1);
+  ear(1);
 
-  // Stubby limbs (spheres) for arms and feet.
+  // Stubby limbs (spheres): arms resting in front, feet at the bottom front.
   const blob = (cx: number, cy: number, cz: number, r: number) => {
     for (let x = -3; x <= 3; x++)
       for (let y = -3; y <= 3; y++)
         for (let z = -3; z <= 3; z++)
           if (x * x + y * y + z * z <= r * r) add(cx + x, cy + y, cz + z, SUB_BODY);
   };
-  blob(-rx, -1, 1.6, 1.7); // left arm
-  blob(rx, -1, 1.6, 1.7); // right arm
-  blob(-2.3, -ry, 2.2, 1.7); // left foot
-  blob(2.3, -ry, 2.2, 1.7); // right foot
+  blob(-rx + 0.5, -1.5, rz - 1, 2); // left arm
+  blob(rx - 0.5, -1.5, rz - 1, 2); // right arm
+  blob(-2.6, -ry, rz - 1.5, 2); // left foot
+  blob(2.6, -ry, rz - 1.5, 2); // right foot
 
   // Paint a face detail onto the front-most voxel of a column.
   const frontZ = (x: number, y: number): number | null => {
@@ -79,10 +75,11 @@ function buildSubstitute(): Voxel[] {
     if (z !== null) add(x, y, z, c);
   };
 
-  // Closed, content eyes (gentle peaks) + smug wavy mouth + cheek highlight.
-  [[-3, 3], [-2, 4], [-1, 3], [1, 3], [2, 4], [3, 3]].forEach(([x, y]) => paint(x, y, SUB_DARK));
-  [[-2, 1], [-1, 0], [0, 1], [1, 0], [2, 1]].forEach(([x, y]) => paint(x, y, SUB_DARK));
+  // Smug closed eyes (down-tilted dashes) + wavy mouth + cheek highlight.
+  [[-3, 4], [-2, 3], [1, 3], [2, 4]].forEach(([x, y]) => paint(x, y, SUB_DARK));
+  [[-2, 1], [-1, 2], [0, 1], [1, 2], [2, 1]].forEach(([x, y]) => paint(x, y, SUB_DARK));
   paint(3, 2, SUB_HILITE);
+  paint(3, 1, SUB_HILITE);
 
   return [...map.entries()].map(([k, color]) => {
     const [x, y, z] = k.split(",").map(Number);
