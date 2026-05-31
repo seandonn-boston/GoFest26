@@ -19,6 +19,8 @@ interface PlannerState {
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
+  setSkipCatch: (bossId: string, skip: boolean) => void;
+  setMegaBuddy: (bossId: string, on: boolean) => void;
   applyPreset: (bossId: string, presetId: string) => void;
   setSettings: (patch: Partial<PlannerSettings>) => void;
   resetSettings: () => void;
@@ -102,6 +104,20 @@ export const usePlannerStore = create<PlannerState>()(
               [bossId]: { ...input, presetId: undefined, target: { ...input.target, megaLevel } },
             },
           };
+        }),
+
+      setSkipCatch: (bossId, skip) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, skipCatch: skip } } };
+        }),
+
+      setMegaBuddy: (bossId, on) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, megaBuddy: on } } };
         }),
 
       applyPreset: (bossId, presetId) =>

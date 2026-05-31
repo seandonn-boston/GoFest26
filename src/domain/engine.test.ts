@@ -63,10 +63,21 @@ describe("requirements", () => {
 });
 
 describe("raidsNeeded", () => {
-  it("never needs more raids with the mega-buddy boost than without", () => {
-    const result = computeBossResult(reshiram, input("reshiram", { level: 40, targetLevel: 50 }));
-    expect(result.raidsWithBoost.min).toBeLessThanOrEqual(result.raidsNoBoost.min);
-    expect(result.raidsWithBoost.max).toBeLessThanOrEqual(result.raidsNoBoost.max);
+  it("the mega-buddy candy bonus reduces candy-driven raids", () => {
+    // Level 10→40 needs regular Candy (no XL band) → Candy is the constraint.
+    const base = input("reshiram", { level: 10, targetLevel: 40 });
+    const withBuddy = computeBossResult(reshiram, { ...base, megaBuddy: true });
+    const noBuddy = computeBossResult(reshiram, { ...base, megaBuddy: false });
+    expect(withBuddy.bindingCurrency).toBe("candy");
+    expect(withBuddy.raids.max).toBeLessThan(noBuddy.raids.max);
+  });
+
+  it("skipping the catch removes catch-based candy/XL needs", () => {
+    const base = input("reshiram", { level: 40, targetLevel: 50 });
+    expect(computeBossResult(reshiram, base).bindingCurrency).toBe("xlCandy");
+    const skip = computeBossResult(reshiram, { ...base, skipCatch: true });
+    expect(skip.bindingCurrency).toBeNull();
+    expect(skip.raids).toEqual({ min: 0, max: 0 });
   });
 
   it("uses Super Mega energy rewards to size Mewtwo raids", () => {
@@ -78,13 +89,13 @@ describe("raidsNeeded", () => {
     const need = 18580 - 7500; // 11080
     const { min, max } = GAME_CONFIG.megaRewards.superMega;
     expect(result.bindingCurrency).toBe("megaEnergy");
-    expect(result.raidsNoBoost.min).toBe(Math.ceil(need / max));
-    expect(result.raidsNoBoost.max).toBe(Math.ceil(need / min));
+    expect(result.raids.min).toBe(Math.ceil(need / max));
+    expect(result.raids.max).toBe(Math.ceil(need / min));
   });
 
   it("returns zero raids when nothing is needed", () => {
     const result = computeBossResult(reshiram, input("reshiram", { xlCandy: 9999, level: 40, targetLevel: 50 }));
-    expect(result.raidsNoBoost).toEqual({ min: 0, max: 0 });
+    expect(result.raids).toEqual({ min: 0, max: 0 });
     expect(result.bindingCurrency).toBeNull();
   });
 });
@@ -102,7 +113,7 @@ describe("scheduler", () => {
   it("places exactly the demanded number of Mewtwo raids (no overshoot)", () => {
     const mewtwo = input("mega-mewtwo-x", { megaLevel: 0, targetMegaLevel: 4, level: 40, targetLevel: 40 });
     const result = computeBossResult(mewtwoX, mewtwo);
-    const expectedDemand = Math.ceil((result.raidsNoBoost.min + result.raidsNoBoost.max) / 2);
+    const expectedDemand = Math.ceil((result.raids.min + result.raids.max) / 2);
 
     const schedule = scheduleFor([mewtwo]);
     const placed = schedule.raids.filter((r) => r.bossId === "mega-mewtwo-x").length;

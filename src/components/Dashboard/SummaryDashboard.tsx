@@ -7,22 +7,21 @@ import { CapacityGauge } from "./CapacityGauge";
 
 export function SummaryDashboard({ summary }: { summary: PlanSummary }) {
   const { capacity } = summary;
-  const hasGoals = summary.totalRaidsNoBoost.max > 0;
+  const hasGoals = summary.totalRaids.max > 0;
 
   return (
     <Card className="p-4">
       <h2 className="mb-3 text-lg font-semibold">Weekend plan</h2>
 
-      <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Total raids needed" value={formatRange(summary.totalRaidsNoBoost)} accent="text-gofest-accent2" />
-        <Stat label="With mega buddy" value={formatRange(summary.totalRaidsWithBoost)} accent="text-gofest-mewtwo" />
+      <div className="mb-4 grid grid-cols-3 gap-4">
+        <Stat label="Total raids needed" value={formatRange(summary.totalRaids)} accent="text-gofest-accent2" />
         <Stat label="Raids / hour" value={formatRange(capacity.raidsPerHour)} />
         <Stat label="Max weekend raids" value={formatRange(capacity.totalRaids)} />
       </div>
 
       {hasGoals ? (
         <>
-          <CapacityGauge utilization={summary.utilizationNoBoost} />
+          <CapacityGauge utilization={summary.utilization} />
           {(() => {
             const windowLimited = summary.schedule.unmetGoals.length > 0;
             const ok = summary.feasible && !windowLimited;

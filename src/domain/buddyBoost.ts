@@ -1,25 +1,4 @@
-import { GAME_CONFIG } from "@/data/config";
-import type { Currency, RaidBoss } from "./types";
-
-/**
- * Mega-buddy boost multipliers applied to per-raid rewards.
- *
- * In Pokémon GO, raiding with a Mega-Evolved buddy of a matching type boosts
- * Candy (and, at higher mega levels, XL Candy) earned from the raid. Mega
- * Energy is never boosted. We expose a single multiplier per currency so the
- * engine can model a "with boost" scenario.
- */
-export function buddyMultiplier(currency: Currency): number {
-  const { candyMultiplier, xlMultiplier, appliesToMegaEnergy } = GAME_CONFIG.buddyBoost;
-  switch (currency) {
-    case "candy":
-      return candyMultiplier;
-    case "xlCandy":
-      return xlMultiplier;
-    case "megaEnergy":
-      return appliesToMegaEnergy ? candyMultiplier : 1;
-  }
-}
+import type { RaidBoss } from "./types";
 
 function shareType(a: RaidBoss, b: RaidBoss): boolean {
   const at = a.types ?? [];

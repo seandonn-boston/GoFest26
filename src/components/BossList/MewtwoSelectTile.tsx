@@ -25,7 +25,7 @@ export function MewtwoSelectTile({
       style={typeBackgroundStyle(boss.types)}
       className={`enamel enamel-bezel relative flex min-h-[136px] flex-col items-center justify-center rounded-2xl transition ${
         selected
-          ? "outline outline-2 outline-white outline-offset-2"
+          ? "outline outline-[3px] outline-gofest-accent2 outline-offset-2"
           : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
       }`}
     >
@@ -33,11 +33,6 @@ export function MewtwoSelectTile({
       <span className="absolute left-2 top-2 z-20 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
         {dayLabel}
       </span>
-      {selected ? (
-        <span className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs text-gofest-bg">
-          ✓
-        </span>
-      ) : null}
       <span className="relative z-10 flex flex-col items-center gap-1 p-3">
         <Sprite src={boss.sprite} alt={boss.name} size={64} />
         <span className="rounded bg-black/55 px-1.5 text-sm font-bold text-white">{boss.name}</span>

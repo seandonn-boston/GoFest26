@@ -18,7 +18,7 @@ import { GAME_CONFIG } from "./config";
  * the player can raid them locally or must remote raid.
  */
 
-const { megaRewards, legendaryRewards, genericMegaLevelTotals } = GAME_CONFIG;
+const { megaRewards, catch: catchRewards, genericMegaLevelTotals } = GAME_CONFIG;
 
 const w = (day: EventDay, startHour: number, endHour: number): HabitatWindow => ({
   day,
@@ -47,7 +47,7 @@ function mega(o: MegaOpts): RaidBoss {
     sortPriority: 0,
     allWeekend: false,
     windows: o.windows,
-    rewards: { candy: { min: 5, max: 8 }, xlCandy: { min: 1, max: 3 }, megaEnergy: megaRewards.mega },
+    rewards: { candy: catchRewards.candy, xlCandy: catchRewards.megaXl, megaEnergy: megaRewards.mega },
     rewardsCurrencies: ["candy", "xlCandy", "megaEnergy"],
     bestCounters: o.counters,
     types: o.types,
@@ -64,7 +64,7 @@ function superMega(o: MegaOpts): RaidBoss {
     sortPriority: 0,
     allWeekend: false,
     windows: o.windows,
-    rewards: { candy: { min: 5, max: 8 }, xlCandy: { min: 1, max: 3 }, megaEnergy: megaRewards.superMega },
+    rewards: { candy: catchRewards.candy, xlCandy: catchRewards.legendaryXl, megaEnergy: megaRewards.superMega },
     rewardsCurrencies: ["candy", "xlCandy", "megaEnergy"],
     bestCounters: o.counters,
     types: o.types,
@@ -93,7 +93,7 @@ function legendary(o: LegOpts): RaidBoss {
     sortPriority: 0,
     allWeekend: false,
     windows: o.windows,
-    rewards: { candy: legendaryRewards.candy, xlCandy: legendaryRewards.xlCandy },
+    rewards: { candy: catchRewards.candy, xlCandy: catchRewards.legendaryXl },
     rewardsCurrencies: ["candy", "xlCandy"],
     bestCounters: o.counters,
     types: o.types,

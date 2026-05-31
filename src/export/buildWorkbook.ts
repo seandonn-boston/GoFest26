@@ -102,8 +102,7 @@ export function buildWorkbook(
     { header: "Need Candy", key: "candy", width: 12 },
     { header: "Need XL", key: "xl", width: 12 },
     { header: "Need Mega Energy", key: "energy", width: 16 },
-    { header: "Raids (no boost)", key: "raids", width: 16 },
-    { header: "Raids (buddy)", key: "raidsBoost", width: 16 },
+    { header: "Raids needed", key: "raids", width: 16 },
     { header: "Limited by", key: "binding", width: 16 },
   ];
   styleHeader(goals.getRow(1));
@@ -128,8 +127,7 @@ export function buildWorkbook(
       candy: result.needs.candy?.needed ?? 0,
       xl: result.needs.xlCandy?.needed ?? 0,
       energy: result.needs.megaEnergy?.needed ?? 0,
-      raids: formatRange(result.raidsNoBoost),
-      raidsBoost: formatRange(result.raidsWithBoost),
+      raids: formatRange(result.raids),
       binding: result.bindingCurrency ? CURRENCY_LABEL[result.bindingCurrency] : "—",
     });
   }
@@ -152,9 +150,8 @@ export function buildWorkbook(
     ["Seconds per raid (+ downtime)", `${c.raidDurationSec}s + ${c.downtimeSecRange.min}–${c.downtimeSecRange.max}s`],
     ["Raids per hour", formatRange(c.raidsPerHour)],
     ["Max weekend raids", formatRange(c.totalRaids)],
-    ["Total raids needed (no boost)", formatRange(summary.totalRaidsNoBoost)],
-    ["Total raids needed (with buddy)", formatRange(summary.totalRaidsWithBoost)],
-    ["Capacity used (no boost)", `${Math.round(summary.utilizationNoBoost * 100)}%`],
+    ["Total raids needed", formatRange(summary.totalRaids)],
+    ["Capacity used", `${Math.round(summary.utilization * 100)}%`],
     ["Plan fits the weekend?", summary.feasible ? "Yes" : "No — trim targets or use boosts"],
     ["Scheduled raids placed", summary.schedule.raids.length],
   ];

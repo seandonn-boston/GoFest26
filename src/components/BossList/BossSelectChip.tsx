@@ -27,16 +27,11 @@ export function BossSelectChip({
       style={typeBackgroundStyle(boss.types)}
       className={`enamel enamel-bezel relative flex w-[84px] flex-col items-center rounded-xl transition ${
         selected
-          ? "outline outline-2 outline-white outline-offset-2"
+          ? "outline outline-[3px] outline-gofest-accent2 outline-offset-2"
           : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
       }`}
     >
       {isMega ? <MegaRelief /> : null}
-      {selected ? (
-        <span className="absolute right-1 top-1 z-20 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-gofest-bg">
-          ✓
-        </span>
-      ) : null}
       <span className="relative z-10 flex flex-col items-center gap-1 p-2">
         <Sprite src={boss.sprite} alt={label ?? boss.name} size={46} />
         <span className="line-clamp-2 rounded bg-black/55 px-1 text-[10px] font-medium leading-tight text-white">
