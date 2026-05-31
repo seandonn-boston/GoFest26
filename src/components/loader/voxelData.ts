@@ -89,68 +89,45 @@ function buildSubstitute(): Voxel[] {
 
 export const SUBSTITUTE_VOXELS = buildSubstitute();
 
-// ---------------- MissingNo (flat block transcription, depth = 1) ----------------
-// Blocks of color read from the MissingNo sprite: P purple, K black/dark,
-// T peach/tan, "." empty. Laid out top→bottom to match the source image —
-// full-height right band, empty upper-left notch, peach band near the top,
-// black streaks, ragged bottom.
-const MN_PALETTE: Record<string, string> = {
-  P: "#9b8cb1",
-  K: "#20212c",
-  T: "#e9c9a1",
-};
+// ---------------- MissingNo fallback (flat, depth = 1) ----------------
+// One solid contained shape: a rectangle with the top-left notch cut out. Every
+// cell inside the shape is a block (colored or white) — no transparent gaps;
+// only the notch and outside are empty. Used if the live image decode is
+// blocked. P purple, K black, T peach, W white interior.
+const MN_P = "#9b8cb1";
+const MN_K = "#20212c";
+const MN_T = "#e9c9a1";
+const MN_W = "#f1f1f4";
+const MN_COLS = 14;
+const MN_ROWS = 34;
+const MN_NOTCH_W = 7; // top-left notch width
+const MN_NOTCH_H = 13; // top-left notch height
 
-const MISSINGNO_ROWS = [
-  "................",
-  ".....K..........",
-  "...........PP...",
-  "..........PPPPP.",
-  ".........PPPPPP.",
-  ".........PTTTTPP",
-  "........TTTTKTPP",
-  "........KTTTTTPP",
-  ".........PPPPPPP",
-  ".........PPKKPPP",
-  ".........KKKPPPP",
-  "........PPPPPTPP",
-  ".......PPPPPPPPP",
-  ".....PPPPPKKPPPP",
-  "....PPPPPPPPPPPP",
-  "...PPPTTTPPPPKPP",
-  "...PPKTTKPPPPPPP",
-  "...PPPKKPPPKKPPP",
-  "..PPPPPPPPPPPPPP",
-  "..PPKPPPPTTPPPPP",
-  ".PPPPPKKPPPPPPKP",
-  ".PPPPPPPPPPPPPPP",
-  ".PPKPPPTPPPPPPPP",
-  ".PPPPPPTPPPKKPPP",
-  "..PPPKKPPPPPPPPP",
-  ".PPPPPPPPPTTPPPP",
-  ".PPKPPPPPPPPPPKP",
-  ".PPPPPKPPPPPPPPP",
-  "..PPPPPPPPPKPPPP",
-  ".PKKPPPPPPPPPPPP",
-  ".PPPPPPPTTPPPKPP",
-  "..PPKPPPPPPPPPPP",
-  ".PPPPPPKKPPPPPPP",
-  ".PP.PPPPPPPP.PPP",
-  "..PPP.PPP.PPPPKP",
-  ".P..PP..PP..PPPP",
-  "...P...P....PP..",
-];
+function mnHash(x: number, y: number): number {
+  let h = (x * 73856093) ^ (y * 19349663);
+  h = (h ^ (h >>> 13)) >>> 0;
+  return (h % 1000) / 1000;
+}
+
+function mnBlockColor(x: number, y: number): string {
+  const r = mnHash(x, y);
+  const row = (y * 2654435 + 5) % 6;
+  if (r < 0.1) return MN_W; // interior white blocks
+  if (row === 0 && r < 0.55) return MN_T;
+  if (row === 1 && r < 0.45) return MN_K;
+  if (r < 0.18) return MN_K;
+  if (r < 0.3) return MN_T;
+  return MN_P;
+}
 
 function buildMissingno(): Voxel[] {
-  const height = MISSINGNO_ROWS.length;
-  const width = Math.max(...MISSINGNO_ROWS.map((r) => r.length));
   const out: Voxel[] = [];
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const color = MN_PALETTE[MISSINGNO_ROWS[y][x] ?? "."];
-      if (!color) continue;
+  for (let y = 0; y < MN_ROWS; y++) {
+    for (let x = 0; x < MN_COLS; x++) {
+      if (x < MN_NOTCH_W && y < MN_NOTCH_H) continue; // top-left notch cutout
       out.push({
-        position: [x - (width - 1) / 2, height - 1 - y - (height - 1) / 2, 0],
-        color,
+        position: [x - (MN_COLS - 1) / 2, MN_ROWS - 1 - y - (MN_ROWS - 1) / 2, 0],
+        color: mnBlockColor(x, y),
       });
     }
   }
