@@ -54,6 +54,11 @@ export const GAME_CONFIG = {
     xlCandy: { min: 2, max: 4 } as Range,
   },
 
+  // Approximate cumulative Mega Energy to reach Mega Level 0..3 for a typical
+  // (non-Mewtwo) Mega — covers the first evolution plus the level-ups. Real costs
+  // vary per species; override a specific boss via its megaLevelEnergyTotals.
+  genericMegaLevelTotals: [0, 200, 360, 560],
+
   // Mega-buddy boost multipliers applied to candy/XL gained from raids.
   // source: a level-1 mega boosts regular candy only; High/Max/Super-Max
   // mega level additionally boosts XL candy. Mega Energy is never boosted.

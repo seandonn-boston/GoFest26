@@ -10,6 +10,31 @@ export type Variant = "standard" | "shadow" | "purified";
 
 export type EventDay = "sat" | "sun";
 
+/** Continental region groupings used by Niantic for region-locked raids. */
+export type Continent = "americas" | "emea" | "apac";
+
+/**
+ * A geographic restriction on a raid boss. Only the specified axes are
+ * constrained; an undefined axis means "anywhere". A boss with no scope at all
+ * is globally available.
+ *   - ns: Northern / Southern hemisphere
+ *   - ew: Eastern / Western hemisphere
+ *   - continent: Americas+Greenland / Europe-MEA-India / Asia-Pacific
+ */
+export interface RegionScope {
+  ns?: "N" | "S";
+  ew?: "E" | "W";
+  continent?: Continent;
+}
+
+/** The player's location, used to decide which raids are local vs. remote-only. */
+export interface UserRegion {
+  label: string;
+  ns: "N" | "S";
+  ew: "E" | "W";
+  continent: Continent;
+}
+
 /** A min/max range. Rewards are modeled as ranges because in-game drops vary. */
 export interface Range {
   min: number;
@@ -52,8 +77,10 @@ export interface RaidBoss {
   bestCounters: string[];
   /** Pokémon types (e.g. ["Psychic", "Fighting"]); used for buddy-boost matching. */
   types?: string[];
-  /** e.g. "Northern Hemisphere"; undefined = globally available. */
-  regionRestriction?: string;
+  /** Geographic restriction; undefined = globally available. */
+  region?: RegionScope;
+  /** Optional planning tip (e.g. "wait for the Primal form to get Primal Energy"). */
+  note?: string;
   // ---- Mega-specific fields (only for mega / super-mega bosses) ----
   /** Mega Energy cost of the very first Mega Evolution (e.g. 7,500 for Mewtwo). */
   megaEvolutionEnergyFirst?: number;
@@ -131,7 +158,12 @@ export interface ScheduledRaid {
   recommendedBuddyMegaName?: string;
   passType: PassType;
   counters: string[];
-  regionRestriction?: string;
+  /** Named habitat hour-block this raid falls in (e.g. "Stormfire Peaks"). */
+  habitat?: string;
+  /** True when this boss is not available in the player's region (remote raid). */
+  remote: boolean;
+  /** Human-readable region restriction, if any. */
+  regionLabel?: string;
 }
 
 export interface UnmetGoal {
