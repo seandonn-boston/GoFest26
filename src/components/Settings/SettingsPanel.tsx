@@ -123,9 +123,10 @@ export function SettingsPanel() {
               onChange={(e) => setSettings({ fridayRemoteRaids: e.target.checked })}
             />
             <span className="text-slate-300">
-              20 Friday remote raids
+              Raid Friday night (20 remote raids)
               <span className="block text-xs text-slate-500">
-                Try-hard mode: also grind a night of Remote Raids before the event (+20 remote-raid budget).
+                Try-hard mode: +20 remote-raid budget, and the free Friday Orange pass carries over
+                (10 Orange on Saturday).
               </span>
             </span>
           </label>

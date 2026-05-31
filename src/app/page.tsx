@@ -13,6 +13,7 @@ import { LocationPicker } from "@/components/Settings/LocationPicker";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
+import { TiltProvider } from "@/components/ui/TiltProvider";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -34,6 +35,7 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
+      <TiltProvider />
       <SubstituteLoader>
         <header className="mb-6">
           <h1 className="text-2xl font-bold sm:text-3xl">

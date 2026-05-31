@@ -45,6 +45,22 @@ input[type="number"] {
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
     0 7px 18px rgba(0, 0, 0, 0.5);
 }
+/* Specular glint whose position follows the device tilt (gyroscope sets
+   --tilt-x/--tilt-y, -1..1). Defaults to a centered-top gloss with no gyro. */
+.enamel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: soft-light;
+  background: radial-gradient(
+    58% 52% at calc(50% + var(--tilt-x, 0) * 40%) calc(30% + var(--tilt-y, 0) * 30%),
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0) 60%
+  );
+}
 /* Optional polished champagne-gold metal bezel (selection buttons only).
    The glossy dome is blended into the type color via background layers (see
    typeBackgroundStyle), so no flat overlay film is needed. */
