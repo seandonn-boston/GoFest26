@@ -92,47 +92,68 @@ function buildSubstitute(): Voxel[] {
 
 export const SUBSTITUTE_VOXELS = buildSubstitute();
 
-// ---------------- MissingNo (flat glitch "backwards L", depth = 1) ----------------
-// The three sprite colors. Glitch fill is deterministic (seeded) so it's stable.
-const MN_PURPLE = "#9c8aa8";
-const MN_BLACK = "#181820";
-const MN_PEACH = "#ecc9a2";
-const MN_W = 14;
-const MN_H = 34;
+// ---------------- MissingNo (flat block transcription, depth = 1) ----------------
+// Blocks of color read from the MissingNo sprite: P purple, K black/dark,
+// T peach/tan, "." empty. Laid out top→bottom to match the source image —
+// full-height right band, empty upper-left notch, peach band near the top,
+// black streaks, ragged bottom.
+const MN_PALETTE: Record<string, string> = {
+  P: "#9b8cb1",
+  K: "#20212c",
+  T: "#e9c9a1",
+};
 
-function mnHash(x: number, y: number): number {
-  let h = (x * 73856093) ^ (y * 19349663);
-  h = (h ^ (h >>> 13)) >>> 0;
-  return (h % 1000) / 1000;
-}
-
-// Silhouette: full-height right band + lower-left block, with an empty
-// upper-left notch (left columns are blank above the notch line).
-function mnSolid(x: number, y: number): boolean {
-  if (y < 1) return x === 2; // tiny top-left speck (the notch detail)
-  if (mnHash(x + 31, y + 7) < 0.06) return false; // sprinkle glitch holes
-  if (x >= 7) return true; // right band, full height
-  return y >= 13 && x >= 1; // lower-left block (notch is the empty area above)
-}
-
-function mnColor(x: number, y: number): string {
-  const r = mnHash(x, y);
-  const rowType = (y * 2654435 + 7) % 5;
-  if (rowType === 0 && r < 0.5) return MN_PEACH; // peach streak rows
-  if (rowType === 1 && r < 0.4) return MN_BLACK; // black streak rows
-  if (r < 0.12) return MN_BLACK;
-  if (r < 0.22) return MN_PEACH;
-  return MN_PURPLE;
-}
+const MISSINGNO_ROWS = [
+  "................",
+  ".....K..........",
+  "...........PP...",
+  "..........PPPPP.",
+  ".........PPPPPP.",
+  ".........PTTTTPP",
+  "........TTTTKTPP",
+  "........KTTTTTPP",
+  ".........PPPPPPP",
+  ".........PPKKPPP",
+  ".........KKKPPPP",
+  "........PPPPPTPP",
+  ".......PPPPPPPPP",
+  ".....PPPPPKKPPPP",
+  "....PPPPPPPPPPPP",
+  "...PPPTTTPPPPKPP",
+  "...PPKTTKPPPPPPP",
+  "...PPPKKPPPKKPPP",
+  "..PPPPPPPPPPPPPP",
+  "..PPKPPPPTTPPPPP",
+  ".PPPPPKKPPPPPPKP",
+  ".PPPPPPPPPPPPPPP",
+  ".PPKPPPTPPPPPPPP",
+  ".PPPPPPTPPPKKPPP",
+  "..PPPKKPPPPPPPPP",
+  ".PPPPPPPPPTTPPPP",
+  ".PPKPPPPPPPPPPKP",
+  ".PPPPPKPPPPPPPPP",
+  "..PPPPPPPPPKPPPP",
+  ".PKKPPPPPPPPPPPP",
+  ".PPPPPPPTTPPPKPP",
+  "..PPKPPPPPPPPPPP",
+  ".PPPPPPKKPPPPPPP",
+  ".PP.PPPPPPPP.PPP",
+  "..PPP.PPP.PPPPKP",
+  ".P..PP..PP..PPPP",
+  "...P...P....PP..",
+];
 
 function buildMissingno(): Voxel[] {
+  const height = MISSINGNO_ROWS.length;
+  const width = Math.max(...MISSINGNO_ROWS.map((r) => r.length));
   const out: Voxel[] = [];
-  for (let y = 0; y < MN_H; y++) {
-    for (let x = 0; x < MN_W; x++) {
-      if (!mnSolid(x, y)) continue;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const color = MN_PALETTE[MISSINGNO_ROWS[y][x] ?? "."];
+      if (!color) continue;
       out.push({
-        position: [x - (MN_W - 1) / 2, MN_H - 1 - y - (MN_H - 1) / 2, 0],
-        color: mnColor(x, y),
+        position: [x - (width - 1) / 2, height - 1 - y - (height - 1) / 2, 0],
+        color,
       });
     }
   }
