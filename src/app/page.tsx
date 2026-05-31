@@ -1,11 +1,12 @@
 "use client";
 
-import { SORTED_BOSSES } from "@/data";
+import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePlannerResults } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
+import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { SettingsPanel } from "@/components/Settings/SettingsPanel";
 import { LocationPicker } from "@/components/Settings/LocationPicker";
@@ -18,8 +19,13 @@ export default function Home() {
   const resetAll = usePlannerStore((s) => s.resetAll);
   const summary = usePlannerResults();
 
-  const selectedBosses = SORTED_BOSSES.filter((b) => inputs[b.id]?.selected);
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
+  const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
+  // Mewtwo X & Y share one combined card; other selected bosses get their own.
+  const otherSelectedBosses = SORTED_BOSSES.filter(
+    (b) => inputs[b.id]?.selected && b.id !== MEWTWO_X_ID && b.id !== MEWTWO_Y_ID,
+  );
+  const anySelected = mewtwoSelected || otherSelectedBosses.length > 0;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
@@ -43,7 +49,7 @@ export default function Home() {
 
           <LocationPicker />
 
-          {selectedBosses.length > 0 ? (
+          {anySelected ? (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">2. Enter what you have</h2>
@@ -55,7 +61,15 @@ export default function Home() {
                   Reset all
                 </button>
               </div>
-              {selectedBosses.map((boss) => {
+              {mewtwoSelected ? (
+                <MewtwoCard
+                  bossX={getBoss(MEWTWO_X_ID)!}
+                  bossY={getBoss(MEWTWO_Y_ID)!}
+                  resultX={resultById.get(MEWTWO_X_ID)}
+                  resultY={resultById.get(MEWTWO_Y_ID)}
+                />
+              ) : null}
+              {otherSelectedBosses.map((boss) => {
                 const result = resultById.get(boss.id);
                 return result ? <BossInputCard key={boss.id} boss={boss} result={result} /> : null;
               })}

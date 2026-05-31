@@ -7,10 +7,12 @@ export function BossSelectChip({
   boss,
   selected,
   onToggle,
+  label,
 }: {
   boss: RaidBoss;
   selected: boolean;
   onToggle: () => void;
+  label?: string;
 }) {
   return (
     <button
@@ -30,7 +32,7 @@ export function BossSelectChip({
       >
         {selected ? "✓" : ""}
       </span>
-      <span className="font-medium">{boss.name}</span>
+      <span className="font-medium">{label ?? boss.name}</span>
       <TierBadge tier={boss.tier} />
     </button>
   );

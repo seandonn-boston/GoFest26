@@ -19,6 +19,12 @@ export function getBoss(id: string): RaidBoss | undefined {
   return RAID_BOSSES.find((b) => b.id === id);
 }
 
+// Mega Mewtwo X and Y are separate raids (different days, separate energy) but
+// share one underlying Mewtwo, so the UI presents them as a single combined card.
+export const MEWTWO_X_ID = "mega-mewtwo-x";
+export const MEWTWO_Y_ID = "mega-mewtwo-y";
+export const isMewtwo = (id: string): boolean => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
+
 /**
  * Dev-only sanity checks on the hand-authored game data. Throws in development
  * if the roster is internally inconsistent so mistakes surface immediately.

@@ -14,6 +14,7 @@ interface PlannerState {
   inputs: Record<string, BossInput>;
   settings: PlannerSettings;
   toggleSelected: (bossId: string) => void;
+  setSelected: (bossId: string, selected: boolean) => void;
   setVariant: (bossId: string, variant: Variant) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
@@ -45,6 +46,17 @@ export const usePlannerStore = create<PlannerState>()(
           const next = existing
             ? { ...existing, selected: !existing.selected }
             : makeDefaultInput(boss);
+          return { inputs: { ...state.inputs, [bossId]: next } };
+        }),
+
+      setSelected: (bossId, selected) =>
+        set((state) => {
+          const boss = getBoss(bossId);
+          if (!boss) return state;
+          const existing = state.inputs[bossId];
+          const next = existing
+            ? { ...existing, selected }
+            : { ...makeDefaultInput(boss), selected };
           return { inputs: { ...state.inputs, [bossId]: next } };
         }),
 
