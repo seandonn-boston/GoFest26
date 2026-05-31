@@ -71,7 +71,14 @@ export default function Home() {
               ) : null}
               {otherSelectedBosses.map((boss) => {
                 const result = resultById.get(boss.id);
-                return result ? <BossInputCard key={boss.id} boss={boss} result={result} /> : null;
+                return result ? (
+                  <BossInputCard
+                    key={boss.id}
+                    boss={boss}
+                    result={result}
+                    planningRaidsPerHour={summary.schedule.planningRaidsPerHour}
+                  />
+                ) : null;
               })}
             </section>
           ) : null}
