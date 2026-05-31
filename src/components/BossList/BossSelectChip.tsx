@@ -1,9 +1,9 @@
 "use client";
 
 import type { RaidBoss } from "@/domain/types";
-import { typeBackgroundStyle } from "@/data/typeVisuals";
 import { Sprite } from "@/components/ui/Sprite";
 import { MegaRelief } from "@/components/ui/MegaRelief";
+import { EnamelBadge } from "@/components/ui/EnamelBadge";
 
 export function BossSelectChip({
   boss,
@@ -19,17 +19,12 @@ export function BossSelectChip({
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={selected}
+    <EnamelBadge
+      types={boss.types}
+      selected={selected}
+      onToggle={onToggle}
       title={label ?? boss.name}
-      style={typeBackgroundStyle(boss.types)}
-      className={`enamel enamel-bezel relative flex w-[84px] flex-col items-center rounded-xl transition ${
-        selected
-          ? "outline outline-[3px] outline-gofest-accent2 outline-offset-2"
-          : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
-      }`}
+      stageClassName="w-[84px]"
     >
       {isMega ? <MegaRelief /> : null}
       <span className="relative z-10 flex flex-col items-center gap-1 p-2">
@@ -38,6 +33,6 @@ export function BossSelectChip({
           {label ?? boss.name}
         </span>
       </span>
-    </button>
+    </EnamelBadge>
   );
 }
