@@ -163,24 +163,24 @@ export function computeSchedule(
       return x.slotInHour - y.slotInHour;
     });
 
-  const freePerDay = settings.freeDailyPerDay;
-  const freeUsed: Record<EventDay, number> = { sat: 0, sun: 0 };
+  const orangePerDay = settings.freeDailyPerDay;
+  const orangeUsed: Record<EventDay, number> = { sat: 0, sun: 0 };
 
   const raids: ScheduledRaid[] = assigned.map((slot) => {
     const boss = getBoss(slot.bossId!)!;
     const buddy = recommendBuddy(boss, selectedMegas);
     const local = bossIsLocal(boss, settings.region);
 
-    // Out-of-region bosses can only be reached via a remote raid; otherwise use
-    // free daily passes first, then premium.
+    // Out-of-region bosses need a Remote Raid Pass. Local raids use a free
+    // Orange pass first, then unlimited Green passes / Link Charges.
     let passType: PassType;
     if (!local) {
       passType = "remote";
-    } else if (freeUsed[slot.day] < freePerDay) {
-      passType = "free-daily";
-      freeUsed[slot.day] += 1;
+    } else if (orangeUsed[slot.day] < orangePerDay) {
+      passType = "orange";
+      orangeUsed[slot.day] += 1;
     } else {
-      passType = "premium";
+      passType = "green";
     }
 
     return {
