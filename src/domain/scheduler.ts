@@ -111,8 +111,16 @@ export function computeSchedule(
   });
 
   // 4. Assign each boss into its tightest open slots (fewest alternatives first).
+  // Out-of-region (remote-only) bosses are also capped by the Remote Raid budget:
+  // up to remotePassesPerDay per day, plus an optional Friday-night pool.
+  const maxRemote = Math.max(0, settings.remotePassesPerDay);
+  const dayRemote: Record<EventDay, number> = { sat: 0, sun: 0 };
+  let fridayPool = settings.fridayRemoteRaids ? maxRemote : 0;
+
   const unmetGoals: UnmetGoal[] = [];
   for (const bossId of order) {
+    const boss = getBoss(bossId);
+    const remote = boss ? !bossIsLocal(boss, settings.region) : false;
     const need = demand.get(bossId) ?? 0;
     const candidates = slots
       .filter((slot) => !slot.bossId && slot.available.includes(bossId))
@@ -123,16 +131,25 @@ export function computeSchedule(
         return x.slotInHour - y.slotInHour;
       });
 
-    const assignable = Math.min(need, candidates.length);
-    for (let i = 0; i < assignable; i++) candidates[i].bossId = bossId;
+    let assigned = 0;
+    for (const slot of candidates) {
+      if (assigned >= need) break;
+      if (remote) {
+        if (dayRemote[slot.day] < maxRemote) dayRemote[slot.day]++;
+        else if (fridayPool > 0) fridayPool--;
+        else break; // remote-raid budget exhausted
+      }
+      slot.bossId = bossId;
+      assigned++;
+    }
 
-    if (assignable < need) {
+    if (assigned < need) {
       const result = resultById.get(bossId);
       unmetGoals.push({
         bossId,
         bossName: getBoss(bossId)?.name ?? bossId,
         currency: result?.bindingCurrency ?? null,
-        shortfall: need - assignable,
+        shortfall: need - assigned,
       });
     }
   }

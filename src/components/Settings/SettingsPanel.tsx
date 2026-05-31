@@ -23,7 +23,9 @@ export function SettingsPanel() {
     settings.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     settings.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     settings.rewardCase === DEFAULT_SETTINGS.rewardCase &&
-    settings.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay;
+    settings.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
+    settings.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
+    settings.fridayRemoteRaids === DEFAULT_SETTINGS.fridayRemoteRaids;
 
   return (
     <Card className="p-4">
@@ -99,7 +101,30 @@ export function SettingsPanel() {
               max={30}
               onChange={(v) => setSettings({ freeDailyPerDay: v })}
             />
+            <NumberInput
+              label="Remote raids / day"
+              value={settings.remotePassesPerDay}
+              min={0}
+              max={20}
+              onChange={(v) => setSettings({ remotePassesPerDay: v })}
+            />
           </div>
+
+          {/* Friday remote raids */}
+          <label className="flex cursor-pointer items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-gofest-accent2"
+              checked={settings.fridayRemoteRaids}
+              onChange={(e) => setSettings({ fridayRemoteRaids: e.target.checked })}
+            />
+            <span className="text-slate-300">
+              20 Friday remote raids
+              <span className="block text-xs text-slate-500">
+                Try-hard mode: also grind a night of Remote Raids before the event (+20 remote-raid budget).
+              </span>
+            </span>
+          </label>
 
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-500">

@@ -3,7 +3,7 @@
 import type { RaidBoss } from "@/domain/types";
 import { typeBackgroundStyle } from "@/data/typeVisuals";
 import { Sprite } from "@/components/ui/Sprite";
-import { MegaGlyph } from "@/components/ui/MegaGlyph";
+import { MegaRelief } from "@/components/ui/MegaRelief";
 
 export function BossSelectChip({
   boss,
@@ -31,9 +31,7 @@ export function BossSelectChip({
           : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
       }`}
     >
-      {isMega ? (
-        <MegaGlyph className="pointer-events-none absolute inset-x-0 top-2 z-[1] mx-auto h-11 w-11 text-white/40" />
-      ) : null}
+      {isMega ? <MegaRelief /> : null}
       {selected ? (
         <span className="absolute right-1 top-1 z-20 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-gofest-bg">
           ✓
@@ -41,7 +39,7 @@ export function BossSelectChip({
       ) : null}
       <span className="relative z-10 flex flex-col items-center gap-1 p-2">
         <Sprite src={boss.sprite} alt={label ?? boss.name} size={46} />
-        <span className="line-clamp-2 text-[10px] font-medium leading-tight text-white drop-shadow">
+        <span className="line-clamp-2 rounded bg-black/55 px-1 text-[10px] font-medium leading-tight text-white">
           {label ?? boss.name}
         </span>
       </span>

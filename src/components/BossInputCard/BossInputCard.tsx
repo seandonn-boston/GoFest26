@@ -4,7 +4,7 @@ import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability, bossWindowSlots } from "@/data";
-import { typeBackgroundStyle } from "@/data/typeVisuals";
+import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
@@ -48,11 +48,11 @@ export function BossInputCard({
   const field = "rounded-lg border border-white/10 bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2";
 
   return (
-    <div className="enamel relative rounded-2xl p-1.5" style={typeBackgroundStyle(boss.types)}>
-      <div className="relative z-10 rounded-[13px] bg-gofest-panel/95 p-3">
+    <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(boss.types)}>
+      <div className="relative z-10 rounded-[12px] p-3" style={typePanelStyle(boss.types)}>
       <div className="mt-1 flex justify-center gap-1">
         {(boss.types ?? []).map((t) => (
-          <span key={t} className="rounded-full bg-gofest-bg ring-1 ring-white/25">
+          <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
             <TypeIcon type={t} size={24} />
           </span>
         ))}
