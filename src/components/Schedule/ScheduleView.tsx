@@ -1,6 +1,7 @@
 "use client";
 
 import { GAME_CONFIG } from "@/data/config";
+import { habitatAt } from "@/data/habitats";
 import type { EventDay, Schedule, ScheduledRaid } from "@/domain/types";
 import { hourLabel } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
@@ -77,6 +78,9 @@ export function ScheduleView({ schedule }: { schedule: Schedule }) {
                 <div key={h.hour}>
                   <div className="mb-1 text-xs font-medium text-slate-400">
                     {hourLabel(h.hour, startLocal)} — {hourLabel(h.hour + 1, startLocal)}
+                    {habitatAt(day, h.hour) ? (
+                      <span className="ml-2 text-gofest-accent2">{habitatAt(day, h.hour)!.name}</span>
+                    ) : null}
                     <span className="ml-2 text-slate-500">({h.raids.length} raids)</span>
                   </div>
                   <div className="space-y-1.5">

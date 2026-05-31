@@ -64,6 +64,7 @@ export function buildWorkbook(
     { header: "#", key: "n", width: 5 },
     { header: "Day", key: "day", width: 14 },
     { header: "Time", key: "time", width: 10 },
+    { header: "Habitat", key: "habitat", width: 20 },
     { header: "Boss", key: "boss", width: 22 },
     { header: "Tier", key: "tier", width: 12 },
     { header: "Pass", key: "pass", width: 18 },
@@ -78,16 +79,17 @@ export function buildWorkbook(
       n: idx + 1,
       day: DAY_LABEL[raid.day] ?? raid.day,
       time: hourLabel(raid.hour, startLocal),
+      habitat: raid.habitat ?? "—",
       boss: raid.bossName,
       tier: TIER_LABEL[raid.tier],
       pass: PASS_LABEL[raid.passType],
       buddy: raid.recommendedBuddyMegaName ?? "—",
       counters: raid.counters.join(", "),
-      region: raid.regionRestriction ?? "Global",
+      region: raid.remote ? `${raid.regionLabel ?? "Out of region"} (remote)` : "Local",
     });
   });
   schedule.views = [{ state: "frozen", ySplit: 1 }];
-  schedule.autoFilter = "A1:I1";
+  schedule.autoFilter = "A1:J1";
 
   if (summary.schedule.raids.length === 0) {
     schedule.addRow({ n: "", day: "Select bosses and enter your currencies to generate a plan." });

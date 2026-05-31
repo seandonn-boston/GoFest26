@@ -1,5 +1,6 @@
 import { GAME_CONFIG } from "@/data/config";
-import type { Range } from "./types";
+import { DEFAULT_REGION } from "@/data/locations";
+import type { Range, UserRegion } from "./types";
 
 /**
  * User-adjustable planning assumptions. These layer over GAME_CONFIG so a user
@@ -19,6 +20,8 @@ export interface PlannerSettings {
   rewardCase: "optimistic" | "expected" | "safe";
   /** Free Raid Passes the user expects to get per day. */
   freeDailyPerDay: number;
+  /** Player location — decides which region-locked raids are local vs. remote-only. */
+  region: UserRegion;
 }
 
 export const DEFAULT_SETTINGS: PlannerSettings = {
@@ -26,4 +29,5 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
+  region: DEFAULT_REGION,
 };

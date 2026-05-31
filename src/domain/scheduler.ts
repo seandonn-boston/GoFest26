@@ -1,6 +1,8 @@
 import { getBoss } from "@/data";
+import { habitatAt } from "@/data/habitats";
 import { midpoint } from "@/lib/math";
 import { recommendBuddy } from "./buddyBoost";
+import { bossIsLocal, regionScopeLabel } from "./region";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type {
   BossInput,
@@ -150,9 +152,14 @@ export function computeSchedule(
   const raids: ScheduledRaid[] = assigned.map((slot) => {
     const boss = getBoss(slot.bossId!)!;
     const buddy = recommendBuddy(boss, selectedMegas);
+    const local = bossIsLocal(boss, settings.region);
 
+    // Out-of-region bosses can only be reached via a remote raid; otherwise use
+    // free daily passes first, then premium.
     let passType: PassType;
-    if (freeUsed[slot.day] < freePerDay) {
+    if (!local) {
+      passType = "remote";
+    } else if (freeUsed[slot.day] < freePerDay) {
       passType = "free-daily";
       freeUsed[slot.day] += 1;
     } else {
@@ -170,7 +177,9 @@ export function computeSchedule(
       recommendedBuddyMegaName: buddy?.name,
       passType,
       counters: boss.bestCounters.slice(0, 3),
-      regionRestriction: boss.regionRestriction,
+      habitat: habitatAt(slot.day, slot.hour)?.name,
+      remote: !local,
+      regionLabel: regionScopeLabel(boss.region),
     };
   });
 

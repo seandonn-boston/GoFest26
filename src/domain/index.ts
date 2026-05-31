@@ -13,6 +13,7 @@ export { computeSchedule } from "./scheduler";
 export { computeGrossRequirement, computeNetNeed } from "./requirements";
 export { DEFAULT_SETTINGS } from "./settings";
 export type { PlannerSettings } from "./settings";
+export { bossIsLocal, isScopeLocal, regionScopeLabel } from "./region";
 
 /**
  * Top-level engine entry point: given the user's per-boss inputs, computes

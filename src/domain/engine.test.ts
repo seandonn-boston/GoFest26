@@ -99,7 +99,7 @@ describe("capacity", () => {
 });
 
 describe("scheduler", () => {
-  it("places exactly the demanded number of all-weekend Mewtwo raids (no overshoot)", () => {
+  it("places exactly the demanded number of Mewtwo raids (no overshoot)", () => {
     const mewtwo = input("mega-mewtwo-x", { megaLevel: 0, targetMegaLevel: 4, level: 40, targetLevel: 40 });
     const result = computeBossResult(mewtwoX, mewtwo);
     const expectedDemand = Math.ceil((result.raidsNoBoost.min + result.raidsNoBoost.max) / 2);
@@ -111,16 +111,31 @@ describe("scheduler", () => {
   });
 
   it("only places a windowed boss inside its habitat windows", () => {
-    // Reshiram is only available Saturday hours 0–3.
+    // Reshiram is only available Saturday's Dragonflight Summit (hours 6–9).
     const resh = input("reshiram", { level: 40, targetLevel: 50 });
     const schedule = scheduleFor([resh]);
     const reshRaids = schedule.raids.filter((r) => r.bossId === "reshiram");
     expect(reshRaids.length).toBeGreaterThan(0);
     for (const r of reshRaids) {
       expect(r.day).toBe("sat");
-      expect(r.hour).toBeGreaterThanOrEqual(0);
-      expect(r.hour).toBeLessThan(3);
+      expect(r.hour).toBeGreaterThanOrEqual(6);
+      expect(r.hour).toBeLessThan(9);
     }
+  });
+
+  it("marks out-of-region bosses as remote and keeps in-region ones local (Boston default)", () => {
+    // Boston = Northern/Western/Americas. Celesteela is Southern-only → remote;
+    // Kartana is Northern → local. Small goals so both fit the shared window.
+    const celesteela = input("celesteela", { xlCandy: 290, level: 40, targetLevel: 50 });
+    const kartana = input("kartana", { xlCandy: 290, level: 40, targetLevel: 50 });
+    const schedule = scheduleFor([celesteela, kartana]);
+
+    const cel = schedule.raids.find((r) => r.bossId === "celesteela");
+    const kar = schedule.raids.find((r) => r.bossId === "kartana");
+    expect(cel?.remote).toBe(true);
+    expect(cel?.passType).toBe("remote");
+    expect(kar?.remote).toBe(false);
+    expect(kar?.passType).not.toBe("remote");
   });
 
   it("flags an unmet goal when a windowed boss needs more raids than its windows allow", () => {
