@@ -26,7 +26,9 @@ export function BossSelectChip({
       title={label ?? boss.name}
       style={typeBackgroundStyle(boss.types)}
       className={`enamel enamel-bezel relative flex w-[84px] flex-col items-center rounded-xl transition ${
-        selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
+        selected
+          ? "outline outline-2 outline-white outline-offset-2"
+          : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
       }`}
     >
       {isMega ? (

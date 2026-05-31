@@ -24,7 +24,9 @@ export function MewtwoSelectTile({
       aria-pressed={selected}
       style={typeBackgroundStyle(boss.types)}
       className={`enamel enamel-bezel relative flex min-h-[136px] flex-col items-center justify-center rounded-2xl transition ${
-        selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
+        selected
+          ? "outline outline-2 outline-white outline-offset-2"
+          : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
       }`}
     >
       <MegaGlyph className="pointer-events-none absolute inset-0 z-[1] m-auto h-24 w-24 text-white/40" />
