@@ -59,3 +59,10 @@ export function typeBackgroundStyle(types?: string[]): CSSProperties {
 export function typeIconList(types?: string[]): string[] {
   return (types ?? []).map((t) => TYPE_ICONS[t.toLowerCase()] ?? "❔");
 }
+
+// Game-accurate type symbols (recreations of the modern-game type icons).
+const TYPE_ICON_BASE = "https://raw.githubusercontent.com/partywhale/pokemon-type-icons/master/icons/";
+
+export function typeIconUrl(type: string): string {
+  return `${TYPE_ICON_BASE}${type.toLowerCase()}.svg`;
+}
