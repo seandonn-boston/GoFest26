@@ -45,10 +45,10 @@ input[type="number"] {
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
     0 7px 18px rgba(0, 0, 0, 0.5);
 }
-/* Polished champagne-gold metal bezel (conic gradient catches light).
-   The glossy dome itself is blended into the type color via background layers
-   (see typeBackgroundStyle), so no flat overlay film is needed here. */
-.enamel::after {
+/* Optional polished champagne-gold metal bezel (selection buttons only).
+   The glossy dome is blended into the type color via background layers (see
+   typeBackgroundStyle), so no flat overlay film is needed. */
+.enamel-bezel::after {
   content: "";
   position: absolute;
   inset: -3px;
