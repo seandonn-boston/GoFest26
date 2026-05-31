@@ -19,6 +19,9 @@ export function TiltProvider() {
     const root = document.documentElement;
 
     const onOrient = (e: DeviceOrientationEvent) => {
+      // Real sensor data arrived: hand the glint over to the gyroscope and stop
+      // the desktop shimmer fallback.
+      if (e.gamma != null || e.beta != null) root.classList.add("gyro-active");
       const gamma = e.gamma ?? 0; // left-right, ~ -90..90
       const beta = e.beta ?? 0; // front-back, ~ -180..180
       // Smaller divisor => a gentle wrist tilt already saturates the effect, so
@@ -65,6 +68,7 @@ export function TiltProvider() {
       window.removeEventListener("deviceorientation", onOrient);
       if (onGesture) window.removeEventListener("pointerdown", onGesture);
       cancelAnimationFrame(raf);
+      root.classList.remove("gyro-active");
     };
   }, []);
 

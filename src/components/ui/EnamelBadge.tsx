@@ -35,6 +35,7 @@ export function EnamelBadge({
       <div className="badge h-full w-full">
         <div className="badge-face h-full w-full">
           <span className="badge-fill" style={{ ...typeBackgroundStyle(types), opacity: selected ? 1 : 0.45 }} />
+          <span className="badge-shimmer" aria-hidden="true" />
           {children}
         </div>
       </div>
