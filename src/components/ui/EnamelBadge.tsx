@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import { typeBackgroundStyle } from "@/data/typeVisuals";
 
 /**
- * Apple-Fitness-style 3D enamel badge: a metallic bezel that tilts to the
- * gyroscope over a type-colored enamel face. `children` are the badge contents
- * (sprite, label, mega relief), rendered above the tilt-tracking specular.
+ * Apple-Fitness-style 3D enamel badge: a metallic gold bezel that tilts to the
+ * gyroscope over a type-colored enamel face. The fill stays fully opaque; a dark
+ * scrim fades in/out to show selection so no blended layer ever animates.
  */
 export function EnamelBadge({
   types,
@@ -34,9 +34,9 @@ export function EnamelBadge({
     >
       <div className="badge h-full w-full">
         <div className="badge-face h-full w-full">
-          <span className="badge-fill" style={{ ...typeBackgroundStyle(types), opacity: selected ? 1 : 0.45 }} />
-          <span className="badge-shimmer" aria-hidden="true" />
+          <span className="badge-fill" style={typeBackgroundStyle(types)} />
           {children}
+          <span className="badge-dim" aria-hidden="true" style={{ opacity: selected ? 0 : 0.55 }} />
         </div>
       </div>
     </button>

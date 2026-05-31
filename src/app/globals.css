@@ -44,22 +44,6 @@ input[type="number"] {
     inset 0 -10px 16px rgba(0, 0, 0, 0.3),
     0 3px 9px rgba(0, 0, 0, 0.4);
 }
-/* Specular glint whose position follows the device tilt (gyroscope sets
-   --tilt-x/--tilt-y, -1..1). Defaults to a centered-top gloss with no gyro. */
-.enamel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
-  mix-blend-mode: soft-light;
-  background: radial-gradient(
-    58% 52% at calc(50% + var(--tilt-x, 0) * 40%) calc(30% + var(--tilt-y, 0) * 30%),
-    rgba(255, 255, 255, 0.6),
-    rgba(255, 255, 255, 0) 60%
-  );
-}
 /* ---- 3D enamel badge (Apple-Fitness-style), reverse-engineered into CSS ----
    Stage gives perspective; the badge is a metallic bezel that tilts to the
    gyroscope (--tilt-x/y); the face is the enamel with a tilt-tracking specular. */
@@ -101,84 +85,23 @@ input[type="number"] {
     inset 0 2px 3px rgba(255, 255, 255, 0.4),
     inset 0 -9px 15px rgba(0, 0, 0, 0.34);
 }
-/* The type-color fill: translucent when unselected, opaque when selected. */
+/* The type-color fill is always fully opaque; selection is handled by fading a
+   dark scrim (.badge-dim) so no blend-backdrop layer ever animates its opacity
+   (which is what used to make the mega relief's blend pop at transition end). */
 .badge-fill {
   position: absolute;
   inset: 0;
   z-index: 0;
+}
+/* Dark scrim above the fill + mega relief: dims the face when unselected and
+   fades out on selection. Plain opacity — no blend — so nothing pops. */
+.badge-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: #0b0e1a;
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.badge-face::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  mix-blend-mode: screen; /* brighter, clearly-visible glint vs. soft-light */
-  background: radial-gradient(
-    60% 52% at calc(50% + var(--tilt-x, 0) * 85%) calc(30% + var(--tilt-y, 0) * 60%),
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.28) 38%,
-    rgba(255, 255, 255, 0) 64%
-  );
-}
-/* A second, tighter hot-spot that sweeps the opposite way for a lively sheen. */
-.badge-face::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  background: radial-gradient(
-    34% 30% at calc(50% - var(--tilt-x, 0) * 70%) calc(70% - var(--tilt-y, 0) * 55%),
-    rgba(255, 255, 255, 0.55),
-    rgba(255, 255, 255, 0) 60%
-  );
-}
-
-/* ---- Desktop shimmer fallback ----
-   Desktops have no gyroscope, so the tilt vars never move and the badges look
-   static. We animate a moving radial glint via registered custom properties
-   (needed so the values interpolate instead of jumping). When the real
-   gyroscope takes over, <html> gets .gyro-active and the shimmer is hidden. */
-@property --shimmer-x {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-@property --shimmer-y {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-.badge-shimmer {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0; /* off unless we're in the no-gyro fallback */
-  background: radial-gradient(
-    52% 46% at calc(50% + var(--shimmer-x, 0) * 80%) calc(34% + var(--shimmer-y, 0) * 58%),
-    rgba(255, 255, 255, 0.9),
-    rgba(255, 255, 255, 0.22) 40%,
-    rgba(255, 255, 255, 0) 66%
-  );
-}
-html:not(.gyro-active) .badge-shimmer {
-  opacity: 1;
-  animation: badge-shimmer-orbit 5.5s ease-in-out infinite;
-}
-@keyframes badge-shimmer-orbit {
-  0% { --shimmer-x: -0.9; --shimmer-y: -0.55; }
-  25% { --shimmer-x: 0.9; --shimmer-y: -0.25; }
-  50% { --shimmer-x: 0.55; --shimmer-y: 0.7; }
-  75% { --shimmer-x: -0.55; --shimmer-y: 0.35; }
-  100% { --shimmer-x: -0.9; --shimmer-y: -0.55; }
-}
-@media (prefers-reduced-motion: reduce) {
-  html:not(.gyro-active) .badge-shimmer { animation: none; opacity: 0; }
 }
 
 /* (legacy) flat gold bezel — kept for any non-badge use. */

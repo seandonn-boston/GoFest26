@@ -1,14 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type DOEWithPermission = typeof window.DeviceOrientationEvent & {
+  requestPermission?: () => Promise<"granted" | "denied" | "default">;
+};
 
 /**
- * Drives the enamel specular highlight from the phone's gyroscope: device
- * orientation updates CSS variables --tilt-x / --tilt-y (-1..1) on the document,
- * which the .enamel highlight reads, so pins catch the light as you tilt. On
- * iOS, motion permission is requested on the first tap. Renders nothing.
+ * Drives the enamel badge tilt from the phone's gyroscope: device orientation
+ * updates CSS variables --tilt-x / --tilt-y (-1..1) on the document, which the
+ * .badge transform reads, so the pins physically tilt as you move the phone.
+ *
+ * iOS (Safari 13+) gates the motion sensor behind a permission prompt that can
+ * only be requested from a user gesture, and only when "Motion & Orientation
+ * Access" is enabled in Settings. We try on the first tap, and also render an
+ * explicit "Enable motion tilt" button so there's always a clear way in.
  */
 export function TiltProvider() {
+  const [needsPermission, setNeedsPermission] = useState(false);
+  const requestRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     let targetX = 0;
     let targetY = 0;
@@ -19,19 +30,14 @@ export function TiltProvider() {
     const root = document.documentElement;
 
     const onOrient = (e: DeviceOrientationEvent) => {
-      // Real sensor data arrived: hand the glint over to the gyroscope and stop
-      // the desktop shimmer fallback.
-      if (e.gamma != null || e.beta != null) root.classList.add("gyro-active");
       const gamma = e.gamma ?? 0; // left-right, ~ -90..90
       const beta = e.beta ?? 0; // front-back, ~ -180..180
-      // Smaller divisor => a gentle wrist tilt already saturates the effect, so
-      // the gyroscope motion is unmistakable instead of subtle.
+      // Small divisor => a gentle wrist tilt already saturates the effect.
       targetX = Math.max(-1, Math.min(1, gamma / 16));
       targetY = Math.max(-1, Math.min(1, (beta - 45) / 16));
     };
 
     const loop = () => {
-      // Snappier follow so the badges visibly chase the phone as you tilt.
       curX += (targetX - curX) * 0.22;
       curY += (targetY - curY) * 0.22;
       root.style.setProperty("--tilt-x", curX.toFixed(3));
@@ -46,21 +52,31 @@ export function TiltProvider() {
       raf = requestAnimationFrame(loop);
     };
 
-    const DOE = window.DeviceOrientationEvent as
-      | (typeof window.DeviceOrientationEvent & { requestPermission?: () => Promise<string> })
-      | undefined;
+    const DOE = window.DeviceOrientationEvent as DOEWithPermission | undefined;
+
+    requestRef.current = () => {
+      if (DOE && typeof DOE.requestPermission === "function") {
+        DOE.requestPermission()
+          .then((res) => {
+            if (res === "granted") {
+              setNeedsPermission(false);
+              start();
+            }
+          })
+          .catch(() => {});
+      } else {
+        start();
+      }
+    };
 
     let onGesture: (() => void) | undefined;
     if (DOE && typeof DOE.requestPermission === "function") {
-      onGesture = () => {
-        DOE.requestPermission!()
-          .then((res) => {
-            if (res === "granted") start();
-          })
-          .catch(() => {});
-      };
+      // iOS: needs an explicit opt-in. Offer the button and also try on first tap.
+      setNeedsPermission(true);
+      onGesture = () => requestRef.current();
       window.addEventListener("pointerdown", onGesture, { once: true });
     } else if (DOE) {
+      // Android / desktop with a sensor: orientation fires without a prompt.
       start();
     }
 
@@ -68,9 +84,18 @@ export function TiltProvider() {
       window.removeEventListener("deviceorientation", onOrient);
       if (onGesture) window.removeEventListener("pointerdown", onGesture);
       cancelAnimationFrame(raf);
-      root.classList.remove("gyro-active");
     };
   }, []);
 
-  return null;
+  if (!needsPermission) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => requestRef.current()}
+      className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-black/70 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg backdrop-blur active:scale-95"
+    >
+      <span aria-hidden>🧭</span> Enable motion tilt
+    </button>
+  );
 }
