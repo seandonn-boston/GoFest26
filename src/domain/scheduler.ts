@@ -29,7 +29,7 @@ interface Slot {
 
 /** Sizes how many raids of a boss to schedule, per the configured reward case. */
 function demandFor(result: BossResult, settings: PlannerSettings): number {
-  const r = result.raidsNoBoost;
+  const r = result.raids;
   switch (settings.rewardCase) {
     case "optimistic":
       return r.min;

@@ -40,33 +40,32 @@ export const GAME_CONFIG = {
     candyToLevel40: 270,
   },
 
-  // Mega Energy rewarded per raid by tier.
-  // source: standard Mega Raids ~150–250 (2026 update); Super Mega Raids ~450.
+  // Mega Energy rewarded for *completing* (defeating) a raid, by tier. Awarded
+  // on defeat regardless of whether you catch. source: standard Mega Raids
+  // ~150–250 (2026 update); Super Mega Raids ~450.
   megaRewards: {
     mega: { min: 150, max: 250 } as Range,
     superMega: { min: 400, max: 450 } as Range,
   },
 
-  // Default candy / XL candy rewards for non-mega legendary (5★) raids.
-  // source: legendaries give base candy + a guaranteed 3 XL on catch.
-  legendaryRewards: {
-    candy: { min: 10, max: 14 } as Range,
-    xlCandy: { min: 2, max: 4 } as Range,
+  // Rewards from *catching* the boss (skipped if you run from the encounter).
+  // source: ~3 base candy, doubled to ~6 with a Pinap; transferring it = +1
+  // candy. Legendary/Mythical catches are guaranteed 3 XL (+3 more for an
+  // in-person Tier-5 completion); regular mega-raid catches give 0–3 XL.
+  catch: {
+    candy: { min: 3, max: 6 } as Range, // no berry → Pinap
+    legendaryXl: { min: 3, max: 6 } as Range, // guaranteed 3 + in-person completion
+    megaXl: { min: 1, max: 3 } as Range, // 0–3 in game; min 1 keeps worst-case finite
+    transferCandy: 1,
+    // A matching Mega-Evolved buddy adds +1 Candy per catch (and a modest XL
+    // chance at higher mega levels, not modeled here).
+    buddyBonusCandy: 1,
   },
 
   // Approximate cumulative Mega Energy to reach Mega Level 0..3 for a typical
   // (non-Mewtwo) Mega — covers the first evolution plus the level-ups. Real costs
   // vary per species; override a specific boss via its megaLevelEnergyTotals.
   genericMegaLevelTotals: [0, 200, 360, 560],
-
-  // Mega-buddy boost multipliers applied to candy/XL gained from raids.
-  // source: a level-1 mega boosts regular candy only; High/Max/Super-Max
-  // mega level additionally boosts XL candy. Mega Energy is never boosted.
-  buddyBoost: {
-    candyMultiplier: 2,
-    xlMultiplier: 2,
-    appliesToMegaEnergy: false,
-  },
 
   // Free Raid Passes obtainable per day (spinning Gym Photo Discs during GO Fest).
   // source: up to 9 free Raid Passes per day. Remote Raids are capped at 20/day.

@@ -1,5 +1,5 @@
+import { GAME_CONFIG } from "@/data/config";
 import { ceilDiv, ZERO_RANGE } from "@/lib/math";
-import { buddyMultiplier } from "./buddyBoost";
 import { computeNetNeed } from "./requirements";
 import type {
   BossInput,
@@ -12,27 +12,42 @@ import type {
 
 const CURRENCY_ORDER: Currency[] = ["megaEnergy", "xlCandy", "candy"];
 
-/** Raids needed to cover one currency, given a per-raid reward range. */
-function raidsForCurrency(needed: number, reward: Range, boost: number): Range {
+/**
+ * Per-raid reward for a currency, accounting for the catch toggles:
+ * - Mega Energy comes from defeating the raid (always, even if you run).
+ * - Candy = catch candy + transfer candy (+1 if a matching Mega buddy is active),
+ *   and is 0 if you skip the catch.
+ * - XL Candy = catch XL, 0 if you skip the catch.
+ * Returns undefined when this boss can't yield that currency under the toggles.
+ */
+function perRaidReward(
+  boss: RaidBoss,
+  currency: Currency,
+  input: BossInput,
+): Range | undefined {
+  const c = GAME_CONFIG.catch;
+  const skipCatch = input.skipCatch ?? false;
+  const megaBuddy = input.megaBuddy ?? true;
+
+  if (currency === "megaEnergy") return boss.rewards.megaEnergy;
+  if (skipCatch) return undefined; // ran from the encounter → no catch rewards
+
+  if (currency === "candy") {
+    const bonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);
+    return { min: boss.rewards.candy.min + bonus, max: boss.rewards.candy.max + bonus };
+  }
+  return boss.rewards.xlCandy; // xlCandy
+}
+
+function raidsForCurrency(needed: number, reward: Range): Range {
   if (needed <= 0) return { ...ZERO_RANGE };
   return {
-    // Best-case rewards (max, boosted) => fewest raids.
-    min: ceilDiv(needed, reward.max * boost),
-    // Worst-case rewards (min, boosted) => most raids.
-    max: ceilDiv(needed, reward.min * boost),
+    min: ceilDiv(needed, reward.max), // best-case rolls → fewest raids
+    max: ceilDiv(needed, reward.min), // worst-case rolls → most raids
   };
 }
 
-function rewardFor(boss: RaidBoss, currency: Currency): Range | undefined {
-  if (currency === "candy") return boss.rewards.candy;
-  if (currency === "xlCandy") return boss.rewards.xlCandy;
-  return boss.rewards.megaEnergy;
-}
-
-/** Picks the currency that demands the most raids (worst case). */
-function bindingOf(
-  perCurrency: Partial<Record<Currency, Range>>,
-): Currency | null {
+function bindingOf(perCurrency: Partial<Record<Currency, Range>>): Currency | null {
   let binding: Currency | null = null;
   let worst = -1;
   for (const c of CURRENCY_ORDER) {
@@ -49,30 +64,23 @@ export function computeBossResult(boss: RaidBoss, input: BossInput): BossResult 
   const net = computeNetNeed(boss, input);
 
   const needs: Partial<Record<Currency, CurrencyNeed>> = {};
-  const noBoostRanges: Partial<Record<Currency, Range>> = {};
-  const boostRanges: Partial<Record<Currency, Range>> = {};
+  const ranges: Partial<Record<Currency, Range>> = {};
 
   for (const c of CURRENCY_ORDER) {
     const needed = net[c];
-    const reward = rewardFor(boss, c);
-    if (needed === undefined || needed <= 0 || !reward) continue;
+    const reward = perRaidReward(boss, c, input);
+    if (needed === undefined || needed <= 0 || !reward || reward.max <= 0) continue;
 
-    const noBoost = raidsForCurrency(needed, reward, 1);
-    const boosted = raidsForCurrency(needed, reward, buddyMultiplier(c));
-
-    needs[c] = { needed, raidsRange: noBoost };
-    noBoostRanges[c] = noBoost;
-    boostRanges[c] = boosted;
+    const range = raidsForCurrency(needed, reward);
+    needs[c] = { needed, raidsRange: range };
+    ranges[c] = range;
   }
 
-  const bindingNoBoost = bindingOf(noBoostRanges);
-  const bindingBoost = bindingOf(boostRanges);
-
+  const binding = bindingOf(ranges);
   return {
     bossId: boss.id,
     needs,
-    raidsNoBoost: bindingNoBoost ? noBoostRanges[bindingNoBoost]! : { ...ZERO_RANGE },
-    raidsWithBoost: bindingBoost ? boostRanges[bindingBoost]! : { ...ZERO_RANGE },
-    bindingCurrency: bindingNoBoost,
+    raids: binding ? ranges[binding]! : { ...ZERO_RANGE },
+    bindingCurrency: binding,
   };
 }

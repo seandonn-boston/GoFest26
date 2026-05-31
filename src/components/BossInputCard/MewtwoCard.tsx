@@ -42,6 +42,8 @@ export function MewtwoCard({
   const setVariant = usePlannerStore((s) => s.setVariant);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
+  const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
+  const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
 
   if (!inputX || !inputY) return null;
 
@@ -126,6 +128,10 @@ export function MewtwoCard({
               onEnergy={(v) => setCurrent(bossX.id, "megaEnergy", v)}
               onMegaLevel={(v) => setCurrent(bossX.id, "megaLevel", v)}
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
+              skipCatch={inputX.skipCatch ?? false}
+              megaBuddy={inputX.megaBuddy ?? true}
+              onSkipCatch={(v) => setSkipCatch(bossX.id, v)}
+              onMegaBuddy={(v) => setMegaBuddy(bossX.id, v)}
               result={resultX}
               preUnlocked={!!bossX.goFestPreUnlocked}
             />
@@ -141,6 +147,10 @@ export function MewtwoCard({
               onEnergy={(v) => setCurrent(bossY.id, "megaEnergy", v)}
               onMegaLevel={(v) => setCurrent(bossY.id, "megaLevel", v)}
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
+              skipCatch={inputY.skipCatch ?? false}
+              megaBuddy={inputY.megaBuddy ?? true}
+              onSkipCatch={(v) => setSkipCatch(bossY.id, v)}
+              onMegaBuddy={(v) => setMegaBuddy(bossY.id, v)}
               result={resultY}
               preUnlocked={!!bossY.goFestPreUnlocked}
             />
@@ -161,6 +171,10 @@ function FormColumn({
   onEnergy,
   onMegaLevel,
   onTargetMegaLevel,
+  skipCatch,
+  megaBuddy,
+  onSkipCatch,
+  onMegaBuddy,
   result,
   preUnlocked,
 }: {
@@ -173,6 +187,10 @@ function FormColumn({
   onEnergy: (v: number) => void;
   onMegaLevel: (v: number) => void;
   onTargetMegaLevel: (v: number) => void;
+  skipCatch: boolean;
+  megaBuddy: boolean;
+  onSkipCatch: (v: boolean) => void;
+  onMegaBuddy: (v: boolean) => void;
   result?: BossResult;
   preUnlocked: boolean;
 }) {
@@ -195,6 +213,17 @@ function FormColumn({
         <NumberInput label="Target lvl" value={targetMegaLevel} min={0} max={4} onChange={onTargetMegaLevel} />
       </div>
 
+      <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-300">
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={skipCatch} onChange={(e) => onSkipCatch(e.target.checked)} />
+          Run from encounter
+        </label>
+        <label className={`flex items-center gap-1.5 ${skipCatch ? "opacity-40" : ""}`}>
+          <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={megaBuddy} disabled={skipCatch} onChange={(e) => onMegaBuddy(e.target.checked)} />
+          Mega buddy bonus
+        </label>
+      </div>
+
       <div className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/40 p-2.5">
         {needEntries.length === 0 ? (
           <p className="text-xs text-emerald-300">✓ Nothing needed for this form.</p>
@@ -202,12 +231,8 @@ function FormColumn({
           <>
             <div className="flex flex-wrap items-baseline gap-x-4">
               <div>
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids</span>
-                <div className="text-xl font-bold text-gofest-accent2">{formatRange(result!.raidsNoBoost)}</div>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">w/ buddy</span>
-                <div className="text-xl font-bold text-gofest-mewtwo">{formatRange(result!.raidsWithBoost)}</div>
+                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids needed</span>
+                <div className="text-xl font-bold text-gofest-accent2">{formatRange(result!.raids)}</div>
               </div>
             </div>
             <ul className="mt-1 space-y-0.5 text-[11px] text-slate-400">

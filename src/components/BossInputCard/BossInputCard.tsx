@@ -32,6 +32,8 @@ export function BossInputCard({
   const setCurrent = usePlannerStore((s) => s.setCurrent);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
+  const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
+  const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const applyPreset = usePlannerStore((s) => s.applyPreset);
   const region = usePlannerStore((s) => s.settings.region);
 
@@ -39,10 +41,12 @@ export function BossInputCard({
 
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
+  const skipCatch = input.skipCatch ?? false;
+  const megaBuddy = input.megaBuddy ?? true;
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
   const windowSlots = bossWindowSlots(boss, planningRaidsPerHour);
-  const overWindow = result.raidsNoBoost.min > windowSlots && windowSlots > 0;
+  const overWindow = result.raids.min > windowSlots && windowSlots > 0;
   const needEntries = Object.entries(result.needs) as [Currency, { needed: number; raidsRange: { min: number; max: number } }][];
 
   const field = "rounded-lg border border-white/10 bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2";
@@ -115,6 +119,18 @@ export function BossInputCard({
         <PresetPicker boss={boss} activePresetId={input.presetId} onApply={(id) => applyPreset(boss.id, id)} />
       </div>
 
+      {/* Catch toggles */}
+      <div className="mt-2 flex flex-col gap-1.5 text-xs text-slate-300">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" className="h-3.5 w-3.5 accent-gofest-accent2" checked={skipCatch} onChange={(e) => setSkipCatch(boss.id, e.target.checked)} />
+          Run from encounter (raid rewards only — no catch candy/XL)
+        </label>
+        <label className={`flex items-center gap-2 ${skipCatch ? "opacity-40" : ""}`}>
+          <input type="checkbox" className="h-3.5 w-3.5 accent-gofest-accent2" checked={megaBuddy} disabled={skipCatch} onChange={(e) => setMegaBuddy(boss.id, e.target.checked)} />
+          Mega buddy same-type bonus (+1 candy/catch)
+        </label>
+      </div>
+
       {/* Result */}
       <div className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/40 p-2.5">
         {needEntries.length === 0 ? (
@@ -123,12 +139,8 @@ export function BossInputCard({
           <>
             <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
               <div>
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids</span>
-                <div className="text-xl font-bold text-gofest-accent2">{formatRange(result.raidsNoBoost)}</div>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">w/ buddy</span>
-                <div className="text-xl font-bold text-gofest-mewtwo">{formatRange(result.raidsWithBoost)}</div>
+                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids needed</span>
+                <div className="text-xl font-bold text-gofest-accent2">{formatRange(result.raids)}</div>
               </div>
               <span className="text-[11px] text-slate-400">
                 {needEntries.map(([c, n]) => `${CURRENCY_LABELS[c]} ${formatNumber(n.needed)}`).join(" · ")}

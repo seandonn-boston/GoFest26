@@ -115,6 +115,10 @@ export interface BossInput {
     level: number;
     megaLevel: number;
   };
+  /** Run from the encounter (raid-completion rewards only, no catch candy/XL). */
+  skipCatch?: boolean;
+  /** Assume a matching Mega-Evolved buddy is active for the same-type candy bonus. */
+  megaBuddy?: boolean;
 }
 
 export interface CurrencyNeed {
@@ -127,10 +131,8 @@ export interface CurrencyNeed {
 export interface BossResult {
   bossId: string;
   needs: Partial<Record<Currency, CurrencyNeed>>;
-  /** Raids needed without a mega-buddy boost (driven by the binding currency). */
-  raidsNoBoost: Range;
-  /** Raids needed with the mega-buddy candy/XL boost applied. */
-  raidsWithBoost: Range;
+  /** Raids needed for this boss given its inputs/toggles (binding currency). */
+  raids: Range;
   /** The currency that demands the most raids (the constraint). */
   bindingCurrency: Currency | null;
 }
@@ -191,13 +193,10 @@ export interface PlanSummary {
   results: BossResult[];
   capacity: CapacityModel;
   schedule: Schedule;
-  /** Total raids across all selected bosses, no boost. */
-  totalRaidsNoBoost: Range;
-  /** Total raids across all selected bosses, with boost. */
-  totalRaidsWithBoost: Range;
-  /** Fraction of weekend capacity consumed (no boost), using midpoints. */
-  utilizationNoBoost: number;
-  utilizationWithBoost: number;
-  /** Whether the (no-boost, worst-case) plan fits within weekend capacity. */
+  /** Total raids across all selected bosses. */
+  totalRaids: Range;
+  /** Fraction of weekend capacity consumed, using midpoints. */
+  utilization: number;
+  /** Whether the worst-case plan fits within weekend capacity. */
   feasible: boolean;
 }

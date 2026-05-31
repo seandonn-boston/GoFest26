@@ -26,8 +26,7 @@ export function computePlanSummary(
   const capacity = computeCapacity(settings);
 
   const results: BossResult[] = [];
-  let totalNoBoost: Range = { ...ZERO_RANGE };
-  let totalWithBoost: Range = { ...ZERO_RANGE };
+  let totalRaids: Range = { ...ZERO_RANGE };
 
   for (const input of inputs) {
     if (!input.selected) continue;
@@ -35,27 +34,14 @@ export function computePlanSummary(
     if (!boss) continue;
     const result = computeBossResult(boss, input);
     results.push(result);
-    totalNoBoost = addRange(totalNoBoost, result.raidsNoBoost);
-    totalWithBoost = addRange(totalWithBoost, result.raidsWithBoost);
+    totalRaids = addRange(totalRaids, result.raids);
   }
 
   const capacityMid = midpoint(capacity.totalRaids);
-  const utilizationNoBoost = capacityMid > 0 ? midpoint(totalNoBoost) / capacityMid : 0;
-  const utilizationWithBoost = capacityMid > 0 ? midpoint(totalWithBoost) / capacityMid : 0;
-
-  // Feasible if even the worst-case (no-boost) plan fits within max capacity.
-  const feasible = totalNoBoost.max <= capacity.totalRaids.max;
+  const utilization = capacityMid > 0 ? midpoint(totalRaids) / capacityMid : 0;
+  const feasible = totalRaids.max <= capacity.totalRaids.max;
 
   const schedule = computeSchedule(inputs, results, capacity, settings);
 
-  return {
-    results,
-    capacity,
-    schedule,
-    totalRaidsNoBoost: totalNoBoost,
-    totalRaidsWithBoost: totalWithBoost,
-    utilizationNoBoost,
-    utilizationWithBoost,
-    feasible,
-  };
+  return { results, capacity, schedule, totalRaids, utilization, feasible };
 }
