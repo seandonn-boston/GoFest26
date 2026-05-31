@@ -1,7 +1,9 @@
 "use client";
 
 import type { ScheduledRaid } from "@/domain/types";
+import { getBoss } from "@/data";
 import { TierBadge, Badge } from "@/components/ui/Badge";
+import { Sprite } from "@/components/ui/Sprite";
 
 const PASS_LABEL: Record<ScheduledRaid["passType"], string> = {
   "free-daily": "Free pass",
@@ -12,8 +14,9 @@ const PASS_LABEL: Record<ScheduledRaid["passType"], string> = {
 
 export function ScheduleRow({ raid, index }: { raid: ScheduledRaid; index: number }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2">
-      <span className="mt-0.5 w-6 shrink-0 text-right text-xs text-slate-500">{index}</span>
+    <div className="flex items-start gap-2 rounded-lg border border-white/5 bg-white/[0.03] px-2.5 py-2">
+      <span className="mt-1 w-5 shrink-0 text-right text-xs text-slate-500">{index}</span>
+      <Sprite src={getBoss(raid.bossId)?.sprite} alt={raid.bossName} size={32} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">{raid.bossName}</span>

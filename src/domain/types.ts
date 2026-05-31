@@ -77,6 +77,8 @@ export interface RaidBoss {
   bestCounters: string[];
   /** Pokémon types (e.g. ["Psychic", "Fighting"]); used for buddy-boost matching. */
   types?: string[];
+  /** Pokémon GO sprite image URL. */
+  sprite?: string;
   /** Geographic restriction; undefined = globally available. */
   region?: RegionScope;
   /** Optional planning tip (e.g. "wait for the Primal form to get Primal Energy"). */

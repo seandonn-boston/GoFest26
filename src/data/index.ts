@@ -6,8 +6,9 @@ export { GAME_CONFIG } from "./config";
 export { RAID_BOSSES } from "./bosses";
 export { PRESETS } from "./presets";
 export type { Preset } from "./presets";
-export { HABITATS, habitatAt } from "./habitats";
+export { HABITATS, habitatAt, describeWindow, describeAvailability, bossWindowSlots } from "./habitats";
 export type { Habitat } from "./habitats";
+export { MEWTWO_X_SPRITE, MEWTWO_Y_SPRITE } from "./bosses";
 export { LOCATION_PRESETS, DEFAULT_REGION } from "./locations";
 
 /** Roster sorted for display (Mega Mewtwo X/Y pinned to the top). */

@@ -23,11 +23,21 @@ export function SummaryDashboard({ summary }: { summary: PlanSummary }) {
       {hasGoals ? (
         <>
           <CapacityGauge utilization={summary.utilizationNoBoost} />
-          <p className={`mt-3 text-sm ${summary.feasible ? "text-emerald-300" : "text-rose-300"}`}>
-            {summary.feasible
-              ? "✓ Your goals fit within the weekend — even in the worst-case reward rolls."
-              : "⚠ Your goals exceed the max raids possible this weekend. Trim targets, use the mega-buddy boost, or prioritize."}
-          </p>
+          {(() => {
+            const windowLimited = summary.schedule.unmetGoals.length > 0;
+            const ok = summary.feasible && !windowLimited;
+            return (
+              <p className={`mt-3 text-sm ${ok ? "text-emerald-300" : "text-rose-300"}`}>
+                {ok
+                  ? "✓ Your goals fit within the weekend — and inside each boss's time windows."
+                  : windowLimited
+                    ? `⚠ Some goals can't fit their limited time windows: ${summary.schedule.unmetGoals
+                        .map((u) => u.bossName)
+                        .join(", ")}. Each non-Mewtwo boss only spawns for one 3-hour habitat block.`
+                    : "⚠ Your goals exceed the max raids possible this weekend. Trim targets, use the mega-buddy boost, or prioritize."}
+              </p>
+            );
+          })()}
         </>
       ) : (
         <p className="text-sm text-slate-400">

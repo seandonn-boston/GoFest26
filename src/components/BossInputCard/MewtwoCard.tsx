@@ -3,9 +3,11 @@
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { describeAvailability } from "@/data";
 import { Card } from "@/components/ui/Card";
-import { Badge, TierBadge } from "@/components/ui/Badge";
+import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
+import { Sprite } from "@/components/ui/Sprite";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -42,7 +44,9 @@ export function MewtwoCard({
 
   return (
     <Card className="p-4">
-      <div className="mb-1 flex flex-wrap items-center gap-2">
+      <div className="mb-1 flex items-center gap-2">
+        <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={40} />
+        <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={40} />
         <h3 className="text-base font-semibold">Mega Mewtwo X &amp; Y</h3>
         <TierBadge tier="super-mega" />
       </div>
@@ -89,7 +93,8 @@ export function MewtwoCard({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormColumn
           title="Mega Mewtwo X"
-          subtitle="Saturday"
+          subtitle={describeAvailability(bossX)}
+          sprite={bossX.sprite}
           energy={inputX.current.megaEnergy}
           megaLevel={inputX.current.megaLevel}
           targetMegaLevel={inputX.target.megaLevel}
@@ -101,7 +106,8 @@ export function MewtwoCard({
         />
         <FormColumn
           title="Mega Mewtwo Y"
-          subtitle="Sunday"
+          subtitle={describeAvailability(bossY)}
+          sprite={bossY.sprite}
           energy={inputY.current.megaEnergy}
           megaLevel={inputY.current.megaLevel}
           targetMegaLevel={inputY.target.megaLevel}
@@ -119,6 +125,7 @@ export function MewtwoCard({
 function FormColumn({
   title,
   subtitle,
+  sprite,
   energy,
   megaLevel,
   targetMegaLevel,
@@ -130,6 +137,7 @@ function FormColumn({
 }: {
   title: string;
   subtitle: string;
+  sprite?: string;
   energy: number;
   megaLevel: number;
   targetMegaLevel: number;
@@ -145,9 +153,12 @@ function FormColumn({
 
   return (
     <div className="rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="text-sm font-semibold">{title}</span>
-        <Badge>{subtitle}</Badge>
+      <div className="mb-2 flex items-center gap-2">
+        <Sprite src={sprite} alt={title} size={32} />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">{title}</div>
+          <div className="text-[11px] text-slate-400">🗓 {subtitle}</div>
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <NumberInput label="Mega Energy" value={energy} onChange={onEnergy} />
