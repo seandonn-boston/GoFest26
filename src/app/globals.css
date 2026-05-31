@@ -45,19 +45,9 @@ input[type="number"] {
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
     0 7px 18px rgba(0, 0, 0, 0.5);
 }
-/* Glossy domed enamel highlight (bright top, soft bottom shade). */
-.enamel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(120% 70% at 30% 4%, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0) 44%),
-    radial-gradient(150% 130% at 50% 132%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0) 58%);
-}
-/* Polished champagne-gold metal bezel (conic gradient catches light). */
+/* Polished champagne-gold metal bezel (conic gradient catches light).
+   The glossy dome itself is blended into the type color via background layers
+   (see typeBackgroundStyle), so no flat overlay film is needed here. */
 .enamel::after {
   content: "";
   position: absolute;

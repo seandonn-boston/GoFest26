@@ -44,16 +44,33 @@ export const TYPE_ICONS: Record<string, string> = {
   fairy: "✨",
 };
 
+// Glossy enamel layers blended *into* the color (not overlaid as a flat film):
+// a soft-light highlight (domed sheen) + a multiplied bottom shade.
+const ENAMEL_HILITE =
+  "radial-gradient(95% 62% at 32% 0%, rgba(255,255,255,0.92), rgba(255,255,255,0.18) 34%, rgba(255,255,255,0) 62%)";
+const ENAMEL_SHADE =
+  "radial-gradient(150% 125% at 50% 130%, rgba(0,0,0,0.78), rgba(0,0,0,0) 60%)";
+
 /**
- * Background that matches the Pokémon's type. Dual types get a hard diagonal
- * split with the dividing line running top-right → bottom-left (primary type
- * fills the top-left triangle).
+ * Glossy enamel background matching the Pokémon's type. Dual types get a hard
+ * diagonal split (top-right → bottom-left). The highlight and shade are blended
+ * into the color via background-blend-mode so the layers integrate naturally.
  */
 export function typeBackgroundStyle(types?: string[]): CSSProperties {
   const cols = (types ?? []).map((t) => TYPE_COLORS[t.toLowerCase()] ?? "#6b7280");
-  if (cols.length === 0) return { backgroundColor: "#3a3f55" };
-  if (cols.length === 1) return { backgroundColor: cols[0] };
-  return { backgroundImage: `linear-gradient(135deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)` };
+  const base = cols[0] ?? "#3a3f55";
+  if (cols.length >= 2) {
+    return {
+      backgroundColor: base,
+      backgroundImage: `${ENAMEL_HILITE}, ${ENAMEL_SHADE}, linear-gradient(135deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)`,
+      backgroundBlendMode: "soft-light, multiply, normal",
+    };
+  }
+  return {
+    backgroundColor: base,
+    backgroundImage: `${ENAMEL_HILITE}, ${ENAMEL_SHADE}`,
+    backgroundBlendMode: "soft-light, multiply",
+  };
 }
 
 export function typeIconList(types?: string[]): string[] {
