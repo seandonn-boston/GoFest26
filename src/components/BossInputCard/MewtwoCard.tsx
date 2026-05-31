@@ -54,15 +54,15 @@ export function MewtwoCard({
   const wantsLeveling = owner.target.level > owner.current.level;
 
   return (
-    <div className="relative rounded-2xl p-[3px]" style={typeBackgroundStyle(MEWTWO_TYPES)}>
-      <div className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 gap-1">
-        {MEWTWO_TYPES.map((t) => (
-          <span key={t} className="rounded-full bg-gofest-bg ring-1 ring-white/25">
-            <TypeIcon type={t} size={24} />
-          </span>
-        ))}
-      </div>
-      <div className="rounded-[14px] bg-gofest-panel p-4 pt-5">
+    <div className="enamel enamel-shimmer relative rounded-2xl p-1.5" style={typeBackgroundStyle(MEWTWO_TYPES)}>
+      <div className="relative z-10 rounded-[13px] bg-gofest-panel/95 p-4">
+        <div className="mb-2 flex justify-center gap-1">
+          {MEWTWO_TYPES.map((t) => (
+            <span key={t} className="rounded-full bg-gofest-bg ring-1 ring-white/25">
+              <TypeIcon type={t} size={24} />
+            </span>
+          ))}
+        </div>
         <div className="mb-1 flex items-center gap-2">
           <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={40} />
           <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={40} />

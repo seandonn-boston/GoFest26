@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { MISSINGNO_VOXELS, SUBSTITUTE_VOXELS } from "./voxelData";
+import { decodeMissingnoVoxels } from "./missingnoImage";
 
 // The WebGL canvas is client-only; load it lazily with a quiet fallback.
 const LoaderCanvas = dynamic(() => import("./LoaderCanvas"), {
@@ -17,6 +19,21 @@ const LoaderCanvas = dynamic(() => import("./LoaderCanvas"), {
 export function SubstituteLoader({ children }: { children: React.ReactNode }) {
   const [done, setDone] = useState(false);
   const [isGlitch] = useState(() => Math.random() < 0.1);
+  // For the glitch, decode the real MissingNo sprite in the browser; fall back
+  // to the bundled transcription if the fetch/CORS is blocked.
+  const [missingno, setMissingno] = useState(MISSINGNO_VOXELS);
+  useEffect(() => {
+    if (!isGlitch) return;
+    let active = true;
+    decodeMissingnoVoxels().then((v) => {
+      if (active && v) setMissingno(v);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isGlitch]);
+
+  const voxels = isGlitch ? missingno : SUBSTITUTE_VOXELS;
 
   return (
     <>
@@ -25,7 +42,7 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
       {!done ? (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gofest-bg">
           <div className="aspect-square w-full max-w-sm">
-            <LoaderCanvas isGlitch={isGlitch} onComplete={() => setDone(true)} />
+            <LoaderCanvas voxels={voxels} onComplete={() => setDone(true)} />
           </div>
           <div className="-mt-2 text-center">
             <div

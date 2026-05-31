@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import type { RaidBoss } from "@/domain/types";
 import { typeBackgroundStyle } from "@/data/typeVisuals";
 import { Sprite } from "@/components/ui/Sprite";
@@ -17,6 +18,11 @@ export function BossSelectChip({
   label?: string;
 }) {
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
+  const delay = ([...boss.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 12) * 0.4;
+  const style = {
+    ...typeBackgroundStyle(boss.types),
+    "--sheen-delay": `${delay}s`,
+  } as CSSProperties;
 
   return (
     <button
@@ -24,20 +30,17 @@ export function BossSelectChip({
       onClick={onToggle}
       aria-pressed={selected}
       title={label ?? boss.name}
-      style={typeBackgroundStyle(boss.types)}
-      className={`relative flex w-[84px] flex-col items-center overflow-hidden rounded-xl border transition ${
-        selected
-          ? "border-white/70 ring-2 ring-white"
-          : "border-black/20 opacity-85 hover:opacity-100"
+      style={style}
+      className={`enamel enamel-shimmer relative flex w-[84px] flex-col items-center rounded-xl transition ${
+        selected ? "outline outline-2 outline-white outline-offset-1" : "opacity-90 hover:opacity-100"
       }`}
     >
-      {/* darken for sprite/label contrast */}
-      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-black/25" />
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
       {isMega ? (
-        <MegaGlyph className="pointer-events-none absolute inset-x-0 top-2 mx-auto h-11 w-11 text-white/35" />
+        <MegaGlyph className="pointer-events-none absolute inset-x-0 top-2 z-[1] mx-auto h-11 w-11 text-white/40" />
       ) : null}
       {selected ? (
-        <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-gofest-bg">
+        <span className="absolute right-1 top-1 z-20 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-gofest-bg">
           ✓
         </span>
       ) : null}

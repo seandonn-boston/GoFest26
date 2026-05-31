@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Voxel } from "./voxelData";
@@ -52,6 +52,21 @@ export function LoaderScene({ voxels, onComplete }: { voxels: Voxel[]; onComplet
   const start = useRef<number | null>(null);
   const done = useRef(false);
 
+  // Auto-fit: normalize any model (plushie vs. tall MissingNo) to a target size.
+  const fit = useMemo(() => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const v of voxels) {
+      const [x, y] = v.position;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const hgt = Math.max(1, maxY - minY + 1);
+    const wid = Math.max(1, maxX - minX + 1);
+    return { scale: Math.min(8.5 / hgt, 7.5 / wid), cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+  }, [voxels]);
+
   // Initialize HP bar cell transforms once.
   useLayoutEffect(() => {
     const mesh = bar.current;
@@ -78,10 +93,10 @@ export function LoaderScene({ voxels, onComplete }: { voxels: Voxel[]; onComplet
     const g = charGroup.current;
     if (g) {
       const bob = Math.sin(t * 2.3) * 0.18 * (1 - faint);
-      g.position.y = 2 + bob - faint * 6;
+      g.position.y = 1.5 + bob - faint * 6;
       g.rotation.y = Math.sin(t * 0.8) * 0.18 * (1 - faint);
       g.rotation.z = faint * 1.7;
-      g.scale.setScalar(0.62 * (1 - faint * 0.2));
+      g.scale.setScalar(fit.scale * (1 - faint * 0.2));
     }
     if (charMat.current) charMat.current.opacity = 1 - faint * faint;
 
@@ -107,8 +122,10 @@ export function LoaderScene({ voxels, onComplete }: { voxels: Voxel[]; onComplet
       <directionalLight position={[4, 8, 6]} intensity={1.15} />
       <directionalLight position={[-6, 2, 4]} intensity={0.45} color="#88aaff" />
 
-      <group ref={charGroup} position={[0, 2, 0]}>
-        <VoxelInstanced voxels={voxels} matRef={charMat} />
+      <group ref={charGroup} position={[0, 1.5, 0]}>
+        <group position={[-fit.cx, -fit.cy, 0]}>
+          <VoxelInstanced voxels={voxels} matRef={charMat} />
+        </group>
       </group>
 
       {/* HP bar frame + cells */}
