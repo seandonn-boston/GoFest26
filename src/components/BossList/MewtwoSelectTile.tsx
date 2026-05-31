@@ -23,7 +23,7 @@ export function MewtwoSelectTile({
       onClick={onToggle}
       aria-pressed={selected}
       style={typeBackgroundStyle(boss.types)}
-      className={`enamel relative flex min-h-[136px] flex-col items-center justify-center rounded-2xl transition ${
+      className={`enamel enamel-bezel relative flex min-h-[136px] flex-col items-center justify-center rounded-2xl transition ${
         selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
       }`}
     >
