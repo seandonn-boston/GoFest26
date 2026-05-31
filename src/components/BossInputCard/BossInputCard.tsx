@@ -4,8 +4,8 @@ import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability, bossWindowSlots } from "@/data";
+import { typeBackgroundStyle, typeIconList } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { Card } from "@/components/ui/Card";
 import { Badge, TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
@@ -47,7 +47,15 @@ export function BossInputCard({
   const field = "rounded-lg border border-white/10 bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2";
 
   return (
-    <Card className="p-3">
+    <div className="relative rounded-2xl p-[3px]" style={typeBackgroundStyle(boss.types)}>
+      <div className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 gap-1">
+        {typeIconList(boss.types).map((ic, i) => (
+          <span key={i} className="flex h-6 w-6 items-center justify-center rounded-full bg-gofest-bg text-sm ring-1 ring-white/25">
+            {ic}
+          </span>
+        ))}
+      </div>
+      <div className="rounded-[14px] bg-gofest-panel p-3 pt-4">
       <div className="flex items-start gap-3">
         <Sprite src={boss.sprite} alt={boss.name} size={44} />
         <div className="min-w-0 flex-1">
@@ -128,6 +136,7 @@ export function BossInputCard({
           </>
         )}
       </div>
-    </Card>
+      </div>
+    </div>
   );
 }

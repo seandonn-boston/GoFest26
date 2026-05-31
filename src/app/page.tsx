@@ -12,6 +12,7 @@ import { SettingsPanel } from "@/components/Settings/SettingsPanel";
 import { LocationPicker } from "@/components/Settings/LocationPicker";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
+import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -27,23 +28,23 @@ export default function Home() {
   );
   const anySelected = mewtwoSelected || otherSelectedBosses.length > 0;
 
+  if (!hydrated) {
+    return <main className="min-h-screen" />;
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold sm:text-3xl">
-          GO Fest 2026 <span className="text-gofest-mewtwo">Raid Planner</span>
-        </h1>
-        <p className="mt-1 text-sm text-slate-400">
-          July 11–12, 2026 · Work out exactly how many raids you need to max your Pokémon —
-          starting with Mega Mewtwo X &amp; Y.
-        </p>
-      </header>
+      <SubstituteLoader>
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold sm:text-3xl">
+            GO Fest 2026 <span className="text-gofest-mewtwo">Raid Planner</span>
+          </h1>
+          <p className="mt-1 text-sm text-slate-400">
+            July 11–12, 2026 · Work out exactly how many raids you need to max your Pokémon —
+            starting with Mega Mewtwo X &amp; Y.
+          </p>
+        </header>
 
-      {!hydrated ? (
-        <div className="rounded-2xl border border-white/10 bg-gofest-panel/80 p-8 text-center text-slate-400">
-          Loading your plan…
-        </div>
-      ) : (
         <div className="space-y-6">
           <BossList />
 
@@ -102,7 +103,7 @@ export default function Home() {
 
           <Disclaimer />
         </div>
-      )}
+      </SubstituteLoader>
     </main>
   );
 }

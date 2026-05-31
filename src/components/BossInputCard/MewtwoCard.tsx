@@ -4,7 +4,7 @@ import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { describeAvailability } from "@/data";
-import { Card } from "@/components/ui/Card";
+import { typeBackgroundStyle, typeIconList } from "@/data/typeVisuals";
 import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
@@ -14,6 +14,9 @@ const CURRENCY_LABELS: Record<Currency, string> = {
   xlCandy: "XL Candy",
   megaEnergy: "Mega Energy",
 };
+
+// Combined Mewtwo types (X is Psychic/Fighting, Y is Psychic).
+const MEWTWO_TYPES = ["Psychic", "Fighting"];
 
 /**
  * Combined card for Mega Mewtwo X & Y. They are separate raids (X on Saturday,
@@ -40,85 +43,105 @@ export function MewtwoCard({
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
 
   if (!inputX || !inputY) return null;
-  const wantsLeveling = inputX.target.level > inputX.current.level;
+
+  const selectedX = inputX.selected;
+  const selectedY = inputY.selected;
+  // The shared Mewtwo (candy/XL/level/variant) lives on a selected form so its
+  // leveling is counted exactly once; prefer X when both are selected.
+  const ownerId = selectedX ? bossX.id : bossY.id;
+  const owner = selectedX ? inputX : inputY;
+  const wantsLeveling = owner.target.level > owner.current.level;
 
   return (
-    <Card className="p-4">
-      <div className="mb-1 flex items-center gap-2">
-        <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={40} />
-        <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={40} />
-        <h3 className="text-base font-semibold">Mega Mewtwo X &amp; Y</h3>
-        <TierBadge tier="super-mega" />
+    <div className="relative rounded-2xl p-[3px]" style={typeBackgroundStyle(MEWTWO_TYPES)}>
+      <div className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 gap-1">
+        {typeIconList(MEWTWO_TYPES).map((ic, i) => (
+          <span key={i} className="flex h-6 w-6 items-center justify-center rounded-full bg-gofest-bg text-sm ring-1 ring-white/25">
+            {ic}
+          </span>
+        ))}
       </div>
-      <p className="mb-3 text-xs text-slate-400">
-        One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
-        appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
-        so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
-      </p>
+      <div className="rounded-[14px] bg-gofest-panel p-4 pt-5">
+        <div className="mb-1 flex items-center gap-2">
+          <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={40} />
+          <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={40} />
+          <h3 className="text-base font-semibold">Mega Mewtwo X &amp; Y</h3>
+          <TierBadge tier="super-mega" />
+        </div>
+        <p className="mb-3 text-xs text-slate-400">
+          One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
+          appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
+          so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
+        </p>
 
-      {/* Shared Mewtwo */}
-      <div className="mb-4 rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gofest-accent2">
-          Shared Mewtwo
+        {/* Shared Mewtwo */}
+        <div className="mb-4 rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gofest-accent2">
+            Shared Mewtwo
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <NumberInput label="Current Candy" value={owner.current.candy} onChange={(v) => setCurrent(ownerId, "candy", v)} />
+            <NumberInput label="Current XL Candy" value={owner.current.xlCandy} onChange={(v) => setCurrent(ownerId, "xlCandy", v)} />
+            <NumberInput label="Current level" value={owner.current.level} min={1} max={50} step={0.5} onChange={(v) => setCurrent(ownerId, "level", v)} />
+            <NumberInput label="Target level" value={owner.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(ownerId, v)} />
+          </div>
+          <div className="mt-3">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-slate-300">Variant</span>
+              <select
+                className="max-w-xs rounded-lg border border-white/10 bg-gofest-bg/60 px-3 py-2 text-sm outline-none focus:border-gofest-accent2"
+                value={owner.variant}
+                onChange={(e) => setVariant(ownerId, e.target.value as typeof owner.variant)}
+              >
+                <option value="standard">Standard (296 XL)</option>
+                <option value="shadow">Shadow (360 XL)</option>
+                <option value="purified">Purified (272 XL)</option>
+              </select>
+            </label>
+          </div>
+          {wantsLeveling ? (
+            <p className="mt-2 text-xs text-slate-500">
+              Leveling to {owner.target.level} (XL Candy) is counted under the form you raid, since
+              you farm Mewtwo XL from those raids.
+            </p>
+          ) : null}
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <NumberInput label="Current Candy" value={inputX.current.candy} onChange={(v) => setCurrent(bossX.id, "candy", v)} />
-          <NumberInput label="Current XL Candy" value={inputX.current.xlCandy} onChange={(v) => setCurrent(bossX.id, "xlCandy", v)} />
-          <NumberInput label="Current level" value={inputX.current.level} min={1} max={50} step={0.5} onChange={(v) => setCurrent(bossX.id, "level", v)} />
-          <NumberInput label="Target level" value={inputX.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(bossX.id, v)} />
-        </div>
-        <div className="mt-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-slate-300">Variant</span>
-            <select
-              className="max-w-xs rounded-lg border border-white/10 bg-gofest-bg/60 px-3 py-2 text-sm outline-none focus:border-gofest-accent2"
-              value={inputX.variant}
-              onChange={(e) => setVariant(bossX.id, e.target.value as typeof inputX.variant)}
-            >
-              <option value="standard">Standard (296 XL)</option>
-              <option value="shadow">Shadow (360 XL)</option>
-              <option value="purified">Purified (272 XL)</option>
-            </select>
-          </label>
-        </div>
-        {wantsLeveling ? (
-          <p className="mt-2 text-xs text-slate-500">
-            Leveling to {inputX.target.level} (XL Candy) is counted under Mega Mewtwo X, since you
-            farm Mewtwo XL from those Saturday raids.
-          </p>
-        ) : null}
-      </div>
 
-      {/* Per-form */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormColumn
-          title="Mega Mewtwo X"
-          subtitle={describeAvailability(bossX)}
-          sprite={bossX.sprite}
-          energy={inputX.current.megaEnergy}
-          megaLevel={inputX.current.megaLevel}
-          targetMegaLevel={inputX.target.megaLevel}
-          onEnergy={(v) => setCurrent(bossX.id, "megaEnergy", v)}
-          onMegaLevel={(v) => setCurrent(bossX.id, "megaLevel", v)}
-          onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
-          result={resultX}
-          preUnlocked={!!bossX.goFestPreUnlocked}
-        />
-        <FormColumn
-          title="Mega Mewtwo Y"
-          subtitle={describeAvailability(bossY)}
-          sprite={bossY.sprite}
-          energy={inputY.current.megaEnergy}
-          megaLevel={inputY.current.megaLevel}
-          targetMegaLevel={inputY.target.megaLevel}
-          onEnergy={(v) => setCurrent(bossY.id, "megaEnergy", v)}
-          onMegaLevel={(v) => setCurrent(bossY.id, "megaLevel", v)}
-          onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
-          result={resultY}
-          preUnlocked={!!bossY.goFestPreUnlocked}
-        />
+        {/* Per-form (only the forms you selected) */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {selectedX ? (
+            <FormColumn
+              title="Mega Mewtwo X"
+              subtitle={describeAvailability(bossX)}
+              sprite={bossX.sprite}
+              energy={inputX.current.megaEnergy}
+              megaLevel={inputX.current.megaLevel}
+              targetMegaLevel={inputX.target.megaLevel}
+              onEnergy={(v) => setCurrent(bossX.id, "megaEnergy", v)}
+              onMegaLevel={(v) => setCurrent(bossX.id, "megaLevel", v)}
+              onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
+              result={resultX}
+              preUnlocked={!!bossX.goFestPreUnlocked}
+            />
+          ) : null}
+          {selectedY ? (
+            <FormColumn
+              title="Mega Mewtwo Y"
+              subtitle={describeAvailability(bossY)}
+              sprite={bossY.sprite}
+              energy={inputY.current.megaEnergy}
+              megaLevel={inputY.current.megaLevel}
+              targetMegaLevel={inputY.target.megaLevel}
+              onEnergy={(v) => setCurrent(bossY.id, "megaEnergy", v)}
+              onMegaLevel={(v) => setCurrent(bossY.id, "megaLevel", v)}
+              onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
+              result={resultY}
+              preUnlocked={!!bossY.goFestPreUnlocked}
+            />
+          ) : null}
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
