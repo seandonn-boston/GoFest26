@@ -4,7 +4,7 @@ import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { describeAvailability } from "@/data";
-import { typeBackgroundStyle } from "@/data/typeVisuals";
+import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
@@ -54,11 +54,11 @@ export function MewtwoCard({
   const wantsLeveling = owner.target.level > owner.current.level;
 
   return (
-    <div className="enamel relative rounded-2xl p-1.5" style={typeBackgroundStyle(MEWTWO_TYPES)}>
-      <div className="relative z-10 rounded-[13px] bg-gofest-panel/95 p-4">
+    <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
+      <div className="relative z-10 rounded-[12px] p-4" style={typePanelStyle(MEWTWO_TYPES)}>
         <div className="mt-1 flex justify-center gap-1">
           {MEWTWO_TYPES.map((t) => (
-            <span key={t} className="rounded-full bg-gofest-bg ring-1 ring-white/25">
+            <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
               <TypeIcon type={t} size={24} />
             </span>
           ))}

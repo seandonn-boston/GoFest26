@@ -77,6 +77,23 @@ export function typeIconList(types?: string[]): string[] {
   return (types ?? []).map((t) => TYPE_ICONS[t.toLowerCase()] ?? "❔");
 }
 
+// A card's content panel: the Pokémon's type color under a dark scrim — so the
+// card is themed by its type (no generic purple base) while staying dark enough
+// for white text to remain legible on any type.
+const PANEL_SCRIM = "linear-gradient(rgba(9,11,18,0.80), rgba(9,11,18,0.86))";
+
+export function typePanelStyle(types?: string[]): CSSProperties {
+  const cols = (types ?? []).map((t) => TYPE_COLORS[t.toLowerCase()] ?? "#6b7280");
+  const base = cols[0] ?? "#3a3f55";
+  if (cols.length >= 2) {
+    return {
+      backgroundColor: base,
+      backgroundImage: `${PANEL_SCRIM}, linear-gradient(135deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)`,
+    };
+  }
+  return { backgroundColor: base, backgroundImage: PANEL_SCRIM };
+}
+
 // Game-accurate type symbols (recreations of the modern-game type icons).
 const TYPE_ICON_BASE = "https://raw.githubusercontent.com/partywhale/pokemon-type-icons/master/icons/";
 

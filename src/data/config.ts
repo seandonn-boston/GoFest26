@@ -69,9 +69,10 @@ export const GAME_CONFIG = {
   },
 
   // Free Raid Passes obtainable per day (spinning Gym Photo Discs during GO Fest).
-  // source: up to 9 free Raid Passes per day.
+  // source: up to 9 free Raid Passes per day. Remote Raids are capped at 20/day.
   passes: {
     freeDailyPerDay: 9,
+    remotePerDay: 20,
   },
 
   scheduler: {

@@ -20,6 +20,10 @@ export interface PlannerSettings {
   rewardCase: "optimistic" | "expected" | "safe";
   /** Free Raid Passes the user expects to get per day. */
   freeDailyPerDay: number;
+  /** Max Remote Raids per day (for out-of-region, remote-only bosses). */
+  remotePassesPerDay: number;
+  /** Try-hard option: also do a day of Remote Raids the Friday night before. */
+  fridayRemoteRaids: boolean;
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
 }
@@ -29,5 +33,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
+  remotePassesPerDay: GAME_CONFIG.passes.remotePerDay,
+  fridayRemoteRaids: false,
   region: DEFAULT_REGION,
 };
