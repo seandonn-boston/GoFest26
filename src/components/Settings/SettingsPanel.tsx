@@ -95,7 +95,7 @@ export function SettingsPanel() {
               onChange={(v) => setSettings({ downtimeSecRange: { ...settings.downtimeSecRange, max: v } })}
             />
             <NumberInput
-              label="Free passes / day"
+              label="Free Orange / day"
               value={settings.freeDailyPerDay}
               min={0}
               max={30}
@@ -109,6 +109,10 @@ export function SettingsPanel() {
               onChange={(v) => setSettings({ remotePassesPerDay: v })}
             />
           </div>
+          <p className="-mt-2 text-xs text-slate-500">
+            Green passes &amp; Link Charges are unlimited, so local raids are only limited by time.
+            Free Orange passes are used first, then Green/Link.
+          </p>
 
           {/* Friday remote raids */}
           <label className="flex cursor-pointer items-start gap-2 text-sm">

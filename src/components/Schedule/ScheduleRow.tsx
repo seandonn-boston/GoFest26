@@ -6,10 +6,9 @@ import { TierBadge, Badge } from "@/components/ui/Badge";
 import { Sprite } from "@/components/ui/Sprite";
 
 const PASS_LABEL: Record<ScheduledRaid["passType"], string> = {
-  "free-daily": "Free pass",
-  premium: "Premium/Remote",
+  orange: "Orange (free)",
+  green: "Green / Link",
   remote: "Remote",
-  "link-charge": "Link Charge",
 };
 
 export function ScheduleRow({ raid, index }: { raid: ScheduledRaid; index: number }) {

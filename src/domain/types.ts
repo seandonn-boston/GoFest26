@@ -144,7 +144,9 @@ export interface CapacityModel {
   totalRaids: Range;
 }
 
-export type PassType = "remote" | "premium" | "free-daily" | "link-charge";
+// orange = free Premium/Orange pass (limited), green = free Green pass / Link
+// Charge (unlimited), remote = Remote Raid Pass (capped per day).
+export type PassType = "orange" | "green" | "remote";
 
 /** A single raid placed at a specific time in the weekend plan. */
 export interface ScheduledRaid {

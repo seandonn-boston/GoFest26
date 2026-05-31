@@ -24,10 +24,9 @@ const TIER_LABEL: Record<RaidTier, string> = {
 };
 
 const PASS_LABEL: Record<PassType, string> = {
-  "free-daily": "Free (Gym disc)",
-  premium: "Premium / Remote",
-  remote: "Remote",
-  "link-charge": "Link Charge",
+  orange: "Orange (free)",
+  green: "Green / Link Charge",
+  remote: "Remote Raid Pass",
 };
 
 const CURRENCY_LABEL: Record<Currency, string> = {
