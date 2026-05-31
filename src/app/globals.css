@@ -89,6 +89,12 @@ input[type="number"] {
   height: 100%;
   border-radius: 13px;
   overflow: hidden;
+  /* Isolate the blend group so the glint's screen blend composites with the
+     fill consistently. Without this, animating the fill's opacity promotes it
+     to its own layer mid-transition (the glint momentarily un-blends and brighter),
+     then snaps back when the layer merges at the end. Isolation keeps the blend
+     applied throughout — only the fill's opacity animates. */
+  isolation: isolate;
   background: #0e1120; /* dark base shows through the translucent type fill */
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.28),
@@ -129,6 +135,50 @@ input[type="number"] {
     rgba(255, 255, 255, 0.55),
     rgba(255, 255, 255, 0) 60%
   );
+}
+
+/* ---- Desktop shimmer fallback ----
+   Desktops have no gyroscope, so the tilt vars never move and the badges look
+   static. We animate a moving radial glint via registered custom properties
+   (needed so the values interpolate instead of jumping). When the real
+   gyroscope takes over, <html> gets .gyro-active and the shimmer is hidden. */
+@property --shimmer-x {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --shimmer-y {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.badge-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0; /* off unless we're in the no-gyro fallback */
+  background: radial-gradient(
+    52% 46% at calc(50% + var(--shimmer-x, 0) * 80%) calc(34% + var(--shimmer-y, 0) * 58%),
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.22) 40%,
+    rgba(255, 255, 255, 0) 66%
+  );
+}
+html:not(.gyro-active) .badge-shimmer {
+  opacity: 1;
+  animation: badge-shimmer-orbit 5.5s ease-in-out infinite;
+}
+@keyframes badge-shimmer-orbit {
+  0% { --shimmer-x: -0.9; --shimmer-y: -0.55; }
+  25% { --shimmer-x: 0.9; --shimmer-y: -0.25; }
+  50% { --shimmer-x: 0.55; --shimmer-y: 0.7; }
+  75% { --shimmer-x: -0.55; --shimmer-y: 0.35; }
+  100% { --shimmer-x: -0.9; --shimmer-y: -0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(.gyro-active) .badge-shimmer { animation: none; opacity: 0; }
 }
 
 /* (legacy) flat gold bezel — kept for any non-badge use. */
