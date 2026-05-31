@@ -48,15 +48,15 @@ export function BossInputCard({
   const field = "rounded-lg border border-white/10 bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2";
 
   return (
-    <div className="relative rounded-2xl p-[3px]" style={typeBackgroundStyle(boss.types)}>
-      <div className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 gap-1">
+    <div className="enamel enamel-shimmer relative rounded-2xl p-1.5" style={typeBackgroundStyle(boss.types)}>
+      <div className="relative z-10 rounded-[13px] bg-gofest-panel/95 p-3">
+      <div className="mb-2 flex justify-center gap-1">
         {(boss.types ?? []).map((t) => (
           <span key={t} className="rounded-full bg-gofest-bg ring-1 ring-white/25">
             <TypeIcon type={t} size={24} />
           </span>
         ))}
       </div>
-      <div className="rounded-[14px] bg-gofest-panel p-3 pt-4">
       <div className="flex items-start gap-3">
         <Sprite src={boss.sprite} alt={boss.name} size={44} />
         <div className="min-w-0 flex-1">
