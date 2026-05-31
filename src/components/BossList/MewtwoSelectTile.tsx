@@ -23,12 +23,11 @@ export function MewtwoSelectTile({
       onClick={onToggle}
       aria-pressed={selected}
       style={typeBackgroundStyle(boss.types)}
-      className={`enamel relative flex min-h-[136px] flex-col items-center justify-center overflow-hidden rounded-2xl transition ${
+      className={`enamel relative flex min-h-[136px] flex-col items-center justify-center rounded-2xl transition ${
         selected ? "outline outline-2 outline-white outline-offset-2" : "opacity-90 hover:opacity-100"
       }`}
     >
       <MegaGlyph className="pointer-events-none absolute inset-0 z-[1] m-auto h-24 w-24 text-white/40" />
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
       <span className="absolute left-2 top-2 z-20 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
         {dayLabel}
       </span>

@@ -40,22 +40,35 @@ input[type="number"] {
 .enamel {
   position: relative;
   box-shadow:
-    inset 0 2px 2px rgba(255, 255, 255, 0.5),
-    inset 0 -11px 18px rgba(0, 0, 0, 0.34),
+    inset 0 2px 2px rgba(255, 255, 255, 0.55),
+    inset 0 -12px 18px rgba(0, 0, 0, 0.38),
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
-    0 0 0 1.5px rgba(247, 233, 179, 0.92),
-    0 0 0 3px rgba(150, 116, 52, 0.78),
     0 7px 18px rgba(0, 0, 0, 0.5);
 }
+/* Glossy domed enamel highlight (bright top, soft bottom shade). */
 .enamel::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  z-index: 0;
   background:
-    radial-gradient(115% 70% at 30% 6%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 46%),
-    radial-gradient(150% 120% at 50% 128%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 55%);
+    radial-gradient(120% 70% at 30% 4%, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0) 44%),
+    radial-gradient(150% 130% at 50% 132%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0) 58%);
+}
+/* Polished champagne-gold metal bezel (conic gradient catches light). */
+.enamel::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+  background: conic-gradient(
+    from 210deg,
+    #fff4cf, #c89a3e, #8a6a28, #ffeeb2, #9c7a30, #fff4cf, #b58b34, #8a6a28, #fff4cf
+  );
 }
 
 /* MissingNo glitch flicker for the loader label. */
