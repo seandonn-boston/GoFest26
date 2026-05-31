@@ -29,16 +29,12 @@ export function EnamelBadge({
       onClick={onToggle}
       aria-pressed={selected}
       title={title}
-      className={`badge-stage ${stageClassName}`}
+      className={`badge-stage outline-none focus:outline-none focus-visible:outline-none ${stageClassName}`}
+      style={{ WebkitTapHighlightColor: "transparent" }}
     >
-      <div
-        className={`badge h-full w-full transition ${
-          selected
-            ? "outline outline-[3px] outline-gofest-accent2 outline-offset-2"
-            : "hover:outline hover:outline-2 hover:outline-white/40 hover:outline-offset-2"
-        }`}
-      >
-        <div className="badge-face h-full w-full" style={typeBackgroundStyle(types)}>
+      <div className="badge h-full w-full">
+        <div className="badge-face h-full w-full">
+          <span className="badge-fill" style={{ ...typeBackgroundStyle(types), opacity: selected ? 1 : 0.45 }} />
           {children}
         </div>
       </div>

@@ -11,27 +11,33 @@ export function computeGrossRequirement(
   input: BossInput,
 ): Partial<Record<Currency, number>> {
   const out: Partial<Record<Currency, number>> = {};
+  const counts = input.counts ?? { standard: 1, shadow: 0, purified: 0 };
+  const xl = GAME_CONFIG.xlToLevel50;
 
-  // ---- XL Candy (levels 40→50) ----
-  // XL is spent linearly across the 40→50 band in this model. A target level
-  // at or below 40 needs no XL; level 50 needs the full xlToLevel50 amount.
-  const xlTotal = GAME_CONFIG.xlToLevel50[input.variant];
+  // ---- XL Candy (levels 40→50), summed across every Pokémon you want to max ----
+  // XL is spent linearly across the 40→50 band; sum each variant's count × its
+  // XL-to-50 cost (296 standard / 360 shadow / 272 purified), plus any extra.
   const fromLevel = clamp(input.current.level, 40, 50);
   const toLevel = clamp(input.target.level, 40, 50);
   const xlBandFraction = Math.max(0, toLevel - fromLevel) / 10;
-  const xlNeed = Math.round(xlTotal * xlBandFraction);
+  const xlPerSet =
+    counts.standard * xl.standard + counts.shadow * xl.shadow + counts.purified * xl.purified;
+  const xlNeed = Math.round(xlPerSet * xlBandFraction) + Math.max(0, input.extraXl ?? 0);
   if (xlNeed > 0) out.xlCandy = xlNeed;
 
-  // ---- Regular Candy (levels below 40) ----
-  // Only relevant when starting below level 40; coarse linear estimate.
+  // ---- Regular Candy (levels below 40), summed across the counted Pokémon ----
   const candyFrom = clamp(input.current.level, 1, 40);
   const candyTo = clamp(input.target.level, 1, 40);
   const candyFraction = Math.max(0, candyTo - candyFrom) / 39;
-  const candyNeed = Math.round(GAME_CONFIG.leveling.candyToLevel40 * candyFraction);
+  const totalCount = counts.standard + counts.shadow + counts.purified;
+  const candyNeed = Math.round(GAME_CONFIG.leveling.candyToLevel40 * candyFraction * totalCount);
   if (candyNeed > 0) out.candy = candyNeed;
 
   // ---- Mega Energy (mega levels) ----
-  if (boss.megaLevelEnergyTotals) {
+  // Only mega-evolvable Pokémon need energy — Shadow Pokémon can't Mega Evolve.
+  // Mega Level is a per-species progression, so energy is counted once.
+  const megaEvolvable = counts.standard + counts.purified > 0;
+  if (boss.megaLevelEnergyTotals && megaEvolvable) {
     const totals = boss.megaLevelEnergyTotals;
     // GO Fest-caught specimens come pre-unlocked with >= 1 mega level and waive
     // the initial evolution cost, so the effective starting level is >= 1.

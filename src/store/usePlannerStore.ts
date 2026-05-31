@@ -15,7 +15,8 @@ interface PlannerState {
   settings: PlannerSettings;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
-  setVariant: (bossId: string, variant: Variant) => void;
+  setCount: (bossId: string, variant: Variant, value: number) => void;
+  setExtraXl: (bossId: string, value: number) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -62,11 +63,23 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs: { ...state.inputs, [bossId]: next } };
         }),
 
-      setVariant: (bossId, variant) =>
+      setCount: (bossId, variant, value) =>
         set((state) => {
           const input = ensureInput(state, bossId);
           if (!input) return state;
-          return { inputs: { ...state.inputs, [bossId]: { ...input, variant } } };
+          const counts = input.counts ?? { standard: 1, shadow: 0, purified: 0 };
+          const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+          return {
+            inputs: { ...state.inputs, [bossId]: { ...input, counts: { ...counts, [variant]: safe } } },
+          };
+        }),
+
+      setExtraXl: (bossId, value) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, extraXl: safe } } };
         }),
 
       setCurrent: (bossId, field, value) =>
