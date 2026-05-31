@@ -1,14 +1,9 @@
 "use client";
 
 import type { RaidBoss } from "@/domain/types";
+import { typeBackgroundStyle } from "@/data/typeVisuals";
 import { Sprite } from "@/components/ui/Sprite";
-
-const TIER_DOT: Record<RaidBoss["tier"], string> = {
-  "super-mega": "bg-gofest-mewtwo",
-  mega: "bg-fuchsia-400",
-  "five-star": "bg-amber-400",
-  regional: "bg-emerald-400",
-};
+import { MegaGlyph } from "@/components/ui/MegaGlyph";
 
 export function BossSelectChip({
   boss,
@@ -21,26 +16,37 @@ export function BossSelectChip({
   onToggle: () => void;
   label?: string;
 }) {
+  const isMega = boss.tier === "mega" || boss.tier === "super-mega";
+
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={selected}
       title={label ?? boss.name}
-      className={`relative flex w-[84px] flex-col items-center gap-1 rounded-xl border p-2 text-center transition ${
+      style={typeBackgroundStyle(boss.types)}
+      className={`relative flex w-[84px] flex-col items-center overflow-hidden rounded-xl border transition ${
         selected
-          ? "border-gofest-accent2 bg-gofest-accent2/15 ring-1 ring-gofest-accent2"
-          : "border-white/10 bg-white/5 hover:border-white/30"
+          ? "border-white/70 ring-2 ring-white"
+          : "border-black/20 opacity-85 hover:opacity-100"
       }`}
     >
-      <span className={`absolute left-1.5 top-1.5 h-2 w-2 rounded-full ${TIER_DOT[boss.tier]}`} />
+      {/* darken for sprite/label contrast */}
+      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-black/25" />
+      {isMega ? (
+        <MegaGlyph className="pointer-events-none absolute inset-x-0 top-2 mx-auto h-11 w-11 text-white/35" />
+      ) : null}
       {selected ? (
-        <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-gofest-accent2 text-[10px] text-gofest-bg">
+        <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-gofest-bg">
           ✓
         </span>
       ) : null}
-      <Sprite src={boss.sprite} alt={label ?? boss.name} size={48} />
-      <span className="line-clamp-2 text-[10px] leading-tight text-slate-300">{label ?? boss.name}</span>
+      <span className="relative z-10 flex flex-col items-center gap-1 p-2">
+        <Sprite src={boss.sprite} alt={label ?? boss.name} size={46} />
+        <span className="line-clamp-2 text-[10px] font-medium leading-tight text-white drop-shadow">
+          {label ?? boss.name}
+        </span>
+      </span>
     </button>
   );
 }
