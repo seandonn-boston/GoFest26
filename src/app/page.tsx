@@ -8,6 +8,7 @@ import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { SettingsPanel } from "@/components/Settings/SettingsPanel";
+import { LocationPicker } from "@/components/Settings/LocationPicker";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
 
@@ -39,6 +40,8 @@ export default function Home() {
       ) : (
         <div className="space-y-6">
           <BossList />
+
+          <LocationPicker />
 
           {selectedBosses.length > 0 ? (
             <section className="space-y-4">

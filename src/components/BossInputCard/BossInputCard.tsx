@@ -2,6 +2,7 @@
 
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
+import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
 import { Badge, TierBadge } from "@/components/ui/Badge";
@@ -27,20 +28,32 @@ export function BossInputCard({ boss, result }: { boss: RaidBoss; result: BossRe
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const applyPreset = usePlannerStore((s) => s.applyPreset);
+  const region = usePlannerStore((s) => s.settings.region);
 
   if (!input) return null;
 
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
   const hasMegaEnergy = boss.rewardsCurrencies.includes("megaEnergy");
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
+  const regionLabel = regionScopeLabel(boss.region);
+  const remoteOnly = !bossIsLocal(boss, region);
 
   return (
     <Card className="p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="text-base font-semibold">{boss.name}</h3>
         <TierBadge tier={boss.tier} />
-        {boss.regionRestriction ? <Badge>{boss.regionRestriction}</Badge> : null}
+        {regionLabel ? <Badge>{regionLabel}</Badge> : null}
+        {remoteOnly ? (
+          <Badge className="border-amber-400/40 text-amber-200">Remote only</Badge>
+        ) : null}
       </div>
+      {remoteOnly ? (
+        <p className="-mt-1 mb-2 text-xs text-amber-200/80">
+          Not available near {region.label} — you&apos;ll need a Remote Raid Pass (or a friend hosting it).
+        </p>
+      ) : null}
+      {boss.note ? <p className="-mt-1 mb-3 text-xs text-slate-400">💡 {boss.note}</p> : null}
 
       {/* Current holdings */}
       <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
