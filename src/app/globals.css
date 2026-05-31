@@ -64,7 +64,7 @@ input[type="number"] {
    Stage gives perspective; the badge is a metallic bezel that tilts to the
    gyroscope (--tilt-x/y); the face is the enamel with a tilt-tracking specular. */
 .badge-stage {
-  perspective: 700px;
+  perspective: 460px; /* shorter => stronger, more obvious 3D tilt */
   display: inline-block;
 }
 .badge {
@@ -76,7 +76,7 @@ input[type="number"] {
     from 210deg,
     #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5
   );
-  transform: rotateX(calc(var(--tilt-y, 0) * -7deg)) rotateY(calc(var(--tilt-x, 0) * 7deg));
+  transform: rotateX(calc(var(--tilt-y, 0) * -18deg)) rotateY(calc(var(--tilt-x, 0) * 18deg));
   transform-style: preserve-3d;
   transition: transform 90ms linear;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.55);
@@ -108,10 +108,25 @@ input[type="number"] {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  mix-blend-mode: soft-light;
+  mix-blend-mode: screen; /* brighter, clearly-visible glint vs. soft-light */
   background: radial-gradient(
-    56% 48% at calc(50% + var(--tilt-x, 0) * 42%) calc(26% + var(--tilt-y, 0) * 26%),
-    rgba(255, 255, 255, 0.78),
+    60% 52% at calc(50% + var(--tilt-x, 0) * 85%) calc(30% + var(--tilt-y, 0) * 60%),
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.28) 38%,
+    rgba(255, 255, 255, 0) 64%
+  );
+}
+/* A second, tighter hot-spot that sweeps the opposite way for a lively sheen. */
+.badge-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(
+    34% 30% at calc(50% - var(--tilt-x, 0) * 70%) calc(70% - var(--tilt-y, 0) * 55%),
+    rgba(255, 255, 255, 0.55),
     rgba(255, 255, 255, 0) 60%
   );
 }

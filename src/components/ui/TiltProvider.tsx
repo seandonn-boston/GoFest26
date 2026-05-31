@@ -21,13 +21,16 @@ export function TiltProvider() {
     const onOrient = (e: DeviceOrientationEvent) => {
       const gamma = e.gamma ?? 0; // left-right, ~ -90..90
       const beta = e.beta ?? 0; // front-back, ~ -180..180
-      targetX = Math.max(-1, Math.min(1, gamma / 32));
-      targetY = Math.max(-1, Math.min(1, (beta - 45) / 32));
+      // Smaller divisor => a gentle wrist tilt already saturates the effect, so
+      // the gyroscope motion is unmistakable instead of subtle.
+      targetX = Math.max(-1, Math.min(1, gamma / 16));
+      targetY = Math.max(-1, Math.min(1, (beta - 45) / 16));
     };
 
     const loop = () => {
-      curX += (targetX - curX) * 0.15;
-      curY += (targetY - curY) * 0.15;
+      // Snappier follow so the badges visibly chase the phone as you tilt.
+      curX += (targetX - curX) * 0.22;
+      curY += (targetY - curY) * 0.22;
       root.style.setProperty("--tilt-x", curX.toFixed(3));
       root.style.setProperty("--tilt-y", curY.toFixed(3));
       raf = requestAnimationFrame(loop);
