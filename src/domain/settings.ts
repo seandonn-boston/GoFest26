@@ -9,8 +9,12 @@ import type { Range, UserRegion } from "./types";
  * touching code. Exact per-raid reward *amounts* still live in the data layer.
  */
 export interface PlannerSettings {
-  /** Seconds of lobby + battle per raid (the catch is modeled separately). */
-  raidDurationSec: number;
+  /** Trainers in the raid lobby (red lobbies are full = 20). Drives battle time. */
+  lobbySize: number;
+  /** Party Play active — a 2–4 sub-group inside the lobby hits harder. */
+  partyPlay: boolean;
+  /** Party size 2–4, used when partyPlay is on. */
+  partySize: number;
   /** Quick-catch (throw + back out to skip the animation): ~5s catch vs. ~100s. */
   quickCatch: boolean;
   /** Walking / setup time between raids. */
@@ -31,7 +35,9 @@ export interface PlannerSettings {
 }
 
 export const DEFAULT_SETTINGS: PlannerSettings = {
-  raidDurationSec: GAME_CONFIG.capacity.raidDurationSec,
+  lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
+  partyPlay: false,
+  partySize: 4,
   quickCatch: false,
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,

@@ -19,7 +19,9 @@ export function SettingsPanel() {
   const [open, setOpen] = useState(false);
 
   const isDefault =
-    settings.raidDurationSec === DEFAULT_SETTINGS.raidDurationSec &&
+    settings.lobbySize === DEFAULT_SETTINGS.lobbySize &&
+    settings.partyPlay === DEFAULT_SETTINGS.partyPlay &&
+    settings.partySize === DEFAULT_SETTINGS.partySize &&
     settings.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     settings.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     settings.rewardCase === DEFAULT_SETTINGS.rewardCase &&
@@ -69,13 +71,11 @@ export function SettingsPanel() {
           {/* Timing */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <NumberInput
-              label="Battle + lobby / raid"
-              value={settings.raidDurationSec}
-              min={30}
-              max={300}
-              step={5}
-              suffix="s"
-              onChange={(v) => setSettings({ raidDurationSec: v })}
+              label="Raiders in lobby"
+              value={settings.lobbySize}
+              min={2}
+              max={20}
+              onChange={(v) => setSettings({ lobbySize: Math.max(2, Math.min(20, v)) })}
             />
             <NumberInput
               label="Min downtime"
@@ -111,9 +111,48 @@ export function SettingsPanel() {
             />
           </div>
           <p className="-mt-2 text-xs text-slate-500">
-            Green passes &amp; Link Charges are unlimited, so local raids are only limited by time.
-            Free Orange passes are used first, then Green/Link.
+            Battle time scales with lobby size: a full 20-trainer “red” lobby melts Megas/5★ in ~20–30s
+            (Mewtwo ~1 min), while thin lobbies drag on to 4–5 min. Green passes &amp; Link Charges are
+            unlimited, so local raids are only limited by time; Free Orange passes are used first.
           </p>
+
+          {/* Party Play */}
+          <div>
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-gofest-accent2"
+                checked={settings.partyPlay}
+                onChange={(e) => setSettings({ partyPlay: e.target.checked })}
+              />
+              <span className="text-slate-300">
+                Party Play
+                <span className="block text-xs text-slate-500">
+                  A 2–4 sub-group inside the lobby (a party isn’t a lobby) hits harder, shaving
+                  5/10/15s for a party of 2/3/4.
+                </span>
+              </span>
+            </label>
+            {settings.partyPlay ? (
+              <div className="mt-2 flex items-center gap-2 pl-6">
+                <span className="text-xs text-slate-400">Party size</span>
+                {[2, 3, 4].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setSettings({ partySize: n })}
+                    className={`h-7 w-9 rounded-lg border text-sm transition ${
+                      settings.partySize === n
+                        ? "border-gofest-accent2 bg-gofest-accent2/15 text-white"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           {/* Quick catch */}
           <label className="flex cursor-pointer items-start gap-2 text-sm">

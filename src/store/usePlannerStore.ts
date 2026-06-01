@@ -168,13 +168,14 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 2,
+      version: 3,
       migrate: (persisted) => {
-        // v1 had no settings slice; backfill defaults. Also guard against
-        // missing/corrupted fields so the store always has a valid shape.
+        // Backfill defaults and guard against missing/corrupted fields so the
+        // store always has a valid shape. Merging DEFAULT_SETTINGS under any
+        // persisted settings picks up newly-added knobs (lobby size, party play).
         const state = (persisted ?? {}) as Partial<PlannerState>;
         if (!state.inputs) state.inputs = {};
-        if (!state.settings) state.settings = { ...DEFAULT_SETTINGS };
+        state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },
     },
