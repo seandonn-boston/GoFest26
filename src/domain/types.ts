@@ -143,7 +143,10 @@ export interface BossResult {
 export interface CapacityModel {
   hoursPerDay: number;
   days: number;
-  raidDurationSec: number;
+  /** Trainers assumed in the lobby (drives battle time). */
+  lobbySize: number;
+  /** Battle seconds spread across tiers given the lobby/party settings. */
+  battleSecRange: Range;
   /** Catch time per raid (5s when quick-catching, ~100s otherwise). */
   catchSec: number;
   downtimeSecRange: Range;

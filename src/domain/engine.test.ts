@@ -124,13 +124,13 @@ describe("raidsNeeded", () => {
 });
 
 describe("capacity", () => {
-  it("derives raids/hour and weekend totals from timing config", () => {
+  it("derives raids/hour and weekend totals from the timing model", () => {
     const cap = computeCapacity();
-    const { raidDurationSec, downtimeSecRange, catchSec } = GAME_CONFIG.capacity;
-    // Default plan is a normal (non-quick) catch.
-    const perRaid = raidDurationSec + catchSec.normal + downtimeSecRange.min;
-    expect(cap.catchSec).toBe(catchSec.normal);
-    expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaid));
+    // Default plan: full 20-trainer lobby, normal catch.
+    expect(cap.lobbySize).toBe(GAME_CONFIG.capacity.defaultLobbySize);
+    expect(cap.catchSec).toBe(GAME_CONFIG.capacity.catchSec.normal);
+    const perRaidFast = cap.battleSecRange.min + cap.catchSec + cap.downtimeSecRange.min;
+    expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });
 
@@ -139,6 +139,21 @@ describe("capacity", () => {
     const quick = computeCapacity({ ...DEFAULT_SETTINGS, quickCatch: true });
     expect(quick.catchSec).toBe(GAME_CONFIG.capacity.catchSec.quick);
     expect(quick.raidsPerHour.max).toBeGreaterThan(normal.raidsPerHour.max);
+  });
+
+  it("thinner lobbies mean longer battles and fewer raids", () => {
+    const full = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20 });
+    const thin = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 4 });
+    expect(thin.battleSecRange.max).toBeGreaterThan(full.battleSecRange.max);
+    expect(thin.raidsPerHour.max).toBeLessThan(full.raidsPerHour.max);
+  });
+
+  it("party play shaves battle time", () => {
+    const noParty = computeCapacity({ ...DEFAULT_SETTINGS, partyPlay: false });
+    const party = computeCapacity({ ...DEFAULT_SETTINGS, partyPlay: true, partySize: 4 });
+    // A full-lobby Mega is 30s; a party of 4 shaves 15s -> 15s (the floor).
+    expect(party.battleSecRange.min).toBe(15);
+    expect(party.battleSecRange.min).toBeLessThan(noParty.battleSecRange.min);
   });
 });
 
@@ -215,15 +230,18 @@ describe("scheduler", () => {
 
 describe("settings", () => {
   it("derives raids/hour from custom raid timing", () => {
+    // Full lobby (fastest tier battle = 30s) + quick catch (5s) + no downtime
+    // => best-case per raid = 35s.
     const settings: PlannerSettings = {
       ...DEFAULT_SETTINGS,
-      raidDurationSec: 115,
-      quickCatch: true, // 5s catch => 115 + 5 = 120s per raid
+      lobbySize: 20,
+      quickCatch: true,
       downtimeSecRange: { min: 0, max: 0 },
     };
     const cap = computeCapacity(settings);
-    expect(cap.raidsPerHour.max).toBe(30); // 3600 / 120
-    expect(cap.totalRaids.max).toBe(30 * cap.hoursPerDay * cap.days);
+    const perRaidFast = cap.battleSecRange.min + cap.catchSec; // 30 + 5
+    expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
+    expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });
 
   it("schedules more raids in worst-case than best-case reward planning", () => {

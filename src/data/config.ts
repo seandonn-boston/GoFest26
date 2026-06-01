@@ -19,14 +19,24 @@ export const GAME_CONFIG = {
   },
 
   capacity: {
-    // Lobby + battle time per raid (excludes the catch — that's modeled
-    // separately so the "Quick catch" toggle can swap it out).
-    raidDurationSec: 90,
-    // Time to encounter, throw, and catch the boss. Quick-catching (throw then
-    // immediately back out to skip the animation) is ~5s; a normal catch with
-    // full animations averages ~100s.
+    // Catch time (encounter + throw + catch). Quick-catching backs out of the
+    // animation (~5s); a normal catch with full animations averages ~100s.
     catchSec: { normal: 100, quick: 5 },
     downtimeSecRange: { min: 20, max: 60 } as Range,
+    // Battle length depends on how full the lobby is. Time interpolates linearly
+    // between the tier's minimum viable lobby (slow) and a full 20-trainer lobby
+    // (fast), with a hard floor for the best achievable case. Mewtwo needs ≥10
+    // trainers; other Megas can be duo'd (≥2); 5★ legendaries need ≥4.
+    battle: {
+      superMega: { minRaiders: 10, fullSec: 60, minSec: 90, floorSec: 60 }, // Mega Mewtwo X/Y
+      mega: { minRaiders: 2, fullSec: 30, minSec: 270, floorSec: 15 },
+      fiveStar: { minRaiders: 4, fullSec: 30, minSec: 270, floorSec: 20 },
+    },
+    // Party Play — a sub-group of 2–4 *within* the lobby (a party is not a
+    // lobby) — hits harder, shaving extra seconds by party size.
+    partyShaveSec: { 2: 5, 3: 10, 4: 15 },
+    // Default assumption: full "red" lobbies.
+    defaultLobbySize: 20,
   },
 
   // XL Candy required to power a Pokémon from level 40 to level 50.
