@@ -26,9 +26,9 @@ export function EnamelBadge({
   stageClassName?: string;
   children: ReactNode;
 }) {
-  const cornerTypes = (types ?? []).filter(Boolean);
-  const blType = cornerTypes[0]; // bottom-left triangle's color (first type)
-  const trType = cornerTypes[cornerTypes.length - 1]; // top-right triangle's color (last type)
+  // Type symbols are stacked in the top-right corner (deduped, so a single-type
+  // Pokémon shows its symbol once).
+  const cornerTypes = Array.from(new Set((types ?? []).filter(Boolean)));
 
   return (
     <button
@@ -44,14 +44,13 @@ export function EnamelBadge({
           <span className="badge-fill" style={typeBackgroundStyle(types)} />
           {children}
           <span className="badge-dim" aria-hidden="true" style={{ opacity: selected ? 0 : 0.55 }} />
-          {trType ? (
-            <span className="pointer-events-none absolute right-1 top-1 z-20 inline-flex rounded-full shadow ring-1 ring-white/45">
-              <TypeIcon type={trType} size={15} />
-            </span>
-          ) : null}
-          {blType ? (
-            <span className="pointer-events-none absolute bottom-1 left-1 z-20 inline-flex rounded-full shadow ring-1 ring-white/45">
-              <TypeIcon type={blType} size={15} />
+          {cornerTypes.length ? (
+            <span className="pointer-events-none absolute right-1 top-1 z-20 flex flex-col gap-0.5">
+              {cornerTypes.map((t) => (
+                <span key={t} className="inline-flex rounded-full shadow ring-1 ring-white/45">
+                  <TypeIcon type={t} size={15} />
+                </span>
+              ))}
             </span>
           ) : null}
         </div>
