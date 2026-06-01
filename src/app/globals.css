@@ -93,12 +93,13 @@ input[type="number"] {
   inset: 0;
   z-index: 0;
 }
-/* Dark scrim above the fill + mega relief: dims the face when unselected and
-   fades out on selection. Plain opacity — no blend — so nothing pops. */
+/* Dark scrim above the fill, mega relief and sprite (z 0–2): dims the whole
+   face when unselected and fades out on selection. The title and corner type
+   icons sit above it (z-10+), so they stay crisp. Plain opacity — no blend. */
 .badge-dim {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   background: #0b0e1a;
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);

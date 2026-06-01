@@ -53,8 +53,9 @@ const ENAMEL_SHADE =
 
 /**
  * Glossy enamel background matching the Pokémon's type. Dual types get a hard
- * diagonal split (top-right → bottom-left). The highlight and shade are blended
- * into the color via background-blend-mode so the layers integrate naturally.
+ * diagonal split running top-left → bottom-right: the first type fills the
+ * bottom-left triangle, the second the top-right. The highlight and shade are
+ * blended into the color via background-blend-mode so the layers integrate.
  */
 export function typeBackgroundStyle(types?: string[]): CSSProperties {
   const cols = (types ?? []).map((t) => TYPE_COLORS[t.toLowerCase()] ?? "#6b7280");
@@ -62,7 +63,7 @@ export function typeBackgroundStyle(types?: string[]): CSSProperties {
   if (cols.length >= 2) {
     return {
       backgroundColor: base,
-      backgroundImage: `${ENAMEL_HILITE}, ${ENAMEL_SHADE}, linear-gradient(135deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)`,
+      backgroundImage: `${ENAMEL_HILITE}, ${ENAMEL_SHADE}, linear-gradient(45deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)`,
       backgroundBlendMode: "soft-light, multiply, normal",
     };
   }
@@ -88,7 +89,7 @@ export function typePanelStyle(types?: string[]): CSSProperties {
   if (cols.length >= 2) {
     return {
       backgroundColor: base,
-      backgroundImage: `${PANEL_SCRIM}, linear-gradient(135deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)`,
+      backgroundImage: `${PANEL_SCRIM}, linear-gradient(45deg, ${cols[0]} 0 50%, ${cols[1]} 50% 100%)`,
     };
   }
   return { backgroundColor: base, backgroundImage: PANEL_SCRIM };
