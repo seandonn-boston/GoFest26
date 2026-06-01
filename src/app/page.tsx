@@ -14,6 +14,7 @@ import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
+import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -36,6 +37,7 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
       <TiltProvider />
+      <SpriteScaleProvider>
       <SubstituteLoader>
         <header className="mb-6">
           <h1 className="text-2xl font-bold sm:text-3xl">
@@ -106,6 +108,7 @@ export default function Home() {
           <Disclaimer />
         </div>
       </SubstituteLoader>
+      </SpriteScaleProvider>
     </main>
   );
 }
