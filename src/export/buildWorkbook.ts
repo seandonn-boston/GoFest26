@@ -147,7 +147,7 @@ export function buildWorkbook(
     ["Dates", GAME_CONFIG.event.dateLabel],
     ["Hours per day", c.hoursPerDay],
     ["Days", c.days],
-    ["Seconds per raid (+ downtime)", `${c.raidDurationSec}s + ${c.downtimeSecRange.min}–${c.downtimeSecRange.max}s`],
+    ["Seconds per raid (battle + catch + downtime)", `${c.raidDurationSec}s + ${c.catchSec}s + ${c.downtimeSecRange.min}–${c.downtimeSecRange.max}s`],
     ["Raids per hour", formatRange(c.raidsPerHour)],
     ["Max weekend raids", formatRange(c.totalRaids)],
     ["Total raids needed", formatRange(summary.totalRaids)],

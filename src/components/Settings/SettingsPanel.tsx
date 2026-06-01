@@ -23,6 +23,7 @@ export function SettingsPanel() {
     settings.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     settings.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     settings.rewardCase === DEFAULT_SETTINGS.rewardCase &&
+    settings.quickCatch === DEFAULT_SETTINGS.quickCatch &&
     settings.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     settings.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
     settings.fridayRemoteRaids === DEFAULT_SETTINGS.fridayRemoteRaids;
@@ -68,7 +69,7 @@ export function SettingsPanel() {
           {/* Timing */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <NumberInput
-              label="Seconds / raid"
+              label="Battle + lobby / raid"
               value={settings.raidDurationSec}
               min={30}
               max={300}
@@ -113,6 +114,23 @@ export function SettingsPanel() {
             Green passes &amp; Link Charges are unlimited, so local raids are only limited by time.
             Free Orange passes are used first, then Green/Link.
           </p>
+
+          {/* Quick catch */}
+          <label className="flex cursor-pointer items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-gofest-accent2"
+              checked={settings.quickCatch}
+              onChange={(e) => setSettings({ quickCatch: e.target.checked })}
+            />
+            <span className="text-slate-300">
+              Quick catch
+              <span className="block text-xs text-slate-500">
+                Throw and back out to skip the catch animation — ~5s per catch instead of the ~100s
+                a full encounter, throw, and catch averages.
+              </span>
+            </span>
+          </label>
 
           {/* Friday remote raids */}
           <label className="flex cursor-pointer items-start gap-2 text-sm">

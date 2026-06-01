@@ -10,9 +10,14 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
   const { hoursPerDay, days } = GAME_CONFIG.event;
   const { raidDurationSec, downtimeSecRange } = settings;
 
+  // Catch time depends on whether the user quick-catches.
+  const catchSec = settings.quickCatch
+    ? GAME_CONFIG.capacity.catchSec.quick
+    : GAME_CONFIG.capacity.catchSec.normal;
+
   // Shorter downtime => more raids per hour, and vice-versa.
-  const perRaidFast = raidDurationSec + downtimeSecRange.min;
-  const perRaidSlow = raidDurationSec + downtimeSecRange.max;
+  const perRaidFast = raidDurationSec + catchSec + downtimeSecRange.min;
+  const perRaidSlow = raidDurationSec + catchSec + downtimeSecRange.max;
 
   const raidsPerHour = {
     min: Math.floor(3600 / perRaidSlow),
@@ -28,6 +33,7 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
     hoursPerDay,
     days,
     raidDurationSec,
+    catchSec,
     downtimeSecRange,
     raidsPerHour,
     totalRaids,

@@ -126,9 +126,19 @@ describe("raidsNeeded", () => {
 describe("capacity", () => {
   it("derives raids/hour and weekend totals from timing config", () => {
     const cap = computeCapacity();
-    const { raidDurationSec, downtimeSecRange } = GAME_CONFIG.capacity;
-    expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / (raidDurationSec + downtimeSecRange.min)));
+    const { raidDurationSec, downtimeSecRange, catchSec } = GAME_CONFIG.capacity;
+    // Default plan is a normal (non-quick) catch.
+    const perRaid = raidDurationSec + catchSec.normal + downtimeSecRange.min;
+    expect(cap.catchSec).toBe(catchSec.normal);
+    expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaid));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
+  });
+
+  it("quick catch shrinks per-raid time, so more raids fit", () => {
+    const normal = computeCapacity({ ...DEFAULT_SETTINGS, quickCatch: false });
+    const quick = computeCapacity({ ...DEFAULT_SETTINGS, quickCatch: true });
+    expect(quick.catchSec).toBe(GAME_CONFIG.capacity.catchSec.quick);
+    expect(quick.raidsPerHour.max).toBeGreaterThan(normal.raidsPerHour.max);
   });
 });
 
@@ -207,7 +217,8 @@ describe("settings", () => {
   it("derives raids/hour from custom raid timing", () => {
     const settings: PlannerSettings = {
       ...DEFAULT_SETTINGS,
-      raidDurationSec: 120,
+      raidDurationSec: 115,
+      quickCatch: true, // 5s catch => 115 + 5 = 120s per raid
       downtimeSecRange: { min: 0, max: 0 },
     };
     const cap = computeCapacity(settings);

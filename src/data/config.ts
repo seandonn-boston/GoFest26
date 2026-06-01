@@ -19,8 +19,13 @@ export const GAME_CONFIG = {
   },
 
   capacity: {
-    // A full-lobby raid: ~2 min lobby+battle+catch, plus walking/setup between.
-    raidDurationSec: 120,
+    // Lobby + battle time per raid (excludes the catch — that's modeled
+    // separately so the "Quick catch" toggle can swap it out).
+    raidDurationSec: 90,
+    // Time to encounter, throw, and catch the boss. Quick-catching (throw then
+    // immediately back out to skip the animation) is ~5s; a normal catch with
+    // full animations averages ~100s.
+    catchSec: { normal: 100, quick: 5 },
     downtimeSecRange: { min: 20, max: 60 } as Range,
   },
 
