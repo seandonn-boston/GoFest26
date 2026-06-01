@@ -45,8 +45,9 @@ export function SummaryDashboard({ summary }: { summary: PlanSummary }) {
       )}
 
       <p className="mt-3 text-xs text-slate-500">
-        Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, ~{capacity.raidDurationSec}s per
-        raid plus {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
+        Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, ~{capacity.raidDurationSec}s
+        battle + {capacity.catchSec}s catch per raid plus {capacity.downtimeSecRange.min}–
+        {capacity.downtimeSecRange.max}s between raids.
       </p>
     </Card>
   );

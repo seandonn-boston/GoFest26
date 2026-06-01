@@ -144,6 +144,8 @@ export interface CapacityModel {
   hoursPerDay: number;
   days: number;
   raidDurationSec: number;
+  /** Catch time per raid (5s when quick-catching, ~100s otherwise). */
+  catchSec: number;
   downtimeSecRange: Range;
   raidsPerHour: Range;
   totalRaids: Range;

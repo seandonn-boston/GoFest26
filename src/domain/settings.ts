@@ -9,8 +9,10 @@ import type { Range, UserRegion } from "./types";
  * touching code. Exact per-raid reward *amounts* still live in the data layer.
  */
 export interface PlannerSettings {
-  /** Seconds of lobby + battle + catch per raid. */
+  /** Seconds of lobby + battle per raid (the catch is modeled separately). */
   raidDurationSec: number;
+  /** Quick-catch (throw + back out to skip the animation): ~5s catch vs. ~100s. */
+  quickCatch: boolean;
   /** Walking / setup time between raids. */
   downtimeSecRange: Range;
   /**
@@ -30,6 +32,7 @@ export interface PlannerSettings {
 
 export const DEFAULT_SETTINGS: PlannerSettings = {
   raidDurationSec: GAME_CONFIG.capacity.raidDurationSec,
+  quickCatch: false,
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
