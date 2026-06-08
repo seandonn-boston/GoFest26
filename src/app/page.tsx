@@ -32,22 +32,37 @@ export default function Home() {
   const anySelected = mewtwoSelected || otherSelectedBosses.length > 0;
 
   if (!hydrated) {
-    return <main className="min-h-screen" />;
+    return <main className="relative z-10 min-h-screen" />;
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
+    <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-10">
       <TiltProvider />
       <SpriteScaleProvider>
       <SubstituteLoader>
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold sm:text-3xl">
-            GO Fest 2026 <span className="text-gofest-mewtwo">Raid Planner</span>
+        <header className="relative mb-8">
+          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-gofest-accent2">
+            <span>▚ GO_FEST // 2026</span>
+            <span className="text-gofest-accent">● REC</span>
+          </div>
+          <h1 className="glitch-title mt-3 text-[2.6rem] font-extrabold leading-[0.82] tracking-tighter sm:text-7xl">
+            GO FEST
+            <br />
+            <span className="text-gofest-mewtwo">RAID</span> PLANNER
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            July 11–12, 2026 · Work out exactly how many raids you need to max your Pokémon —
-            starting with Mega Mewtwo X &amp; Y.
-          </p>
+          <div className="hairline mt-4" />
+          <div className="mt-3 overflow-hidden">
+            <div className="ticker font-mono text-[11px] uppercase tracking-widest text-slate-400">
+              <span>
+                JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT ·
+                SUPER MEGA RAIDS · MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
+              </span>
+              <span aria-hidden="true">
+                JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT ·
+                SUPER MEGA RAIDS · MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
+              </span>
+            </div>
+          </div>
         </header>
 
         <div className="space-y-6">
