@@ -5,6 +5,7 @@ import { makeDefaultInput } from "./defaults";
 import { computeBossResult } from "./raidsNeeded";
 import { computeCapacity } from "./capacity";
 import { computeNetNeed } from "./requirements";
+import { applyResearchCredits } from "./research";
 import { computeSchedule } from "./scheduler";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import { computePlanSummary } from "./index";
@@ -82,6 +83,28 @@ describe("requirements", () => {
     const net = computeNetNeed(mewtwoX, input("mega-mewtwo-x", { megaLevel: 0, targetMegaLevel: 4 }));
     const totals = mewtwoX.megaLevelEnergyTotals!;
     expect(net.megaEnergy).toBe(totals[4] - totals[1]); // 18580 - 7500 = 11080
+  });
+});
+
+describe("research credits", () => {
+  it("credits research rewards as on-hand currency, reducing raids", () => {
+    const base = input("reshiram", { level: 40, targetLevel: 50 }); // needs 296 XL
+    const [credited] = applyResearchCredits([base], [
+      { bossId: "reshiram", currency: "xlCandy", amount: 100 },
+    ]);
+    expect(credited.current.xlCandy).toBe(100);
+    const before = computeBossResult(reshiram, base);
+    const after = computeBossResult(reshiram, credited);
+    expect(after.raids.max).toBeLessThan(before.raids.max);
+  });
+
+  it("only credits the targeted boss and never mutates the input", () => {
+    const base = input("reshiram", { level: 40, targetLevel: 50 });
+    const out = applyResearchCredits([base], [
+      { bossId: "mega-mewtwo-x", currency: "megaEnergy", amount: 100 },
+    ]);
+    expect(out[0].current.megaEnergy).toBe(base.current.megaEnergy); // untouched
+    expect(base.current.xlCandy).toBe(0); // original not mutated
   });
 });
 

@@ -13,6 +13,8 @@ type CurrentField = keyof BossInput["current"];
 interface PlannerState {
   inputs: Record<string, BossInput>;
   settings: PlannerSettings;
+  /** Which research lines the user has (or will) complete, by id. */
+  research: Record<string, boolean>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
@@ -22,6 +24,7 @@ interface PlannerState {
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
   setSkipCatch: (bossId: string, skip: boolean) => void;
   setMegaBuddy: (bossId: string, on: boolean) => void;
+  setResearchEnabled: (id: string, enabled: boolean, exclusiveWith?: readonly string[]) => void;
   applyPreset: (bossId: string, presetId: string) => void;
   setSettings: (patch: Partial<PlannerSettings>) => void;
   resetSettings: () => void;
@@ -40,6 +43,17 @@ export const usePlannerStore = create<PlannerState>()(
     (set) => ({
       inputs: {},
       settings: { ...DEFAULT_SETTINGS },
+      research: {},
+
+      setResearchEnabled: (id, enabled, exclusiveWith) =>
+        set((state) => {
+          const research = { ...state.research, [id]: enabled };
+          // Branching research: enabling one branch clears the others.
+          if (enabled && exclusiveWith) {
+            for (const other of exclusiveWith) if (other !== id) research[other] = false;
+          }
+          return { research };
+        }),
 
       toggleSelected: (bossId) =>
         set((state) => {
@@ -164,17 +178,18 @@ export const usePlannerStore = create<PlannerState>()(
 
       resetSettings: () => set({ settings: { ...DEFAULT_SETTINGS } }),
 
-      resetAll: () => set({ inputs: {}, settings: { ...DEFAULT_SETTINGS } }),
+      resetAll: () => set({ inputs: {}, settings: { ...DEFAULT_SETTINGS }, research: {} }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 3,
+      version: 4,
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
         // store always has a valid shape. Merging DEFAULT_SETTINGS under any
         // persisted settings picks up newly-added knobs (lobby size, party play).
         const state = (persisted ?? {}) as Partial<PlannerState>;
         if (!state.inputs) state.inputs = {};
+        if (!state.research) state.research = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },
