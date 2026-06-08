@@ -3,14 +3,17 @@ import type { Currency } from "@/domain/types";
 /**
  * GO Fest 2026 research that yields currency relevant to raid planning.
  *
- * Reward amounts below are transcribed from Serebii's listings for the in-person
- * City Experience (the "Chicago Expert" Mewtwo research and the 8-step Zeraora
- * "A Thunderous Discovery"). The free Global event may differ; correct the
- * numbers here in one place if so — the UI and calculations update automatically.
+ * ⚠️ These amounts are transcribed from Serebii's listings for the IN-PERSON
+ * Chicago City Experience (the "Chicago Expert" Mewtwo research and the 8-step
+ * Zeraora "A Thunderous Discovery"). This site targets the FREE GLOBAL event,
+ * whose research has not been published yet — so treat the numbers below as
+ * estimates / predictions based on the in-person event (hence `estimated: true`).
+ * Correct them here in one place once the Global tables are out — the UI and
+ * calculations update automatically.
  *
- * Notably, the Mewtwo branching research grants Mewtwo Candy + XL (shared across
- * the X/Y branch you pick) and a pre-unlocked Mewtwo encounter, but NO Mewtwo
- * Mega Energy — that comes from Super Mega Raids.
+ * Notably, the in-person Mewtwo branching research grants Mewtwo Candy + XL
+ * (shared across the X/Y branch you pick) and a pre-unlocked Mewtwo encounter,
+ * but NO Mewtwo Mega Energy — that comes from Super Mega Raids.
  */
 export interface ResearchReward {
   /** Boss ids this credits toward; omit/empty = informational (non-roster). */
@@ -44,8 +47,8 @@ export const RESEARCH_LINES: ResearchLine[] = [
     id: "research-mewtwo",
     name: "Mega Mewtwo Trainer Challenge (X / Y branch)",
     kind: "timed",
-    availability: "In-person City Experience (per Serebii) · choose X or Y after ≥2 Trainer Challenges",
-    estimated: false,
+    availability: "Predicted from the Chicago in-person research · choose X or Y after ≥2 Trainer Challenges",
+    estimated: true,
     rewards: [
       { bossIds: MEWTWO_IDS, currency: "candy", amount: 26, label: "Mewtwo Candy ×26" },
       { bossIds: MEWTWO_IDS, currency: "xlCandy", amount: 2, label: "Mewtwo XL Candy ×2" },
@@ -61,8 +64,8 @@ export const RESEARCH_LINES: ResearchLine[] = [
     id: "research-zeraora",
     name: "A Thunderous Discovery (Zeraora)",
     kind: "special",
-    availability: "In-person only · Tokyo / Chicago / Copenhagen · 8 steps",
-    estimated: false,
+    availability: "Chicago in-person · 8 steps (Global equivalent, if any, TBD)",
+    estimated: true,
     rewards: [], // Zeraora isn't a raid boss here, so no effect on raid counts.
     extras: [
       "Zeraora encounter + Zeraora Candy ×3 + Zeraora Candy XL ×6",

@@ -41,8 +41,11 @@ export function ResearchPanel() {
         <div className="mt-4 space-y-3">
           <p className="text-xs text-slate-500">
             Tick the research you’ll complete and its Candy / XL is credited toward your raid goals —
-            lowering the raids you need. Amounts are transcribed from Serebii’s in-person City
-            Experience listings; the free Global event may differ.
+            lowering the raids you need. These amounts are an{" "}
+            <span className="text-amber-300/90">estimate</span> based on the{" "}
+            <span className="text-slate-300">Chicago in-person</span> research (via Serebii) — the free
+            Global event this planner targets hasn’t published its research yet, so treat them as a
+            prediction.
           </p>
 
           {RESEARCH_LINES.map((line) => {
