@@ -30,11 +30,14 @@ export function TiltProvider() {
     const root = document.documentElement;
 
     const onOrient = (e: DeviceOrientationEvent) => {
-      const gamma = e.gamma ?? 0; // left-right, ~ -90..90
-      const beta = e.beta ?? 0; // front-back, ~ -180..180
-      // Small divisor => a gentle wrist tilt already saturates the effect.
+      const gamma = e.gamma ?? 0; // left-right, ~ -90..90 (0 held vertically)
+      const beta = e.beta ?? 0; // front-back, ~ 90 when held perfectly vertical
+      // Origin = phone held vertically (beta ≈ 90, gamma ≈ 0) => 0,0 (no tilt).
+      // Tilting the top away from you (beta < 90) pushes the card's top back and
+      // its bottom toward you; left/right follows gamma. ~16° of phone tilt
+      // reaches the full card tilt.
       targetX = Math.max(-1, Math.min(1, gamma / 16));
-      targetY = Math.max(-1, Math.min(1, (beta - 45) / 16));
+      targetY = Math.max(-1, Math.min(1, (beta - 90) / 16));
     };
 
     const loop = () => {
