@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RESEARCH_LINES, MEWTWO_RESEARCH_IDS } from "@/data/research";
+import { RESEARCH_LINES } from "@/data/research";
 import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
@@ -40,15 +40,16 @@ export function ResearchPanel() {
       {open ? (
         <div className="mt-4 space-y-3">
           <p className="text-xs text-slate-500">
-            Tick the research you’ll complete and its Candy / XL / Mega Energy is credited toward your
-            raid goals — lowering the raids you need. Reward amounts are{" "}
-            <span className="text-amber-300/90">estimates</span> until Niantic’s final numbers are in
-            (edit <code className="text-slate-400">src/data/research.ts</code> to correct them).
+            Tick the research you’ll complete and its Candy / XL is credited toward your raid goals —
+            lowering the raids you need. These amounts are an{" "}
+            <span className="text-amber-300/90">estimate</span> based on the{" "}
+            <span className="text-slate-300">Chicago in-person</span> research (via Serebii) — the free
+            Global event this planner targets hasn’t published its research yet, so treat them as a
+            prediction.
           </p>
 
           {RESEARCH_LINES.map((line) => {
             const checked = !!research[line.id];
-            const isMewtwo = (MEWTWO_RESEARCH_IDS as readonly string[]).includes(line.id);
             return (
               <label
                 key={line.id}
@@ -60,9 +61,7 @@ export function ResearchPanel() {
                   type="checkbox"
                   className="mt-0.5 h-4 w-4 accent-gofest-accent2"
                   checked={checked}
-                  onChange={(e) =>
-                    setResearchEnabled(line.id, e.target.checked, isMewtwo ? MEWTWO_RESEARCH_IDS : undefined)
-                  }
+                  onChange={(e) => setResearchEnabled(line.id, e.target.checked)}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
