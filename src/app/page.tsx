@@ -9,6 +9,7 @@ import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { SettingsPanel } from "@/components/Settings/SettingsPanel";
+import { ResearchPanel } from "@/components/Research/ResearchPanel";
 import { LocationPicker } from "@/components/Settings/LocationPicker";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
@@ -89,6 +90,8 @@ export default function Home() {
           ) : null}
 
           <SummaryDashboard summary={summary} />
+
+          <ResearchPanel />
 
           <SettingsPanel />
 
