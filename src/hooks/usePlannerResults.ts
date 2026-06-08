@@ -16,7 +16,9 @@ export function usePlannerResults(): PlanSummary {
     for (const line of RESEARCH_LINES) {
       if (!research[line.id]) continue;
       for (const r of line.rewards) {
-        if (r.bossId) credits.push({ bossId: r.bossId, currency: r.currency, amount: r.amount });
+        for (const id of r.bossIds ?? []) {
+          credits.push({ bossId: id, currency: r.currency, amount: r.amount });
+        }
       }
     }
     const credited = applyResearchCredits(Object.values(inputs), credits);
