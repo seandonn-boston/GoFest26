@@ -145,7 +145,7 @@ input[type="number"] {
     from 210deg,
     #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5
   );
-  transform: rotateX(calc(var(--tilt-y, 0) * -18deg)) rotateY(calc(var(--tilt-x, 0) * 18deg));
+  transform: rotateX(calc(var(--tilt-y, 0) * -22deg)) rotateY(calc(var(--tilt-x, 0) * 22deg));
   transform-style: preserve-3d;
   transition: transform 90ms linear;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.55);
