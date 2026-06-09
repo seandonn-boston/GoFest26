@@ -265,7 +265,8 @@ function FormColumn({
         )}
         {preUnlocked ? (
           <p className="mt-1.5 text-[11px] text-slate-500">
-            GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500 first-evolution cost).
+            💡 Protip: GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500 first-evolution cost) —
+            set Mega lvl to 0 if you&apos;re evolving one you already own.
           </p>
         ) : null}
       </div>

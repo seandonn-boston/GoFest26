@@ -62,11 +62,11 @@ describe("requirements", () => {
     expect(net.megaEnergy).toBe(totals[4] - totals[1]); // 18580 - 7500 = 11080
   });
 
-  it("waives the first-evolution cost for GO Fest pre-unlocked Mewtwo", () => {
-    // current mega level 0, but pre-unlocked => effective start is level 1 (7,500 waived)
+  it("includes the 7,500 first-evolution cost at Mega Level 0 (no forced floor)", () => {
+    // A Mewtwo you already own at Mega Level 0 owes the full climb incl. 7,500.
     const net = computeNetNeed(mewtwoX, input("mega-mewtwo-x", { megaLevel: 0, targetMegaLevel: 4 }));
     const totals = mewtwoX.megaLevelEnergyTotals!;
-    expect(net.megaEnergy).toBe(totals[4] - totals[1]); // 18580 - 7500 = 11080
+    expect(net.megaEnergy).toBe(totals[4] - totals[0]); // 18580 - 0 = 18580
   });
 });
 
@@ -114,9 +114,9 @@ describe("raidsNeeded", () => {
     // Isolate the mega-energy goal (no leveling) so Mega Energy is the constraint.
     const result = computeBossResult(
       mewtwoX,
-      input("mega-mewtwo-x", { megaLevel: 0, targetMegaLevel: 4, level: 40, targetLevel: 40 }),
+      input("mega-mewtwo-x", { megaLevel: 1, targetMegaLevel: 4, level: 40, targetLevel: 40 }),
     );
-    const need = 18580 - 7500; // 11080
+    const need = 18580 - 7500; // 11080 (Mega Level 1 -> 4)
     const { min, max } = GAME_CONFIG.megaRewards.superMega;
     expect(result.bindingCurrency).toBe("megaEnergy");
     expect(result.raids.min).toBe(Math.ceil(need / max));
@@ -166,7 +166,7 @@ describe("capacity", () => {
 
 describe("scheduler", () => {
   it("places exactly the demanded number of Mewtwo raids (no overshoot)", () => {
-    const mewtwo = input("mega-mewtwo-x", { megaLevel: 0, targetMegaLevel: 4, level: 40, targetLevel: 40 });
+    const mewtwo = input("mega-mewtwo-x", { megaLevel: 1, targetMegaLevel: 4, level: 40, targetLevel: 40 });
     const result = computeBossResult(mewtwoX, mewtwo);
     const expectedDemand = Math.ceil((result.raids.min + result.raids.max) / 2);
 

@@ -32,13 +32,11 @@ export function computeGrossRequirement(
   // independent of how the Pokémon is leveled.
   if (boss.megaLevelEnergyTotals) {
     const totals = boss.megaLevelEnergyTotals;
-    // GO Fest-caught specimens come pre-unlocked with >= 1 mega level and waive
-    // the initial evolution cost, so the effective starting level is >= 1.
-    const startLevel = boss.goFestPreUnlocked
-      ? Math.max(input.current.megaLevel, 1)
-      : input.current.megaLevel;
+    // The user's current Mega Level drives the start — no forced floor. At Mega
+    // Level 0 (e.g. a Mewtwo you already own), reaching Mega Level 1 includes the
+    // first-evolution cost (Mewtwo's 7,500); GO Fest-caught Mewtwo start at ≥1.
     const target = clamp(input.target.megaLevel, 0, totals.length - 1);
-    const start = clamp(startLevel, 0, totals.length - 1);
+    const start = clamp(input.current.megaLevel, 0, totals.length - 1);
     const energyNeed = Math.max(0, totals[target] - totals[start]);
     if (energyNeed > 0) out.megaEnergy = energyNeed;
   }
