@@ -374,24 +374,28 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
   const worker = await getWorker();
   const { data } = worker ? await worker.recognize(image) : await Tesseract.recognize(image, "eng");
   const words = collectWords(data);
-  let entries = parseEntries(words);
-  if (!entries.length) entries = parseEntriesFromText(data.text);
-  const result = aggregateEntries(entries, file.lastModified || Date.now(), data.text || "");
+  const capturedAt = file.lastModified || Date.now();
 
-  // Fallback: if label-position found no values, infer them from the number grid
-  // (digits OCR better than the labels) — by word position when boxes exist, else
-  // by text reading order. Species still comes from any labels read.
-  if (result.candy === undefined && result.xlCandy === undefined && result.megaEnergies.length === 0) {
-    const grid = parseByGrid(words) ?? parseByTextOrder(data.text || "");
-    if (grid) {
-      return {
-        ...result,
-        candy: grid.candy,
-        xlCandy: grid.xlCandy,
-        megaEnergies: grid.megaEnergies,
-        readAnything: true,
-      };
-    }
-  }
-  return result;
+  // Labels are best-effort (OCR garbles them) — used only for SPECIES.
+  let labelEntries = parseEntries(words);
+  if (!labelEntries.length) labelEntries = parseEntriesFromText(data.text);
+  const fromLabels = aggregateEntries(labelEntries, capturedAt, data.text || "");
+
+  // VALUES come from the NUMBERS, which OCR reliably: by word position (grid)
+  // when boxes exist, else by text reading order. This is primary so a garbled
+  // label can't duplicate one value across Candy/XL/Energy.
+  const grid = parseByGrid(words) ?? parseByTextOrder(data.text || "");
+  const candy = grid?.candy ?? fromLabels.candy;
+  const xlCandy = grid?.xlCandy ?? fromLabels.xlCandy;
+  const megaEnergies = grid && grid.megaEnergies.length ? grid.megaEnergies : fromLabels.megaEnergies;
+
+  return {
+    species: fromLabels.species,
+    candy,
+    xlCandy,
+    megaEnergies,
+    capturedAt,
+    readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0,
+    rawText: fromLabels.rawText,
+  };
 }
