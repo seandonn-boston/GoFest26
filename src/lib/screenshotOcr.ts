@@ -436,7 +436,9 @@ export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawTe
     megaEnergies: energy.map((e) => ({ value: e.value, species: normSpecies(e.species) || null })),
     capturedAt,
     readAnything: entries.length > 0,
-    rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 300),
+    // Keep the full text (capped generously) so a failed scan can be copied
+    // verbatim into a unit test; the UI truncates it for display.
+    rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 4000),
   };
 }
 

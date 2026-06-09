@@ -7,8 +7,10 @@ import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
 import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotOcr";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
 
 // One option per species group (Mewtwo X/Y, Giratina A/O, etc. share a key).
 const SPECIES_OPTIONS = (() => {
@@ -182,10 +184,13 @@ export function ScreenshotImporter() {
                     </select>
                   </>
                 ) : (
-                  <p className="text-[11px] text-amber-200">
-                    ⚠ Couldn’t read {r.fileName}
-                    {r.scan.rawText ? <> — OCR saw: “{r.scan.rawText}”</> : ""}.
-                  </p>
+                  <div>
+                    <p className="text-[11px] text-amber-200">
+                      ⚠ Couldn’t read {r.fileName}
+                      {r.scan.rawText ? <> — OCR saw: “{previewOcr(r.scan.rawText)}”</> : ""}.
+                    </p>
+                    <CopyOcrButton text={r.scan.rawText} />
+                  </div>
                 )}
               </li>
             );
