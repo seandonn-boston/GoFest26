@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateEntries, parseEntriesFromText } from "./screenshotOcr";
+import { aggregateEntries, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
 import { buildSearchString, pokemonSearchName, speciesKey } from "./pokemonSearch";
 import { RAID_BOSSES } from "@/data";
 
@@ -29,6 +29,60 @@ describe("screenshot parse + identify", () => {
     const r = scan(["181", "GROUDON CANDY", "82", "GROUDON CANDY XL", "485", "GROUDON PRIMAL ENERGY"].join("\n"));
     expect(r.species).toBe("groudon");
     expect(r.megaEnergies).toEqual([485]);
+  });
+});
+
+describe("parseByGrid (layout-aware number grid)", () => {
+  // A number word box at (x,y); CP at top should be ignored, Stardust anchors.
+  const n = (text: string, x: number, y: number) => ({ text, x0: x, y0: y, x1: x + 60, y1: y + 24 });
+
+  it("non-mega: Stardust | Candy | XL in one row", () => {
+    const words = [
+      n("4724", 200, 60), // CP at top — must be ignored
+      n("1,001,623", 100, 1000),
+      n("170", 400, 1000),
+      n("205", 700, 1000),
+    ];
+    expect(parseByGrid(words)).toEqual({ candy: 170, xlCandy: 205, megaEnergies: [] });
+  });
+
+  it("mega: Stardust|Candy on top, XL|Energy below", () => {
+    const words = [
+      n("1,001,623", 100, 1000),
+      n("67", 400, 1000),
+      n("12", 100, 1150),
+      n("9,475", 400, 1150),
+    ];
+    expect(parseByGrid(words)).toEqual({ candy: 67, xlCandy: 12, megaEnergies: [9475] });
+  });
+
+  it("mega X/Y: a third (close) row for the second energy", () => {
+    const words = [
+      n("11,001,623", 100, 1000), // OCR-mangled Stardust (>10M) still anchors
+      n("26", 400, 1000),
+      n("27", 100, 1150),
+      n("0", 400, 1150),
+      n("0", 250, 1300),
+    ];
+    expect(parseByGrid(words)).toEqual({ candy: 26, xlCandy: 27, megaEnergies: [0, 0] });
+  });
+
+  it("single mega: ignores the far-below Mega-Evolve cost row", () => {
+    const words = [
+      n("1,001,623", 100, 1000),
+      n("67", 400, 1000),
+      n("12", 100, 1150),
+      n("9,475", 400, 1150),
+      n("7,500", 250, 1500), // big gap below -> the Mega Evolve cost, not energy
+    ];
+    expect(parseByGrid(words)).toEqual({ candy: 67, xlCandy: 12, megaEnergies: [9475] });
+  });
+});
+
+describe("parseByTextOrder (no word boxes)", () => {
+  it("anchors on the largest number (Stardust) and reads forward", () => {
+    expect(parseByTextOrder("4724 192 192 1,001,623 23 47 GYMS")).toEqual({ candy: 23, xlCandy: 47, megaEnergies: [] });
+    expect(parseByTextOrder("cp 1,001,623 67 12 9,475 7,500 evolve")).toEqual({ candy: 67, xlCandy: 12, megaEnergies: [9475] });
   });
 });
 
