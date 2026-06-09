@@ -9,6 +9,7 @@ import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotOcr";
 import { CardScan } from "./CardScan";
@@ -48,6 +49,8 @@ export function MewtwoCard({
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
+  const setScreenshot = usePlannerStore((s) => s.setScreenshot);
+  const preview = usePlannerStore((s) => s.screenshots["mewtwo"]);
 
   const selectedX = !!inputX?.selected;
   const selectedY = !!inputY?.selected;
@@ -89,18 +92,22 @@ export function MewtwoCard({
           so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
         </p>
 
-        <div className="mb-4">
-          <CardScan
-            expectedSpecies="mewtwo"
-            bossLabel="Mega Mewtwo"
-            onApply={(s) => {
-              if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
-              if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
-              const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
-              if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
-              if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
-            }}
-          />
+        <div className="mb-4 flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <CardScan
+              expectedSpecies="mewtwo"
+              bossLabel="Mega Mewtwo"
+              onThumb={(thumb, capturedAt) => setScreenshot("mewtwo", thumb, capturedAt)}
+              onApply={(s) => {
+                if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
+                if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
+                const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
+                if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
+                if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
+              }}
+            />
+          </div>
+          {preview ? <ImageThumb src={preview.src} alt="Mewtwo screenshot" size={56} /> : null}
         </div>
 
         {/* Shared Mewtwo */}

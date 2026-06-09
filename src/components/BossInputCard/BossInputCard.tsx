@@ -10,6 +10,7 @@ import { Badge, TierBadge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
+import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
 import { energyForBosses } from "@/lib/screenshotOcr";
@@ -35,6 +36,9 @@ export function BossInputCard({
 }) {
   const input = usePlannerStore((s) => s.inputs[boss.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
+  const setScreenshot = usePlannerStore((s) => s.setScreenshot);
+  const sKey = speciesKey(boss.name);
+  const preview = usePlannerStore((s) => s.screenshots[sKey]);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
@@ -85,19 +89,23 @@ export function BossInputCard({
 
       {boss.note ? <p className="mt-2 text-[11px] text-slate-400">💡 {boss.note}</p> : null}
 
-      <div className="mt-3">
-        <CardScan
-          expectedSpecies={speciesKey(boss.name)}
-          bossLabel={boss.name}
-          onApply={(s) => {
-            if (s.candy !== undefined) setCurrent(boss.id, "candy", s.candy);
-            if (s.xlCandy !== undefined) setCurrent(boss.id, "xlCandy", s.xlCandy);
-            if (boss.rewardsCurrencies.includes("megaEnergy")) {
-              const [v] = energyForBosses(s.megaEnergies, [boss]);
-              if (v !== undefined) setCurrent(boss.id, "megaEnergy", v);
-            }
-          }}
-        />
+      <div className="mt-3 flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <CardScan
+            expectedSpecies={sKey}
+            bossLabel={boss.name}
+            onThumb={(thumb, capturedAt) => setScreenshot(sKey, thumb, capturedAt)}
+            onApply={(s) => {
+              if (s.candy !== undefined) setCurrent(boss.id, "candy", s.candy);
+              if (s.xlCandy !== undefined) setCurrent(boss.id, "xlCandy", s.xlCandy);
+              if (boss.rewardsCurrencies.includes("megaEnergy")) {
+                const [v] = energyForBosses(s.megaEnergies, [boss]);
+                if (v !== undefined) setCurrent(boss.id, "megaEnergy", v);
+              }
+            }}
+          />
+        </div>
+        {preview ? <ImageThumb src={preview.src} alt={`${boss.name} screenshot`} size={56} /> : null}
       </div>
 
       {/* Inputs */}

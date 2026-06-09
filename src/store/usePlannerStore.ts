@@ -10,11 +10,19 @@ export { makeDefaultInput };
 
 type CurrentField = keyof BossInput["current"];
 
+/** A persisted screenshot preview, keyed by species (e.g. "mewtwo"). */
+export interface ScreenshotPreview {
+  src: string;
+  capturedAt: number;
+}
+
 interface PlannerState {
   inputs: Record<string, BossInput>;
   settings: PlannerSettings;
   /** Which research lines the user has (or will) complete, by id. */
   research: Record<string, boolean>;
+  /** Imported screenshot previews, keyed by species — only the latest is kept. */
+  screenshots: Record<string, ScreenshotPreview>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
@@ -25,6 +33,8 @@ interface PlannerState {
   setSkipCatch: (bossId: string, skip: boolean) => void;
   setMegaBuddy: (bossId: string, on: boolean) => void;
   setResearchEnabled: (id: string, enabled: boolean, exclusiveWith?: readonly string[]) => void;
+  /** Store a screenshot preview for a species — keeps only the most-recent. */
+  setScreenshot: (speciesKey: string, src: string, capturedAt: number) => void;
   applyPreset: (bossId: string, presetId: string) => void;
   setSettings: (patch: Partial<PlannerSettings>) => void;
   resetSettings: () => void;
@@ -44,6 +54,15 @@ export const usePlannerStore = create<PlannerState>()(
       inputs: {},
       settings: { ...DEFAULT_SETTINGS },
       research: {},
+      screenshots: {},
+
+      setScreenshot: (speciesKey, src, capturedAt) =>
+        set((state) => {
+          const prev = state.screenshots[speciesKey];
+          // Same species → keep only the most-recent screenshot (drop predecessors).
+          if (prev && prev.capturedAt > capturedAt) return state;
+          return { screenshots: { ...state.screenshots, [speciesKey]: { src, capturedAt } } };
+        }),
 
       setResearchEnabled: (id, enabled, exclusiveWith) =>
         set((state) => {
@@ -178,11 +197,11 @@ export const usePlannerStore = create<PlannerState>()(
 
       resetSettings: () => set({ settings: { ...DEFAULT_SETTINGS } }),
 
-      resetAll: () => set({ inputs: {}, settings: { ...DEFAULT_SETTINGS }, research: {} }),
+      resetAll: () => set({ inputs: {}, settings: { ...DEFAULT_SETTINGS }, research: {}, screenshots: {} }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 4,
+      version: 5,
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
         // store always has a valid shape. Merging DEFAULT_SETTINGS under any
@@ -190,6 +209,7 @@ export const usePlannerStore = create<PlannerState>()(
         const state = (persisted ?? {}) as Partial<PlannerState>;
         if (!state.inputs) state.inputs = {};
         if (!state.research) state.research = {};
+        if (!state.screenshots) state.screenshots = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },
