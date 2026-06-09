@@ -5,8 +5,10 @@ import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
-import { scanScreenshot, type ScanResult } from "@/lib/screenshotOcr";
+import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotOcr";
 import { usePlannerStore } from "@/store/usePlannerStore";
+
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // One option per species group (Mewtwo X/Y, Giratina A/O, etc. share a key).
 const SPECIES_OPTIONS = (() => {
@@ -37,11 +39,8 @@ function valueChips(scan: ScanResult): string[] {
   const c: string[] = [];
   if (scan.candy !== undefined) c.push(`Candy ${formatNumber(scan.candy)}`);
   if (scan.xlCandy !== undefined) c.push(`XL ${formatNumber(scan.xlCandy)}`);
-  if (scan.megaEnergies.length > 1) {
-    if (scan.megaEnergies[0] !== undefined) c.push(`Energy X ${formatNumber(scan.megaEnergies[0])}`);
-    if (scan.megaEnergies[1] !== undefined) c.push(`Energy Y ${formatNumber(scan.megaEnergies[1])}`);
-  } else if (scan.megaEnergies[0] !== undefined) {
-    c.push(`Energy ${formatNumber(scan.megaEnergies[0])}`);
+  for (const e of scan.megaEnergies) {
+    c.push(e.species ? `${cap(e.species)} En ${formatNumber(e.value)}` : `Energy ${formatNumber(e.value)}`);
   }
   return c;
 }
@@ -59,9 +58,10 @@ function applyScan(
     if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
   }
   const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
-  const E = scan.megaEnergies;
-  if (E.length > 1 && energyBosses.length === E.length) energyBosses.forEach((b, i) => setCurrent(b.id, "megaEnergy", E[i]));
-  else if (E.length >= 1) for (const b of energyBosses) setCurrent(b.id, "megaEnergy", E[0]);
+  const vals = energyForBosses(scan.megaEnergies, energyBosses);
+  energyBosses.forEach((b, i) => {
+    if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
+  });
 }
 
 /**

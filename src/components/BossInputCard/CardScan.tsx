@@ -12,18 +12,18 @@ type State = "idle" | "scanning" | "done" | "error";
  * the screenshot's species (read from its labels) matches this card's Pokémon.
  * Beta — the detected values are shown for review before applying.
  */
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
 export function CardScan({
   onApply,
   expectedSpecies,
   bossLabel,
-  dualMega = false,
 }: {
   onApply: (scan: ScanResult) => void;
   /** Normalized species key this card expects (e.g. "mewtwo"). */
   expectedSpecies: string;
   /** Display name for mismatch messages. */
   bossLabel: string;
-  dualMega?: boolean;
 }) {
   const [state, setState] = useState<State>("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -63,11 +63,8 @@ export function CardScan({
   if (result) {
     if (result.candy !== undefined) chips.push(`Candy ${formatNumber(result.candy)}`);
     if (result.xlCandy !== undefined) chips.push(`XL ${formatNumber(result.xlCandy)}`);
-    if (dualMega) {
-      if (result.megaEnergies[0] !== undefined) chips.push(`Energy X ${formatNumber(result.megaEnergies[0])}`);
-      if (result.megaEnergies[1] !== undefined) chips.push(`Energy Y ${formatNumber(result.megaEnergies[1])}`);
-    } else if (result.megaEnergies[0] !== undefined) {
-      chips.push(`Energy ${formatNumber(result.megaEnergies[0])}`);
+    for (const e of result.megaEnergies) {
+      chips.push(e.species ? `${cap(e.species)} En ${formatNumber(e.value)}` : `Energy ${formatNumber(e.value)}`);
     }
   }
 

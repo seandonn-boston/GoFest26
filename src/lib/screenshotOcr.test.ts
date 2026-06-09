@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateEntries, fuzzyMatchSpecies, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
+import { aggregateEntries, energyForBosses, fuzzyMatchSpecies, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
 import { buildSearchString, pokemonSearchName, speciesKey } from "./pokemonSearch";
 import { RAID_BOSSES } from "@/data";
 
@@ -8,27 +8,53 @@ function scan(text: string, capturedAt = 0) {
 }
 
 describe("screenshot parse + identify", () => {
-  it("reads a Mewtwo page and identifies it by the energy label", () => {
+  it("reads a Mewtwo page and tags each energy with its species", () => {
     const r = scan(["26", "MEWTWO CANDY", "27", "MEWTWO CANDY XL", "0", "MEWTWO MEGA ENERGY", "X", "0", "MEWTWO MEGA ENERGY", "Y"].join("\n"));
     expect(r.species).toBe("mewtwo");
     expect(r.candy).toBe(26);
     expect(r.xlCandy).toBe(27);
-    expect(r.megaEnergies).toEqual([0, 0]);
+    expect(r.megaEnergies).toEqual([
+      { value: 0, species: "mewtwo" },
+      { value: 0, species: "mewtwo" },
+    ]);
   });
 
-  it("identifies by the energy label, not the (base-form) candy label", () => {
-    // Dragonite screenshot: DRATINI candy but DRAGONITE mega energy.
-    const r = scan(["1,427", "DRATINI CANDY", "25", "DRATINI CANDY XL", "3,985", "DRAGONITE MEGA ENERGY"].join("\n"));
-    expect(r.species).toBe("dragonite");
-    expect(r.candy).toBe(1427);
-    expect(r.xlCandy).toBe(25);
-    expect(r.megaEnergies).toEqual([3985]);
+  it("tags a two-species page (Ralts) with the right species per energy", () => {
+    const r = scan(["1,142", "RALTS CANDY", "330", "RALTS CANDY XL", "60", "GALLADE MEGA ENERGY", "80", "GARDEVOIR MEGA ENERGY"].join("\n"));
+    expect(r.candy).toBe(1142);
+    expect(r.xlCandy).toBe(330);
+    expect(r.megaEnergies).toEqual([
+      { value: 60, species: "gallade" },
+      { value: 80, species: "gardevoir" },
+    ]);
   });
 
   it("reads a legendary with primal energy", () => {
     const r = scan(["181", "GROUDON CANDY", "82", "GROUDON CANDY XL", "485", "GROUDON PRIMAL ENERGY"].join("\n"));
     expect(r.species).toBe("groudon");
-    expect(r.megaEnergies).toEqual([485]);
+    expect(r.megaEnergies).toEqual([{ value: 485, species: "groudon" }]);
+  });
+});
+
+describe("energyForBosses (species-aware association)", () => {
+  it("a single boss takes the energy matching its species, not the first", () => {
+    const energies = [
+      { value: 60, species: "gallade" },
+      { value: 80, species: "gardevoir" },
+    ];
+    expect(energyForBosses(energies, [{ name: "Mega Gardevoir" }])).toEqual([80]);
+  });
+
+  it("X/Y bosses (same species) map in reading order", () => {
+    const energies = [
+      { value: 100, species: "mewtwo" },
+      { value: 250, species: "mewtwo" },
+    ];
+    expect(energyForBosses(energies, [{ name: "Mega Mewtwo X" }, { name: "Mega Mewtwo Y" }])).toEqual([100, 250]);
+  });
+
+  it("falls back to the first energy when species is unknown", () => {
+    expect(energyForBosses([{ value: 6212, species: null }], [{ name: "Mega Metagross" }])).toEqual([6212]);
   });
 });
 
