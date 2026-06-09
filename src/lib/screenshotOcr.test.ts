@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateEntries, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
+import { aggregateEntries, fuzzyMatchSpecies, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
 import { buildSearchString, pokemonSearchName, speciesKey } from "./pokemonSearch";
 import { RAID_BOSSES } from "@/data";
 
@@ -83,6 +83,25 @@ describe("parseByTextOrder (no word boxes)", () => {
   it("anchors on the largest number (Stardust) and reads forward", () => {
     expect(parseByTextOrder("4724 192 192 1,001,623 23 47 GYMS")).toEqual({ candy: 23, xlCandy: 47, megaEnergies: [] });
     expect(parseByTextOrder("cp 1,001,623 67 12 9,475 7,500 evolve")).toEqual({ candy: 67, xlCandy: 12, megaEnergies: [9475] });
+  });
+});
+
+describe("fuzzyMatchSpecies (vocabulary-validated)", () => {
+  const vocab = [
+    { key: "mewtwo", name: "MEWTWO" },
+    { key: "zacian", name: "ZACIAN" },
+    { key: "reshiram", name: "RESHIRAM" },
+    { key: "tyranitar", name: "TYRANITAR" },
+  ];
+
+  it("snaps a near-miss to the right species", () => {
+    expect(fuzzyMatchSpecies("blah MEWTW0 CANDY 26", vocab)).toBe("mewtwo"); // 0 -> O
+    expect(fuzzyMatchSpecies("ZAClAN CANDY 23", vocab)).toBe("zacian"); // l -> I
+    expect(fuzzyMatchSpecies("TYRANITAR MEGA ENERGY 209", vocab)).toBe("tyranitar"); // from energy label
+  });
+
+  it("returns null for garbage that isn't close to any species", () => {
+    expect(fuzzyMatchSpecies("cr4d 724 OF Ares HP kg", vocab)).toBeNull();
   });
 });
 

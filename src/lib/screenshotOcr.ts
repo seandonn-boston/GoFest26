@@ -7,6 +7,9 @@
 // survive shinies, poses and nicknames. Numbers (0–999,999) can sit anywhere,
 // so every value is taken from the number directly above its label.
 
+import { RAID_BOSSES } from "@/data";
+import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
+
 interface Box {
   x0: number;
   y0: number;
@@ -69,7 +72,15 @@ async function getWorker(): Promise<TWorker | null> {
     workerP = (async () => {
       try {
         const w = await T.createWorker!("eng");
-        await w.setParameters({ tessedit_pageseg_mode: "11" });
+        await w.setParameters({
+          tessedit_pageseg_mode: "11", // sparse text — find scattered stat labels/numbers
+          // Disable the dictionary/language model so it doesn't "spellcheck"
+          // Pokémon names (non-words) into real words.
+          load_system_dawg: "0",
+          load_freq_dawg: "0",
+          // Only the chars we care about: uppercase labels + digits.
+          tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,. ",
+        });
         return w;
       } catch {
         return null;
@@ -314,6 +325,66 @@ export function parseEntriesFromText(text: string): StatEntry[] {
 
 const normSpecies = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 
+// ---- Vocabulary-validated species matching ----
+// We have a fixed roster, so a garbled OCR token can snap to the nearest real
+// species (e.g. "MEWTW0" -> mewtwo). The roster name appears in the candy label
+// (legendaries) or the energy label (megas — the candy there is the base form).
+export interface SpeciesVocab {
+  key: string;
+  name: string;
+}
+
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+function candidateTokens(text: string): string[] {
+  const words = text.toUpperCase().match(/[A-Z]{3,}/g) ?? [];
+  const toks = new Set<string>(words);
+  for (let i = 0; i < words.length - 1; i++) toks.add(words[i] + words[i + 1]); // "TAPU"+"KOKO"
+  return [...toks];
+}
+
+/** The roster's species vocabulary (one per species group, uppercased). */
+const ROSTER_VOCAB: SpeciesVocab[] = (() => {
+  const seen = new Set<string>();
+  const list: SpeciesVocab[] = [];
+  for (const b of RAID_BOSSES) {
+    const key = speciesKey(b.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push({ key, name: pokemonSearchName(b.name).toUpperCase().replace(/[^A-Z]/g, "") });
+  }
+  return list;
+})();
+
+/** Nearest roster species to any token in `text`, within an edit-distance ratio. */
+export function fuzzyMatchSpecies(text: string, vocab: SpeciesVocab[]): string | null {
+  const toks = candidateTokens(text);
+  let best: { key: string; score: number } | null = null;
+  for (const sp of vocab) {
+    if (sp.name.length < 3) continue;
+    for (const tok of toks) {
+      const score = editDistance(tok, sp.name) / Math.max(tok.length, sp.name.length);
+      if (score <= 0.34 && (!best || score < best.score)) best = { key: sp.key, score };
+    }
+  }
+  return best?.key ?? null;
+}
+
 export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawText = ""): ScanResult {
   const candy = entries.find((e) => e.kind === "candy")?.value;
   const xlCandy = entries.find((e) => e.kind === "xlCandy")?.value;
@@ -353,10 +424,14 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
     bitmap.close?.();
     const img = ctx.getImageData(0, 0, w, h);
     const d = img.data;
-    const C = 1.7; // contrast
+    // Levels: map [150..225] -> [0..255] so the *gray* labels darken to readable
+    // black (the old contrast curve bleached them toward white), while the white
+    // card stays white. Dark numbers and the colorful header collapse cleanly.
+    const Bp = 150;
+    const Wp = 225;
     for (let i = 0; i < d.length; i += 4) {
-      let g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      g = (g - 140) * C + 150; // boost contrast, lift the background toward white
+      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      let g = ((lum - Bp) / (Wp - Bp)) * 255;
       d[i] = d[i + 1] = d[i + 2] = g < 0 ? 0 : g > 255 ? 255 : g;
     }
     ctx.putImageData(img, 0, 0);
@@ -381,6 +456,10 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
   if (!labelEntries.length) labelEntries = parseEntriesFromText(data.text);
   const fromLabels = aggregateEntries(labelEntries, capturedAt, data.text || "");
 
+  // Snap the species to the roster vocabulary (tolerates OCR slips); fall back
+  // to the raw label species only if nothing matches.
+  const species = fuzzyMatchSpecies(data.text || "", ROSTER_VOCAB) ?? fromLabels.species;
+
   // VALUES come from the NUMBERS, which OCR reliably: by word position (grid)
   // when boxes exist, else by text reading order. This is primary so a garbled
   // label can't duplicate one value across Candy/XL/Energy.
@@ -390,7 +469,7 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
   const megaEnergies = grid && grid.megaEnergies.length ? grid.megaEnergies : fromLabels.megaEnergies;
 
   return {
-    species: fromLabels.species,
+    species,
     candy,
     xlCandy,
     megaEnergies,
