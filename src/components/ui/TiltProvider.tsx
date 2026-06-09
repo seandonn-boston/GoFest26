@@ -96,7 +96,7 @@ export function TiltProvider() {
     <button
       type="button"
       onClick={() => requestRef.current()}
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-black/70 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg backdrop-blur active:scale-95"
+      className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-black/70 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg backdrop-blur active:scale-95"
     >
       <span aria-hidden>🧭</span> Enable motion tilt
     </button>

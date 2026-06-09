@@ -46,3 +46,20 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   fridayRemoteRaids: false,
   region: DEFAULT_REGION,
 };
+
+/** True when every planning knob is at its default (region is excluded). */
+export function isDefaultSettings(s: PlannerSettings): boolean {
+  return (
+    s.lobbySize === DEFAULT_SETTINGS.lobbySize &&
+    s.partyPlay === DEFAULT_SETTINGS.partyPlay &&
+    s.partySize === DEFAULT_SETTINGS.partySize &&
+    s.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
+    s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
+    s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
+    s.quickCatch === DEFAULT_SETTINGS.quickCatch &&
+    s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
+    s.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
+    s.fridayRemoteRaids === DEFAULT_SETTINGS.fridayRemoteRaids
+  );
+}
+
