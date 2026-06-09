@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateEntries, energyForBosses, fuzzyMatchSpecies, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
+import { aggregateEntries, chooseSpecies, energyForBosses, fuzzyMatchSpecies, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
 import { buildSearchString, pokemonSearchName, speciesKey } from "./pokemonSearch";
 import { RAID_BOSSES } from "@/data";
 
@@ -33,6 +33,25 @@ describe("screenshot parse + identify", () => {
     const r = scan(["181", "GROUDON CANDY", "82", "GROUDON CANDY XL", "485", "GROUDON PRIMAL ENERGY"].join("\n"));
     expect(r.species).toBe("groudon");
     expect(r.megaEnergies).toEqual([{ value: 485, species: "groudon" }]);
+  });
+});
+
+describe("chooseSpecies (from candy/energy labels only)", () => {
+  const vocab = [
+    { key: "mewtwo", name: "MEWTWO" },
+    { key: "gardevoir", name: "GARDEVOIR" },
+    { key: "groudon", name: "GROUDON" },
+  ];
+
+  it("matches the roster off the labels, energy (form) preferred", () => {
+    // Ralts: Gallade not a target, Gardevoir is -> picks gardevoir.
+    expect(chooseSpecies(["gallade", "gardevoir"], ["ralts"], vocab)).toEqual({ key: "gardevoir", name: "gallade" });
+    expect(chooseSpecies(["mewtwo", "mewtwo"], ["mewtwo"], vocab)).toEqual({ key: "mewtwo", name: "mewtwo" });
+  });
+
+  it("returns the read name with no key when it isn't a raid target", () => {
+    // Charizard isn't in the roster — still named (for the warning), key null.
+    expect(chooseSpecies(["charizard", "charizard"], ["charmander"], vocab)).toEqual({ key: null, name: "charizard" });
   });
 });
 
