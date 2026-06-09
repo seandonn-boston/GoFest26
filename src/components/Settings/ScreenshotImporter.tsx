@@ -3,27 +3,48 @@
 import { useRef, useState } from "react";
 import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
-import { speciesKey } from "@/lib/pokemonSearch";
+import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
 import { scanScreenshot, type ScanResult } from "@/lib/screenshotOcr";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
-type Status = "applied" | "duplicate" | "unmatched" | "unreadable";
+// One option per species group (Mewtwo X/Y, Giratina A/O, etc. share a key).
+const SPECIES_OPTIONS = (() => {
+  const byKey = new Map<string, RaidBoss[]>();
+  for (const b of RAID_BOSSES) {
+    const k = speciesKey(b.name);
+    const arr = byKey.get(k) ?? [];
+    arr.push(b);
+    byKey.set(k, arr);
+  }
+  return Array.from(byKey.entries())
+    .map(([key, bosses]) => {
+      const sorted = [...bosses].sort((a, b) => a.sortPriority - b.sortPriority);
+      return { key, bosses: sorted, label: pokemonSearchName(sorted[0].name) };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
+})();
+const OPTION_BY_KEY = new Map(SPECIES_OPTIONS.map((o) => [o.key, o]));
+
 interface Row {
-  file: string;
-  when: number;
-  status: Status;
-  title: string;
-  detail: string;
+  id: number;
+  fileName: string;
+  scan: ScanResult;
+  key: string; // chosen species key ("" = unassigned)
 }
 
-const STATUS_STYLE: Record<Status, string> = {
-  applied: "border-gofest-acid/50 text-gofest-acid",
-  duplicate: "border-white/15 text-slate-400",
-  unmatched: "border-amber-400/50 text-amber-200",
-  unreadable: "border-rose-400/50 text-rose-300",
-};
-const STATUS_ICON: Record<Status, string> = { applied: "✓", duplicate: "↩", unmatched: "⚠", unreadable: "✕" };
+function valueChips(scan: ScanResult): string[] {
+  const c: string[] = [];
+  if (scan.candy !== undefined) c.push(`Candy ${formatNumber(scan.candy)}`);
+  if (scan.xlCandy !== undefined) c.push(`XL ${formatNumber(scan.xlCandy)}`);
+  if (scan.megaEnergies.length > 1) {
+    if (scan.megaEnergies[0] !== undefined) c.push(`Energy X ${formatNumber(scan.megaEnergies[0])}`);
+    if (scan.megaEnergies[1] !== undefined) c.push(`Energy Y ${formatNumber(scan.megaEnergies[1])}`);
+  } else if (scan.megaEnergies[0] !== undefined) {
+    c.push(`Energy ${formatNumber(scan.megaEnergies[0])}`);
+  }
+  return c;
+}
 
 function applyScan(
   scan: ScanResult,
@@ -39,18 +60,14 @@ function applyScan(
   }
   const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
   const E = scan.megaEnergies;
-  if (E.length > 1 && energyBosses.length === E.length) {
-    energyBosses.forEach((b, i) => setCurrent(b.id, "megaEnergy", E[i]));
-  } else if (E.length >= 1) {
-    for (const b of energyBosses) setCurrent(b.id, "megaEnergy", E[0]);
-  }
+  if (E.length > 1 && energyBosses.length === E.length) energyBosses.forEach((b, i) => setCurrent(b.id, "megaEnergy", E[i]));
+  else if (E.length >= 1) for (const b of energyBosses) setCurrent(b.id, "megaEnergy", E[0]);
 }
 
 /**
- * Batch screenshot import: OCR each Pokémon detail screenshot, identify the
- * species by its Candy/Energy label, match it to a raid target and fill the
- * card. Same species → only the most-recent screenshot is used (values come
- * from a shared pool, so they're not additive). Non-targets/unreadable are flagged.
+ * Assisted bulk import: OCR the Candy/XL/Energy from each screenshot (reliable),
+ * then the user taps which Pokémon each belongs to. Same species → only the
+ * most-recent screenshot is applied (values share one pool).
  */
 export function ScreenshotImporter() {
   const setSelected = usePlannerStore((s) => s.setSelected);
@@ -58,80 +75,62 @@ export function ScreenshotImporter() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
-  const [rows, setRows] = useState<Row[] | null>(null);
-
-  // Roster grouped by species key (Mewtwo X/Y, Giratina A/O, etc. share a key).
-  const bossesByKey = new Map<string, RaidBoss[]>();
-  for (const b of RAID_BOSSES) {
-    const k = speciesKey(b.name);
-    (bossesByKey.get(k) ?? bossesByKey.set(k, []).get(k)!).push(b);
-  }
+  const [rows, setRows] = useState<Row[]>([]);
+  const [summary, setSummary] = useState<string | null>(null);
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (fileRef.current) fileRef.current.value = "";
     if (!files.length) return;
     setBusy(true);
-    setRows(null);
-
-    const scans: { file: File; scan: ScanResult }[] = [];
+    setRows([]);
+    setSummary(null);
+    const next: Row[] = [];
     for (let i = 0; i < files.length; i++) {
       setProgress(`Scanning ${i + 1}/${files.length}…${i === 0 ? " (first run downloads the OCR engine)" : ""}`);
+      let scan: ScanResult;
       try {
-        scans.push({ file: files[i], scan: await scanScreenshot(files[i]) });
+        scan = await scanScreenshot(files[i]);
       } catch {
-        scans.push({
-          file: files[i],
-          scan: { species: null, megaEnergies: [], capturedAt: files[i].lastModified || 0, readAnything: false },
-        });
+        scan = { species: null, megaEnergies: [], capturedAt: files[i].lastModified || 0, readAnything: false };
       }
+      const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
+      next.push({ id: i, fileName: files[i].name, scan, key });
     }
-
-    const out: Row[] = [];
-    const bySpecies = new Map<string, { file: File; scan: ScanResult; bosses: RaidBoss[] }[]>();
-
-    for (const { file, scan } of scans) {
-      if (!scan.readAnything || !scan.species) {
-        const detail = scan.rawText ? `OCR read: “${scan.rawText}”` : "No Candy / XL / Energy found — try a tighter crop.";
-        out.push({ file: file.name, when: scan.capturedAt, status: "unreadable", title: "Couldn't read", detail });
-        continue;
-      }
-      const bosses = bossesByKey.get(scan.species);
-      if (!bosses?.length) {
-        out.push({ file: file.name, when: scan.capturedAt, status: "unmatched", title: cap(scan.species), detail: "Not a GO Fest raid target — skipped." });
-        continue;
-      }
-      (bySpecies.get(scan.species) ?? bySpecies.set(scan.species, []).get(scan.species)!).push({ file, scan, bosses });
-    }
-
-    for (const [, cands] of bySpecies) {
-      cands.sort((a, b) => b.scan.capturedAt - a.scan.capturedAt); // most recent first
-      const [winner, ...older] = cands;
-      applyScan(winner.scan, winner.bosses, setSelected, setCurrent);
-      out.push({
-        file: winner.file.name,
-        when: winner.scan.capturedAt,
-        status: "applied",
-        title: winner.bosses.map((b) => b.name).join(" / "),
-        detail: summarize(winner.scan),
-      });
-      for (const o of older) {
-        out.push({ file: o.file.name, when: o.scan.capturedAt, status: "duplicate", title: cap(winner.scan.species ?? ""), detail: "Older screenshot of the same species — ignored." });
-      }
-    }
-
-    out.sort((a, b) => order(a.status) - order(b.status) || b.when - a.when);
-    setRows(out);
+    setRows(next);
     setBusy(false);
     setProgress("");
   }
 
+  function setKey(id: number, key: string) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, key } : r)));
+    setSummary(null);
+  }
+
+  function applyAll() {
+    // Same species → keep only the most-recent screenshot (not additive).
+    const byKey = new Map<string, Row>();
+    for (const r of rows) {
+      if (!r.key || !r.scan.readAnything) continue;
+      const prev = byKey.get(r.key);
+      if (!prev || r.scan.capturedAt > prev.scan.capturedAt) byKey.set(r.key, r);
+    }
+    const labels: string[] = [];
+    for (const [key, r] of byKey) {
+      const opt = OPTION_BY_KEY.get(key)!;
+      applyScan(r.scan, opt.bosses, setSelected, setCurrent);
+      labels.push(opt.label);
+    }
+    setSummary(labels.length ? `Filled ${labels.length}: ${labels.join(", ")}` : "Pick a Pokémon for each screenshot first.");
+  }
+
+  const anyAssignable = rows.some((r) => r.scan.readAnything);
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-400">
-        Upload one or more Pokémon detail screenshots. We read the Candy / XL / Mega Energy, identify
-        each by its label, and fill the matching card. Same species → only the most-recent screenshot is
-        kept (values share one pool). Non-targets are flagged.
+        Upload one or more Pokémon screenshots. We read the Candy / XL / Mega Energy from each — then you
+        tap which Pokémon it is and we fill that card. Same species → only the most-recent is kept.
       </p>
 
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
@@ -147,51 +146,60 @@ export function ScreenshotImporter() {
 
       {busy ? <p className="text-[11px] text-slate-400">{progress}</p> : null}
 
-      {rows ? (
-        <ul className="space-y-1.5">
-          {rows.map((r, i) => (
-            <li key={i} className={`rounded-sm border bg-gofest-bg/40 p-2 ${STATUS_STYLE[r.status]}`}>
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono text-sm">{STATUS_ICON[r.status]}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-slate-100">{r.title}</div>
-                  <div className="text-[11px] text-slate-400">{r.detail}</div>
-                </div>
-                <span className="shrink-0 font-mono text-[9px] text-slate-500">{when(r.when)}</span>
-              </div>
-            </li>
-          ))}
+      {rows.length ? (
+        <ul className="space-y-2">
+          {rows.map((r) => {
+            const chips = valueChips(r.scan);
+            return (
+              <li key={r.id} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-2">
+                {r.scan.readAnything ? (
+                  <>
+                    <div className="mb-1.5 flex flex-wrap gap-1">
+                      {chips.map((c) => (
+                        <span key={c} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                    <select
+                      value={r.key}
+                      onChange={(e) => setKey(r.id, e.target.value)}
+                      className={`w-full rounded-sm border bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2 ${
+                        r.key ? "border-gofest-accent2/50 text-white" : "border-white/15 text-slate-300"
+                      }`}
+                    >
+                      <option value="">— pick the Pokémon —</option>
+                      {SPECIES_OPTIONS.map((o) => (
+                        <option key={o.key} value={o.key}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-amber-200">
+                    ⚠ Couldn’t read {r.fileName}
+                    {r.scan.rawText ? <> — OCR saw: “{r.scan.rawText}”</> : ""}.
+                  </p>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 
-      {rows ? <p className="text-[10px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
+      {anyAssignable ? (
+        <button
+          type="button"
+          onClick={applyAll}
+          className="rounded-sm border-2 border-black/40 bg-gofest-accent2 px-3 py-2 font-mono text-xs font-extrabold uppercase tracking-wider text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+        >
+          Apply all →
+        </button>
+      ) : null}
+
+      {summary ? <p className="text-[11px] text-emerald-300">✓ {summary}</p> : null}
+      {rows.length ? <p className="text-[10px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
     </div>
   );
-}
-
-function summarize(scan: ScanResult): string {
-  const parts: string[] = [];
-  if (scan.candy !== undefined) parts.push(`Candy ${formatNumber(scan.candy)}`);
-  if (scan.xlCandy !== undefined) parts.push(`XL ${formatNumber(scan.xlCandy)}`);
-  scan.megaEnergies.forEach((v, i) =>
-    parts.push(`Energy${scan.megaEnergies.length > 1 ? ` ${i === 0 ? "X" : "Y"}` : ""} ${formatNumber(v)}`),
-  );
-  return parts.length ? `Filled · ${parts.join(" · ")}` : "Filled";
-}
-
-function cap(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Unknown";
-}
-
-function order(s: Status): number {
-  return { applied: 0, unmatched: 1, duplicate: 2, unreadable: 3 }[s];
-}
-
-function when(ms: number): string {
-  if (!ms) return "";
-  try {
-    return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  } catch {
-    return "";
-  }
 }
