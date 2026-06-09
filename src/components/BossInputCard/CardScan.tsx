@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import { scanScreenshot, type ScanResult } from "@/lib/screenshotOcr";
 import { formatNumber } from "@/lib/format";
+import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
+
+const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
 
 type State = "idle" | "scanning" | "done" | "error";
 
@@ -104,10 +107,13 @@ export function CardScan({
             </button>
           </div>
         ) : (
-          <p className="mt-1.5 text-[11px] text-amber-200">
-            Couldn’t read it{result?.rawText ? <> — OCR saw: “{result.rawText}”</> : ""}. Try a tighter crop
-            or enter manually.
-          </p>
+          <div className="mt-1.5">
+            <p className="text-[11px] text-amber-200">
+              Couldn’t read it{result?.rawText ? <> — OCR saw: “{previewOcr(result.rawText)}”</> : ""}. Try a tighter
+              crop or enter manually.
+            </p>
+            <CopyOcrButton text={result?.rawText} />
+          </div>
         )
       ) : null}
     </div>
