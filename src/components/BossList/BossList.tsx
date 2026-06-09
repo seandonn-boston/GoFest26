@@ -66,7 +66,7 @@ export function BossList() {
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
               <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
-              <span className="ml-1 normal-case text-slate-500">({habitat.types.join("/")})</span>
+              <span className="ml-1 hidden normal-case text-slate-500 sm:inline">({habitat.types.join("/")})</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {bosses.map((boss) => (

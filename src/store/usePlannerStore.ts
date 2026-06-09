@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { getBoss } from "@/data";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
@@ -9,6 +9,60 @@ import type { BossInput, Variant } from "@/domain/types";
 export { makeDefaultInput };
 
 type CurrentField = keyof BossInput["current"];
+
+/** Max persisted screenshot previews (data URLs) before evicting the oldest. */
+const MAX_SCREENSHOTS = 12;
+
+/**
+ * Debounced, quota-tolerant localStorage. Store updates fire on every keystroke;
+ * this batches rapid writes into one (300ms trailing, flushed on tab hide) and
+ * swallows QuotaExceededError so a full disk / private mode can never crash a
+ * state update. A no-op on the server (no persistence there).
+ */
+function makeSafeStorage() {
+  const noop = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+  if (typeof window === "undefined") return noop;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let queued: { key: string; value: string } | null = null;
+  const flush = () => {
+    if (!queued) return;
+    try {
+      window.localStorage.setItem(queued.key, queued.value);
+    } catch {
+      /* quota exceeded / private mode — drop the write rather than throw */
+    }
+    queued = null;
+    timer = null;
+  };
+  window.addEventListener("pagehide", flush);
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flush();
+  });
+  return {
+    getItem: (name: string) => {
+      if (queued && queued.key === name) return queued.value; // freshest pending value
+      try {
+        return window.localStorage.getItem(name);
+      } catch {
+        return null;
+      }
+    },
+    setItem: (name: string, value: string) => {
+      queued = { key: name, value };
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, 300);
+    },
+    removeItem: (name: string) => {
+      queued = null;
+      if (timer) clearTimeout(timer);
+      try {
+        window.localStorage.removeItem(name);
+      } catch {
+        /* ignore */
+      }
+    },
+  };
+}
 
 /** A persisted screenshot preview, keyed by species (e.g. "mewtwo"). */
 export interface ScreenshotPreview {
@@ -26,7 +80,6 @@ interface PlannerState {
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
-  setExtraXl: (bossId: string, value: number) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -61,7 +114,17 @@ export const usePlannerStore = create<PlannerState>()(
           const prev = state.screenshots[speciesKey];
           // Same species → keep only the most-recent screenshot (drop predecessors).
           if (prev && prev.capturedAt > capturedAt) return state;
-          return { screenshots: { ...state.screenshots, [speciesKey]: { src, capturedAt } } };
+          const screenshots = { ...state.screenshots, [speciesKey]: { src, capturedAt } };
+          // Cap the persisted previews so data-URL bloat can't blow the
+          // localStorage quota — evict the oldest beyond MAX_SCREENSHOTS.
+          const keys = Object.keys(screenshots);
+          if (keys.length > MAX_SCREENSHOTS) {
+            keys
+              .sort((a, b) => screenshots[a].capturedAt - screenshots[b].capturedAt)
+              .slice(0, keys.length - MAX_SCREENSHOTS)
+              .forEach((k) => delete screenshots[k]);
+          }
+          return { screenshots };
         }),
 
       setResearchEnabled: (id, enabled, exclusiveWith) =>
@@ -105,14 +168,6 @@ export const usePlannerStore = create<PlannerState>()(
           return {
             inputs: { ...state.inputs, [bossId]: { ...input, counts: { ...counts, [variant]: safe } } },
           };
-        }),
-
-      setExtraXl: (bossId, value) =>
-        set((state) => {
-          const input = ensureInput(state, bossId);
-          if (!input) return state;
-          const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
-          return { inputs: { ...state.inputs, [bossId]: { ...input, extraXl: safe } } };
         }),
 
       setCurrent: (bossId, field, value) =>
@@ -202,6 +257,7 @@ export const usePlannerStore = create<PlannerState>()(
     {
       name: "gofest26-planner-v1",
       version: 5,
+      storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
         // store always has a valid shape. Merging DEFAULT_SETTINGS under any

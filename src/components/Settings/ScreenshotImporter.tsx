@@ -7,6 +7,7 @@ import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
 import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotOcr";
 import { makeThumbnail } from "@/lib/thumbnail";
+import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 import { ImageThumb } from "@/components/ui/ImageThumb";
@@ -38,6 +39,7 @@ interface Row {
   scan: ScanResult;
   key: string; // chosen species key ("" = unassigned)
   thumb: string | null; // preview data URL
+  error?: string; // pre-flight / decode failure message
 }
 
 function valueChips(scan: ScanResult): string[] {
@@ -93,20 +95,32 @@ export function ScreenshotImporter() {
     setSummary(null);
     const next: Row[] = [];
     for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const blank: ScanResult = { species: null, detectedName: null, megaEnergies: [], capturedAt: file.lastModified || 0, readAnything: false };
+      const tooBig = uploadError(file);
+      if (tooBig) {
+        next.push({ id: i, fileName: file.name, scan: blank, key: "", thumb: null, error: tooBig });
+        continue;
+      }
       setProgress(`Scanning ${i + 1}/${files.length}…${i === 0 ? " (first run downloads the OCR engine)" : ""}`);
       let scan: ScanResult;
+      let error: string | undefined;
       try {
-        scan = await scanScreenshot(files[i]);
+        scan = await scanScreenshot(file);
       } catch {
-        scan = { species: null, detectedName: null, megaEnergies: [], capturedAt: files[i].lastModified || 0, readAnything: false };
+        scan = blank;
+        if (looksHeic(file)) error = HEIC_HINT;
       }
-      const thumb = await makeThumbnail(files[i]);
+      const thumb = await makeThumbnail(file);
       const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
-      next.push({ id: i, fileName: files[i].name, scan, key, thumb });
+      next.push({ id: i, fileName: file.name, scan, key, thumb, error });
     }
     setRows(next);
     setBusy(false);
     setProgress("");
+    if (next.length && next.every((r) => !r.scan.readAnything)) {
+      setSummary("No readable screenshots — try a tighter crop, or that the image is a Pokémon detail screen.");
+    }
   }
 
   function setKey(id: number, key: string) {
@@ -120,7 +134,9 @@ export function ScreenshotImporter() {
     for (const r of rows) {
       if (!r.key || !r.scan.readAnything) continue;
       const prev = byKey.get(r.key);
-      if (!prev || r.scan.capturedAt > prev.scan.capturedAt) byKey.set(r.key, r);
+      // Ties (identical lastModified — common for iOS photo-library picks) →
+      // the later file in the list wins, matching the render + store ordering.
+      if (!prev || r.scan.capturedAt >= prev.scan.capturedAt) byKey.set(r.key, r);
     }
     const labels: string[] = [];
     for (const [key, r] of byKey) {
@@ -185,8 +201,8 @@ export function ScreenshotImporter() {
                   {r.scan.readAnything ? (
                     <>
                       <div className="mb-1.5 flex flex-wrap gap-1">
-                        {chips.map((c) => (
-                          <span key={c} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
+                        {chips.map((c, i) => (
+                          <span key={`${i}-${c}`} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
                             {c}
                           </span>
                         ))}
@@ -199,7 +215,7 @@ export function ScreenshotImporter() {
                       <select
                         value={r.key}
                         onChange={(e) => setKey(r.id, e.target.value)}
-                        className={`w-full rounded-sm border bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2 ${
+                        className={`w-full rounded-sm border bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2 focus-visible:ring-2 focus-visible:ring-gofest-accent2 ${
                           r.key ? "border-gofest-accent2/50 text-white" : "border-white/15 text-slate-300"
                         }`}
                       >
@@ -213,11 +229,10 @@ export function ScreenshotImporter() {
                     </>
                   ) : (
                     <div>
-                      <p className="text-[11px] text-amber-200">
-                        ⚠ Couldn’t read {r.fileName}
-                        {r.scan.rawText ? <> — OCR saw: “{previewOcr(r.scan.rawText)}”</> : ""}.
+                      <p className="text-[11px] text-amber-200 break-words">
+                        ⚠ {r.error ? r.error : <>Couldn’t read {r.fileName}{r.scan.rawText ? <> — OCR saw: “{previewOcr(r.scan.rawText)}”</> : ""}.</>}
                       </p>
-                      <CopyOcrButton text={r.scan.rawText} />
+                      {r.scan.rawText ? <CopyOcrButton text={r.scan.rawText} /> : null}
                     </div>
                   )}
                 </div>

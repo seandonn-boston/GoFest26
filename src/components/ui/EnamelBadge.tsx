@@ -36,7 +36,7 @@ export function EnamelBadge({
       onClick={onToggle}
       aria-pressed={selected}
       title={title}
-      className={`badge-stage outline-none focus:outline-none focus-visible:outline-none ${stageClassName}`}
+      className={`badge-stage rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${stageClassName}`}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
       <div className="badge h-full w-full">

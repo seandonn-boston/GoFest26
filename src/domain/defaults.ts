@@ -16,7 +16,6 @@ export function makeDefaultInput(boss: RaidBoss): BossInput {
     bossId: boss.id,
     selected: true,
     counts: { standard: 1, shadow: 0, purified: 0 },
-    extraXl: 0,
     current: { candy: 0, xlCandy: 0, megaEnergy: 0, level: 40, megaLevel: startMegaLevel },
     // Mega bosses default to "just the mega level" (no leveling) since that's the
     // headline use case; 5★ legendaries default to a full level 40→50 climb.

@@ -21,6 +21,12 @@ export function TiltProvider() {
   const requestRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    // Respect the OS "reduce motion" setting: pin the tilt flat and run nothing.
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      document.documentElement.style.setProperty("--tilt-x", "0");
+      document.documentElement.style.setProperty("--tilt-y", "0");
+      return;
+    }
     // Latest device orientation offset from "held vertical" (gamma, beta-90).
     let oriX = 0;
     let oriY = 0;
@@ -41,6 +47,10 @@ export function TiltProvider() {
     let raf = 0;
     let gyroOn = false;
     const root = document.documentElement;
+    // Last values written to the DOM — skip the setProperty when unchanged so a
+    // resting card stops touching the DOM every frame (battery on mobile).
+    let lastX = "";
+    let lastY = "";
 
     const BASE_FOLLOW = 0.02; // how fast a held tilt decays back to flat (~1s)
     const DEADZONE = 0.12; // firmer nudge required before any motion begins
@@ -83,8 +93,16 @@ export function TiltProvider() {
       velY *= DAMP;
       curY += velY;
 
-      root.style.setProperty("--tilt-x", curX.toFixed(3));
-      root.style.setProperty("--tilt-y", curY.toFixed(3));
+      const nx = curX.toFixed(3);
+      const ny = curY.toFixed(3);
+      if (nx !== lastX) {
+        root.style.setProperty("--tilt-x", nx);
+        lastX = nx;
+      }
+      if (ny !== lastY) {
+        root.style.setProperty("--tilt-y", ny);
+        lastY = ny;
+      }
       raf = requestAnimationFrame(loop);
     };
 
@@ -139,7 +157,7 @@ export function TiltProvider() {
     <button
       type="button"
       onClick={() => requestRef.current()}
-      className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-black/70 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg backdrop-blur active:scale-95"
+      className="fixed bottom-4 left-4 z-50 flex max-w-[45vw] items-center gap-1.5 truncate rounded-full border border-amber-300/40 bg-black/70 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg backdrop-blur active:scale-95"
     >
       <span aria-hidden>🧭</span> Enable motion tilt
     </button>

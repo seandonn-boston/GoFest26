@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { scanScreenshot, type ScanResult } from "@/lib/screenshotOcr";
 import { makeThumbnail } from "@/lib/thumbnail";
+import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { formatNumber } from "@/lib/format";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 
@@ -42,6 +43,12 @@ export function CardScan({
     const file = e.target.files?.[0];
     if (fileRef.current) fileRef.current.value = "";
     if (!file) return;
+    const tooBig = uploadError(file);
+    if (tooBig) {
+      setError(tooBig);
+      setState("error");
+      return;
+    }
     setState("scanning");
     setError("");
     setResult(null);
@@ -58,7 +65,7 @@ export function CardScan({
       setResult(scan);
       setState("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Scan failed");
+      setError(looksHeic(file) ? HEIC_HINT : err instanceof Error ? err.message : "Scan failed");
       setState("error");
     }
   }
@@ -96,13 +103,13 @@ export function CardScan({
       </div>
 
       {state === "scanning" ? <p className="mt-1.5 text-[11px] text-slate-400">Scanning…</p> : null}
-      {state === "error" ? <p className="mt-1.5 text-[11px] text-rose-300">⚠ {error}</p> : null}
+      {state === "error" ? <p className="mt-1.5 text-[11px] text-rose-300 break-words">⚠ {error}</p> : null}
       {state === "done" ? (
         chips.length ? (
           <div className="mt-1.5">
             <div className="flex flex-wrap gap-1">
-              {chips.map((c) => (
-                <span key={c} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
+              {chips.map((c, i) => (
+                <span key={`${i}-${c}`} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
                   {c}
                 </span>
               ))}
