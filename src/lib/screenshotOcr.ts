@@ -138,7 +138,9 @@ function numVal(text: string): number | null {
 }
 
 /** Word boxes from whichever shape Tesseract provides (NOT both — `data.words`
- *  and `data.blocks` hold the SAME words, so merging double-counts every value). */
+ *  and `data.blocks` hold the SAME words, so merging double-counts every value).
+ *  Reading a single source keeps every distinct stat, even ones that legitimately
+ *  share a number (e.g. Energy X 0 and Energy Y 0). */
 function collectWords(data: TData): Word[] {
   let raw: TWord[] = [];
   if (data.words?.length) {
@@ -148,15 +150,7 @@ function collectWords(data: TData): Word[] {
       for (const p of b.paragraphs ?? [])
         for (const l of p.lines ?? []) for (const w of l.words ?? []) raw.push(w);
   }
-  const out = raw.filter((w) => w.bbox && w.text.trim()).map((w) => ({ text: w.text.trim(), ...w.bbox! }));
-  // Safety dedupe: drop words at a near-identical position with the same text.
-  const seen = new Set<string>();
-  return out.filter((w) => {
-    const key = `${w.text}@${Math.round(w.x0 / 6)},${Math.round(w.y0 / 6)}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return raw.filter((w) => w.bbox && w.text.trim()).map((w) => ({ text: w.text.trim(), ...w.bbox! }));
 }
 
 function speciesLeftOf(words: Word[], anchor: Word): string {
