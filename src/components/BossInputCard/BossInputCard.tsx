@@ -74,7 +74,7 @@ export function BossInputCard({
             <h3 className="text-sm font-semibold">{boss.name}</h3>
             <TierBadge tier={boss.tier} />
             {regionLabel ? <Badge>{regionLabel}</Badge> : null}
-            {remoteOnly ? <Badge className="border-amber-400/40 text-amber-200">Remote</Badge> : null}
+            {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
           </div>
           <p className="mt-0.5 text-[11px] text-slate-400">🗓 {describeAvailability(boss)}</p>
         </div>

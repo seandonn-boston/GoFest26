@@ -2,6 +2,7 @@
 
 import { RAID_BOSSES, HABITATS, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss, GAME_CONFIG } from "@/data";
 import type { EventDay } from "@/domain/types";
+import { bossIsLocal } from "@/domain/region";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
@@ -13,6 +14,7 @@ const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 export function BossList() {
   const inputs = usePlannerStore((s) => s.inputs);
   const toggleSelected = usePlannerStore((s) => s.toggleSelected);
+  const region = usePlannerStore((s) => s.settings.region);
 
   const selectedCount = Object.values(inputs).filter((i) => i.selected).length;
   const start = GAME_CONFIG.event.hourStartLocal;
@@ -37,6 +39,10 @@ export function BossList() {
         <h2 className="text-lg font-semibold">1. Pick your raid targets</h2>
         <span className="text-sm text-slate-400">{selectedCount} selected</span>
       </div>
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+        <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span>{" "}
+        = not raidable in {region.label}; needs a Remote Raid Pass (capped per day).
+      </p>
 
       {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
       <div className="mb-5 grid grid-cols-2 gap-3">
@@ -69,6 +75,7 @@ export function BossList() {
                   boss={boss}
                   selected={!!inputs[boss.id]?.selected}
                   onToggle={() => toggleSelected(boss.id)}
+                  remoteOnly={!bossIsLocal(boss, region)}
                 />
               ))}
             </div>
