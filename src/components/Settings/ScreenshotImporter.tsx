@@ -92,7 +92,7 @@ export function ScreenshotImporter() {
       try {
         scan = await scanScreenshot(files[i]);
       } catch {
-        scan = { species: null, megaEnergies: [], capturedAt: files[i].lastModified || 0, readAnything: false };
+        scan = { species: null, detectedName: null, megaEnergies: [], capturedAt: files[i].lastModified || 0, readAnything: false };
       }
       const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
       next.push({ id: i, fileName: files[i].name, scan, key });
@@ -161,6 +161,11 @@ export function ScreenshotImporter() {
                         </span>
                       ))}
                     </div>
+                    {!OPTION_BY_KEY.has(r.key) && r.scan.detectedName ? (
+                      <p className="mb-1.5 text-[11px] text-amber-300">
+                        ⚠ {cap(r.scan.detectedName)} isn’t available for raids during this event.
+                      </p>
+                    ) : null}
                     <select
                       value={r.key}
                       onChange={(e) => setKey(r.id, e.target.value)}

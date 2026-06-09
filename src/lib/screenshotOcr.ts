@@ -107,8 +107,10 @@ export interface EnergyHit {
 }
 
 export interface ScanResult {
-  /** Normalized species (lowercase letters), from the energy/candy label. */
+  /** Roster species key when a candy/energy label matches a raid target, else null. */
   species: string | null;
+  /** The species read from the label (even if not a raid target) — for warnings. */
+  detectedName: string | null;
   candy?: number;
   xlCandy?: number;
   /** Mega/Primal energies, top-to-bottom, each tagged with its label species. */
@@ -233,19 +235,18 @@ interface NumTok {
  *   Stardust | Candy | XL            (non-mega: one row)
  *   Stardust | Candy / XL | Energy   (mega: 2×2)
  *   …with a third row for the second Energy (Mewtwo/Charizard X & Y)
- * Stardust is the largest number and anchors the grid; CP/HP/weight are dropped
- * by keeping only the lower portion of the image.
+ * Stardust is the largest number and anchors the grid; CP/HP/weight sit ABOVE it
+ * so they're excluded by the "right-of / below Stardust" logic — which also makes
+ * this work no matter how far the screenshot is scrolled.
  */
 export function parseByGrid(words: Word[]): GridValues | null {
   if (words.length === 0) return null;
-  const H = Math.max(...words.map((w) => w.y1), 1);
   const toks: NumTok[] = words
     .map((w) => {
       const v = numVal(w.text);
       return v === null ? null : { value: v, x: cx(w), y: cy(w), h: w.y1 - w.y0 || 18 };
     })
-    .filter((t): t is NumTok => t !== null)
-    .filter((t) => t.y > H * 0.4); // stats live in the lower portion
+    .filter((t): t is NumTok => t !== null);
   if (toks.length < 2) return null;
 
   const stardust = toks.reduce((a, b) => (b.value > a.value ? b : a));
@@ -399,6 +400,29 @@ export function fuzzyMatchSpecies(text: string, vocab: SpeciesVocab[]): string |
   return best?.key ?? null;
 }
 
+/**
+ * Resolve the species from the candy/energy LABELS only (never arbitrary text,
+ * which used to match e.g. "Max Spirit" -> Mesprit). Energy labels (the form,
+ * e.g. CHARIZARD) win over candy labels (the base form, e.g. CHARMANDER).
+ * Returns the matched roster key (raid target) and the read name (for warnings).
+ */
+export function chooseSpecies(
+  energySpecies: string[],
+  candySpecies: string[],
+  vocab: SpeciesVocab[],
+): { key: string | null; name: string | null } {
+  const candidates = [...energySpecies, ...candySpecies].map((s) => s.toLowerCase().replace(/[^a-z]/g, "")).filter(Boolean);
+  let key: string | null = null;
+  for (const c of candidates) {
+    const m = fuzzyMatchSpecies(c, vocab);
+    if (m) {
+      key = m;
+      break;
+    }
+  }
+  return { key, name: candidates[0] ?? null };
+}
+
 export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawText = ""): ScanResult {
   const candy = entries.find((e) => e.kind === "candy")?.value;
   const xlCandy = entries.find((e) => e.kind === "xlCandy")?.value;
@@ -406,6 +430,7 @@ export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawTe
   const speciesRaw = energy[0]?.species || entries.find((e) => e.kind === "candy" || e.kind === "xlCandy")?.species || "";
   return {
     species: normSpecies(speciesRaw) || null,
+    detectedName: normSpecies(speciesRaw) || null,
     candy,
     xlCandy,
     megaEnergies: energy.map((e) => ({ value: e.value, species: normSpecies(e.species) || null })),
@@ -496,23 +521,26 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
   if (!labelEntries.length) labelEntries = parseEntriesFromText(data.text);
   const fromLabels = aggregateEntries(labelEntries, capturedAt, data.text || "");
 
-  // Snap the species to the roster vocabulary (tolerates OCR slips); fall back
-  // to the raw label species only if nothing matches.
-  const species = fuzzyMatchSpecies(data.text || "", ROSTER_VOCAB) ?? fromLabels.species;
+  // Species comes ONLY from the candy/energy labels (not arbitrary text), so
+  // "Max Spirit" etc. can't masquerade as a species. Energy label (the form)
+  // wins over candy label (the base form).
+  const energySpecies = labelEntries.filter((e) => e.kind === "energy").map((e) => e.species);
+  const candySpecies = labelEntries.filter((e) => e.kind === "candy" || e.kind === "xlCandy").map((e) => e.species);
+  const resolved = chooseSpecies(energySpecies, candySpecies, ROSTER_VOCAB);
 
-  // Candy/XL: trust the number grid (positional) when it reads, else labels.
+  // Labels anchor on their own row, so they read the correct value regardless of
+  // scroll position and ignore stray numbers (e.g. Max-Move levels). Grid/text
+  // order is the fallback when a label didn't read.
   const grid = parseByGrid(words) ?? parseByTextOrder(data.text || "");
-  const candy = grid?.candy ?? fromLabels.candy;
-  const xlCandy = grid?.xlCandy ?? fromLabels.xlCandy;
-  // Energies: prefer the LABEL parse — it tags each energy with its own species
-  // (so two-species pages like Ralts route correctly). Fall back to the grid's
-  // species-less values only if no energy labels were read.
+  const candy = fromLabels.candy ?? grid?.candy;
+  const xlCandy = fromLabels.xlCandy ?? grid?.xlCandy;
   const megaEnergies: EnergyHit[] = fromLabels.megaEnergies.length
     ? fromLabels.megaEnergies
     : (grid?.megaEnergies ?? []).map((value) => ({ value, species: null }));
 
   return {
-    species,
+    species: resolved.key,
+    detectedName: resolved.name,
     candy,
     xlCandy,
     megaEnergies,
