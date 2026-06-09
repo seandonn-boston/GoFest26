@@ -8,6 +8,7 @@ import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
+import { ScreenshotImporter } from "@/components/Settings/ScreenshotImporter";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ResearchPanel } from "@/components/Research/ResearchPanel";
@@ -82,6 +83,12 @@ export default function Home() {
                 </button>
               </div>
               <SearchStringBar />
+              <div className="brutal rounded-xl bg-gofest-panel/80 p-3">
+                <div className="mb-2 font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
+                  Bulk import from screenshots
+                </div>
+                <ScreenshotImporter />
+              </div>
               {mewtwoSelected ? (
                 <MewtwoCard
                   bossX={getBoss(MEWTWO_X_ID)!}

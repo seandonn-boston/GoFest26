@@ -116,7 +116,7 @@ function speciesLeftOf(words: Word[], anchor: Word): string {
 export function parseEntries(words: Word[]): StatEntry[] {
   if (words.length === 0) return [];
   const width = Math.max(...words.map((w) => w.x1), 1);
-  const xTol = width * 0.26;
+  const xTol = width * 0.33;
   const numbers = words
     .map((w) => ({ value: numVal(w.text), x: cx(w), y: cy(w) }))
     .filter((n): n is { value: number; x: number; y: number } => n.value !== null);
@@ -197,9 +197,46 @@ export function aggregateEntries(entries: StatEntry[], capturedAt: number): Scan
   };
 }
 
+/**
+ * Preprocess for OCR: grayscale + strong contrast (whitening the colorful photo
+ * header, keeping the dark stat text crisp) so a *full* screenshot reads as well
+ * as a tight crop — no fragile fixed cropping. Falls back to the raw file if the
+ * canvas pipeline is unavailable.
+ */
+async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
+  if (typeof document === "undefined" || typeof createImageBitmap !== "function") return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxW = 1600;
+    const scale = bitmap.width > maxW ? maxW / bitmap.width : 1;
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const img = ctx.getImageData(0, 0, w, h);
+    const d = img.data;
+    const C = 1.7; // contrast
+    for (let i = 0; i < d.length; i += 4) {
+      let g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      g = (g - 140) * C + 150; // boost contrast, lift the background toward white
+      d[i] = d[i + 1] = d[i + 2] = g < 0 ? 0 : g > 255 ? 255 : g;
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  } catch {
+    return file;
+  }
+}
+
 export async function scanScreenshot(file: File): Promise<ScanResult> {
   const Tesseract = await loadTesseract();
-  const { data } = await Tesseract.recognize(file, "eng");
+  const image = await preprocess(file);
+  const { data } = await Tesseract.recognize(image, "eng");
   const words = collectWords(data);
   let entries = parseEntries(words);
   if (!entries.length) entries = parseEntriesFromText(data.text);
