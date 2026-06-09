@@ -10,13 +10,17 @@ import { Badge, TierBadge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
+import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { PresetPicker } from "./PresetPicker";
+import { CardScan } from "./CardScan";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
   xlCandy: "XL Candy",
   megaEnergy: "Mega Energy",
 };
+
+const VARIANT_LABEL = { standard: "Regular", shadow: "Shadow", purified: "Purified" } as const;
 
 export function BossInputCard({
   boss,
@@ -28,8 +32,6 @@ export function BossInputCard({
   planningRaidsPerHour: number;
 }) {
   const input = usePlannerStore((s) => s.inputs[boss.id]);
-  const setCount = usePlannerStore((s) => s.setCount);
-  const setExtraXl = usePlannerStore((s) => s.setExtraXl);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
@@ -44,8 +46,7 @@ export function BossInputCard({
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
   const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
-  const counts = input.counts ?? { standard: 1, shadow: 0, purified: 0 };
-  const extraXl = input.extraXl ?? 0;
+  const toMax = xlToMaxRemaining(input.current.level, input.current.xlCandy);
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
   const windowSlots = bossWindowSlots(boss, planningRaidsPerHour);
@@ -82,6 +83,18 @@ export function BossInputCard({
 
       {boss.note ? <p className="mt-2 text-[11px] text-slate-400">💡 {boss.note}</p> : null}
 
+      <div className="mt-3">
+        <CardScan
+          onApply={(s) => {
+            if (s.candy !== undefined) setCurrent(boss.id, "candy", s.candy);
+            if (s.xlCandy !== undefined) setCurrent(boss.id, "xlCandy", s.xlCandy);
+            if (boss.rewardsCurrencies.includes("megaEnergy") && s.megaEnergies[0] !== undefined) {
+              setCurrent(boss.id, "megaEnergy", s.megaEnergies[0]);
+            }
+          }}
+        />
+      </div>
+
       {/* Inputs */}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {boss.rewardsCurrencies.map((c) => (
@@ -106,19 +119,19 @@ export function BossInputCard({
         ) : null}
       </div>
 
-      {/* How many of each variant to take to the target level */}
+      {/* XL Candy still needed to max (40→50), computed from current level + XL. */}
       {wantsLeveling ? (
         <div className="mt-2">
-          <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">How many to max</div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <NumberInput label="Regular (296)" value={counts.standard} min={0} max={99} onChange={(v) => setCount(boss.id, "standard", v)} />
-            <NumberInput label="Shadow (360)" value={counts.shadow} min={0} max={99} onChange={(v) => setCount(boss.id, "shadow", v)} />
-            <NumberInput label="Purified (272)" value={counts.purified} min={0} max={99} onChange={(v) => setCount(boss.id, "purified", v)} />
-            <NumberInput label="+ Extra XL" value={extraXl} min={0} onChange={(v) => setExtraXl(boss.id, v)} />
+          <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">XL Candy to max (→ lvl 50)</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(["standard", "shadow", "purified"] as const).map((v) => (
+              <div key={v} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-1.5 text-center">
+                <div className="text-base font-bold text-gofest-accent2">{formatNumber(toMax[v])}</div>
+                <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
+              </div>
+            ))}
           </div>
-          {isMega ? (
-            <p className="mt-1 text-[11px] text-slate-500">Shadow Pokémon can&apos;t Mega Evolve, so they add XL but no Mega Energy.</p>
-          ) : null}
+          <p className="mt-1 text-[10px] text-slate-500">Remaining XL Candy to reach level 50 from your current level &amp; XL on hand.</p>
         </div>
       ) : null}
 
