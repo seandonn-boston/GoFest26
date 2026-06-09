@@ -137,7 +137,7 @@ const alpha = (w: Word) => w.text.toLowerCase().replace(/[^a-z]/g, "");
 const isCandyW = (a: string) => a.includes("cand");
 const isEnergyW = (a: string) => a.includes("ener");
 const isXlW = (a: string) => a === "xl" || a === "xi";
-const isStopW = (a: string) => isCandyW(a) || isEnergyW(a) || isXlW(a) || a === "mega" || a === "primal";
+const isStopW = (a: string) => isCandyW(a) || isEnergyW(a) || isXlW(a) || a === "mega" || a === "primal" || a.includes("stardus");
 
 function numVal(text: string): number | null {
   const m = text.replace(/\s/g, "").match(/^[^\d]*(\d[\d,]*)[^\d]*$/);
@@ -411,7 +411,13 @@ export function chooseSpecies(
   candySpecies: string[],
   vocab: SpeciesVocab[],
 ): { key: string | null; name: string | null } {
-  const candidates = [...energySpecies, ...candySpecies].map((s) => s.toLowerCase().replace(/[^a-z]/g, "")).filter(Boolean);
+  // Keep word boundaries (don't collapse to a single alpha run) so a stray prefix
+  // — e.g. the Stardust label leaking in as "stardust giratina" — doesn't fuse
+  // into one token the matcher can't recognize. candidateTokens splits on spaces
+  // and still finds "GIRATINA".
+  const candidates = [...energySpecies, ...candySpecies]
+    .map((s) => s.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
   let key: string | null = null;
   for (const c of candidates) {
     const m = fuzzyMatchSpecies(c, vocab);
@@ -420,7 +426,11 @@ export function chooseSpecies(
       break;
     }
   }
-  return { key, name: candidates[0] ?? null };
+  // The displayed name (for the not-available warning) is the last meaningful word
+  // of the first candidate — the species/form trails any base-form or stray prefix
+  // ("stardust giratina" -> "giratina", "ralts gallade" -> "gallade").
+  const words = (candidates[0] ?? "").split(" ").filter(Boolean);
+  return { key, name: words.length ? words[words.length - 1] : null };
 }
 
 export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawText = ""): ScanResult {

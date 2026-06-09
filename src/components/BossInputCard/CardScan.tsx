@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { scanScreenshot, type ScanResult } from "@/lib/screenshotOcr";
+import { makeThumbnail } from "@/lib/thumbnail";
 import { formatNumber } from "@/lib/format";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 
@@ -19,10 +20,13 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export function CardScan({
   onApply,
+  onThumb,
   expectedSpecies,
   bossLabel,
 }: {
   onApply: (scan: ScanResult) => void;
+  /** Persist a preview thumbnail (data URL) for this species when applied. */
+  onThumb?: (thumb: string, capturedAt: number) => void;
   /** Normalized species key this card expects (e.g. "mewtwo"). */
   expectedSpecies: string;
   /** Display name for mismatch messages. */
@@ -30,6 +34,7 @@ export function CardScan({
 }) {
   const [state, setState] = useState<State>("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [thumb, setThumb] = useState<string | null>(null);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -40,6 +45,7 @@ export function CardScan({
     setState("scanning");
     setError("");
     setResult(null);
+    setThumb(null);
     try {
       const scan = await scanScreenshot(file);
       if (scan.species && scan.species !== expectedSpecies) {
@@ -48,6 +54,7 @@ export function CardScan({
         setState("error");
         return;
       }
+      setThumb(await makeThumbnail(file));
       setResult(scan);
       setState("done");
     } catch (err) {
@@ -58,8 +65,10 @@ export function CardScan({
 
   function apply() {
     if (result) onApply(result);
+    if (thumb && onThumb) onThumb(thumb, result?.capturedAt ?? Date.now());
     setState("idle");
     setResult(null);
+    setThumb(null);
   }
 
   const chips: string[] = [];

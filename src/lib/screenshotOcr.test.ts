@@ -53,6 +53,12 @@ describe("chooseSpecies (from candy/energy labels only)", () => {
     // Charizard isn't in the roster — still named (for the warning), key null.
     expect(chooseSpecies(["charizard", "charizard"], ["charmander"], vocab)).toEqual({ key: null, name: "charizard" });
   });
+
+  it("sees past a leaked 'Stardust' prefix and still resolves the species", () => {
+    // OCR fuses the Stardust label into the candy label: "stardust giratina".
+    const v = [...vocab, { key: "giratina", name: "GIRATINA" }];
+    expect(chooseSpecies([], ["stardust giratina"], v)).toEqual({ key: "giratina", name: "giratina" });
+  });
 });
 
 describe("energyForBosses (species-aware association)", () => {

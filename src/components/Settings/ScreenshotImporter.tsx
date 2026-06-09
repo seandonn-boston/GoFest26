@@ -6,8 +6,10 @@ import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
 import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotOcr";
+import { makeThumbnail } from "@/lib/thumbnail";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
+import { ImageThumb } from "@/components/ui/ImageThumb";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
@@ -35,6 +37,7 @@ interface Row {
   fileName: string;
   scan: ScanResult;
   key: string; // chosen species key ("" = unassigned)
+  thumb: string | null; // preview data URL
 }
 
 function valueChips(scan: ScanResult): string[] {
@@ -74,6 +77,7 @@ function applyScan(
 export function ScreenshotImporter() {
   const setSelected = usePlannerStore((s) => s.setSelected);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
+  const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
@@ -96,8 +100,9 @@ export function ScreenshotImporter() {
       } catch {
         scan = { species: null, detectedName: null, megaEnergies: [], capturedAt: files[i].lastModified || 0, readAnything: false };
       }
+      const thumb = await makeThumbnail(files[i]);
       const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
-      next.push({ id: i, fileName: files[i].name, scan, key });
+      next.push({ id: i, fileName: files[i].name, scan, key, thumb });
     }
     setRows(next);
     setBusy(false);
@@ -121,12 +126,21 @@ export function ScreenshotImporter() {
     for (const [key, r] of byKey) {
       const opt = OPTION_BY_KEY.get(key)!;
       applyScan(r.scan, opt.bosses, setSelected, setCurrent);
+      if (r.thumb) setScreenshot(key, r.thumb, r.scan.capturedAt);
       labels.push(opt.label);
     }
     setSummary(labels.length ? `Filled ${labels.length}: ${labels.join(", ")}` : "Pick a Pokémon for each screenshot first.");
   }
 
   const anyAssignable = rows.some((r) => r.scan.readAnything);
+  // Same species → only the latest screenshot counts; earlier ones are superseded.
+  const latestIdByKey = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.key) continue;
+    const cur = latestIdByKey.get(r.key);
+    const curRow = cur !== undefined ? rows.find((x) => x.id === cur) : undefined;
+    if (!curRow || r.scan.capturedAt >= curRow.scan.capturedAt) latestIdByKey.set(r.key, r.id);
+  }
 
   return (
     <div className="space-y-3">
@@ -152,46 +166,61 @@ export function ScreenshotImporter() {
         <ul className="space-y-2">
           {rows.map((r) => {
             const chips = valueChips(r.scan);
+            const superseded = !!r.key && latestIdByKey.get(r.key) !== r.id;
+            // A superseded duplicate: drop its preview/data, just say why.
+            if (superseded) {
+              const label = OPTION_BY_KEY.get(r.key)?.label ?? cap(r.key);
+              return (
+                <li key={r.id} className="rounded-sm border border-dashed border-amber-400/30 bg-gofest-bg/20 px-2 py-1.5">
+                  <p className="text-[11px] text-amber-300/80">
+                    ↪ Dropped an earlier {label} screenshot — only your most-recent one is used.
+                  </p>
+                </li>
+              );
+            }
             return (
-              <li key={r.id} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-2">
-                {r.scan.readAnything ? (
-                  <>
-                    <div className="mb-1.5 flex flex-wrap gap-1">
-                      {chips.map((c) => (
-                        <span key={c} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                    {!OPTION_BY_KEY.has(r.key) && r.scan.detectedName ? (
-                      <p className="mb-1.5 text-[11px] text-amber-300">
-                        ⚠ {cap(r.scan.detectedName)} isn’t available for raids during this event.
+              <li key={r.id} className="flex gap-2 rounded-sm border border-white/10 bg-gofest-bg/40 p-2">
+                {r.thumb ? <ImageThumb src={r.thumb} alt={r.fileName} size={52} /> : null}
+                <div className="min-w-0 flex-1">
+                  {r.scan.readAnything ? (
+                    <>
+                      <div className="mb-1.5 flex flex-wrap gap-1">
+                        {chips.map((c) => (
+                          <span key={c} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                      {!OPTION_BY_KEY.has(r.key) && r.scan.detectedName ? (
+                        <p className="mb-1.5 text-[11px] text-amber-300">
+                          ⚠ {cap(r.scan.detectedName)} isn’t available for raids during this event.
+                        </p>
+                      ) : null}
+                      <select
+                        value={r.key}
+                        onChange={(e) => setKey(r.id, e.target.value)}
+                        className={`w-full rounded-sm border bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2 ${
+                          r.key ? "border-gofest-accent2/50 text-white" : "border-white/15 text-slate-300"
+                        }`}
+                      >
+                        <option value="">— pick the Pokémon —</option>
+                        {SPECIES_OPTIONS.map((o) => (
+                          <option key={o.key} value={o.key}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <div>
+                      <p className="text-[11px] text-amber-200">
+                        ⚠ Couldn’t read {r.fileName}
+                        {r.scan.rawText ? <> — OCR saw: “{previewOcr(r.scan.rawText)}”</> : ""}.
                       </p>
-                    ) : null}
-                    <select
-                      value={r.key}
-                      onChange={(e) => setKey(r.id, e.target.value)}
-                      className={`w-full rounded-sm border bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2 ${
-                        r.key ? "border-gofest-accent2/50 text-white" : "border-white/15 text-slate-300"
-                      }`}
-                    >
-                      <option value="">— pick the Pokémon —</option>
-                      {SPECIES_OPTIONS.map((o) => (
-                        <option key={o.key} value={o.key}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </>
-                ) : (
-                  <div>
-                    <p className="text-[11px] text-amber-200">
-                      ⚠ Couldn’t read {r.fileName}
-                      {r.scan.rawText ? <> — OCR saw: “{previewOcr(r.scan.rawText)}”</> : ""}.
-                    </p>
-                    <CopyOcrButton text={r.scan.rawText} />
-                  </div>
-                )}
+                      <CopyOcrButton text={r.scan.rawText} />
+                    </div>
+                  )}
+                </div>
               </li>
             );
           })}
