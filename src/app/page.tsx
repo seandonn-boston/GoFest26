@@ -50,7 +50,7 @@ export default function Home() {
         <header className="relative mb-8">
           <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-gofest-accent2">
             <span>▚ GO_FEST // 2026</span>
-            <span className="text-gofest-accent">● REC</span>
+            <span className="text-gofest-accent">GLOBAL // FREE</span>
           </div>
           <h1 className="glitch-title mt-3 text-[2.6rem] font-extrabold leading-[0.82] tracking-tighter sm:text-7xl">
             GO FEST
