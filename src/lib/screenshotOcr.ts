@@ -98,13 +98,21 @@ export interface StatEntry {
   y: number;
 }
 
+/** One mega/primal energy with the species from ITS OWN label (a single page can
+ *  list two species, e.g. Ralts shows Gallade + Gardevoir energy). */
+export interface EnergyHit {
+  value: number;
+  /** Normalized species from this energy's label (null when read from the grid). */
+  species: string | null;
+}
+
 export interface ScanResult {
   /** Normalized species (lowercase letters), from the energy/candy label. */
   species: string | null;
   candy?: number;
   xlCandy?: number;
-  /** Mega/Primal energies, top-to-bottom (Mewtwo lists X then Y). */
-  megaEnergies: number[];
+  /** Mega/Primal energies, top-to-bottom, each tagged with its label species. */
+  megaEnergies: EnergyHit[];
   /** File timestamp — used to pick the most-recent screenshot per species. */
   capturedAt: number;
   readAnything: boolean;
@@ -400,11 +408,37 @@ export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawTe
     species: normSpecies(speciesRaw) || null,
     candy,
     xlCandy,
-    megaEnergies: energy.map((e) => e.value),
+    megaEnergies: energy.map((e) => ({ value: e.value, species: normSpecies(e.species) || null })),
     capturedAt,
     readAnything: entries.length > 0,
     rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 300),
   };
+}
+
+/**
+ * Assign one energy value per energy-boss. A single boss takes the energy whose
+ * label species matches it (so Gardevoir takes the Gardevoir energy, not
+ * Gallade's); X/Y groups (same species, two bosses) map by top-to-bottom order.
+ */
+export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[]): number[] {
+  if (bosses.length === 1) {
+    const key = speciesKey(bosses[0].name);
+    let bestIdx = -1;
+    let best = Infinity;
+    energies.forEach((e, i) => {
+      if (!e.species) return;
+      const score = editDistance(e.species, key) / Math.max(e.species.length, key.length, 1);
+      if (score < best) {
+        best = score;
+        bestIdx = i;
+      }
+    });
+    const idx = best <= 0.34 ? bestIdx : -1;
+    const val = idx >= 0 ? energies[idx].value : energies[0]?.value;
+    return val !== undefined ? [val] : [];
+  }
+  // X/Y (same species, multiple bosses): map in reading order.
+  return bosses.map((_, i) => energies[i]?.value).filter((v): v is number => v !== undefined);
 }
 
 /**
@@ -466,13 +500,16 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
   // to the raw label species only if nothing matches.
   const species = fuzzyMatchSpecies(data.text || "", ROSTER_VOCAB) ?? fromLabels.species;
 
-  // VALUES come from the NUMBERS, which OCR reliably: by word position (grid)
-  // when boxes exist, else by text reading order. This is primary so a garbled
-  // label can't duplicate one value across Candy/XL/Energy.
+  // Candy/XL: trust the number grid (positional) when it reads, else labels.
   const grid = parseByGrid(words) ?? parseByTextOrder(data.text || "");
   const candy = grid?.candy ?? fromLabels.candy;
   const xlCandy = grid?.xlCandy ?? fromLabels.xlCandy;
-  const megaEnergies = grid && grid.megaEnergies.length ? grid.megaEnergies : fromLabels.megaEnergies;
+  // Energies: prefer the LABEL parse — it tags each energy with its own species
+  // (so two-species pages like Ralts route correctly). Fall back to the grid's
+  // species-less values only if no energy labels were read.
+  const megaEnergies: EnergyHit[] = fromLabels.megaEnergies.length
+    ? fromLabels.megaEnergies
+    : (grid?.megaEnergies ?? []).map((value) => ({ value, species: null }));
 
   return {
     species,

@@ -10,6 +10,7 @@ import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
+import { energyForBosses } from "@/lib/screenshotOcr";
 import { CardScan } from "./CardScan";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
@@ -90,14 +91,14 @@ export function MewtwoCard({
 
         <div className="mb-4">
           <CardScan
-            dualMega
             expectedSpecies="mewtwo"
             bossLabel="Mega Mewtwo"
             onApply={(s) => {
               if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
               if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
-              if (s.megaEnergies[0] !== undefined) setCurrent(bossX.id, "megaEnergy", s.megaEnergies[0]);
-              if (s.megaEnergies[1] !== undefined) setCurrent(bossY.id, "megaEnergy", s.megaEnergies[1]);
+              const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
+              if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
+              if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
             }}
           />
         </div>

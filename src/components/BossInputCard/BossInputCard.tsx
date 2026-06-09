@@ -12,6 +12,7 @@ import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
+import { energyForBosses } from "@/lib/screenshotOcr";
 import { PresetPicker } from "./PresetPicker";
 import { CardScan } from "./CardScan";
 
@@ -91,8 +92,9 @@ export function BossInputCard({
           onApply={(s) => {
             if (s.candy !== undefined) setCurrent(boss.id, "candy", s.candy);
             if (s.xlCandy !== undefined) setCurrent(boss.id, "xlCandy", s.xlCandy);
-            if (boss.rewardsCurrencies.includes("megaEnergy") && s.megaEnergies[0] !== undefined) {
-              setCurrent(boss.id, "megaEnergy", s.megaEnergies[0]);
+            if (boss.rewardsCurrencies.includes("megaEnergy")) {
+              const [v] = energyForBosses(s.megaEnergies, [boss]);
+              if (v !== undefined) setCurrent(boss.id, "megaEnergy", v);
             }
           }}
         />
