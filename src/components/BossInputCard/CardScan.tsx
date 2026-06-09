@@ -8,14 +8,21 @@ type State = "idle" | "scanning" | "done" | "error";
 
 /**
  * Per-card screenshot scan: OCR a single Pokémon detail screenshot (in the
- * browser) and apply its Candy / XL / Mega Energy to this card. Beta — the
- * detected values are shown for review before applying.
+ * browser) and apply its Candy / XL / Mega Energy to this card — but only if
+ * the screenshot's species (read from its labels) matches this card's Pokémon.
+ * Beta — the detected values are shown for review before applying.
  */
 export function CardScan({
   onApply,
+  expectedSpecies,
+  bossLabel,
   dualMega = false,
 }: {
   onApply: (scan: ScanResult) => void;
+  /** Normalized species key this card expects (e.g. "mewtwo"). */
+  expectedSpecies: string;
+  /** Display name for mismatch messages. */
+  bossLabel: string;
   dualMega?: boolean;
 }) {
   const [state, setState] = useState<State>("idle");
@@ -31,7 +38,14 @@ export function CardScan({
     setError("");
     setResult(null);
     try {
-      setResult(await scanScreenshot(file));
+      const scan = await scanScreenshot(file);
+      if (scan.species && scan.species !== expectedSpecies) {
+        const cap = scan.species.charAt(0).toUpperCase() + scan.species.slice(1);
+        setError(`That looks like a ${cap} screenshot, not ${bossLabel} — it won't be applied here.`);
+        setState("error");
+        return;
+      }
+      setResult(scan);
       setState("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed");

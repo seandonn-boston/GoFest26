@@ -11,6 +11,7 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
+import { speciesKey } from "@/lib/pokemonSearch";
 import { PresetPicker } from "./PresetPicker";
 import { CardScan } from "./CardScan";
 
@@ -85,6 +86,8 @@ export function BossInputCard({
 
       <div className="mt-3">
         <CardScan
+          expectedSpecies={speciesKey(boss.name)}
+          bossLabel={boss.name}
           onApply={(s) => {
             if (s.candy !== undefined) setCurrent(boss.id, "candy", s.candy);
             if (s.xlCandy !== undefined) setCurrent(boss.id, "xlCandy", s.xlCandy);

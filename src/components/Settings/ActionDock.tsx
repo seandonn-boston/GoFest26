@@ -6,14 +6,12 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { AssumptionsControls } from "./AssumptionsControls";
 import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
-import { ScreenshotImporter } from "./ScreenshotImporter";
 
-type Panel = "assumptions" | "location" | "import" | "feedback";
+type Panel = "assumptions" | "location" | "feedback";
 
 const ACTIONS: { id: Panel; label: string; icon: string; circle: string }[] = [
   // Rendered top → bottom; the last sits nearest the main FAB.
   { id: "feedback", label: "Feedback", icon: "✎", circle: "bg-gofest-accent text-black" },
-  { id: "import", label: "Import", icon: "📷", circle: "bg-gofest-bone text-black" },
   { id: "location", label: "Location", icon: "📍", circle: "bg-gofest-accent2 text-black" },
   { id: "assumptions", label: "Assumptions", icon: "⚙", circle: "bg-gofest-mewtwo text-white" },
 ];
@@ -21,7 +19,6 @@ const ACTIONS: { id: Panel; label: string; icon: string; circle: string }[] = [
 const TITLES: Record<Panel, string> = {
   assumptions: "⚙ Assumptions",
   location: "📍 Your location",
-  import: "📷 Import from screenshots",
   feedback: "✎ Feedback",
 };
 
@@ -110,7 +107,6 @@ export function ActionDock() {
             <div className="max-h-[72vh] overflow-y-auto px-4 py-4">
               {panel === "assumptions" ? <AssumptionsControls /> : null}
               {panel === "location" ? <LocationControls /> : null}
-              {panel === "import" ? <ScreenshotImporter /> : null}
               {panel === "feedback" ? <FeedbackForm onDone={() => setPanel(null)} /> : null}
             </div>
           </div>

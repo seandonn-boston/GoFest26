@@ -91,6 +91,8 @@ export function MewtwoCard({
         <div className="mb-4">
           <CardScan
             dualMega
+            expectedSpecies="mewtwo"
+            bossLabel="Mega Mewtwo"
             onApply={(s) => {
               if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
               if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
