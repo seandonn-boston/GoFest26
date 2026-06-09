@@ -8,7 +8,7 @@ import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
-import { SettingsPanel } from "@/components/Settings/SettingsPanel";
+import { AssumptionsBar } from "@/components/Settings/AssumptionsBar";
 import { ResearchPanel } from "@/components/Research/ResearchPanel";
 import { LocationPicker } from "@/components/Settings/LocationPicker";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
@@ -32,11 +32,18 @@ export default function Home() {
   const anySelected = mewtwoSelected || otherSelectedBosses.length > 0;
 
   if (!hydrated) {
-    return <main className="relative z-10 min-h-screen" />;
+    return (
+      <>
+        <AssumptionsBar />
+        <main className="relative z-10 min-h-screen" />
+      </>
+    );
   }
 
   return (
-    <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-10">
+    <>
+      <AssumptionsBar />
+      <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-10">
       <TiltProvider />
       <SpriteScaleProvider>
       <SubstituteLoader>
@@ -108,8 +115,6 @@ export default function Home() {
 
           <ResearchPanel />
 
-          <SettingsPanel />
-
           <ScheduleView schedule={summary.schedule} />
 
           {summary.schedule.raids.length > 0 ? (
@@ -127,7 +132,8 @@ export default function Home() {
         </div>
       </SubstituteLoader>
       </SpriteScaleProvider>
-    </main>
+      </main>
+    </>
   );
 }
 
