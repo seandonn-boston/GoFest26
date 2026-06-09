@@ -92,7 +92,8 @@ export function ScreenshotImporter() {
 
     for (const { file, scan } of scans) {
       if (!scan.readAnything || !scan.species) {
-        out.push({ file: file.name, when: scan.capturedAt, status: "unreadable", title: "Couldn't read", detail: "No Candy / XL / Energy found — try a tighter crop." });
+        const detail = scan.rawText ? `OCR read: “${scan.rawText}”` : "No Candy / XL / Energy found — try a tighter crop.";
+        out.push({ file: file.name, when: scan.capturedAt, status: "unreadable", title: "Couldn't read", detail });
         continue;
       }
       const bosses = bossesByKey.get(scan.species);
