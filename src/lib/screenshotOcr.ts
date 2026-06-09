@@ -28,6 +28,7 @@ interface TData {
 interface TWorker {
   setParameters: (p: Record<string, string>) => Promise<unknown>;
   recognize: (image: unknown) => Promise<{ data: TData }>;
+  terminate?: () => Promise<unknown>;
 }
 interface TesseractGlobal {
   recognize: (image: unknown, lang?: string, options?: unknown) => Promise<{ data: TData }>;
@@ -54,7 +55,14 @@ export function loadTesseract(): Promise<TesseractGlobal> {
     s.async = true;
     s.onload = () =>
       window.Tesseract ? resolve(window.Tesseract) : reject(new Error("OCR engine failed to load"));
-    s.onerror = () => reject(new Error("Couldn't load the OCR engine (are you offline?)"));
+    s.onerror = () =>
+      reject(
+        new Error(
+          typeof navigator !== "undefined" && navigator.onLine === false
+            ? "You're offline — the OCR engine couldn't be downloaded. Reconnect and try again."
+            : "Couldn't load the OCR engine (a network or firewall issue blocked the download).",
+        ),
+      );
     document.head.appendChild(s);
   });
   return loader;
@@ -88,6 +96,21 @@ async function getWorker(): Promise<TWorker | null> {
     })();
   }
   return workerP;
+}
+
+// Tesseract holds a worker (~10MB) alive; terminate it after a quiet spell so a
+// one-off scan doesn't pin memory for the whole session. The next scan lazily
+// recreates it.
+let workerIdleTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleWorkerCleanup() {
+  if (typeof window === "undefined") return;
+  if (workerIdleTimer) clearTimeout(workerIdleTimer);
+  workerIdleTimer = setTimeout(() => {
+    const pending = workerP;
+    workerP = null;
+    workerIdleTimer = null;
+    pending?.then((w) => w?.terminate?.()).catch(() => {});
+  }, 60_000);
 }
 
 export interface StatEntry {
@@ -139,8 +162,12 @@ const isEnergyW = (a: string) => a.includes("ener");
 const isXlW = (a: string) => a === "xl" || a === "xi";
 const isStopW = (a: string) => isCandyW(a) || isEnergyW(a) || isXlW(a) || a === "mega" || a === "primal" || a.includes("stardus");
 
-function numVal(text: string): number | null {
-  const m = text.replace(/\s/g, "").match(/^[^\d]*(\d[\d,]*)[^\d]*$/);
+export function numVal(text: string): number | null {
+  // Accept a (possibly label-padded) number that is EITHER plain digits or
+  // properly thousands-grouped ("1,001,623") — but reject malformed grouping
+  // like "1,2,3", which is OCR noise rather than a real value. Leading/trailing
+  // non-digits ("CP ", " XL") are tolerated.
+  const m = text.replace(/\s/g, "").match(/^\D*(\d{1,3}(?:,\d{3})+|\d+)\D*$/);
   if (!m) return null;
   const n = parseInt(m[1].replace(/,/g, ""), 10);
   // No upper cap — Stardust can reach the billions, and OCR may add digits.
@@ -249,8 +276,33 @@ export function parseByGrid(words: Word[]): GridValues | null {
     .filter((t): t is NumTok => t !== null);
   if (toks.length < 2) return null;
 
-  const stardust = toks.reduce((a, b) => (b.value > a.value ? b : a));
-  if (stardust.value < 1000) return null; // need a plausible Stardust anchor
+  // Prefer the Stardust value anchored by its on-screen "STARDUST" label: the
+  // number sits directly above the label. This fixes hoarders whose Candy
+  // exceeds their Stardust (the old max-number heuristic picked Candy) and
+  // low-Stardust players the heuristic would also misread. Fall back to the
+  // largest number when the label didn't OCR.
+  const sdWord = words.find((w) => /stardu/.test(alpha(w)));
+  let stardust: NumTok;
+  let labelAnchored = false;
+  if (sdWord) {
+    const wx = cx(sdWord);
+    const wy = cy(sdWord);
+    const xTol = (sdWord.x1 - sdWord.x0 || 60) * 1.5;
+    const above = toks
+      .filter((t) => t.y < wy && Math.abs(t.x - wx) <= xTol)
+      .sort((a, b) => wy - a.y - (wy - b.y));
+    if (above.length) {
+      stardust = above[0];
+      labelAnchored = true;
+    } else {
+      stardust = toks.reduce((a, b) => (b.value > a.value ? b : a));
+    }
+  } else {
+    stardust = toks.reduce((a, b) => (b.value > a.value ? b : a));
+  }
+  // A labelled Stardust can be tiny (new/spent-out accounts); only require the
+  // 1,000+ plausibility floor when we're guessing via the largest number.
+  if (!labelAnchored && stardust.value < 1000) return null;
   const rowTol = stardust.h * 1.3;
   const others = toks.filter((t) => t !== stardust);
   const row0 = others
@@ -331,7 +383,9 @@ export function parseEntriesFromText(text: string): StatEntry[] {
     pending = null;
     if (value === undefined) continue;
     const m = lower.replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
-    if (/cand/.test(m) && /\bxl?\b|xi/.test(m)) entries.push({ kind: "xlCandy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
+    // Require the full "XL"/"XI" token — a lone "x" (e.g. the Mewtwo X form
+    // letter) must NOT promote a candy line to XL candy.
+    if (/cand/.test(m) && /\b(?:xl|xi)\b/.test(m)) entries.push({ kind: "xlCandy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
     else if (/ener/.test(m)) entries.push({ kind: "energy", species: m.split(/\s+(mega|primal|ener)/)[0].trim(), value, y: y++ });
     else if (/cand/.test(m)) entries.push({ kind: "candy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
   }
@@ -487,7 +541,15 @@ export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[
 async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
   if (typeof document === "undefined" || typeof createImageBitmap !== "function") return file;
   try {
-    const bitmap = await createImageBitmap(file);
+    // Respect EXIF orientation so a sideways camera photo is uprighted before
+    // OCR (screenshots have no EXIF and are unaffected). Fall back if the
+    // options bag isn't supported.
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      bitmap = await createImageBitmap(file);
+    }
     const maxW = 1600;
     const scale = bitmap.width > maxW ? maxW / bitmap.width : 1;
     const w = Math.round(bitmap.width * scale);
@@ -518,15 +580,9 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
   }
 }
 
-export async function scanScreenshot(file: File): Promise<ScanResult> {
-  const Tesseract = await loadTesseract();
-  const image = await preprocess(file);
-  // Prefer the sparse-text worker (better on scattered UI text); fall back to
-  // the simple recognize() if the worker API isn't available.
-  const worker = await getWorker();
-  const { data } = worker ? await worker.recognize(image) : await Tesseract.recognize(image, "eng");
+/** Turn one OCR pass into a ScanResult (shared by the main + dark-retry passes). */
+function assembleResult(data: TData, capturedAt: number): ScanResult {
   const words = collectWords(data);
-  const capturedAt = file.lastModified || Date.now();
 
   // Labels are best-effort (OCR garbles them) — used only for SPECIES.
   let labelEntries = parseEntries(words);
@@ -560,4 +616,33 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
     readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0,
     rawText: fromLabels.rawText,
   };
+}
+
+export async function scanScreenshot(file: File): Promise<ScanResult> {
+  const Tesseract = await loadTesseract();
+  // Prefer the sparse-text worker (better on scattered UI text); fall back to
+  // the simple recognize() if the worker API isn't available.
+  const worker = await getWorker();
+  const recognize = (img: unknown): Promise<TData> =>
+    worker ? worker.recognize(img).then((r) => r.data) : Tesseract.recognize(img, "eng").then((r) => r.data);
+
+  const capturedAt = file.lastModified || Date.now();
+  try {
+    const processed = await preprocess(file);
+    let result = assembleResult(await recognize(processed), capturedAt);
+    // Dark / low-contrast screenshots can be crushed by the levels curve — if
+    // the processed image read nothing, retry once on the raw file (Tesseract's
+    // own binarization) before giving up.
+    if (!result.readAnything && processed !== file) {
+      try {
+        const retry = assembleResult(await recognize(file), capturedAt);
+        if (retry.readAnything) result = retry;
+      } catch {
+        /* keep the first result */
+      }
+    }
+    return result;
+  } finally {
+    scheduleWorkerCleanup();
+  }
 }

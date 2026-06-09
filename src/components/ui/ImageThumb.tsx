@@ -14,7 +14,13 @@ export function ImageThumb({ src, alt, size = 48 }: { src: string; alt: string; 
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Lock background scroll while the lightbox is open.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open]);
 
   return (
@@ -32,7 +38,7 @@ export function ImageThumb({ src, alt, size = 48 }: { src: string; alt: string; 
 
       {open ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/85 p-4"
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"

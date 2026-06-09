@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateEntries, chooseSpecies, energyForBosses, fuzzyMatchSpecies, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
+import { aggregateEntries, chooseSpecies, energyForBosses, fuzzyMatchSpecies, numVal, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
 import { buildSearchString, pokemonSearchName, speciesKey } from "./pokemonSearch";
 import { RAID_BOSSES } from "@/data";
 
@@ -130,10 +130,58 @@ describe("parseByGrid (layout-aware number grid)", () => {
   });
 });
 
+describe("parseByGrid (Stardust anchored by its label)", () => {
+  const n = (text: string, x: number, y: number) => ({ text, x0: x, y0: y, x1: x + 60, y1: y + 24 });
+
+  it("anchors on the labelled Stardust even when Candy is the larger number (hoarder)", () => {
+    const words = [
+      n("1,200", 100, 1000), // Stardust value
+      n("STARDUST", 100, 1030), // its label, directly below
+      n("5,000", 400, 1000), // Candy > Stardust would fool the max-number heuristic
+      n("98", 700, 1000),
+    ];
+    expect(parseByGrid(words)).toEqual({ candy: 5000, xlCandy: 98, megaEnergies: [] });
+  });
+
+  it("accepts a tiny labelled Stardust (new / spent-out account)", () => {
+    const words = [n("300", 100, 1000), n("STARDUST", 100, 1030), n("26", 400, 1000), n("27", 700, 1000)];
+    expect(parseByGrid(words)).toEqual({ candy: 26, xlCandy: 27, megaEnergies: [] });
+  });
+});
+
 describe("parseByTextOrder (no word boxes)", () => {
   it("anchors on the largest number (Stardust) and reads forward", () => {
     expect(parseByTextOrder("4724 192 192 1,001,623 23 47 GYMS")).toEqual({ candy: 23, xlCandy: 47, megaEnergies: [] });
     expect(parseByTextOrder("cp 1,001,623 67 12 9,475 7,500 evolve")).toEqual({ candy: 67, xlCandy: 12, megaEnergies: [9475] });
+  });
+});
+
+describe("numVal (number token parsing)", () => {
+  it("reads plain and properly-grouped numbers, tolerating label padding", () => {
+    expect(numVal("26")).toBe(26);
+    expect(numVal("0")).toBe(0);
+    expect(numVal("1,001,623")).toBe(1001623);
+    expect(numVal("11,001,623")).toBe(11001623); // OCR-mangled Stardust, no cap
+    expect(numVal("CP 4724")).toBe(4724);
+    expect(numVal("9,475 XL")).toBe(9475);
+  });
+
+  it("rejects malformed grouping and non-numbers", () => {
+    expect(numVal("1,2,3")).toBeNull(); // OCR noise, not a real value
+    expect(numVal("GYMS")).toBeNull();
+    expect(numVal("")).toBeNull();
+  });
+});
+
+describe("parseEntriesFromText XL detection", () => {
+  it("does not promote a candy line to XL on a lone 'X' (Mewtwo X form letter)", () => {
+    const e = parseEntriesFromText("100\nMEWTWO CANDY X");
+    expect(e).toEqual([{ kind: "candy", species: "mewtwo", value: 100, y: 0 }]);
+  });
+
+  it("still recognizes a real XL candy label", () => {
+    const e = parseEntriesFromText("27\nMEWTWO CANDY XL");
+    expect(e).toEqual([{ kind: "xlCandy", species: "mewtwo", value: 27, y: 0 }]);
   });
 });
 

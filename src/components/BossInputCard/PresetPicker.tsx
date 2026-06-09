@@ -26,7 +26,7 @@ export function PresetPicker({
             type="button"
             title={p.description}
             onClick={() => onApply(p.id)}
-            className={`rounded-lg border px-2.5 py-1 text-xs transition ${
+            className={`rounded-lg border px-2.5 py-1 text-xs transition outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
               activePresetId === p.id
                 ? "border-gofest-accent bg-gofest-accent/20 text-white"
                 : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"

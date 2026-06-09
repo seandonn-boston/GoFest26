@@ -56,7 +56,13 @@ export function describeAvailability(boss: RaidBoss): string {
   return boss.windows.map(describeWindow).join("  •  ");
 }
 
-/** Max raids obtainable for a boss within its windows at a given raids/hour. */
+/**
+ * Max raids obtainable for a boss within its windows at a given raids/hour.
+ * NOTE: this assumes the boss is up for the whole habitat block. Per the GO Fest
+ * 2026 Global announcement, "Mega and 5★ Raid Bosses rotate hourly following the
+ * habitat schedule", so a specific boss may only appear part of its 3-hour block —
+ * treat this as a generous upper bound (the over-window warning says as much).
+ */
 export function bossWindowSlots(boss: RaidBoss, raidsPerHour: number): number {
   return boss.windows.reduce((sum, wd) => sum + (wd.endHour - wd.startHour) * raidsPerHour, 0);
 }

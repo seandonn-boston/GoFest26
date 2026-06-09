@@ -181,7 +181,8 @@ export function BossInputCard({
             </div>
             {overWindow ? (
               <p className="mt-1.5 text-[11px] text-rose-300">
-                ⚠ More raids than its window allows (~{formatNumber(windowSlots)} max in {describeAvailability(boss)}). Trim the goal or spread across forms.
+                ⚠ More raids than its window allows (~{formatNumber(windowSlots)} max in {describeAvailability(boss)}) — and
+                bosses rotate hourly within a habitat, so you may get fewer. Trim the goal or spread across forms.
               </p>
             ) : null}
           </>
