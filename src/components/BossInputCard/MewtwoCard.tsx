@@ -9,6 +9,7 @@ import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { ScreenshotImport } from "./ScreenshotImport";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -123,6 +124,17 @@ export function MewtwoCard({
               you farm Mewtwo XL from those raids.
             </p>
           ) : null}
+          <div className="mt-3">
+            <ScreenshotImport
+              dualMega
+              onApply={(p) => {
+                if (p.candy !== undefined) setCurrent(ownerId, "candy", p.candy);
+                if (p.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", p.xlCandy);
+                if (p.megaEnergies[0] !== undefined) setCurrent(bossX.id, "megaEnergy", p.megaEnergies[0]);
+                if (p.megaEnergies[1] !== undefined) setCurrent(bossY.id, "megaEnergy", p.megaEnergies[1]);
+              }}
+            />
+          </div>
         </div>
 
         {/* Per-form (only the forms you selected) */}

@@ -7,6 +7,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
+import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ResearchPanel } from "@/components/Research/ResearchPanel";
@@ -80,6 +81,7 @@ export default function Home() {
                   Reset all
                 </button>
               </div>
+              <SearchStringBar />
               {mewtwoSelected ? (
                 <MewtwoCard
                   bossX={getBoss(MEWTWO_X_ID)!}
