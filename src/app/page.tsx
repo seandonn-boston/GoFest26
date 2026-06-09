@@ -10,7 +10,6 @@ import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ResearchPanel } from "@/components/Research/ResearchPanel";
-import { LocationPicker } from "@/components/Settings/LocationPicker";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
@@ -68,8 +67,6 @@ export default function Home() {
 
         <div className="space-y-6">
           <BossList />
-
-          <LocationPicker />
 
           {anySelected ? (
             <section className="space-y-4">
