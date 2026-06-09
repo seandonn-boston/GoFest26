@@ -107,7 +107,10 @@ export function CardScan({
             </button>
           </div>
         ) : (
-          <p className="mt-1.5 text-[11px] text-amber-200">Couldn’t read it — try a tighter crop or enter manually.</p>
+          <p className="mt-1.5 text-[11px] text-amber-200">
+            Couldn’t read it{result?.rawText ? <> — OCR saw: “{result.rawText}”</> : ""}. Try a tighter crop
+            or enter manually.
+          </p>
         )
       ) : null}
     </div>

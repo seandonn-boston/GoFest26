@@ -22,8 +22,13 @@ interface TData {
   words?: TWord[];
   blocks?: { paragraphs?: { lines?: { words?: TWord[] }[] }[] }[];
 }
+interface TWorker {
+  setParameters: (p: Record<string, string>) => Promise<unknown>;
+  recognize: (image: unknown) => Promise<{ data: TData }>;
+}
 interface TesseractGlobal {
   recognize: (image: unknown, lang?: string, options?: unknown) => Promise<{ data: TData }>;
+  createWorker?: (lang?: string, oem?: number, options?: unknown) => Promise<TWorker>;
 }
 
 declare global {
@@ -34,6 +39,7 @@ declare global {
 
 const CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@4.1.4/dist/tesseract.min.js";
 let loader: Promise<TesseractGlobal> | null = null;
+let workerP: Promise<TWorker | null> | null = null;
 
 export function loadTesseract(): Promise<TesseractGlobal> {
   if (typeof window === "undefined") return Promise.reject(new Error("OCR needs a browser"));
@@ -49,6 +55,28 @@ export function loadTesseract(): Promise<TesseractGlobal> {
     document.head.appendChild(s);
   });
   return loader;
+}
+
+/**
+ * A reused worker set to "sparse text" page segmentation (PSM 11) — it finds
+ * text anywhere in the image (good for scattered stat labels/numbers) and always
+ * returns word boxes. Falls back to the simple recognize() if unavailable.
+ */
+async function getWorker(): Promise<TWorker | null> {
+  const T = await loadTesseract();
+  if (!T.createWorker) return null;
+  if (!workerP) {
+    workerP = (async () => {
+      try {
+        const w = await T.createWorker!("eng");
+        await w.setParameters({ tessedit_pageseg_mode: "11" });
+        return w;
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return workerP;
 }
 
 export interface StatEntry {
@@ -69,6 +97,8 @@ export interface ScanResult {
   /** File timestamp — used to pick the most-recent screenshot per species. */
   capturedAt: number;
   readAnything: boolean;
+  /** Raw OCR text (for diagnostics when a read fails). */
+  rawText?: string;
 }
 
 interface Word {
@@ -82,7 +112,11 @@ interface Word {
 const cx = (w: Word) => (w.x0 + w.x1) / 2;
 const cy = (w: Word) => (w.y0 + w.y1) / 2;
 const alpha = (w: Word) => w.text.toLowerCase().replace(/[^a-z]/g, "");
-const STOP = new Set(["candy", "xl", "mega", "energy", "primal"]);
+// Lenient matchers — OCR mangles the stylized PoGo font (e.g. "candv", "eneray").
+const isCandyW = (a: string) => a.includes("cand");
+const isEnergyW = (a: string) => a.includes("ener");
+const isXlW = (a: string) => a === "xl" || a === "xi";
+const isStopW = (a: string) => isCandyW(a) || isEnergyW(a) || isXlW(a) || a === "mega" || a === "primal";
 
 function numVal(text: string): number | null {
   const m = text.replace(/\s/g, "").match(/^[^\d]*(\d[\d,]*)[^\d]*$/);
@@ -107,7 +141,7 @@ function speciesLeftOf(words: Word[], anchor: Word): string {
     .filter((w) => Math.abs(cy(w) - cy(anchor)) < rowH * 0.8 && cx(w) < cx(anchor))
     .sort((a, b) => cx(a) - cx(b))
     .map(alpha)
-    .filter((t) => t.length > 1 && !STOP.has(t))
+    .filter((t) => t.length > 1 && !isStopW(t))
     .join(" ")
     .trim();
 }
@@ -137,15 +171,15 @@ export function parseEntries(words: Word[]): StatEntry[] {
 
   const entries: StatEntry[] = [];
 
-  for (const c of words.filter((w) => alpha(w) === "candy")) {
+  for (const c of words.filter((w) => isCandyW(alpha(w)))) {
     const rowH = c.y1 - c.y0 || 12;
-    const xlRight = words.some((w) => alpha(w) === "xl" && Math.abs(cy(w) - cy(c)) < rowH && cx(w) > cx(c));
+    const xlRight = words.some((w) => isXlW(alpha(w)) && Math.abs(cy(w) - cy(c)) < rowH && cx(w) > cx(c));
     const value = numberAbove(cx(c), cy(c));
     if (value === undefined) continue;
     entries.push({ kind: xlRight ? "xlCandy" : "candy", species: speciesLeftOf(words, c), value, y: cy(c) });
   }
 
-  for (const e of words.filter((w) => alpha(w) === "energy")) {
+  for (const e of words.filter((w) => isEnergyW(alpha(w)))) {
     const value = numberAbove(cx(e), cy(e));
     if (value === undefined) continue;
     entries.push({ kind: "energy", species: speciesLeftOf(words, e), value, y: cy(e) });
@@ -162,7 +196,7 @@ export function parseEntriesFromText(text: string): StatEntry[] {
   let y = 0;
   for (const line of lines) {
     const lower = line.toLowerCase();
-    const isLabel = /candy|mega\s*energy|primal\s*energy/.test(lower);
+    const isLabel = /cand|ener/.test(lower);
     const n = numVal(line);
     if (!isLabel) {
       if (n !== null) pending = n;
@@ -172,17 +206,16 @@ export function parseEntriesFromText(text: string): StatEntry[] {
     pending = null;
     if (value === undefined) continue;
     const m = lower.replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
-    if (/candy\s*xl/.test(m)) entries.push({ kind: "xlCandy", species: m.split(/\s+candy/)[0].trim(), value, y: y++ });
-    else if (/mega\s*energy|primal\s*energy/.test(m))
-      entries.push({ kind: "energy", species: m.split(/\s+(mega|primal)/)[0].trim(), value, y: y++ });
-    else if (/candy/.test(m)) entries.push({ kind: "candy", species: m.split(/\s+candy/)[0].trim(), value, y: y++ });
+    if (/cand/.test(m) && /\bxl?\b|xi/.test(m)) entries.push({ kind: "xlCandy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
+    else if (/ener/.test(m)) entries.push({ kind: "energy", species: m.split(/\s+(mega|primal|ener)/)[0].trim(), value, y: y++ });
+    else if (/cand/.test(m)) entries.push({ kind: "candy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
   }
   return entries;
 }
 
 const normSpecies = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 
-export function aggregateEntries(entries: StatEntry[], capturedAt: number): ScanResult {
+export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawText = ""): ScanResult {
   const candy = entries.find((e) => e.kind === "candy")?.value;
   const xlCandy = entries.find((e) => e.kind === "xlCandy")?.value;
   const energy = entries.filter((e) => e.kind === "energy").sort((a, b) => a.y - b.y);
@@ -194,6 +227,7 @@ export function aggregateEntries(entries: StatEntry[], capturedAt: number): Scan
     megaEnergies: energy.map((e) => e.value),
     capturedAt,
     readAnything: entries.length > 0,
+    rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 300),
   };
 }
 
@@ -236,9 +270,12 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
 export async function scanScreenshot(file: File): Promise<ScanResult> {
   const Tesseract = await loadTesseract();
   const image = await preprocess(file);
-  const { data } = await Tesseract.recognize(image, "eng");
+  // Prefer the sparse-text worker (better on scattered UI text); fall back to
+  // the simple recognize() if the worker API isn't available.
+  const worker = await getWorker();
+  const { data } = worker ? await worker.recognize(image) : await Tesseract.recognize(image, "eng");
   const words = collectWords(data);
   let entries = parseEntries(words);
   if (!entries.length) entries = parseEntriesFromText(data.text);
-  return aggregateEntries(entries, file.lastModified || Date.now());
+  return aggregateEntries(entries, file.lastModified || Date.now(), data.text || "");
 }
