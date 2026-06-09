@@ -11,7 +11,6 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { PresetPicker } from "./PresetPicker";
-import { ScreenshotImport } from "./ScreenshotImport";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -125,18 +124,6 @@ export function BossInputCard({
 
       <div className="mt-2">
         <PresetPicker boss={boss} activePresetId={input.presetId} onApply={(id) => applyPreset(boss.id, id)} />
-      </div>
-
-      <div className="mt-2">
-        <ScreenshotImport
-          onApply={(p) => {
-            if (p.candy !== undefined) setCurrent(boss.id, "candy", p.candy);
-            if (p.xlCandy !== undefined) setCurrent(boss.id, "xlCandy", p.xlCandy);
-            if (boss.rewardsCurrencies.includes("megaEnergy") && p.megaEnergies[0] !== undefined) {
-              setCurrent(boss.id, "megaEnergy", p.megaEnergies[0]);
-            }
-          }}
-        />
       </div>
 
       {/* Catch toggles */}

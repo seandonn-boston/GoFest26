@@ -13,6 +13,14 @@ export function pokemonSearchName(name: string): string {
   return s.trim();
 }
 
+/**
+ * Normalized species key for matching a screenshot's label species to a roster
+ * boss (e.g. "Mega Tyranitar" -> "tyranitar", "Ho-Oh" -> "hooh").
+ */
+export function speciesKey(name: string): string {
+  return pokemonSearchName(name).toLowerCase().replace(/[^a-z]/g, "");
+}
+
 /** Deduped, comma-joined Pokémon GO search string for a set of names. */
 export function buildSearchString(names: string[]): string {
   const seen = new Set<string>();
