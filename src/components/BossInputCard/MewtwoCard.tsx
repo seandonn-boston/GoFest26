@@ -46,14 +46,16 @@ export function MewtwoCard({
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
 
-  if (!inputX || !inputY) return null;
+  const selectedX = !!inputX?.selected;
+  const selectedY = !!inputY?.selected;
+  // Render whenever EITHER form is selected (selecting only X never creates the
+  // Y input, and vice-versa). The per-form columns below are gated individually.
+  if (!selectedX && !selectedY) return null;
 
-  const selectedX = inputX.selected;
-  const selectedY = inputY.selected;
   // The shared Mewtwo (candy/XL/level/variant) lives on a selected form so its
   // leveling is counted exactly once; prefer X when both are selected.
   const ownerId = selectedX ? bossX.id : bossY.id;
-  const owner = selectedX ? inputX : inputY;
+  const owner = (selectedX ? inputX : inputY)!;
   const wantsLeveling = owner.target.level > owner.current.level;
   const counts = owner.counts ?? { standard: 1, shadow: 0, purified: 0 };
   const extraXl = owner.extraXl ?? 0;
@@ -132,14 +134,14 @@ export function MewtwoCard({
               title="Mega Mewtwo X"
               subtitle={describeAvailability(bossX)}
               sprite={bossX.sprite}
-              energy={inputX.current.megaEnergy}
-              megaLevel={inputX.current.megaLevel}
-              targetMegaLevel={inputX.target.megaLevel}
+              energy={inputX!.current.megaEnergy}
+              megaLevel={inputX!.current.megaLevel}
+              targetMegaLevel={inputX!.target.megaLevel}
               onEnergy={(v) => setCurrent(bossX.id, "megaEnergy", v)}
               onMegaLevel={(v) => setCurrent(bossX.id, "megaLevel", v)}
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
-              skipCatch={inputX.skipCatch ?? false}
-              megaBuddy={inputX.megaBuddy ?? true}
+              skipCatch={inputX!.skipCatch ?? false}
+              megaBuddy={inputX!.megaBuddy ?? true}
               onSkipCatch={(v) => setSkipCatch(bossX.id, v)}
               onMegaBuddy={(v) => setMegaBuddy(bossX.id, v)}
               result={resultX}
@@ -151,14 +153,14 @@ export function MewtwoCard({
               title="Mega Mewtwo Y"
               subtitle={describeAvailability(bossY)}
               sprite={bossY.sprite}
-              energy={inputY.current.megaEnergy}
-              megaLevel={inputY.current.megaLevel}
-              targetMegaLevel={inputY.target.megaLevel}
+              energy={inputY!.current.megaEnergy}
+              megaLevel={inputY!.current.megaLevel}
+              targetMegaLevel={inputY!.target.megaLevel}
               onEnergy={(v) => setCurrent(bossY.id, "megaEnergy", v)}
               onMegaLevel={(v) => setCurrent(bossY.id, "megaLevel", v)}
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
-              skipCatch={inputY.skipCatch ?? false}
-              megaBuddy={inputY.megaBuddy ?? true}
+              skipCatch={inputY!.skipCatch ?? false}
+              megaBuddy={inputY!.megaBuddy ?? true}
               onSkipCatch={(v) => setSkipCatch(bossY.id, v)}
               onMegaBuddy={(v) => setMegaBuddy(bossY.id, v)}
               result={resultY}
