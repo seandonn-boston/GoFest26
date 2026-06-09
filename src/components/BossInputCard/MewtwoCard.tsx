@@ -9,12 +9,16 @@ import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { xlToMaxRemaining } from "@/lib/xlToMax";
+import { CardScan } from "./CardScan";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
   xlCandy: "XL Candy",
   megaEnergy: "Mega Energy",
 };
+
+const VARIANT_LABEL = { standard: "Regular", shadow: "Shadow", purified: "Purified" } as const;
 
 // Combined Mewtwo types (X is Psychic/Fighting, Y is Psychic).
 const MEWTWO_TYPES = ["Psychic", "Fighting"];
@@ -39,8 +43,6 @@ export function MewtwoCard({
   const inputX = usePlannerStore((s) => s.inputs[bossX.id]);
   const inputY = usePlannerStore((s) => s.inputs[bossY.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
-  const setCount = usePlannerStore((s) => s.setCount);
-  const setExtraXl = usePlannerStore((s) => s.setExtraXl);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
@@ -57,16 +59,7 @@ export function MewtwoCard({
   const ownerId = selectedX ? bossX.id : bossY.id;
   const owner = (selectedX ? inputX : inputY)!;
   const wantsLeveling = owner.target.level > owner.current.level;
-  const counts = owner.counts ?? { standard: 1, shadow: 0, purified: 0 };
-  const extraXl = owner.extraXl ?? 0;
-
-  // XL/Candy are shared so we store extra XL on the owner only, but the
-  // mega-energy gate (Shadow can't Mega Evolve) reads each form's own counts —
-  // so variant counts are mirrored onto both X and Y.
-  const setCountBoth = (variant: keyof typeof counts, value: number) => {
-    setCount(bossX.id, variant, value);
-    setCount(bossY.id, variant, value);
-  };
+  const toMax = xlToMaxRemaining(owner.current.level, owner.current.xlCandy);
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
@@ -95,6 +88,18 @@ export function MewtwoCard({
           so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
         </p>
 
+        <div className="mb-4">
+          <CardScan
+            dualMega
+            onApply={(s) => {
+              if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
+              if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
+              if (s.megaEnergies[0] !== undefined) setCurrent(bossX.id, "megaEnergy", s.megaEnergies[0]);
+              if (s.megaEnergies[1] !== undefined) setCurrent(bossY.id, "megaEnergy", s.megaEnergies[1]);
+            }}
+          />
+        </div>
+
         {/* Shared Mewtwo */}
         <div className="mb-4 rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gofest-accent2">
@@ -107,16 +112,18 @@ export function MewtwoCard({
             <NumberInput label="Target level" value={owner.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(ownerId, v)} />
           </div>
           <div className="mt-3">
-            <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">How many to max</div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <NumberInput label="Regular (296)" value={counts.standard} min={0} max={99} onChange={(v) => setCountBoth("standard", v)} />
-              <NumberInput label="Shadow (360)" value={counts.shadow} min={0} max={99} onChange={(v) => setCountBoth("shadow", v)} />
-              <NumberInput label="Purified (272)" value={counts.purified} min={0} max={99} onChange={(v) => setCountBoth("purified", v)} />
-              <NumberInput label="+ Extra XL" value={extraXl} min={0} onChange={(v) => setExtraXl(ownerId, v)} />
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">XL Candy to max (→ lvl 50)</div>
+            <div className="grid grid-cols-3 gap-2">
+              {(["standard", "shadow", "purified"] as const).map((v) => (
+                <div key={v} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-1.5 text-center">
+                  <div className="text-base font-bold text-gofest-accent2">{formatNumber(toMax[v])}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
+                </div>
+              ))}
             </div>
             <p className="mt-1.5 text-[11px] text-slate-500">
-              Shadow Mewtwo can&apos;t Mega Evolve, so they add XL Candy but no Mega Energy — only your
-              regular/purified Mewtwo drive the per-form energy below.
+              Remaining XL Candy to reach level 50 from your current level &amp; XL. Mega Energy below is
+              separate and driven by each form&apos;s Mega Level goal.
             </p>
           </div>
           {wantsLeveling ? (

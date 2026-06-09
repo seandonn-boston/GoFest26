@@ -55,27 +55,11 @@ describe("requirements", () => {
     expect(net.xlCandy).toBe(Math.round(GAME_CONFIG.xlToLevel50.standard / 2)); // 148
   });
 
-  it("sums XL across a regular + shadow Mewtwo (656) but mega-evolves once", () => {
-    // One regular + one shadow Mewtwo, both 40→50: XL = 296 + 360 = 656.
-    const base = input("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 0, targetMegaLevel: 4 });
-    const net = computeNetNeed(mewtwoX, { ...base, counts: { standard: 1, shadow: 1, purified: 0 } });
-    expect(net.xlCandy).toBe(GAME_CONFIG.xlToLevel50.standard + GAME_CONFIG.xlToLevel50.shadow); // 656
-    // The regular Mewtwo can Mega Evolve, so energy is still required (counted once).
+  it("needs Mega Energy to climb Mega Levels with none on hand (independent of leveling)", () => {
+    // Mega Level 1 -> 4 with 0 energy held should require the climb, NOT report 0.
+    const net = computeNetNeed(mewtwoX, input("mega-mewtwo-x", { megaLevel: 1, targetMegaLevel: 4, megaEnergy: 0 }));
     const totals = mewtwoX.megaLevelEnergyTotals!;
-    expect(net.megaEnergy).toBe(totals[4] - totals[1]);
-  });
-
-  it("drops Mega Energy when only a Shadow Mewtwo is counted (can't Mega Evolve)", () => {
-    const base = input("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 0, targetMegaLevel: 4 });
-    const net = computeNetNeed(mewtwoX, { ...base, counts: { standard: 0, shadow: 1, purified: 0 } });
-    expect(net.xlCandy).toBe(GAME_CONFIG.xlToLevel50.shadow); // 360
-    expect(net.megaEnergy).toBeUndefined();
-  });
-
-  it("adds extra XL on top of the maxing requirement", () => {
-    const base = input("reshiram", { level: 40, targetLevel: 50 });
-    const net = computeNetNeed(reshiram, { ...base, extraXl: 100 });
-    expect(net.xlCandy).toBe(GAME_CONFIG.xlToLevel50.standard + 100); // 396
+    expect(net.megaEnergy).toBe(totals[4] - totals[1]); // 18580 - 7500 = 11080
   });
 
   it("waives the first-evolution cost for GO Fest pre-unlocked Mewtwo", () => {

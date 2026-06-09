@@ -11,33 +11,26 @@ export function computeGrossRequirement(
   input: BossInput,
 ): Partial<Record<Currency, number>> {
   const out: Partial<Record<Currency, number>> = {};
-  const counts = input.counts ?? { standard: 1, shadow: 0, purified: 0 };
-  const xl = GAME_CONFIG.xlToLevel50;
 
-  // ---- XL Candy (levels 40→50), summed across every Pokémon you want to max ----
-  // XL is spent linearly across the 40→50 band; sum each variant's count × its
-  // XL-to-50 cost (296 standard / 360 shadow / 272 purified), plus any extra.
+  // ---- XL Candy (levels 40→50) to max one Pokémon ----
+  // XL is spent linearly across the 40→50 band at 296 XL for a regular Pokémon.
   const fromLevel = clamp(input.current.level, 40, 50);
   const toLevel = clamp(input.target.level, 40, 50);
   const xlBandFraction = Math.max(0, toLevel - fromLevel) / 10;
-  const xlPerSet =
-    counts.standard * xl.standard + counts.shadow * xl.shadow + counts.purified * xl.purified;
-  const xlNeed = Math.round(xlPerSet * xlBandFraction) + Math.max(0, input.extraXl ?? 0);
+  const xlNeed = Math.round(GAME_CONFIG.xlToLevel50.standard * xlBandFraction);
   if (xlNeed > 0) out.xlCandy = xlNeed;
 
-  // ---- Regular Candy (levels below 40), summed across the counted Pokémon ----
+  // ---- Regular Candy (levels below 40) to raise one Pokémon toward 40 ----
   const candyFrom = clamp(input.current.level, 1, 40);
   const candyTo = clamp(input.target.level, 1, 40);
   const candyFraction = Math.max(0, candyTo - candyFrom) / 39;
-  const totalCount = counts.standard + counts.shadow + counts.purified;
-  const candyNeed = Math.round(GAME_CONFIG.leveling.candyToLevel40 * candyFraction * totalCount);
+  const candyNeed = Math.round(GAME_CONFIG.leveling.candyToLevel40 * candyFraction);
   if (candyNeed > 0) out.candy = candyNeed;
 
   // ---- Mega Energy (mega levels) ----
-  // Only mega-evolvable Pokémon need energy — Shadow Pokémon can't Mega Evolve.
-  // Mega Level is a per-species progression, so energy is counted once.
-  const megaEvolvable = counts.standard + counts.purified > 0;
-  if (boss.megaLevelEnergyTotals && megaEvolvable) {
+  // Energy depends only on the Mega Level goal (a per-species progression),
+  // independent of how the Pokémon is leveled.
+  if (boss.megaLevelEnergyTotals) {
     const totals = boss.megaLevelEnergyTotals;
     // GO Fest-caught specimens come pre-unlocked with >= 1 mega level and waive
     // the initial evolution cost, so the effective starting level is >= 1.
