@@ -122,7 +122,8 @@ function numVal(text: string): number | null {
   const m = text.replace(/\s/g, "").match(/^[^\d]*(\d[\d,]*)[^\d]*$/);
   if (!m) return null;
   const n = parseInt(m[1].replace(/,/g, ""), 10);
-  return Number.isFinite(n) && n >= 0 && n <= 999999 ? n : null;
+  // No upper cap — Stardust can reach the billions, and OCR may add digits.
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 /** Flatten word boxes across Tesseract's various data shapes. */
@@ -186,6 +187,104 @@ export function parseEntries(words: Word[]): StatEntry[] {
   }
 
   return entries;
+}
+
+export interface GridValues {
+  candy?: number;
+  xlCandy?: number;
+  megaEnergies: number[];
+}
+
+interface NumTok {
+  value: number;
+  x: number;
+  y: number;
+  h: number;
+}
+
+/**
+ * Layout-aware value extraction by the number grid (no labels needed — digits
+ * OCR far better than the stylized font). Pokémon GO has three stat layouts:
+ *   Stardust | Candy | XL            (non-mega: one row)
+ *   Stardust | Candy / XL | Energy   (mega: 2×2)
+ *   …with a third row for the second Energy (Mewtwo/Charizard X & Y)
+ * Stardust is the largest number and anchors the grid; CP/HP/weight are dropped
+ * by keeping only the lower portion of the image.
+ */
+export function parseByGrid(words: Word[]): GridValues | null {
+  if (words.length === 0) return null;
+  const H = Math.max(...words.map((w) => w.y1), 1);
+  const toks: NumTok[] = words
+    .map((w) => {
+      const v = numVal(w.text);
+      return v === null ? null : { value: v, x: cx(w), y: cy(w), h: w.y1 - w.y0 || 18 };
+    })
+    .filter((t): t is NumTok => t !== null)
+    .filter((t) => t.y > H * 0.4); // stats live in the lower portion
+  if (toks.length < 2) return null;
+
+  const stardust = toks.reduce((a, b) => (b.value > a.value ? b : a));
+  if (stardust.value < 1000) return null; // need a plausible Stardust anchor
+  const rowTol = stardust.h * 1.3;
+  const others = toks.filter((t) => t !== stardust);
+  const row0 = others
+    .filter((t) => Math.abs(t.y - stardust.y) <= rowTol && t.x > stardust.x)
+    .sort((a, b) => a.x - b.x);
+  const below = others.filter((t) => t.y > stardust.y + rowTol).sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows: NumTok[][] = [];
+  for (const t of below) {
+    const last = rows[rows.length - 1];
+    if (last && Math.abs(t.y - last[0].y) <= rowTol) last.push(t);
+    else rows.push([t]);
+  }
+  rows.forEach((r) => r.sort((a, b) => a.x - b.x));
+
+  const out: GridValues = { megaEnergies: [] };
+  if (row0.length >= 2) {
+    // Non-mega: Stardust | Candy | XL across one row.
+    out.candy = row0[0].value;
+    out.xlCandy = row0[1].value;
+  } else if (row0.length === 1) {
+    // Mega: Stardust | Candy on top; XL | Energy below (+ optional second energy
+    // for Mewtwo/Charizard X & Y).
+    out.candy = row0[0].value;
+    const r1 = rows[0] ?? [];
+    if (r1[0]) out.xlCandy = r1[0].value;
+    if (r1[1]) out.megaEnergies.push(r1[1].value);
+    // Only count a third row as the second energy if it's the same step below as
+    // the grid rows — a far-below number is the "Mega Evolve" cost, not energy.
+    const r2 = rows[1] ?? [];
+    if (r1[0] && r2[0]) {
+      const step = r1[0].y - stardust.y;
+      const gap = r2[0].y - r1[0].y;
+      if (step > 0 && gap <= step * 1.6) out.megaEnergies.push(r2[r2.length - 1].value);
+    }
+  } else {
+    return null;
+  }
+  if (out.candy === undefined && out.xlCandy === undefined && out.megaEnergies.length === 0) return null;
+  return out;
+}
+
+/**
+ * Pure text-order fallback (no word boxes): all numbers in reading order, anchor
+ * on the largest (Stardust), then Candy / XL / Energy follow it. Can't separate a
+ * second energy from the Mega-Evolve cost, so it reads at most one energy — the
+ * position grid handles X/Y.
+ */
+export function parseByTextOrder(text: string): GridValues | null {
+  const nums = (text.match(/\d[\d,]*/g) ?? [])
+    .map((s) => parseInt(s.replace(/,/g, ""), 10))
+    .filter((n) => Number.isFinite(n) && n >= 0);
+  if (nums.length < 3) return null;
+  let maxIdx = 0;
+  for (let i = 1; i < nums.length; i++) if (nums[i] > nums[maxIdx]) maxIdx = i;
+  if (nums[maxIdx] < 1000) return null; // need a plausible Stardust anchor
+  const after = nums.slice(maxIdx + 1);
+  if (after.length < 2) return null;
+  const out: GridValues = { candy: after[0], xlCandy: after[1], megaEnergies: [] };
+  if (after[2] !== undefined) out.megaEnergies.push(after[2]);
+  return out;
 }
 
 /** Text-line fallback (single column only; used when no word boxes exist). */
@@ -277,5 +376,22 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
   const words = collectWords(data);
   let entries = parseEntries(words);
   if (!entries.length) entries = parseEntriesFromText(data.text);
-  return aggregateEntries(entries, file.lastModified || Date.now(), data.text || "");
+  const result = aggregateEntries(entries, file.lastModified || Date.now(), data.text || "");
+
+  // Fallback: if label-position found no values, infer them from the number grid
+  // (digits OCR better than the labels) — by word position when boxes exist, else
+  // by text reading order. Species still comes from any labels read.
+  if (result.candy === undefined && result.xlCandy === undefined && result.megaEnergies.length === 0) {
+    const grid = parseByGrid(words) ?? parseByTextOrder(data.text || "");
+    if (grid) {
+      return {
+        ...result,
+        candy: grid.candy,
+        xlCandy: grid.xlCandy,
+        megaEnergies: grid.megaEnergies,
+        readAnything: true,
+      };
+    }
+  }
+  return result;
 }
