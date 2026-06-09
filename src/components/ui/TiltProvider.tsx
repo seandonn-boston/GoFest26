@@ -21,28 +21,54 @@ export function TiltProvider() {
   const requestRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    let targetX = 0;
-    let targetY = 0;
+    // Latest device orientation offset from "held vertical" (gamma, beta-90).
+    let oriX = 0;
+    let oriY = 0;
+    // Slow baseline that absorbs the *held* angle, so a static tilt decays away
+    // (high-pass): the card only reacts to motion, then gravitates back to flat.
+    let baseX = 0;
+    let baseY = 0;
+    // Card position + velocity, driven by a soft, lightly-damped spring so it
+    // eases in slowly and springs elastically back to neutral.
     let curX = 0;
     let curY = 0;
+    let velX = 0;
+    let velY = 0;
     let raf = 0;
     let running = false;
     const root = document.documentElement;
 
+    const BASE_FOLLOW = 0.02; // how fast a held tilt decays back to flat (~1s)
+    const DEADZONE = 0.12; // firmer nudge required before any motion begins
+    const SPRING = 0.06; // soft spring => sluggish, slow to finish
+    const DAMP = 0.86; // <1 leaves a little elastic overshoot on the way back
+
+    const dz = (v: number) => (v > DEADZONE ? v - DEADZONE : v < -DEADZONE ? v + DEADZONE : 0);
+    const clampOri = (v: number) => Math.max(-2, Math.min(2, v));
+
     const onOrient = (e: DeviceOrientationEvent) => {
       const gamma = e.gamma ?? 0; // left-right, ~ -90..90 (0 held vertically)
       const beta = e.beta ?? 0; // front-back, ~ 90 when held perfectly vertical
-      // Origin = phone held vertically (beta ≈ 90, gamma ≈ 0) => 0,0 (no tilt).
-      // Tilting the top away from you (beta < 90) pushes the card's top back and
-      // its bottom toward you; left/right follows gamma. ~16° of phone tilt
-      // reaches the full card tilt.
-      targetX = Math.max(-1, Math.min(1, gamma / 16));
-      targetY = Math.max(-1, Math.min(1, (beta - 90) / 16));
+      // Origin = phone held vertically (beta ≈ 90, gamma ≈ 0). ~16° saturates.
+      oriX = clampOri(gamma / 16);
+      oriY = clampOri((beta - 90) / 16);
     };
 
     const loop = () => {
-      curX += (targetX - curX) * 0.22;
-      curY += (targetY - curY) * 0.22;
+      // Baseline catches up to the held orientation, leaving only the motion
+      // component (oriX - baseX) to drive the tilt — so a static angle fades out.
+      baseX += (oriX - baseX) * BASE_FOLLOW;
+      baseY += (oriY - baseY) * BASE_FOLLOW;
+      const targetX = Math.max(-1, Math.min(1, dz(oriX - baseX)));
+      const targetY = Math.max(-1, Math.min(1, dz(oriY - baseY)));
+
+      velX += (targetX - curX) * SPRING;
+      velX *= DAMP;
+      curX += velX;
+      velY += (targetY - curY) * SPRING;
+      velY *= DAMP;
+      curY += velY;
+
       root.style.setProperty("--tilt-x", curX.toFixed(3));
       root.style.setProperty("--tilt-y", curY.toFixed(3));
       raf = requestAnimationFrame(loop);
