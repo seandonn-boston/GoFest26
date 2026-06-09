@@ -137,14 +137,26 @@ function numVal(text: string): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-/** Flatten word boxes across Tesseract's various data shapes. */
+/** Word boxes from whichever shape Tesseract provides (NOT both — `data.words`
+ *  and `data.blocks` hold the SAME words, so merging double-counts every value). */
 function collectWords(data: TData): Word[] {
-  const raw: TWord[] = [];
-  if (data.words?.length) raw.push(...data.words);
-  for (const b of data.blocks ?? [])
-    for (const p of b.paragraphs ?? [])
-      for (const l of p.lines ?? []) for (const w of l.words ?? []) raw.push(w);
-  return raw.filter((w) => w.bbox && w.text.trim()).map((w) => ({ text: w.text.trim(), ...w.bbox! }));
+  let raw: TWord[] = [];
+  if (data.words?.length) {
+    raw = data.words;
+  } else {
+    for (const b of data.blocks ?? [])
+      for (const p of b.paragraphs ?? [])
+        for (const l of p.lines ?? []) for (const w of l.words ?? []) raw.push(w);
+  }
+  const out = raw.filter((w) => w.bbox && w.text.trim()).map((w) => ({ text: w.text.trim(), ...w.bbox! }));
+  // Safety dedupe: drop words at a near-identical position with the same text.
+  const seen = new Set<string>();
+  return out.filter((w) => {
+    const key = `${w.text}@${Math.round(w.x0 / 6)},${Math.round(w.y0 / 6)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function speciesLeftOf(words: Word[], anchor: Word): string {
