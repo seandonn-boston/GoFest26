@@ -9,6 +9,7 @@
 
 import { RAID_BOSSES } from "@/data";
 import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
+import { formatNumber } from "@/lib/format";
 
 interface Box {
   x0: number;
@@ -116,6 +117,8 @@ function scheduleWorkerCleanup() {
 export interface StatEntry {
   kind: "candy" | "xlCandy" | "energy";
   species: string;
+  /** Mega form letter (Mewtwo / Charizard X & Y) when the label carries one. */
+  form?: "x" | "y" | null;
   value: number;
   /** Vertical position (for ordering Mewtwo's X-then-Y energies). */
   y: number;
@@ -127,6 +130,18 @@ export interface EnergyHit {
   value: number;
   /** Normalized species from this energy's label (null when read from the grid). */
   species: string | null;
+  /** Mega form letter (X / Y) when the energy label carries one, else null. */
+  form?: "x" | "y" | null;
+}
+
+/** Human chip for an energy hit: "Charizard X En 209" / "Gardevoir En 80" /
+ *  "Energy 6,212" when the species didn't read. */
+export function energyChip(e: EnergyHit): string {
+  const v = formatNumber(e.value);
+  if (!e.species) return `Energy ${v}`;
+  const name = e.species.charAt(0).toUpperCase() + e.species.slice(1);
+  const form = e.form ? ` ${e.form.toUpperCase()}` : "";
+  return `${name}${form} En ${v}`;
 }
 
 export interface ScanResult {
@@ -201,6 +216,62 @@ function speciesLeftOf(words: Word[], anchor: Word): string {
     .trim();
 }
 
+/**
+ * Split a noisy energy/candy label phrase into a species and an optional mega
+ * FORM letter. Per the PoGo label grammar the keyword is "energy": the species
+ * always precedes it ("[Species] Mega Energy"), and the X/Y forms tack a lone
+ * letter on ("Charizard X … Energy", "Mewtwo Mega Energy X"). We drop the label
+ * noise words (mega/primal/energy/candy/xl/stardust + OCR variants), peel a
+ * trailing x/y as the form, and keep the rest as the species.
+ */
+export function speciesAndForm(phrase: string): { species: string; form: "x" | "y" | null } {
+  const toks = phrase
+    .toLowerCase()
+    .replace(/[^a-z ]/g, " ")
+    .split(/\s+/)
+    .filter((t) => t && !/ener|cand|stardus/.test(t) && t !== "mega" && t !== "primal" && t !== "xl" && t !== "xi");
+  let form: "x" | "y" | null = null;
+  while (toks.length && (toks[toks.length - 1] === "x" || toks[toks.length - 1] === "y")) {
+    form = toks.pop() as "x" | "y";
+  }
+  const species = toks.filter((t) => t.length >= 2).join(" ");
+  return { species, form };
+}
+
+/**
+ * Reconstruct the full label phrase for an energy anchor, robust to the two ways
+ * PoGo lays it out: species to the LEFT on the same line ("Gallade Mega Energy")
+ * or WRAPPED with the species on the line above ("Charizard X" / "Mega Energy").
+ * Walking left stops at a column gap so the neighbouring Candy column can't bleed
+ * in (which used to fuse "ralts" + "gallade" → "raltsgallade").
+ */
+function energyLabelPhrase(words: Word[], anchor: Word): string {
+  const h = anchor.y1 - anchor.y0 || 14;
+  const ay = cy(anchor);
+  // Same line, at or left of the anchor, contiguous (break at a column-width gap).
+  const sameLine = words
+    .filter((w) => Math.abs(cy(w) - ay) <= h * 0.7 && cx(w) <= cx(anchor) + 1)
+    .sort((a, b) => b.x1 - a.x1);
+  const kept: Word[] = [];
+  let leftEdge = anchor.x1;
+  for (const w of sameLine) {
+    if (kept.length && leftEdge - w.x1 > h * 1.6) break; // crossed into another column
+    kept.push(w);
+    leftEdge = w.x0;
+  }
+  const minX = Math.min(...kept.map((w) => w.x0), anchor.x0);
+  const maxX = Math.max(...kept.map((w) => w.x1), anchor.x1);
+  // The wrapped species line directly above, horizontally overlapping the label.
+  const above = words.filter((w) => {
+    const dy = ay - cy(w);
+    return dy > h * 0.7 && dy <= h * 2.1 && w.x1 >= minX - h && w.x0 <= maxX + h;
+  });
+  return [...above, ...kept]
+    .sort((a, b) => cy(a) - cy(b) || cx(a) - cx(b))
+    .map((w) => w.text)
+    .join(" ");
+}
+
 /** Position-aware entry parse: each label takes the number directly above it. */
 export function parseEntries(words: Word[]): StatEntry[] {
   if (words.length === 0) return [];
@@ -237,7 +308,8 @@ export function parseEntries(words: Word[]): StatEntry[] {
   for (const e of words.filter((w) => isEnergyW(alpha(w)))) {
     const value = numberAbove(cx(e), cy(e));
     if (value === undefined) continue;
-    entries.push({ kind: "energy", species: speciesLeftOf(words, e), value, y: cy(e) });
+    const { species, form } = speciesAndForm(energyLabelPhrase(words, e));
+    entries.push({ kind: "energy", species, form, value, y: cy(e) });
   }
 
   return entries;
@@ -376,6 +448,14 @@ export function parseEntriesFromText(text: string): StatEntry[] {
     const isLabel = /cand|ener/.test(lower);
     const n = numVal(line);
     if (!isLabel) {
+      // A lone "X"/"Y" line right after an energy label is that energy's mega
+      // form (the X/Y wraps onto its own line), e.g. "MEWTWO MEGA ENERGY" / "X".
+      const letter = lower.replace(/[^a-z]/g, "");
+      const last = entries[entries.length - 1];
+      if ((letter === "x" || letter === "y") && last?.kind === "energy" && !last.form) {
+        last.form = letter;
+        continue;
+      }
       if (n !== null) pending = n;
       continue;
     }
@@ -386,8 +466,11 @@ export function parseEntriesFromText(text: string): StatEntry[] {
     // Require the full "XL"/"XI" token — a lone "x" (e.g. the Mewtwo X form
     // letter) must NOT promote a candy line to XL candy.
     if (/cand/.test(m) && /\b(?:xl|xi)\b/.test(m)) entries.push({ kind: "xlCandy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
-    else if (/ener/.test(m)) entries.push({ kind: "energy", species: m.split(/\s+(mega|primal|ener)/)[0].trim(), value, y: y++ });
-    else if (/cand/.test(m)) entries.push({ kind: "candy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
+    else if (/ener/.test(m)) {
+      // Keyword "energy": the species precedes it, a trailing x/y is the form.
+      const { species, form } = speciesAndForm(m);
+      entries.push({ kind: "energy", species, form, value, y: y++ });
+    } else if (/cand/.test(m)) entries.push({ kind: "candy", species: m.split(/\s+cand/)[0].trim(), value, y: y++ });
   }
   return entries;
 }
@@ -497,7 +580,11 @@ export function aggregateEntries(entries: StatEntry[], capturedAt: number, rawTe
     detectedName: normSpecies(speciesRaw) || null,
     candy,
     xlCandy,
-    megaEnergies: energy.map((e) => ({ value: e.value, species: normSpecies(e.species) || null })),
+    megaEnergies: energy.map((e) => {
+      const hit: EnergyHit = { value: e.value, species: normSpecies(e.species) || null };
+      if (e.form) hit.form = e.form; // only X/Y energies carry a form
+      return hit;
+    }),
     capturedAt,
     readAnything: entries.length > 0,
     // Keep the full text (capped generously) so a failed scan can be copied
@@ -528,8 +615,20 @@ export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[
     const val = idx >= 0 ? energies[idx].value : energies[0]?.value;
     return val !== undefined ? [val] : [];
   }
-  // X/Y (same species, multiple bosses): map in reading order.
-  return bosses.map((_, i) => energies[i]?.value).filter((v): v is number => v !== undefined);
+  // X/Y (same species, multiple bosses): match by the form letter in the boss
+  // name ("Mega Mewtwo X" ↔ energy tagged form "x") when the labels carried one,
+  // else fall back to top-to-bottom reading order.
+  const bossForm = (name: string): "x" | "y" | null => {
+    const m = name.trim().toLowerCase().match(/\b([xy])$/);
+    return (m?.[1] as "x" | "y") ?? null;
+  };
+  return bosses
+    .map((b, i) => {
+      const bf = bossForm(b.name);
+      const byForm = bf ? energies.find((e) => e.form === bf) : undefined;
+      return (byForm ?? energies[i])?.value;
+    })
+    .filter((v): v is number => v !== undefined);
 }
 
 /**

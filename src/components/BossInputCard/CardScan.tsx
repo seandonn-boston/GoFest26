@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { scanScreenshot, type ScanResult } from "@/lib/screenshotOcr";
+import { scanScreenshot, energyChip, type ScanResult } from "@/lib/screenshotOcr";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { formatNumber } from "@/lib/format";
@@ -17,7 +17,6 @@ type State = "idle" | "scanning" | "done" | "error";
  * the screenshot's species (read from its labels) matches this card's Pokémon.
  * Beta — the detected values are shown for review before applying.
  */
-const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export function CardScan({
   onApply,
@@ -82,9 +81,7 @@ export function CardScan({
   if (result) {
     if (result.candy !== undefined) chips.push(`Candy ${formatNumber(result.candy)}`);
     if (result.xlCandy !== undefined) chips.push(`XL ${formatNumber(result.xlCandy)}`);
-    for (const e of result.megaEnergies) {
-      chips.push(e.species ? `${cap(e.species)} En ${formatNumber(e.value)}` : `Energy ${formatNumber(e.value)}`);
-    }
+    for (const e of result.megaEnergies) chips.push(energyChip(e));
   }
 
   return (

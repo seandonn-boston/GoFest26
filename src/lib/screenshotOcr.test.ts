@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateEntries, chooseSpecies, energyForBosses, fuzzyMatchSpecies, numVal, parseByGrid, parseByTextOrder, parseEntriesFromText } from "./screenshotOcr";
+import { aggregateEntries, chooseSpecies, energyChip, energyForBosses, fuzzyMatchSpecies, numVal, parseByGrid, parseByTextOrder, parseEntries, parseEntriesFromText, speciesAndForm } from "./screenshotOcr";
 import { buildSearchString, pokemonSearchName, speciesKey } from "./pokemonSearch";
 import { RAID_BOSSES } from "@/data";
 
@@ -14,8 +14,18 @@ describe("screenshot parse + identify", () => {
     expect(r.candy).toBe(26);
     expect(r.xlCandy).toBe(27);
     expect(r.megaEnergies).toEqual([
-      { value: 0, species: "mewtwo" },
-      { value: 0, species: "mewtwo" },
+      { value: 0, species: "mewtwo", form: "x" },
+      { value: 0, species: "mewtwo", form: "y" },
+    ]);
+  });
+
+  it("tags Charizard X & Y energy with the form, single-line labels", () => {
+    const r = scan(
+      ["3,606", "CHARMANDER CANDY", "187", "CHARMANDER CANDY XL", "209", "CHARIZARD X MEGA ENERGY", "211", "CHARIZARD Y MEGA ENERGY"].join("\n"),
+    );
+    expect(r.megaEnergies).toEqual([
+      { value: 209, species: "charizard", form: "x" },
+      { value: 211, species: "charizard", form: "y" },
     ]);
   });
 
@@ -61,7 +71,34 @@ describe("chooseSpecies (from candy/energy labels only)", () => {
   });
 });
 
+describe("speciesAndForm (energy-keyword label grammar)", () => {
+  it("peels the species before 'energy' and a trailing X/Y form", () => {
+    expect(speciesAndForm("gallade mega energy")).toEqual({ species: "gallade", form: null });
+    expect(speciesAndForm("charizard x mega energy")).toEqual({ species: "charizard", form: "x" });
+    expect(speciesAndForm("mewtwo mega energy y")).toEqual({ species: "mewtwo", form: "y" });
+    // OCR noise around the keyword shouldn't leak into the species.
+    expect(speciesAndForm("MEGA  ENERGY  Gardevoir")).toEqual({ species: "gardevoir", form: null });
+  });
+});
+
+describe("energyChip (display)", () => {
+  it("renders species, form, and value", () => {
+    expect(energyChip({ value: 209, species: "charizard", form: "x" })).toBe("Charizard X En 209");
+    expect(energyChip({ value: 80, species: "gardevoir" })).toBe("Gardevoir En 80");
+    expect(energyChip({ value: 6212, species: null })).toBe("Energy 6,212");
+  });
+});
+
 describe("energyForBosses (species-aware association)", () => {
+  it("maps X/Y energies by the form letter in the boss name", () => {
+    const energies = [
+      { value: 211, species: "charizard", form: "y" as const },
+      { value: 209, species: "charizard", form: "x" as const },
+    ];
+    // Reading order is Y-then-X here, but the form letters drive the mapping.
+    expect(energyForBosses(energies, [{ name: "Mega Charizard X" }, { name: "Mega Charizard Y" }])).toEqual([209, 211]);
+  });
+
   it("a single boss takes the energy matching its species, not the first", () => {
     const energies = [
       { value: 60, species: "gallade" },
@@ -80,6 +117,39 @@ describe("energyForBosses (species-aware association)", () => {
 
   it("falls back to the first energy when species is unknown", () => {
     expect(energyForBosses([{ value: 6212, species: null }], [{ name: "Mega Metagross" }])).toEqual([6212]);
+  });
+});
+
+describe("parseEntries energy labels (word boxes, real OCR path)", () => {
+  // A label/number word box; default width ~80, height ~24.
+  const b = (text: string, x: number, y: number, w = 80) => ({ text, x0: x, y0: y, x1: x + w, y1: y + 24 });
+
+  it("keeps the energy's own species, not the neighbouring Candy column (Ralts)", () => {
+    const words = [
+      // Left Candy/XL column.
+      b("1142", 150, 300, 70), b("RALTS", 90, 340, 70), b("CANDY", 180, 340),
+      b("330", 150, 440, 60), b("RALTS", 90, 480, 70), b("CANDY", 180, 480), b("XL", 280, 480, 36),
+      // Right Energy column (two species).
+      b("60", 520, 300, 50), b("GALLADE", 470, 340), b("MEGA", 560, 340, 60), b("ENERGY", 650, 340),
+      b("80", 520, 440, 50), b("GARDEVOIR", 460, 480, 100), b("MEGA", 580, 480, 60), b("ENERGY", 670, 480),
+    ];
+    const energies = parseEntries(words).filter((e) => e.kind === "energy");
+    expect(energies.map((e) => ({ species: e.species, value: e.value }))).toEqual([
+      { species: "gallade", value: 60 },
+      { species: "gardevoir", value: 80 },
+    ]);
+  });
+
+  it("captures a wrapped species line above the keyword as species + form (Charizard X)", () => {
+    const words = [
+      b("209", 520, 280, 50),
+      b("CHARIZARD", 470, 320, 110), b("X", 600, 320, 24),
+      b("MEGA", 500, 356, 60), b("ENERGY", 590, 356),
+    ];
+    const energies = parseEntries(words).filter((e) => e.kind === "energy");
+    expect(energies).toHaveLength(1);
+    expect(energies[0].species).toBe("charizard");
+    expect(energies[0].form).toBe("x");
   });
 });
 

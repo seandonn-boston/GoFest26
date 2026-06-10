@@ -5,7 +5,7 @@ import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
-import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotOcr";
+import { scanScreenshot, energyForBosses, energyChip, type ScanResult } from "@/lib/screenshotOcr";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -46,9 +46,7 @@ function valueChips(scan: ScanResult): string[] {
   const c: string[] = [];
   if (scan.candy !== undefined) c.push(`Candy ${formatNumber(scan.candy)}`);
   if (scan.xlCandy !== undefined) c.push(`XL ${formatNumber(scan.xlCandy)}`);
-  for (const e of scan.megaEnergies) {
-    c.push(e.species ? `${cap(e.species)} En ${formatNumber(e.value)}` : `Energy ${formatNumber(e.value)}`);
-  }
+  for (const e of scan.megaEnergies) c.push(energyChip(e));
   return c;
 }
 
