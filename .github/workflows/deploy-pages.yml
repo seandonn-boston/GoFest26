@@ -18,6 +18,8 @@ concurrency:
 
 jobs:
   build:
+    # Owner's repo only — forks can't run this deploy pipeline.
+    if: github.repository == 'seandonn-boston/GoFest26'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { sanitizeBlock, sanitizeLine } from "@/lib/sanitizeFeedback";
 
 // The public repo issues feed. GitHub URLs are case-insensitive.
 const REPO = "seandonn-boston/GoFest26";
@@ -14,7 +15,10 @@ const TYPES = [
 
 /**
  * Feedback → GitHub Issues. With no backend, the most direct pipeline is a
- * pre-filled `issues/new` URL the user reviews and submits on GitHub.
+ * pre-filled `issues/new` URL the user reviews and submits on GitHub — under
+ * their own account, so there is no token or API surface here to abuse.
+ * Everything typed is sanitized (hidden characters stripped, lengths capped)
+ * and lands in the structured "Feedback" issue form, never a free-form issue.
  */
 export function FeedbackForm({ onDone }: { onDone?: () => void }) {
   const [type, setType] = useState("idea");
@@ -26,21 +30,14 @@ export function FeedbackForm({ onDone }: { onDone?: () => void }) {
 
   function submit() {
     if (!canSubmit) return;
-    const title = `[${active.label}] ${summary.trim()}`;
-    const body = [
-      details.trim(),
-      "",
-      "---",
-      `Type: ${active.label}`,
-      typeof window !== "undefined" ? `Page: ${window.location.href}` : "",
-      "Submitted via the GO Fest 2026 Raid Planner.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-    const url = `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(
-      title,
-    )}&body=${encodeURIComponent(body)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const params = new URLSearchParams({
+      template: "feedback.yml",
+      title: `[${active.label}] ${sanitizeLine(summary, 120)}`,
+      kind: active.label,
+      details: sanitizeBlock(details, 3000),
+      page: typeof window !== "undefined" ? sanitizeLine(window.location.href, 200) : "",
+    });
+    window.open(`https://github.com/${REPO}/issues/new?${params}`, "_blank", "noopener,noreferrer");
     onDone?.();
   }
 
