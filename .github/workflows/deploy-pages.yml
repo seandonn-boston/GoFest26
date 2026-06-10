@@ -34,6 +34,18 @@ jobs:
         with:
           enablement: true
 
+      # The site may exist in legacy deploy-from-branch mode (it was bootstrapped
+      # by pushing a gh-pages branch, since GITHUB_TOKEN cannot CREATE a Pages
+      # site). Updating build_type only needs pages:write, which this job has.
+      - name: Switch Pages to workflow builds
+        run: |
+          curl -sf -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pages" \
+            -d '{"build_type":"workflow"}' \
+            || echo "::warning::Couldn't switch Pages to workflow builds — set Settings → Pages → Source to 'GitHub Actions'."
+
       - run: npm ci
 
       - name: Build static export
