@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { scanScreenshot, energyChip, type ScanResult } from "@/lib/screenshotScan";
+import { scanScreenshot, type ScanResult } from "@/lib/screenshotScan";
+import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
-import { formatNumber } from "@/lib/format";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
@@ -77,15 +77,6 @@ export function CardScan({
     setThumb(null);
   }
 
-  const chips: string[] = [];
-  const items: string[] = [];
-  if (result) {
-    if (result.candy !== undefined) chips.push(`Candy ${formatNumber(result.candy)}`);
-    if (result.xlCandy !== undefined) chips.push(`XL ${formatNumber(result.xlCandy)}`);
-    for (const e of result.megaEnergies) chips.push(energyChip(e));
-    for (const i of result.items) items.push(`${i.name} ${formatNumber(i.value)}`);
-  }
-
   return (
     <div className="rounded-lg border border-white/10 bg-black/30 p-2">
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
@@ -104,20 +95,9 @@ export function CardScan({
       {state === "scanning" ? <p className="mt-1.5 text-[11px] text-slate-400">Scanning…</p> : null}
       {state === "error" ? <p className="mt-1.5 text-[11px] text-rose-300 break-words">⚠ {error}</p> : null}
       {state === "done" ? (
-        chips.length ? (
+        result?.readAnything ? (
           <div className="mt-1.5">
-            <div className="flex flex-wrap gap-1">
-              {chips.map((c, i) => (
-                <span key={`${i}-${c}`} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
-                  {c}
-                </span>
-              ))}
-              {items.map((c, i) => (
-                <span key={`item-${i}-${c}`} className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[11px] text-slate-400 ring-1 ring-white/10">
-                  {c}
-                </span>
-              ))}
-            </div>
+            <ScanChips scan={result} />
             <button
               type="button"
               onClick={apply}

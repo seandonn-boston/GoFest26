@@ -38,6 +38,8 @@ export interface EnergyHit {
   value: number;
   /** Normalized species from/implied-by this energy's label, else null. */
   species: string | null;
+  /** Energy family — drives chip theming (mega/primal vs fusion/crowned). */
+  kind?: "mega" | "primal" | "fusion" | "crowned";
   /** Mega form letter (X / Y) when the energy label carries one, else null. */
   form?: "x" | "y" | null;
   /** Display qualifier for non-mega energies: volt/blaze/solar/lunar/sword/shield/primal. */
@@ -83,13 +85,15 @@ const normSpecies = (s: string | null) => {
 };
 
 export function numVal(text: string): number | null {
-  // Accept a (possibly label-padded) number that is EITHER plain digits or
-  // properly thousands-grouped ("1,001,623") — but reject malformed grouping
-  // like "1,2,3", which is OCR noise rather than a real value. Leading/trailing
-  // non-digits ("CP ", " XL", a count's "›" arrow) are tolerated.
-  const m = text.replace(/\s/g, "").match(/^\D*(\d{1,3}(?:,\d{3})+|\d+)\D*$/);
+  // Accept a number that is EITHER plain digits or properly thousands-grouped.
+  // OCR reads commas as periods, so both group separators count ("1.142" is
+  // 1,142 — but "2.07" is a weight, not a malformed group, and is rejected).
+  // Trailing junk (" XL", a count's "›" arrow) is tolerated; LEADING LETTERS are
+  // not — a resource icon fused into the digits ("81" -> "S1") must read as
+  // nothing rather than as a confident wrong value.
+  const m = text.replace(/\s/g, "").match(/^[^A-Za-z0-9]*(\d{1,3}(?:[.,]\d{3})+|\d+)\D*$/);
   if (!m) return null;
-  const n = parseInt(m[1].replace(/,/g, ""), 10);
+  const n = parseInt(m[1].replace(/[.,]/g, ""), 10);
   // No upper cap — Stardust can reach the billions, and OCR may add digits.
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
@@ -193,27 +197,50 @@ const UI_MARKERS = new Set([
   "reversion",
 ]);
 
-/** Classify one label block's tokens against the resource grammar. */
+/** UI words (and their OCR near-misses) never belong in a species name —
+ *  "GROUDON PRIMAL ENERGY" must not pick up a fused "TRAINER BATTLES". */
+const isNoiseTok = (t: string) => {
+  if (UI_MARKERS.has(t)) return true;
+  for (const m of UI_MARKERS) if (m.length >= 4 && like(t, m)) return true;
+  return false;
+};
+
+const speciesOf = (toks: string[]) =>
+  toks.filter((t) => t.length >= 2 && !isNoiseTok(t) && !isStardustTok(t)).join(" ") || null;
+
+function lastIndex(toks: string[], pred: (t: string) => boolean): number {
+  for (let i = toks.length - 1; i >= 0; i--) if (pred(toks[i])) return i;
+  return -1;
+}
+
+/**
+ * Classify one label block's tokens against the resource grammar. The grammar
+ * is positional: the candy/energy keyword TERMINATES a real label (only an
+ * XL or a wrapped X/Y form letter may trail it), so running text that merely
+ * contains the word — the Mega-Evolve blurb's "...bonus Candy and boosted
+ * CP" — can never classify as a resource and steal a value.
+ */
 export function classifyLabel(toks: string[]): LabelClass {
   if (toks.length === 0) return null;
 
-  if (toks.some(isStardustTok)) return { type: "stardust" };
+  // STARDUST is a one-word label (one stray OCR token tolerated).
+  if (toks.length <= 2 && toks.some(isStardustTok)) return { type: "stardust" };
 
-  if (toks.some(isCandyTok)) {
-    const xl = toks.some(isXlTok);
-    const species =
-      toks
-        .filter((t) => !isCandyTok(t) && !isXlTok(t) && !isStardustTok(t) && t.length >= 2)
-        .join(" ") || null;
-    return { type: "candy", xl, species };
+  const candyIdx = lastIndex(toks, isCandyTok);
+  if (candyIdx >= 0 && toks.slice(candyIdx + 1).every((t) => isXlTok(t) || t === "x" || t === "y")) {
+    const xl = toks.slice(candyIdx + 1).some(isXlTok);
+    return { type: "candy", xl, species: speciesOf(toks.slice(0, candyIdx)) };
   }
 
-  if (toks.some(isEnergyTok)) {
+  const energyIdx = lastIndex(toks, isEnergyTok);
+  if (energyIdx >= 0 && toks.slice(energyIdx + 1).every((t) => t === "x" || t === "y")) {
+    const after = toks.slice(energyIdx + 1);
+    let form: "x" | "y" | null = after.length ? (after[after.length - 1] as "x" | "y") : null;
     let energyKind: "mega" | "primal" | "fusion" | "crowned" = "mega";
     let flavor: string | null = null;
     let implied: string | null = null;
     const rest: string[] = [];
-    for (const t of toks) {
+    for (const t of toks.slice(0, energyIdx)) {
       if (isEnergyTok(t) || like(t, "mega")) continue;
       if (like(t, "primal")) {
         energyKind = "primal";
@@ -236,11 +263,10 @@ export function classifyLabel(toks: string[]): LabelClass {
       }
       rest.push(t);
     }
-    let form: "x" | "y" | null = null;
-    while (rest.length && (rest[rest.length - 1] === "x" || rest[rest.length - 1] === "y")) {
+    while (!form && rest.length && (rest[rest.length - 1] === "x" || rest[rest.length - 1] === "y")) {
       form = rest.pop() as "x" | "y";
     }
-    const species = implied ?? (rest.filter((t) => t.length >= 2).join(" ") || null);
+    const species = implied ?? speciesOf(rest);
     return { type: "energy", energyKind, species, form, flavor };
   }
 
@@ -333,28 +359,47 @@ function toLine(words: Word[]): Line {
   };
 }
 
+/** A wrapped-label continuation line: the XL of "APPLIN CANDY / XL" or the
+ *  form letter of "MEWTWO MEGA ENERGY / X". */
+const isContinuation = (toks: string[]) =>
+  toks.length > 0 && toks.every((t) => isXlTok(t) || t === "x" || t === "y");
+
 /** Merge vertically-adjacent, horizontally-overlapping lines into label blocks
  *  — this is what reassembles wrapped labels ("GARDEVOIR MEGA / ENERGY",
- *  "CROWNED SHIELD / ENERGY", "APPLIN CANDY / XL", "MEWTWO MEGA ENERGY / X"). */
+ *  "CROWNED SHIELD / ENERGY", "APPLIN CANDY / XL", "MEWTWO MEGA ENERGY / X").
+ *  Two guards keep blocks from over-growing:
+ *   - once a block already reads as a complete label, only XL/X/Y continuation
+ *     lines may join (so "GROUDON PRIMAL / ENERGY" can't also swallow the
+ *     "TRAINER BATTLES" tab text beneath it);
+ *   - 1–2 letter scraps (resource icons misread as a letter) can neither start
+ *     a block nor host a label, so a stray glyph on the value row can't become
+ *     the anchor that real labels then merge into. */
 export function buildBlocks(words: Word[]): Block[] {
   const blocks: Block[] = [];
   for (const line of buildLines(words)) {
+    const lineToks = line.words.flatMap((w) => alphaTokens(w.text));
     const host = blocks.find((b) => {
       const last = b.lines[b.lines.length - 1];
       const dy = line.cy - last.cy;
       if (dy <= 0 || dy > Math.max(last.h, line.h) * 2.1) return false;
       const pad = Math.max(last.h, line.h);
-      return line.x0 <= b.x1 + pad && line.x1 >= b.x0 - pad;
+      if (line.x0 > b.x1 + pad || line.x1 < b.x0 - pad) return false;
+      // Only label-looking blocks accept more lines; complete labels accept
+      // only wrapped XL / form-letter continuations.
+      if (!b.tokens.some((t) => t.length >= 4)) return false;
+      const cls = classifyLabel(b.tokens);
+      if (cls && cls.type !== "marker" && !isContinuation(lineToks)) return false;
+      return true;
     });
     if (host) {
       host.lines.push(line);
       host.x0 = Math.min(host.x0, line.x0);
       host.x1 = Math.max(host.x1, line.x1);
-      host.tokens.push(...line.words.flatMap((w) => alphaTokens(w.text)));
-    } else {
+      host.tokens.push(...lineToks);
+    } else if (lineToks.join("").length > 2) {
       blocks.push({
         lines: [line],
-        tokens: line.words.flatMap((w) => alphaTokens(w.text)),
+        tokens: lineToks,
         x0: line.x0,
         x1: line.x1,
         topCy: line.cy,
@@ -595,12 +640,16 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
   const res = parsed.resources;
   const valued = res.filter((r) => r.value !== undefined);
   const candy = valued.find((r) => r.kind === "candy")?.value;
-  const xlCandy = valued.find((r) => r.kind === "xlCandy")?.value;
+  // Every Pokémon has an XL pool, but a page can simply not show the cell (Mew,
+  // low-level accounts). Candy read + no XL cell anywhere => the XL count is 0.
+  const xlRead = valued.find((r) => r.kind === "xlCandy")?.value;
+  const xlCandy = xlRead ?? (candy !== undefined && !res.some((r) => r.kind === "xlCandy") ? 0 : undefined);
   const stardust = valued.find((r) => r.kind === "stardust")?.value;
   const megaEnergies: EnergyHit[] = valued
     .filter((r) => r.kind === "energy")
     .map((r) => {
       const hit: EnergyHit = { value: r.value!, species: normSpecies(r.species) };
+      if (r.energyKind) hit.kind = r.energyKind;
       if (r.form) hit.form = r.form;
       if (r.flavor) hit.flavor = r.flavor;
       return hit;

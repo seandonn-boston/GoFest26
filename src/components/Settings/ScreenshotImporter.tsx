@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
-import { formatNumber } from "@/lib/format";
-import { scanScreenshot, energyForBosses, energyChip, type ScanResult } from "@/lib/screenshotScan";
+import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotScan";
+import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -40,19 +40,6 @@ interface Row {
   key: string; // chosen species key ("" = unassigned)
   thumb: string | null; // preview data URL
   error?: string; // pre-flight / decode failure message
-}
-
-function valueChips(scan: ScanResult): string[] {
-  const c: string[] = [];
-  if (scan.candy !== undefined) c.push(`Candy ${formatNumber(scan.candy)}`);
-  if (scan.xlCandy !== undefined) c.push(`XL ${formatNumber(scan.xlCandy)}`);
-  for (const e of scan.megaEnergies) c.push(energyChip(e));
-  return c;
-}
-
-/** Recognized evolution items — shown for confirmation, never applied. */
-function itemChips(scan: ScanResult): string[] {
-  return scan.items.map((i) => `${i.name} ${formatNumber(i.value)}`);
 }
 
 /** Why a screenshot produced no values — as specific as the scan allows. */
@@ -209,7 +196,6 @@ export function ScreenshotImporter() {
       {rows.length ? (
         <ul className="space-y-2">
           {rows.map((r) => {
-            const chips = valueChips(r.scan);
             const superseded = !!r.key && latestIdByKey.get(r.key) !== r.id;
             // A superseded duplicate: drop its preview/data, just say why.
             if (superseded) {
@@ -228,17 +214,8 @@ export function ScreenshotImporter() {
                 <div className="min-w-0 flex-1">
                   {r.scan.readAnything ? (
                     <>
-                      <div className="mb-1.5 flex flex-wrap gap-1">
-                        {chips.map((c, i) => (
-                          <span key={`${i}-${c}`} className="rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] text-emerald-200 ring-1 ring-white/10">
-                            {c}
-                          </span>
-                        ))}
-                        {itemChips(r.scan).map((c, i) => (
-                          <span key={`item-${i}-${c}`} className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[11px] text-slate-400 ring-1 ring-white/10">
-                            {c}
-                          </span>
-                        ))}
+                      <div className="mb-1.5">
+                        <ScanChips scan={r.scan} />
                       </div>
                       {!OPTION_BY_KEY.has(r.key) && r.scan.detectedName ? (
                         <p className="mb-1.5 text-[11px] text-amber-300">

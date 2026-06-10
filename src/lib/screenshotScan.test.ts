@@ -48,7 +48,7 @@ describe("parseScreen — real screenshot layouts", () => {
     ]);
     expect(r.stardust).toBe(1028556);
     expect(r.candy).toBe(19);
-    expect(r.xlCandy).toBeUndefined();
+    expect(r.xlCandy).toBe(0); // no XL cell on screen -> every Pokémon still has an XL pool: 0
     expect(r.megaEnergies).toEqual([]);
     expect(r.detectedName).toBe("mew");
     expect(r.species).toBeNull(); // Mew isn't a raid target
@@ -129,8 +129,8 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.candy).toBe(4062);
     expect(r.xlCandy).toBe(339);
     expect(r.megaEnergies).toEqual([
-      { value: 1420, species: "kyurem", flavor: "volt" },
-      { value: 1280, species: "kyurem", flavor: "blaze" },
+      { value: 1420, species: "kyurem", kind: "fusion", flavor: "volt" },
+      { value: 1280, species: "kyurem", kind: "fusion", flavor: "blaze" },
     ]);
     expect(r.species).toBe("kyurem");
   });
@@ -151,7 +151,7 @@ describe("parseScreen — real screenshot layouts", () => {
     ]);
     expect(r.candy).toBe(310);
     expect(r.xlCandy).toBe(44);
-    expect(r.megaEnergies).toEqual([{ value: 825, species: "zamazenta", flavor: "shield" }]);
+    expect(r.megaEnergies).toEqual([{ value: 825, species: "zamazenta", kind: "crowned", flavor: "shield" }]);
     expect(r.species).toBe("zamazenta");
   });
 
@@ -174,7 +174,7 @@ describe("parseScreen — real screenshot layouts", () => {
     ]);
     expect(r.candy).toBe(181);
     expect(r.xlCandy).toBe(82);
-    expect(r.megaEnergies).toEqual([{ value: 485, species: "groudon", flavor: "primal" }]);
+    expect(r.megaEnergies).toEqual([{ value: 485, species: "groudon", kind: "primal", flavor: "primal" }]);
     expect(r.species).toBe("groudon");
   });
 
@@ -204,8 +204,8 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.candy).toBe(1142);
     expect(r.xlCandy).toBe(330);
     expect(r.megaEnergies).toEqual([
-      { value: 60, species: "gallade" },
-      { value: 80, species: "gardevoir" },
+      { value: 60, species: "gallade", kind: "mega" },
+      { value: 80, species: "gardevoir", kind: "mega" },
     ]);
     expect(r.items).toEqual([{ name: "Sinnoh Stone", value: 1 }]);
     expect(r.species).toBe("gardevoir"); // Gallade isn't a target, Gardevoir is
@@ -230,7 +230,7 @@ describe("parseScreen — real screenshot layouts", () => {
     ]);
     expect(r.candy).toBe(224);
     expect(r.xlCandy).toBe(65);
-    expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix" }]);
+    expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix", kind: "mega" }]);
     expect(r.items).toEqual([{ name: "Metal Coat", value: 75 }]);
     expect(r.species).toBeNull();
     expect(r.detectedName).toBe("steelix");
@@ -274,8 +274,8 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.candy).toBe(3606);
     expect(r.xlCandy).toBe(187);
     expect(r.megaEnergies).toEqual([
-      { value: 209, species: "charizard", form: "x" },
-      { value: 211, species: "charizard", form: "y" },
+      { value: 209, species: "charizard", kind: "mega", form: "x" },
+      { value: 211, species: "charizard", kind: "mega", form: "y" },
     ]);
     expect(r.species).toBeNull(); // Charizard isn't in the GO Fest roster
     expect(r.detectedName).toBe("charizard");
@@ -310,10 +310,49 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.candy).toBe(26);
     expect(r.xlCandy).toBe(27);
     expect(r.megaEnergies).toEqual([
-      { value: 0, species: "mewtwo", form: "x" },
-      { value: 0, species: "mewtwo", form: "y" },
+      { value: 0, species: "mewtwo", kind: "mega", form: "x" },
+      { value: 0, species: "mewtwo", kind: "mega", form: "y" },
     ]);
     expect(r.species).toBe("mewtwo");
+  });
+
+  it("tab-bar text under a wrapped energy label stays out of the species (live Groudon bug)", () => {
+    const r = scanWords([
+      b("485", 470, 1100, 40),
+      b("GROUDON", 395, 1140, 90),
+      b("PRIMAL", 495, 1140, 70),
+      b("ENERGY", 450, 1166, 75),
+      // "GYMS & RAIDS | TRAINER BATTLES" tabs right below the wrapped label.
+      b("TRAINER", 390, 1192, 85),
+      b("BATTLES", 485, 1192, 85),
+    ]);
+    expect(r.megaEnergies).toEqual([{ value: 485, species: "groudon", kind: "primal", flavor: "primal" }]);
+    expect(energyChip(r.megaEnergies[0])).toBe("Groudon Primal En 485");
+  });
+
+  it("the Mega-Evolve blurb ('...bonus Candy and boosted CP') can't steal a cost (live Rayquaza bug)", () => {
+    const r = scanWords([
+      b("67", 470, 1000, 30),
+      b("RAYQUAZA", 380, 1040, 95),
+      b("CANDY", 485, 1040, 65),
+      b("400", 380, 1200, 40),
+      b("BONUS", 160, 1240, 60),
+      b("CANDY", 230, 1240, 65),
+      b("AND", 305, 1240, 45),
+      b("BOOSTED", 360, 1240, 90),
+      b("CP", 460, 1240, 28),
+    ]);
+    expect(r.candy).toBe(67);
+  });
+
+  it("a stray icon glyph on the value row can't become the anchor real labels merge into", () => {
+    const r = scanWords([
+      b("S", 440, 1000, 14), // candy icon misread as a letter
+      b("741", 470, 1000, 40),
+      b("PORYGON", 390, 1040, 90),
+      b("CANDY", 490, 1040, 65),
+    ]);
+    expect(r.candy).toBe(741);
   });
 
   it("PoGo crop with no stats section: looksLikePogo, but nothing readable", () => {
@@ -409,6 +448,15 @@ describe("classifyLabel (resource grammar)", () => {
     expect(classifyLabel(["lunch"])).toBeNull();
   });
 
+  it("the keyword must terminate the label — running text can't classify as a resource", () => {
+    // The Mega-Evolve blurb: "...bonus Candy and boosted CP".
+    expect(classifyLabel(["bonus", "candy", "and", "boosted", "cp"])).toEqual({ type: "marker" });
+    // The Mossy-Lure hint above Flapple's Evolve button.
+    expect(classifyLabel(["use", "the", "apples", "found", "near", "pokestops", "with"])).toBeNull();
+    // A long phrase containing "stardust" mid-sentence isn't the Stardust cell.
+    expect(classifyLabel(["earn", "stardust", "from", "catches"])).toBeNull();
+  });
+
   it("tolerates one OCR edit in keywords", () => {
     expect(classifyLabel(["mewtwo", "candv"])).toMatchObject({ type: "candy" });
     expect(classifyLabel(["slowbro", "mega", "eneray"])).toMatchObject({ type: "energy", species: "slowbro" });
@@ -440,8 +488,8 @@ describe("parseScreenText (no word boxes)", () => {
     expect(r.candy).toBe(100);
     expect(r.xlCandy).toBe(44);
     expect(r.megaEnergies).toEqual([
-      { value: 3120, species: "necrozma", flavor: "solar" },
-      { value: 2230, species: "necrozma", flavor: "lunar" },
+      { value: 3120, species: "necrozma", kind: "fusion", flavor: "solar" },
+      { value: 2230, species: "necrozma", kind: "fusion", flavor: "lunar" },
     ]);
     expect(r.species).toBe("necrozma");
   });
@@ -453,8 +501,8 @@ describe("parseScreenText (no word boxes)", () => {
     expect(r.candy).toBe(26);
     expect(r.xlCandy).toBe(27);
     expect(r.megaEnergies).toEqual([
-      { value: 0, species: "mewtwo", form: "x" },
-      { value: 0, species: "mewtwo", form: "y" },
+      { value: 0, species: "mewtwo", kind: "mega", form: "x" },
+      { value: 0, species: "mewtwo", kind: "mega", form: "y" },
     ]);
     expect(r.species).toBe("mewtwo");
   });
@@ -467,7 +515,7 @@ describe("parseScreenText (no word boxes)", () => {
 
   it("stitches a wrapped species prefix line onto the energy keyword line", () => {
     const r = scanText(["209", "CHARIZARD MEGA", "ENERGY X"].join("\n"));
-    expect(r.megaEnergies).toEqual([{ value: 209, species: "charizard", form: "x" }]);
+    expect(r.megaEnergies).toEqual([{ value: 209, species: "charizard", kind: "mega", form: "x" }]);
   });
 
   it("scanFromWords falls back to text parsing when no boxes exist", () => {
@@ -547,8 +595,8 @@ describe("energyForBosses (species-aware association)", () => {
 
   it("a single boss takes the energy matching its species, not the first", () => {
     const energies = [
-      { value: 60, species: "gallade" },
-      { value: 80, species: "gardevoir" },
+      { value: 60, species: "gallade", kind: "mega" },
+      { value: 80, species: "gardevoir", kind: "mega" },
     ];
     expect(energyForBosses(energies, [{ name: "Mega Gardevoir" }])).toEqual([80]);
   });
@@ -576,13 +624,16 @@ describe("numVal (number token parsing)", () => {
     expect(numVal("0")).toBe(0);
     expect(numVal("1,001,623")).toBe(1001623);
     expect(numVal("11,001,623")).toBe(11001623); // OCR-mangled Stardust, no cap
-    expect(numVal("CP 4724")).toBe(4724);
     expect(numVal("9,475 XL")).toBe(9475);
+    expect(numVal("1.142")).toBe(1142); // OCR reads commas as periods
   });
 
   it("rejects malformed grouping, decimals and non-numbers", () => {
     expect(numVal("1,2,3")).toBeNull(); // OCR noise, not a real value
     expect(numVal("2.07kg")).toBeNull(); // weight, not a count
+    expect(numVal("2.07")).toBeNull(); // bare weight is not period-grouped
+    expect(numVal("S1")).toBeNull(); // icon fused into the digits — refuse, don't guess
+    expect(numVal("CP 4724")).toBeNull(); // letters touching the number = not a stat value
     expect(numVal("GYMS")).toBeNull();
     expect(numVal("")).toBeNull();
   });

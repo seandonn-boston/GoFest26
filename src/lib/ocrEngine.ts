@@ -139,8 +139,11 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
     } catch {
       bitmap = await createImageBitmap(file);
     }
+    // Downscale huge images for speed; upscale small ones — Tesseract reads the
+    // thin stat font noticeably better with some extra pixels.
     const maxW = 1600;
-    const scale = bitmap.width > maxW ? maxW / bitmap.width : 1;
+    const minW = 1200;
+    const scale = bitmap.width > maxW ? maxW / bitmap.width : bitmap.width < minW ? Math.min(2, minW / bitmap.width) : 1;
     const w = Math.round(bitmap.width * scale);
     const h = Math.round(bitmap.height * scale);
     const canvas = document.createElement("canvas");
@@ -152,15 +155,29 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
     bitmap.close?.();
     const img = ctx.getImageData(0, 0, w, h);
     const d = img.data;
-    // Levels: map [150..225] -> [0..255] so the *gray* labels darken to readable
-    // black (a naive contrast curve bleaches them toward white), while the white
-    // card stays white. Dark numbers and the colorful header collapse cleanly.
+    // Two rules tuned for the PoGo stat card:
+    //  - COLORFUL pixels (high chroma) are erased to white: resource icons,
+    //    buttons, badges and the photo header. Otherwise a dark icon fuses into
+    //    the digits beside it and OCR eats or invents leading digits
+    //    ("81" -> "S1", "2,230" -> "92,230").
+    //  - NEUTRAL pixels go through a levels curve mapping [150..225] -> [0..255]
+    //    so the gray labels darken to readable black while the card stays white.
     const Bp = 150;
     const Wp = 225;
     for (let i = 0; i < d.length; i += 4) {
-      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      const g = ((lum - Bp) / (Wp - Bp)) * 255;
-      d[i] = d[i + 1] = d[i + 2] = g < 0 ? 0 : g > 255 ? 255 : g;
+      const r = d[i];
+      const g = d[i + 1];
+      const b = d[i + 2];
+      const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+      let v: number;
+      if (chroma > 60) {
+        v = 255;
+      } else {
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        v = ((lum - Bp) / (Wp - Bp)) * 255;
+        v = v < 0 ? 0 : v > 255 ? 255 : v;
+      }
+      d[i] = d[i + 1] = d[i + 2] = v;
     }
     ctx.putImageData(img, 0, 0);
     return canvas;
