@@ -114,7 +114,7 @@ async function getWorker(): Promise<TWorker | null> {
 
 // Tesseract holds a worker (~10MB) alive; terminate it after a quiet spell so a
 // one-off scan doesn't pin memory for the whole session. The next scan lazily
-// recreates it.
+// recreates it (fast — the WASM and LSTM weights stay in the browser cache).
 let workerIdleTimer: ReturnType<typeof setTimeout> | null = null;
 export function scheduleOcrCleanup() {
   if (typeof window === "undefined") return;
@@ -125,6 +125,19 @@ export function scheduleOcrCleanup() {
     workerIdleTimer = null;
     pending?.then((w) => w?.terminate?.()).catch(() => {});
   }, 60_000);
+}
+
+/**
+ * Preload the OCR engine — the script, WASM core, and LSTM language model are
+ * a few MB of downloads that would otherwise stall the first scan. Called
+ * while the app's loading screen is up; failures are ignored (scanning
+ * performs its own load when actually needed).
+ */
+export function warmupOcr(): void {
+  if (typeof window === "undefined") return;
+  getWorker()
+    .then(() => scheduleOcrCleanup())
+    .catch(() => {});
 }
 
 /** Separable box dilation of a binary mask (radius r), used to grow the
@@ -151,8 +164,23 @@ function dilateMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Arr
   return out;
 }
 
-// preprocess() renders to a canvas; reuse it across the two PSM passes.
+// preprocess() renders to a canvas; reuse it across the two PSM passes, then
+// free it EXPLICITLY via releasePreprocessed() — iOS Safari has hard canvas
+// and page memory budgets, and a batch of retained ~15-20MB canvases gets the
+// whole tab killed and reloaded.
 const prepCache = new WeakMap<File, HTMLCanvasElement | File>();
+
+/** Free a screenshot's cached preprocessing canvas (zeroing releases the
+ *  backing store immediately instead of waiting for GC). */
+export function releasePreprocessed(file: File): void {
+  const cached = prepCache.get(file);
+  prepCache.delete(file);
+  if (cached && cached !== file && typeof (cached as HTMLCanvasElement).getContext === "function") {
+    const c = cached as HTMLCanvasElement;
+    c.width = 0;
+    c.height = 0;
+  }
+}
 
 /**
  * Preprocess for OCR: grayscale + strong contrast (whitening the colorful photo

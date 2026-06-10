@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { MISSINGNO_VOXELS } from "./voxelData";
 import { decodeMissingnoVoxels } from "./missingnoImage";
+import { warmupOcr } from "@/lib/ocrEngine";
 
 // The WebGL canvas is client-only; load it lazily with a quiet fallback.
 const LoaderCanvas = dynamic(() => import("./LoaderCanvas"), {
@@ -26,6 +27,9 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
     decodeMissingnoVoxels().then((v) => {
       if (active && v) setVoxels(v);
     });
+    // Use the loader's screen time to pull down the OCR engine (script, WASM
+    // core, LSTM weights) so the first screenshot scan starts instantly.
+    warmupOcr();
     return () => {
       active = false;
     };

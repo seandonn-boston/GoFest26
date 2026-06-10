@@ -23,7 +23,7 @@
 import { RAID_BOSSES } from "@/data";
 import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
-import { ocrImage, scheduleOcrCleanup, type OcrWord } from "@/lib/ocrEngine";
+import { ocrImage, releasePreprocessed, scheduleOcrCleanup, type OcrWord } from "@/lib/ocrEngine";
 
 export type Word = OcrWord;
 
@@ -817,6 +817,9 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
     }
     return result;
   } finally {
+    // Free this screenshot's preprocessing canvas right away — batches on iOS
+    // Safari otherwise accumulate enough canvas memory to get the tab killed.
+    releasePreprocessed(file);
     scheduleOcrCleanup();
   }
 }
