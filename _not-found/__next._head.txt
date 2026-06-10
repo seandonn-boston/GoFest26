@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[97367,["/GoFest26/_next/static/chunks/0dbhjjzl8qfwv.js"],"ViewportBoundary"]
+3:I[97367,["/GoFest26/_next/static/chunks/0dbhjjzl8qfwv.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#050507"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"GO Fest 2026 Raid Planner"}],["$","meta","1",{"name":"description","content":"Plan your Pokémon GO Fest 2026 raids: figure out how many raids you need to max out your Pokémon's XL Candy and Mega Energy — including Mega Mewtwo X & Y."}]]}]}]}],null]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"ZhW8QXr8gQvNtfiOMb3YF"}
