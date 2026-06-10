@@ -20,12 +20,18 @@ interface TData {
 }
 interface TWorker {
   setParameters: (p: Record<string, string>) => Promise<unknown>;
-  recognize: (image: unknown) => Promise<{ data: TData }>;
+  recognize: (image: unknown, opts?: unknown, output?: Record<string, boolean>) => Promise<{ data: TData }>;
   terminate?: () => Promise<unknown>;
 }
 interface TesseractGlobal {
   recognize: (image: unknown, lang?: string, options?: unknown) => Promise<{ data: TData }>;
-  createWorker?: (lang?: string, oem?: number, options?: unknown) => Promise<TWorker>;
+  createWorker?: (
+    lang?: string,
+    oem?: number,
+    options?: unknown,
+    /** Init-time engine config (dawg switches CANNOT go through setParameters). */
+    config?: Record<string, string>,
+  ) => Promise<TWorker>;
 }
 
 declare global {
@@ -49,7 +55,7 @@ export interface OcrPage {
   preprocessed: boolean;
 }
 
-const CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@4.1.4/dist/tesseract.min.js";
+const CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
 let loader: Promise<TesseractGlobal> | null = null;
 let workerP: Promise<TWorker | null> | null = null;
 
@@ -77,9 +83,11 @@ export function loadTesseract(): Promise<TesseractGlobal> {
 }
 
 /**
- * A reused worker set to "sparse text" page segmentation (PSM 11) — it finds
- * text anywhere in the image (good for scattered stat labels/numbers) and always
- * returns word boxes. Falls back to the simple recognize() if unavailable.
+ * A reused worker. The dictionary/language model is disabled at INIT time (so
+ * it doesn't "spellcheck" Pokémon names into real words — and because passing
+ * dawg switches to setParameters rejects, which would silently lose every
+ * tuned parameter). PSM is set per recognize() call: the scanner runs both a
+ * sparse-text pass and an auto-layout pass and merges them.
  */
 async function getWorker(): Promise<TWorker | null> {
   const T = await loadTesseract();
@@ -87,13 +95,11 @@ async function getWorker(): Promise<TWorker | null> {
   if (!workerP) {
     workerP = (async () => {
       try {
-        const w = await T.createWorker!("eng");
-        await w.setParameters({
-          tessedit_pageseg_mode: "11", // sparse text — find scattered stat labels/numbers
-          // Disable the dictionary/language model so it doesn't "spellcheck"
-          // Pokémon names (non-words) into real words.
+        const w = await T.createWorker!("eng", 1, undefined, {
           load_system_dawg: "0",
           load_freq_dawg: "0",
+        });
+        await w.setParameters({
           // Only the chars we care about: uppercase labels + digits.
           tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,. ",
         });
@@ -121,6 +127,33 @@ export function scheduleOcrCleanup() {
   }, 60_000);
 }
 
+/** Separable box dilation of a binary mask (radius r), used to grow the
+ *  colorful-pixel mask over its anti-aliased rims. */
+function dilateMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+  const tmp = new Uint8Array(mask.length);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      if (!mask[row + x]) continue;
+      const e = Math.min(w - 1, x + r);
+      for (let i = Math.max(0, x - r); i <= e; i++) tmp[row + i] = 1;
+    }
+  }
+  const out = new Uint8Array(mask.length);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      if (!tmp[row + x]) continue;
+      const e = Math.min(h - 1, y + r);
+      for (let i = Math.max(0, y - r); i <= e; i++) out[i * w + x] = 1;
+    }
+  }
+  return out;
+}
+
+// preprocess() renders to a canvas; reuse it across the two PSM passes.
+const prepCache = new WeakMap<File, HTMLCanvasElement | File>();
+
 /**
  * Preprocess for OCR: grayscale + strong contrast (whitening the colorful photo
  * header, keeping the dark stat text crisp) so a *full* screenshot reads as well
@@ -129,6 +162,8 @@ export function scheduleOcrCleanup() {
  */
 async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
   if (typeof document === "undefined" || typeof createImageBitmap !== "function") return file;
+  const cached = prepCache.get(file);
+  if (cached) return cached;
   try {
     // Respect EXIF orientation so a sideways camera photo is uprighted before
     // OCR (screenshots have no EXIF and are unaffected). Fall back if the
@@ -155,31 +190,36 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
     bitmap.close?.();
     const img = ctx.getImageData(0, 0, w, h);
     const d = img.data;
-    // Two rules tuned for the PoGo stat card:
-    //  - COLORFUL pixels (high chroma) are erased to white: resource icons,
-    //    buttons, badges and the photo header. Otherwise a dark icon fuses into
-    //    the digits beside it and OCR eats or invents leading digits
-    //    ("81" -> "S1", "2,230" -> "92,230").
-    //  - NEUTRAL pixels go through a levels curve mapping [150..225] -> [0..255]
-    //    so the gray labels darken to readable black while the card stays white.
+    // Two rules tuned for the PoGo stat card (thresholds validated by running
+    // the production engine against the real screenshot corpus):
+    //  - COLORFUL pixels — and everything within a few px of them — are erased
+    //    to white: resource icons, buttons, badges and the photo header. The
+    //    dilation matters: erasing only the saturated core leaves a neutral
+    //    anti-aliased rim that OCR reads as a digit ("236" -> "1236").
+    //  - Remaining NEUTRAL pixels go through a levels curve mapping
+    //    [150..225] -> [0..255] so the gray labels darken to readable black
+    //    while the card stays white.
+    const mask = new Uint8Array(w * h);
+    for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+      const chroma = Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
+      if (chroma > 40) mask[p] = 1;
+    }
+    const dilated = dilateMask(mask, w, h, 4);
     const Bp = 150;
     const Wp = 225;
-    for (let i = 0; i < d.length; i += 4) {
-      const r = d[i];
-      const g = d[i + 1];
-      const b = d[i + 2];
-      const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+    for (let i = 0, p = 0; i < d.length; i += 4, p++) {
       let v: number;
-      if (chroma > 60) {
+      if (dilated[p]) {
         v = 255;
       } else {
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
         v = ((lum - Bp) / (Wp - Bp)) * 255;
         v = v < 0 ? 0 : v > 255 ? 255 : v;
       }
       d[i] = d[i + 1] = d[i + 2] = v;
     }
     ctx.putImageData(img, 0, 0);
+    prepCache.set(file, canvas);
     return canvas;
   } catch {
     return file;
@@ -206,13 +246,22 @@ function collectWords(data: TData): OcrWord[] {
  * OCR one image. By default the levels preprocess is applied; pass `raw: true`
  * to read the untouched file (Tesseract's own binarization) — useful as a
  * retry when a dark/low-contrast image is crushed by the levels curve.
+ *
+ * `psm` selects the page-segmentation mode per pass: "11" (sparse text) finds
+ * scattered stat cells that auto layout misses; "3" (auto) catches tiny
+ * fragments — like a wrapped "XL" line — that sparse mode skips. The scanner
+ * runs both and merges.
  */
-export async function ocrImage(file: File, opts?: { raw?: boolean }): Promise<OcrPage> {
+export async function ocrImage(file: File, opts?: { raw?: boolean; psm?: "3" | "11" }): Promise<OcrPage> {
   const T = await loadTesseract();
   const worker = await getWorker();
-  const recognize = (img: unknown): Promise<TData> =>
-    worker ? worker.recognize(img).then((r) => r.data) : T.recognize(img, "eng").then((r) => r.data);
   const input = opts?.raw ? file : await preprocess(file);
-  const data = await recognize(input);
+  let data: TData;
+  if (worker) {
+    await worker.setParameters({ tessedit_pageseg_mode: opts?.psm ?? "11" });
+    data = (await worker.recognize(input, {}, { blocks: true, text: true })).data;
+  } else {
+    data = (await T.recognize(input, "eng")).data;
+  }
   return { words: collectWords(data), text: data.text || "", preprocessed: input !== file };
 }

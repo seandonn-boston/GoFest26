@@ -6,7 +6,9 @@ import {
   energyChip,
   energyForBosses,
   fuzzyMatchSpecies,
+  mergeParsed,
   numVal,
+  parsePage,
   parseScreen,
   parseScreenText,
   scanFromWords,
@@ -355,6 +357,28 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.candy).toBe(741);
   });
 
+  it("reads a lone letter 'O' above an energy label as zero (live Mewtwo Y bug)", () => {
+    const r = scanWords([
+      b("O", 615, 510, 28, 32),
+      b("MEWTWO", 390, 590, 160, 32),
+      b("MEGA", 565, 590, 100, 32),
+      b("ENERGY", 680, 590, 150, 32),
+      b("Y", 615, 635, 28, 32),
+    ]);
+    expect(r.megaEnergies).toEqual([{ value: 0, species: "mewtwo", kind: "mega", form: "y" }]);
+  });
+
+  it("a real digit outranks a letter-O artifact at the same height", () => {
+    const r = scanWords([
+      b("O", 400, 1000, 20), // icon rim misread
+      b("27", 470, 1000, 30),
+      b("MEWTWO", 380, 1040, 75),
+      b("CANDY", 465, 1040, 65),
+      b("XL", 540, 1040, 25),
+    ]);
+    expect(r.xlCandy).toBe(27);
+  });
+
   it("PoGo crop with no stats section: looksLikePogo, but nothing readable", () => {
     const r = scanWords([
       b("Caterpie", 250, 100, 120, 30),
@@ -522,6 +546,46 @@ describe("parseScreenText (no word boxes)", () => {
     const r = scanFromWords([], "26\nMEWTWO CANDY", 0);
     expect(r.candy).toBe(26);
     expect(r.species).toBe("mewtwo");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dual-pass merging (sparse PSM 11 + auto PSM 3)
+// ---------------------------------------------------------------------------
+
+describe("mergeParsed", () => {
+  // Flapple's wrapped XL: sparse mode reads col3 as a second plain candy cell,
+  // auto mode sees "APPLIN CANDY XL" — the merge recovers the XL value.
+  it("recovers a cell the primary pass missed (live Flapple XL bug)", () => {
+    const sparse = parseScreen([
+      b("236", 310, 940, 40),
+      b("APPLIN", 255, 980, 70),
+      b("CANDY", 333, 980, 65),
+    ]);
+    const auto = parseScreen([
+      b("236", 310, 940, 40),
+      b("119", 530, 940, 40),
+      b("APPLIN", 255, 980, 70),
+      b("CANDY", 333, 980, 65),
+      b("APPLIN", 465, 980, 70),
+      b("CANDY", 543, 980, 65),
+      b("XL", 545, 1006, 25),
+    ]);
+    const r = assembleScan(mergeParsed(sparse, auto), 0);
+    expect(r.candy).toBe(236);
+    expect(r.xlCandy).toBe(119);
+  });
+
+  it("primary pass wins value conflicts; markers take the max", () => {
+    const a = parseScreenText("26\nMEWTWO CANDY\nPOWER UP");
+    const c = parseScreenText("29\nMEWTWO CANDY\nPOWER UP\nWEIGHT");
+    const m = mergeParsed(a, c);
+    expect(assembleScan(m, 0).candy).toBe(26);
+    expect(m.markers).toBe(2);
+  });
+
+  it("parsePage uses boxes when present, text otherwise", () => {
+    expect(assembleScan(parsePage({ words: [], text: "26\nMEWTWO CANDY" }), 0).candy).toBe(26);
   });
 });
 

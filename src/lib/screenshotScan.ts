@@ -315,6 +315,8 @@ interface NumTok {
   value: number;
   x: number;
   y: number;
+  /** A lone "O" word read as zero — only claimed when no real digit competes. */
+  soft?: boolean;
 }
 
 const wcx = (w: Word) => (w.x0 + w.x1) / 2;
@@ -450,12 +452,14 @@ function toResource(c: Exclude<LabelClass, null | { type: "marker" }>, order: nu
  *  claims the nearest number directly above it (greedy, one number per block). */
 export function parseScreen(words: Word[]): ParsedScreen {
   const blocks = buildBlocks(words);
-  const numbers: NumTok[] = words
-    .map((w) => {
-      const v = numVal(w.text);
-      return v === null ? null : { value: v, x: wcx(w), y: wcy(w) };
-    })
-    .filter((n): n is NumTok => n !== null);
+  const numbers: NumTok[] = [];
+  for (const w of words) {
+    const v = numVal(w.text);
+    if (v !== null) numbers.push({ value: v, x: wcx(w), y: wcy(w) });
+    // The PoGo zero often reads as a letter O. Track it as a *soft* zero that
+    // only a label with no real digit candidate will claim.
+    else if (w.text.trim().toUpperCase() === "O") numbers.push({ value: 0, x: wcx(w), y: wcy(w), soft: true });
+  }
 
   let markers = 0;
   const classified: { block: Block; cls: Exclude<LabelClass, null | { type: "marker" }> }[] = [];
@@ -467,18 +471,19 @@ export function parseScreen(words: Word[]): ParsedScreen {
   }
 
   // Greedy nearest-above pairing: the value sits ~1.5–2.5 line-heights above
-  // its label's first line, horizontally within the label's span.
-  const candidates: { ci: number; ni: number; dy: number }[] = [];
+  // its label's first line, horizontally within the label's span. Soft zeros
+  // (letter-O reads) carry a rank penalty so any real digit wins first.
+  const candidates: { ci: number; ni: number; rank: number }[] = [];
   classified.forEach(({ block }, ci) => {
     numbers.forEach((n, ni) => {
       const dy = block.topCy - n.y;
       if (dy <= 0 || dy > block.h * 3.4) return;
       const pad = block.h * 1.6;
       if (n.x < block.x0 - pad || n.x > block.x1 + pad) return;
-      candidates.push({ ci, ni, dy });
+      candidates.push({ ci, ni, rank: dy + (n.soft ? block.h * 4 : 0) });
     });
   });
-  candidates.sort((a, b) => a.dy - b.dy);
+  candidates.sort((a, b) => a.rank - b.rank);
   const valueOf = new Map<number, number>();
   const takenNum = new Set<number>();
   for (const { ci, ni } of candidates) {
@@ -515,6 +520,11 @@ export function parseScreenText(text: string): ParsedScreen {
 
     if (!toks.length) {
       if (n !== null) pending = n;
+      continue;
+    }
+    // A lone "O" line is the PoGo zero misread as a letter.
+    if (line.trim().toUpperCase() === "O" && pending === null) {
+      pending = 0;
       continue;
     }
     // Wrapped continuations attach to the previous resource.
@@ -692,6 +702,36 @@ export function scanFromWords(words: Word[], text: string, capturedAt: number): 
   return byBoxes.looksLikePogo || !byText.looksLikePogo ? byBoxes : byText;
 }
 
+/**
+ * Merge two parsed passes of the SAME screen (sparse-text PSM 11 + auto PSM 3).
+ * Each mode misses different things — sparse skips tiny wrapped "XL" lines,
+ * auto drops isolated numbers — so the union, keyed by what each label IS,
+ * recovers cells either pass lost. The primary pass wins value conflicts.
+ */
+export function mergeParsed(primary: ParsedScreen, secondary: ParsedScreen): ParsedScreen {
+  const keyOf = (r: ParsedResource) =>
+    [r.kind, r.energyKind ?? "", r.species ?? "", r.form ?? "", r.flavor ?? "", r.itemName ?? ""].join("|");
+  const resources = primary.resources.map((r) => ({ ...r }));
+  const byKey = new Map<string, ParsedResource>();
+  for (const r of resources) if (!byKey.has(keyOf(r))) byKey.set(keyOf(r), r);
+  for (const r of secondary.resources) {
+    const hit = byKey.get(keyOf(r));
+    if (!hit) {
+      const added = { ...r, order: resources.length };
+      resources.push(added);
+      byKey.set(keyOf(added), added);
+    } else if (hit.value === undefined && r.value !== undefined) {
+      hit.value = r.value;
+    }
+  }
+  return { resources, markers: Math.max(primary.markers, secondary.markers) };
+}
+
+/** Parse one OCR page: word boxes when present, raw text otherwise. */
+export function parsePage(page: { words: Word[]; text: string }): ParsedScreen {
+  return page.words.length ? parseScreen(page.words) : parseScreenText(page.text);
+}
+
 // ---------------------------------------------------------------------------
 // Display + boss association helpers
 // ---------------------------------------------------------------------------
@@ -751,14 +791,24 @@ export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[
 export async function scanScreenshot(file: File): Promise<ScanResult> {
   const capturedAt = file.lastModified || Date.now();
   try {
-    const page = await ocrImage(file);
-    let result = scanFromWords(page.words, page.text, capturedAt);
+    // Two passes over the same preprocessed image (the canvas is cached):
+    // sparse-text finds scattered stat cells, auto-layout finds the tiny
+    // wrapped fragments sparse mode skips. Merge recovers both.
+    const sparse = await ocrImage(file, { psm: "11" });
+    let parsed = parsePage(sparse);
+    try {
+      const auto = await ocrImage(file, { psm: "3" });
+      parsed = mergeParsed(parsed, parsePage(auto));
+    } catch {
+      /* the sparse pass alone is still useful */
+    }
+    let result = assembleScan(parsed, capturedAt, sparse.text);
     // Dark / low-contrast screenshots can be crushed by the levels curve — if
     // the processed image read nothing, retry once on the raw file (Tesseract's
     // own binarization) before giving up.
-    if (!result.readAnything && page.preprocessed) {
+    if (!result.readAnything && sparse.preprocessed) {
       try {
-        const raw = await ocrImage(file, { raw: true });
+        const raw = await ocrImage(file, { raw: true, psm: "11" });
         const retry = scanFromWords(raw.words, raw.text, capturedAt);
         if (retry.readAnything || (retry.looksLikePogo && !result.looksLikePogo)) result = retry;
       } catch {
