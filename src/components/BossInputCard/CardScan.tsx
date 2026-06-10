@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { scanScreenshot, energyChip, type ScanResult } from "@/lib/screenshotOcr";
+import { scanScreenshot, energyChip, type ScanResult } from "@/lib/screenshotScan";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { formatNumber } from "@/lib/format";
@@ -78,10 +78,12 @@ export function CardScan({
   }
 
   const chips: string[] = [];
+  const items: string[] = [];
   if (result) {
     if (result.candy !== undefined) chips.push(`Candy ${formatNumber(result.candy)}`);
     if (result.xlCandy !== undefined) chips.push(`XL ${formatNumber(result.xlCandy)}`);
     for (const e of result.megaEnergies) chips.push(energyChip(e));
+    for (const i of result.items) items.push(`${i.name} ${formatNumber(i.value)}`);
   }
 
   return (
@@ -110,6 +112,11 @@ export function CardScan({
                   {c}
                 </span>
               ))}
+              {items.map((c, i) => (
+                <span key={`item-${i}-${c}`} className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[11px] text-slate-400 ring-1 ring-white/10">
+                  {c}
+                </span>
+              ))}
             </div>
             <button
               type="button"
@@ -122,10 +129,16 @@ export function CardScan({
         ) : (
           <div className="mt-1.5">
             <p className="text-[11px] text-amber-200">
-              Couldn’t read it{result?.rawText ? <> — OCR saw: “{previewOcr(result.rawText)}”</> : ""}. Try a tighter
-              crop or enter manually.
+              {result && !result.looksLikePogo
+                ? "That doesn’t look like a Pokémon GO Pokémon screen."
+                : "Looks like Pokémon GO, but no stats are visible — include the Stardust/Candy section, or enter the values manually."}
             </p>
-            <CopyOcrButton text={result?.rawText} />
+            {result?.looksLikePogo && result.rawText ? (
+              <>
+                <p className="text-[10px] text-slate-500 break-words">OCR saw: “{previewOcr(result.rawText)}”</p>
+                <CopyOcrButton text={result.rawText} />
+              </>
+            ) : null}
           </div>
         )
       ) : null}

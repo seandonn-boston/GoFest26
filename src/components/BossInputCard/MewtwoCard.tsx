@@ -11,7 +11,7 @@ import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
-import { energyForBosses } from "@/lib/screenshotOcr";
+import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
 
 const CURRENCY_LABELS: Record<Currency, string> = {

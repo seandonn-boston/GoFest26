@@ -1,0 +1,723 @@
+// Pokémon GO screenshot scanner (v2). Reads the resource grid of a Pokémon
+// detail screen with NO layout assumptions: every value is anchored to the gray
+// caption label *under* it ("MEWTWO CANDY", "VOLT FUSION ENERGY", "SINNOH
+// STONE"), each label independently claims the number directly above it, and
+// unlabeled numbers (CP, HP, Power-Up / Evolve / Purify costs, badges) are
+// never read. That makes 2- and 3-column layouts, any resource count (Stardust
+// + Candy only up to six cells), wrapped labels, scrolled screenshots, and
+// partial crops all work the same way.
+//
+// Label grammar handled:
+//   STARDUST
+//   <species> CANDY [XL]
+//   <species> MEGA ENERGY [X|Y]        (X/Y may wrap to the next line)
+//   <species> PRIMAL ENERGY            (Kyogre / Groudon)
+//   VOLT|BLAZE FUSION ENERGY           -> implied species Kyurem
+//   SOLAR|LUNAR FUSION ENERGY          -> implied species Necrozma
+//   CROWNED SWORD|SHIELD ENERGY        -> implied species Zacian / Zamazenta
+//   evolution items (Sinnoh Stone, King's Rock, Sweet Apple, ...) — recognized
+//     so their counts never pollute candy/energy, surfaced for confirmation
+//   UI text (POWER UP, EVOLVE, WEIGHT, ...) — recognized as "this is Pokémon
+//     GO" markers but never yields a value
+
+import { RAID_BOSSES } from "@/data";
+import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
+import { formatNumber } from "@/lib/format";
+import { ocrImage, scheduleOcrCleanup, type OcrWord } from "@/lib/ocrEngine";
+
+export type Word = OcrWord;
+
+// ---------------------------------------------------------------------------
+// Result types
+// ---------------------------------------------------------------------------
+
+/** One energy with the species from ITS OWN label (a single page can list two
+ *  species, e.g. Ralts shows Gallade + Gardevoir energy) or the species the
+ *  label implies (Volt Fusion -> Kyurem, Crowned Shield -> Zamazenta). */
+export interface EnergyHit {
+  value: number;
+  /** Normalized species from/implied-by this energy's label, else null. */
+  species: string | null;
+  /** Mega form letter (X / Y) when the energy label carries one, else null. */
+  form?: "x" | "y" | null;
+  /** Display qualifier for non-mega energies: volt/blaze/solar/lunar/sword/shield/primal. */
+  flavor?: string | null;
+}
+
+/** An evolution item read off the screen (shown for confirmation, never applied). */
+export interface ItemHit {
+  name: string;
+  value: number;
+}
+
+export interface ScanResult {
+  /** Roster species key when a candy/energy label matches a raid target, else null. */
+  species: string | null;
+  /** The species read from the labels (even if not a raid target) — for warnings. */
+  detectedName: string | null;
+  candy?: number;
+  xlCandy?: number;
+  stardust?: number;
+  /** Energies (mega/primal/fusion/crowned), top-to-bottom, tagged with species. */
+  megaEnergies: EnergyHit[];
+  /** Evolution items with counts (King's Rock 70, Sinnoh Stone 45, ...). */
+  items: ItemHit[];
+  /** True when the image showed Pokémon GO UI (labels/markers), even if no values read. */
+  looksLikePogo: boolean;
+  /** File timestamp — used to pick the most-recent screenshot per species. */
+  capturedAt: number;
+  readAnything: boolean;
+  /** Raw OCR text (for diagnostics when a read fails). */
+  rawText?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Tokens & small helpers
+// ---------------------------------------------------------------------------
+
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const alphaTokens = (text: string) => text.toLowerCase().match(/[a-z]+/g) ?? [];
+const normSpecies = (s: string | null) => {
+  const n = (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  return n || null;
+};
+
+export function numVal(text: string): number | null {
+  // Accept a (possibly label-padded) number that is EITHER plain digits or
+  // properly thousands-grouped ("1,001,623") — but reject malformed grouping
+  // like "1,2,3", which is OCR noise rather than a real value. Leading/trailing
+  // non-digits ("CP ", " XL", a count's "›" arrow) are tolerated.
+  const m = text.replace(/\s/g, "").match(/^\D*(\d{1,3}(?:,\d{3})+|\d+)\D*$/);
+  if (!m) return null;
+  const n = parseInt(m[1].replace(/,/g, ""), 10);
+  // No upper cap — Stardust can reach the billions, and OCR may add digits.
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+export function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+/** Lenient single-token match: exact, or one edit away for 4+ letter keywords
+ *  (OCR garbles the stylized PoGo font — "CANDV", "ENERAY", "STARDUS7"). */
+const like = (tok: string, target: string) =>
+  tok === target || (target.length >= 4 && Math.abs(tok.length - target.length) <= 1 && editDistance(tok, target) <= 1);
+
+const isCandyTok = (t: string) => t.includes("cand") || like(t, "candy");
+const isEnergyTok = (t: string) => t.includes("ener") || like(t, "energy");
+const isStardustTok = (t: string) => t.includes("stardus") || like(t, "stardust");
+// Full "XL"/"XI" token only — a lone "x" (the Mewtwo X form letter) is NOT XL.
+const isXlTok = (t: string) => t === "xl" || t === "xi";
+
+// ---------------------------------------------------------------------------
+// Label classification (the PoGo resource grammar)
+// ---------------------------------------------------------------------------
+
+export type LabelClass =
+  | { type: "stardust" }
+  | { type: "candy"; xl: boolean; species: string | null }
+  | {
+      type: "energy";
+      energyKind: "mega" | "primal" | "fusion" | "crowned";
+      species: string | null;
+      form: "x" | "y" | null;
+      flavor: string | null;
+    }
+  | { type: "item"; name: string }
+  | { type: "marker" }
+  | null;
+
+/** Fusion/crowned flavors and the species each implies (the label itself names
+ *  no Pokémon: "VOLT FUSION ENERGY" belongs to Kyurem). */
+const ENERGY_FLAVORS: Record<string, string> = {
+  volt: "kyurem",
+  blaze: "kyurem",
+  solar: "necrozma",
+  lunar: "necrozma",
+  sword: "zacian",
+  shield: "zamazenta",
+};
+
+/** Known evolution items (normalized, no spaces) -> display name. */
+const KNOWN_ITEMS: Record<string, string> = {
+  kingsrock: "King's Rock",
+  metalcoat: "Metal Coat",
+  dragonscale: "Dragon Scale",
+  sunstone: "Sun Stone",
+  upgrade: "Upgrade",
+  sinnohstone: "Sinnoh Stone",
+  unovastone: "Unova Stone",
+  sweetapple: "Sweet Apple",
+  tartapple: "Tart Apple",
+  syrupyapple: "Syrupy Apple",
+  zygardecell: "Zygarde Cell",
+  gimmighoulcoin: "Gimmighoul Coin",
+};
+
+/** Item word endings — future-proof catch-all for new evolution materials. */
+const ITEM_SUFFIXES = ["stone", "apple", "cell", "coin", "coat", "scale", "rock", "wreath"];
+
+/** Pokémon GO UI words: prove the screenshot is PoGo but never carry a value. */
+const UI_MARKERS = new Set([
+  "power",
+  "evolve",
+  "purify",
+  "weight",
+  "height",
+  "hp",
+  "cp",
+  "gyms",
+  "raids",
+  "trainer",
+  "battles",
+  "max",
+  "moves",
+  "level",
+  "change",
+  "form",
+  "mega",
+  "primal",
+  "reversion",
+]);
+
+/** Classify one label block's tokens against the resource grammar. */
+export function classifyLabel(toks: string[]): LabelClass {
+  if (toks.length === 0) return null;
+
+  if (toks.some(isStardustTok)) return { type: "stardust" };
+
+  if (toks.some(isCandyTok)) {
+    const xl = toks.some(isXlTok);
+    const species =
+      toks
+        .filter((t) => !isCandyTok(t) && !isXlTok(t) && !isStardustTok(t) && t.length >= 2)
+        .join(" ") || null;
+    return { type: "candy", xl, species };
+  }
+
+  if (toks.some(isEnergyTok)) {
+    let energyKind: "mega" | "primal" | "fusion" | "crowned" = "mega";
+    let flavor: string | null = null;
+    let implied: string | null = null;
+    const rest: string[] = [];
+    for (const t of toks) {
+      if (isEnergyTok(t) || like(t, "mega")) continue;
+      if (like(t, "primal")) {
+        energyKind = "primal";
+        flavor = "primal";
+        continue;
+      }
+      if (like(t, "fusion")) {
+        energyKind = "fusion";
+        continue;
+      }
+      if (like(t, "crowned")) {
+        energyKind = "crowned";
+        continue;
+      }
+      const fl = Object.keys(ENERGY_FLAVORS).find((k) => like(t, k));
+      if (fl) {
+        flavor = fl;
+        implied = ENERGY_FLAVORS[fl];
+        continue;
+      }
+      rest.push(t);
+    }
+    let form: "x" | "y" | null = null;
+    while (rest.length && (rest[rest.length - 1] === "x" || rest[rest.length - 1] === "y")) {
+      form = rest.pop() as "x" | "y";
+    }
+    const species = implied ?? (rest.filter((t) => t.length >= 2).join(" ") || null);
+    return { type: "energy", energyKind, species, form, flavor };
+  }
+
+  // Items: known table (fuzzy, OCR-tolerant) or a short phrase ending in an
+  // item-ish word ("... STONE", "... APPLE").
+  const joined = toks.join("");
+  if (joined.length >= 4) {
+    for (const [key, name] of Object.entries(KNOWN_ITEMS)) {
+      if (editDistance(joined, key) / Math.max(joined.length, key.length) <= 0.25) {
+        return { type: "item", name };
+      }
+    }
+  }
+  if (toks.length <= 3 && ITEM_SUFFIXES.some((s) => like(toks[toks.length - 1], s))) {
+    return { type: "item", name: toks.map(cap).join(" ") };
+  }
+
+  if (toks.some((t) => UI_MARKERS.has(t))) return { type: "marker" };
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Geometry: words -> label lines -> label blocks, then value pairing
+// ---------------------------------------------------------------------------
+
+interface Line {
+  words: Word[];
+  x0: number;
+  x1: number;
+  cy: number;
+  h: number;
+}
+
+interface Block {
+  lines: Line[];
+  tokens: string[];
+  x0: number;
+  x1: number;
+  /** Vertical center of the FIRST line — the value sits directly above it. */
+  topCy: number;
+  h: number;
+}
+
+interface NumTok {
+  value: number;
+  x: number;
+  y: number;
+}
+
+const wcx = (w: Word) => (w.x0 + w.x1) / 2;
+const wcy = (w: Word) => (w.y0 + w.y1) / 2;
+const wh = (w: Word) => w.y1 - w.y0 || 16;
+
+/** Group label words into visual lines, splitting a row at column-sized gaps so
+ *  adjacent grid cells ("APPLIN CANDY" | "APPLIN CANDY") never fuse. */
+function buildLines(words: Word[]): Line[] {
+  const labelWords = words.filter((w) => numVal(w.text) === null && /[a-z]/i.test(w.text));
+  const sorted = [...labelWords].sort((a, b) => wcy(a) - wcy(b) || wcx(a) - wcx(b));
+  const rows: Word[][] = [];
+  for (const w of sorted) {
+    const row = rows[rows.length - 1];
+    if (row && Math.abs(wcy(w) - wcy(row[0])) <= Math.max(wh(w), wh(row[0])) * 0.6) row.push(w);
+    else rows.push([w]);
+  }
+  const lines: Line[] = [];
+  for (const row of rows) {
+    row.sort((a, b) => a.x0 - b.x0);
+    let seg: Word[] = [];
+    for (const w of row) {
+      const prev = seg[seg.length - 1];
+      if (prev && w.x0 - prev.x1 > Math.max(wh(w), wh(prev)) * 1.8) {
+        lines.push(toLine(seg));
+        seg = [];
+      }
+      seg.push(w);
+    }
+    if (seg.length) lines.push(toLine(seg));
+  }
+  return lines.sort((a, b) => a.cy - b.cy || a.x0 - b.x0);
+}
+
+function toLine(words: Word[]): Line {
+  return {
+    words,
+    x0: Math.min(...words.map((w) => w.x0)),
+    x1: Math.max(...words.map((w) => w.x1)),
+    cy: words.reduce((s, w) => s + wcy(w), 0) / words.length,
+    h: Math.max(...words.map(wh)),
+  };
+}
+
+/** Merge vertically-adjacent, horizontally-overlapping lines into label blocks
+ *  — this is what reassembles wrapped labels ("GARDEVOIR MEGA / ENERGY",
+ *  "CROWNED SHIELD / ENERGY", "APPLIN CANDY / XL", "MEWTWO MEGA ENERGY / X"). */
+export function buildBlocks(words: Word[]): Block[] {
+  const blocks: Block[] = [];
+  for (const line of buildLines(words)) {
+    const host = blocks.find((b) => {
+      const last = b.lines[b.lines.length - 1];
+      const dy = line.cy - last.cy;
+      if (dy <= 0 || dy > Math.max(last.h, line.h) * 2.1) return false;
+      const pad = Math.max(last.h, line.h);
+      return line.x0 <= b.x1 + pad && line.x1 >= b.x0 - pad;
+    });
+    if (host) {
+      host.lines.push(line);
+      host.x0 = Math.min(host.x0, line.x0);
+      host.x1 = Math.max(host.x1, line.x1);
+      host.tokens.push(...line.words.flatMap((w) => alphaTokens(w.text)));
+    } else {
+      blocks.push({
+        lines: [line],
+        tokens: line.words.flatMap((w) => alphaTokens(w.text)),
+        x0: line.x0,
+        x1: line.x1,
+        topCy: line.cy,
+        h: line.h,
+      });
+    }
+  }
+  return blocks;
+}
+
+// ---------------------------------------------------------------------------
+// Parsed screen (geometry-free intermediate shared with the text fallback)
+// ---------------------------------------------------------------------------
+
+export interface ParsedResource {
+  kind: "stardust" | "candy" | "xlCandy" | "energy" | "item";
+  energyKind?: "mega" | "primal" | "fusion" | "crowned";
+  species: string | null;
+  form?: "x" | "y" | null;
+  flavor?: string | null;
+  itemName?: string;
+  /** Undefined when the label was visible but its number wasn't (cropped). */
+  value?: number;
+  /** Reading order (for X-then-Y energy ordering). */
+  order: number;
+}
+
+export interface ParsedScreen {
+  resources: ParsedResource[];
+  /** Count of recognized PoGo UI markers (POWER UP, WEIGHT, HP, ...). */
+  markers: number;
+}
+
+function toResource(c: Exclude<LabelClass, null | { type: "marker" }>, order: number): ParsedResource {
+  switch (c.type) {
+    case "stardust":
+      return { kind: "stardust", species: null, order };
+    case "candy":
+      return { kind: c.xl ? "xlCandy" : "candy", species: c.species, order };
+    case "energy":
+      return { kind: "energy", energyKind: c.energyKind, species: c.species, form: c.form, flavor: c.flavor, order };
+    case "item":
+      return { kind: "item", itemName: c.name, species: null, order };
+  }
+}
+
+/** Position-aware parse: classify every label block, then each resource block
+ *  claims the nearest number directly above it (greedy, one number per block). */
+export function parseScreen(words: Word[]): ParsedScreen {
+  const blocks = buildBlocks(words);
+  const numbers: NumTok[] = words
+    .map((w) => {
+      const v = numVal(w.text);
+      return v === null ? null : { value: v, x: wcx(w), y: wcy(w) };
+    })
+    .filter((n): n is NumTok => n !== null);
+
+  let markers = 0;
+  const classified: { block: Block; cls: Exclude<LabelClass, null | { type: "marker" }> }[] = [];
+  for (const block of blocks) {
+    const cls = classifyLabel(block.tokens);
+    if (!cls) continue;
+    if (cls.type === "marker") markers++;
+    else classified.push({ block, cls });
+  }
+
+  // Greedy nearest-above pairing: the value sits ~1.5–2.5 line-heights above
+  // its label's first line, horizontally within the label's span.
+  const candidates: { ci: number; ni: number; dy: number }[] = [];
+  classified.forEach(({ block }, ci) => {
+    numbers.forEach((n, ni) => {
+      const dy = block.topCy - n.y;
+      if (dy <= 0 || dy > block.h * 3.4) return;
+      const pad = block.h * 1.6;
+      if (n.x < block.x0 - pad || n.x > block.x1 + pad) return;
+      candidates.push({ ci, ni, dy });
+    });
+  });
+  candidates.sort((a, b) => a.dy - b.dy);
+  const valueOf = new Map<number, number>();
+  const takenNum = new Set<number>();
+  for (const { ci, ni } of candidates) {
+    if (valueOf.has(ci) || takenNum.has(ni)) continue;
+    valueOf.set(ci, numbers[ni].value);
+    takenNum.add(ni);
+  }
+
+  const ordered = classified
+    .map(({ block, cls }, ci) => ({ block, cls, value: valueOf.get(ci) }))
+    .sort((a, b) => a.block.topCy - b.block.topCy || a.block.x0 - b.block.x0);
+  return {
+    resources: ordered.map(({ cls, value }, i) => ({ ...toResource(cls, i), value })),
+    markers,
+  };
+}
+
+/**
+ * Text-only fallback (no word boxes): same grammar, line by line. Values
+ * precede labels in reading order; wrapped fragments ("X", "XL", "ENERGY Y",
+ * a lone species line before "MEGA ENERGY") are stitched onto their label.
+ */
+export function parseScreenText(text: string): ParsedScreen {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const resources: ParsedResource[] = [];
+  let markers = 0;
+  let pending: number | null = null;
+  let prevPlain: string[] | null = null; // unclassified line — maybe a wrapped species prefix
+
+  for (const line of lines) {
+    const n = numVal(line);
+    const toks = alphaTokens(line);
+    const last = resources[resources.length - 1];
+
+    if (!toks.length) {
+      if (n !== null) pending = n;
+      continue;
+    }
+    // Wrapped continuations attach to the previous resource.
+    if (toks.length === 1 && (toks[0] === "x" || toks[0] === "y") && last?.kind === "energy" && !last.form) {
+      last.form = toks[0] as "x" | "y";
+      continue;
+    }
+    if (toks.length === 1 && isXlTok(toks[0]) && last?.kind === "candy") {
+      last.kind = "xlCandy";
+      continue;
+    }
+
+    let cls = classifyLabel(toks);
+    // "CHARIZARD MEGA" / "ENERGY X": the species line above didn't classify —
+    // retry with it prepended.
+    if (cls && cls.type === "energy" && !cls.species && prevPlain) {
+      const merged = classifyLabel([...prevPlain, ...toks]);
+      if (merged && merged.type === "energy") cls = merged;
+    }
+
+    if (!cls) {
+      if (n !== null) {
+        pending = n;
+        prevPlain = null;
+      } else {
+        prevPlain = toks;
+      }
+      continue;
+    }
+    if (cls.type === "marker") {
+      markers++;
+      // A wrapped species line can read as a marker ("CHARIZARD MEGA") — keep
+      // it as a candidate prefix for an energy label on the next line.
+      prevPlain = toks;
+      continue;
+    }
+    prevPlain = null;
+    const value = n ?? pending ?? undefined;
+    pending = null;
+    resources.push({ ...toResource(cls, resources.length), value });
+  }
+  return { resources, markers };
+}
+
+// ---------------------------------------------------------------------------
+// Species resolution (vocabulary-validated against the raid roster)
+// ---------------------------------------------------------------------------
+
+export interface SpeciesVocab {
+  key: string;
+  name: string;
+}
+
+function candidateTokens(text: string): string[] {
+  const words = text.toUpperCase().match(/[A-Z]{3,}/g) ?? [];
+  const toks = new Set<string>(words);
+  for (let i = 0; i < words.length - 1; i++) toks.add(words[i] + words[i + 1]); // "TAPU"+"KOKO"
+  return [...toks];
+}
+
+/** The roster's species vocabulary (one per species group, uppercased). */
+const ROSTER_VOCAB: SpeciesVocab[] = (() => {
+  const seen = new Set<string>();
+  const list: SpeciesVocab[] = [];
+  for (const b of RAID_BOSSES) {
+    const key = speciesKey(b.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push({ key, name: pokemonSearchName(b.name).toUpperCase().replace(/[^A-Z]/g, "") });
+  }
+  return list;
+})();
+
+/** Nearest roster species to any token in `text`, within an edit-distance ratio. */
+export function fuzzyMatchSpecies(text: string, vocab: SpeciesVocab[]): string | null {
+  const toks = candidateTokens(text);
+  let best: { key: string; score: number } | null = null;
+  for (const sp of vocab) {
+    if (sp.name.length < 3) continue;
+    for (const tok of toks) {
+      const score = editDistance(tok, sp.name) / Math.max(tok.length, sp.name.length);
+      if (score <= 0.34 && (!best || score < best.score)) best = { key: sp.key, score };
+    }
+  }
+  return best?.key ?? null;
+}
+
+/**
+ * Resolve the species from the candy/energy LABELS only (never arbitrary text,
+ * which used to match e.g. "Max Spirit" -> Mesprit). Energy labels (the evolved
+ * form, e.g. GARDEVOIR — or the implied fusion species) win over candy labels
+ * (the base form, e.g. RALTS). Returns the matched roster key (raid target)
+ * and the read name (for the "not a raid target" warning).
+ */
+export function chooseSpecies(
+  energySpecies: string[],
+  candySpecies: string[],
+  vocab: SpeciesVocab[],
+): { key: string | null; name: string | null } {
+  const candidates = [...energySpecies, ...candySpecies]
+    .map((s) => s.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  let key: string | null = null;
+  for (const c of candidates) {
+    const m = fuzzyMatchSpecies(c, vocab);
+    if (m) {
+      key = m;
+      break;
+    }
+  }
+  // The displayed name (for the not-available warning) is the last meaningful
+  // word of the first candidate — the species/form trails any stray prefix.
+  const words = (candidates[0] ?? "").split(" ").filter(Boolean);
+  return { key, name: words.length ? words[words.length - 1] : null };
+}
+
+// ---------------------------------------------------------------------------
+// Assembly
+// ---------------------------------------------------------------------------
+
+/** Build the final ScanResult from a parsed screen (boxes or text path). */
+export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText = ""): ScanResult {
+  const res = parsed.resources;
+  const valued = res.filter((r) => r.value !== undefined);
+  const candy = valued.find((r) => r.kind === "candy")?.value;
+  const xlCandy = valued.find((r) => r.kind === "xlCandy")?.value;
+  const stardust = valued.find((r) => r.kind === "stardust")?.value;
+  const megaEnergies: EnergyHit[] = valued
+    .filter((r) => r.kind === "energy")
+    .map((r) => {
+      const hit: EnergyHit = { value: r.value!, species: normSpecies(r.species) };
+      if (r.form) hit.form = r.form;
+      if (r.flavor) hit.flavor = r.flavor;
+      return hit;
+    });
+  const items: ItemHit[] = valued
+    .filter((r) => r.kind === "item")
+    .map((r) => ({ name: r.itemName ?? "Item", value: r.value! }));
+
+  // Species comes from ALL candy/energy labels, valued or not — a crop can show
+  // a label whose number is cut off and we still want to preselect the Pokémon.
+  const energySpecies = res.filter((r) => r.kind === "energy" && r.species).map((r) => r.species!);
+  const candySpecies = res
+    .filter((r) => (r.kind === "candy" || r.kind === "xlCandy") && r.species)
+    .map((r) => r.species!);
+  const resolved = chooseSpecies(energySpecies, candySpecies, ROSTER_VOCAB);
+
+  return {
+    species: resolved.key,
+    detectedName: normSpecies(resolved.name),
+    candy,
+    xlCandy,
+    stardust,
+    megaEnergies,
+    items,
+    looksLikePogo: res.length > 0 || parsed.markers >= 2,
+    capturedAt,
+    readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0,
+    // Keep the full text (capped generously) so a failed scan can be copied
+    // verbatim into a unit test; the UI truncates it for display.
+    rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 4000),
+  };
+}
+
+/** Scan from word boxes, falling back to raw-text parsing when boxes read nothing. */
+export function scanFromWords(words: Word[], text: string, capturedAt: number): ScanResult {
+  const byBoxes = words.length ? assembleScan(parseScreen(words), capturedAt, text) : null;
+  if (byBoxes?.readAnything) return byBoxes;
+  const byText = assembleScan(parseScreenText(text), capturedAt, text);
+  if (byText.readAnything || !byBoxes) return byText;
+  return byBoxes.looksLikePogo || !byText.looksLikePogo ? byBoxes : byText;
+}
+
+// ---------------------------------------------------------------------------
+// Display + boss association helpers
+// ---------------------------------------------------------------------------
+
+/** Human chip for an energy hit: "Charizard X En 209" / "Kyurem Volt En 1,420" /
+ *  "Groudon Primal En 485" / "Energy 6,212" when the species didn't read. */
+export function energyChip(e: EnergyHit): string {
+  const v = formatNumber(e.value);
+  const qual = e.form ? ` ${e.form.toUpperCase()}` : e.flavor ? ` ${cap(e.flavor)}` : "";
+  if (!e.species) return `Energy${qual} ${v}`;
+  return `${cap(e.species)}${qual} En ${v}`;
+}
+
+/**
+ * Assign one energy value per energy-boss. A single boss takes the energy whose
+ * label species matches it (so Gardevoir takes the Gardevoir energy, not
+ * Gallade's); X/Y groups (same species, two bosses) map by the form letter,
+ * else top-to-bottom order.
+ */
+export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[]): number[] {
+  if (bosses.length === 1) {
+    const key = speciesKey(bosses[0].name);
+    let bestIdx = -1;
+    let best = Infinity;
+    energies.forEach((e, i) => {
+      if (!e.species) return;
+      const score = editDistance(e.species, key) / Math.max(e.species.length, key.length, 1);
+      if (score < best) {
+        best = score;
+        bestIdx = i;
+      }
+    });
+    const idx = best <= 0.34 ? bestIdx : -1;
+    const val = idx >= 0 ? energies[idx].value : energies[0]?.value;
+    return val !== undefined ? [val] : [];
+  }
+  // X/Y (same species, multiple bosses): match by the form letter in the boss
+  // name ("Mega Mewtwo X" ↔ energy tagged form "x") when the labels carried one,
+  // else fall back to top-to-bottom reading order.
+  const bossForm = (name: string): "x" | "y" | null => {
+    const m = name.trim().toLowerCase().match(/\b([xy])$/);
+    return (m?.[1] as "x" | "y") ?? null;
+  };
+  return bosses
+    .map((b, i) => {
+      const bf = bossForm(b.name);
+      const byForm = bf ? energies.find((e) => e.form === bf) : undefined;
+      return (byForm ?? energies[i])?.value;
+    })
+    .filter((v): v is number => v !== undefined);
+}
+
+// ---------------------------------------------------------------------------
+// Entry point
+// ---------------------------------------------------------------------------
+
+export async function scanScreenshot(file: File): Promise<ScanResult> {
+  const capturedAt = file.lastModified || Date.now();
+  try {
+    const page = await ocrImage(file);
+    let result = scanFromWords(page.words, page.text, capturedAt);
+    // Dark / low-contrast screenshots can be crushed by the levels curve — if
+    // the processed image read nothing, retry once on the raw file (Tesseract's
+    // own binarization) before giving up.
+    if (!result.readAnything && page.preprocessed) {
+      try {
+        const raw = await ocrImage(file, { raw: true });
+        const retry = scanFromWords(raw.words, raw.text, capturedAt);
+        if (retry.readAnything || (retry.looksLikePogo && !result.looksLikePogo)) result = retry;
+      } catch {
+        /* keep the first result */
+      }
+    }
+    return result;
+  } finally {
+    scheduleOcrCleanup();
+  }
+}

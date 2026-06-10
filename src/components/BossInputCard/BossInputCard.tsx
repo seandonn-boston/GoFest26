@@ -13,7 +13,7 @@ import { Sprite } from "@/components/ui/Sprite";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
-import { energyForBosses } from "@/lib/screenshotOcr";
+import { energyForBosses } from "@/lib/screenshotScan";
 import { PresetPicker } from "./PresetPicker";
 import { CardScan } from "./CardScan";
 

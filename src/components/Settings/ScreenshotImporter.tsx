@@ -5,7 +5,7 @@ import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { formatNumber } from "@/lib/format";
-import { scanScreenshot, energyForBosses, energyChip, type ScanResult } from "@/lib/screenshotOcr";
+import { scanScreenshot, energyForBosses, energyChip, type ScanResult } from "@/lib/screenshotScan";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -48,6 +48,24 @@ function valueChips(scan: ScanResult): string[] {
   if (scan.xlCandy !== undefined) c.push(`XL ${formatNumber(scan.xlCandy)}`);
   for (const e of scan.megaEnergies) c.push(energyChip(e));
   return c;
+}
+
+/** Recognized evolution items — shown for confirmation, never applied. */
+function itemChips(scan: ScanResult): string[] {
+  return scan.items.map((i) => `${i.name} ${formatNumber(i.value)}`);
+}
+
+/** Why a screenshot produced no values — as specific as the scan allows. */
+function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode {
+  if (!scan.looksLikePogo) {
+    return <>This doesn’t look like a Pokémon GO Pokémon screen ({fileName}).</>;
+  }
+  return (
+    <>
+      Looks like Pokémon GO, but the stats aren’t visible in {fileName} — include the Stardust/Candy
+      section of the Pokémon’s page.
+    </>
+  );
 }
 
 function applyScan(
@@ -94,7 +112,15 @@ export function ScreenshotImporter() {
     const next: Row[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const blank: ScanResult = { species: null, detectedName: null, megaEnergies: [], capturedAt: file.lastModified || 0, readAnything: false };
+      const blank: ScanResult = {
+        species: null,
+        detectedName: null,
+        megaEnergies: [],
+        items: [],
+        looksLikePogo: false,
+        capturedAt: file.lastModified || 0,
+        readAnything: false,
+      };
       const tooBig = uploadError(file);
       if (tooBig) {
         next.push({ id: i, fileName: file.name, scan: blank, key: "", thumb: null, error: tooBig });
@@ -117,7 +143,11 @@ export function ScreenshotImporter() {
     setBusy(false);
     setProgress("");
     if (next.length && next.every((r) => !r.scan.readAnything)) {
-      setSummary("No readable screenshots — try a tighter crop, or that the image is a Pokémon detail screen.");
+      setSummary(
+        next.some((r) => r.scan.looksLikePogo)
+          ? "No values read — make sure each screenshot shows the Stardust/Candy section of a Pokémon's page."
+          : "None of these look like Pokémon GO Pokémon screens.",
+      );
     }
   }
 
@@ -204,6 +234,11 @@ export function ScreenshotImporter() {
                             {c}
                           </span>
                         ))}
+                        {itemChips(r.scan).map((c, i) => (
+                          <span key={`item-${i}-${c}`} className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[11px] text-slate-400 ring-1 ring-white/10">
+                            {c}
+                          </span>
+                        ))}
                       </div>
                       {!OPTION_BY_KEY.has(r.key) && r.scan.detectedName ? (
                         <p className="mb-1.5 text-[11px] text-amber-300">
@@ -228,9 +263,14 @@ export function ScreenshotImporter() {
                   ) : (
                     <div>
                       <p className="text-[11px] text-amber-200 break-words">
-                        ⚠ {r.error ? r.error : <>Couldn’t read {r.fileName}{r.scan.rawText ? <> — OCR saw: “{previewOcr(r.scan.rawText)}”</> : ""}.</>}
+                        ⚠ {r.error ? r.error : unreadableMessage(r.scan, r.fileName)}
                       </p>
-                      {r.scan.rawText ? <CopyOcrButton text={r.scan.rawText} /> : null}
+                      {!r.error && r.scan.looksLikePogo && r.scan.rawText ? (
+                        <>
+                          <p className="text-[10px] text-slate-500 break-words">OCR saw: “{previewOcr(r.scan.rawText)}”</p>
+                          <CopyOcrButton text={r.scan.rawText} />
+                        </>
+                      ) : null}
                     </div>
                   )}
                 </div>
