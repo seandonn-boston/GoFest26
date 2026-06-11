@@ -102,6 +102,12 @@ export interface BossInput {
   selected: boolean;
   /** How many of each variant the user wants to take to the target level. */
   counts: Record<Variant, number>;
+  /**
+   * How many of this species the user wants to take to the goal. Every gross
+   * requirement (candy, XL, mega/primal energy, stardust, …) scales with this,
+   * so maxing two Mewtwo costs twice the resources. Defaults to 1.
+   */
+  quantity?: number;
   current: {
     candy: number;
     xlCandy: number;

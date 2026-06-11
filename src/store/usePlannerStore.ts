@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getBoss } from "@/data";
+import { getBoss, SORTED_BOSSES } from "@/data";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
@@ -77,9 +77,18 @@ interface PlannerState {
   research: Record<string, boolean>;
   /** Imported screenshot previews, keyed by species — only the latest is kept. */
   screenshots: Record<string, ScreenshotPreview>;
+  /**
+   * User-ranked priority, highest first, by boss id. Drives card order, bar fill
+   * order, and which raids get greyed out when goals exceed capacity (lowest
+   * priority is cut first). Ids absent from the list sort after, in roster order.
+   */
+  priorityOrder: string[];
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
+  setQuantity: (bossId: string, value: number) => void;
+  /** Move a boss one step up (toward higher priority) or down within the order. */
+  reprioritize: (bossId: string, direction: "up" | "down") => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -101,6 +110,21 @@ function ensureInput(state: PlannerState, bossId: string): BossInput | null {
   return boss ? makeDefaultInput(boss) : null;
 }
 
+/**
+ * The selected bosses in effective priority order (highest first): explicit
+ * `priorityOrder` first, then any unranked selected bosses in roster order.
+ * Shared by the UI ranking list and the per-block plan so both agree.
+ */
+export function selectedInPriorityOrder(state: {
+  inputs: Record<string, BossInput>;
+  priorityOrder: string[];
+}): string[] {
+  const rank = new Map(state.priorityOrder.map((id, i) => [id, i] as const));
+  return SORTED_BOSSES.filter((b) => state.inputs[b.id]?.selected)
+    .map((b) => b.id)
+    .sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
+}
+
 export const usePlannerStore = create<PlannerState>()(
   persist(
     (set) => ({
@@ -108,6 +132,7 @@ export const usePlannerStore = create<PlannerState>()(
       settings: { ...DEFAULT_SETTINGS },
       research: {},
       screenshots: {},
+      priorityOrder: [],
 
       setScreenshot: (speciesKey, src, capturedAt) =>
         set((state) => {
@@ -168,6 +193,27 @@ export const usePlannerStore = create<PlannerState>()(
           return {
             inputs: { ...state.inputs, [bossId]: { ...input, counts: { ...counts, [variant]: safe } } },
           };
+        }),
+
+      setQuantity: (bossId, value) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          const safe = Number.isFinite(value) ? Math.max(1, Math.round(value)) : 1;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, quantity: safe } } };
+        }),
+
+      reprioritize: (bossId, direction) =>
+        set((state) => {
+          const order = selectedInPriorityOrder(state);
+          const i = order.indexOf(bossId);
+          const j = direction === "up" ? i - 1 : i + 1;
+          if (i < 0 || j < 0 || j >= order.length) return state;
+          [order[i], order[j]] = [order[j], order[i]];
+          // Re-materialize the full explicit order: the reordered selected ids
+          // first, then any previously-ranked ids that aren't currently selected.
+          const others = state.priorityOrder.filter((id) => !order.includes(id));
+          return { priorityOrder: [...order, ...others] };
         }),
 
       setCurrent: (bossId, field, value) =>
@@ -252,11 +298,12 @@ export const usePlannerStore = create<PlannerState>()(
 
       resetSettings: () => set({ settings: { ...DEFAULT_SETTINGS } }),
 
-      resetAll: () => set({ inputs: {}, settings: { ...DEFAULT_SETTINGS }, research: {}, screenshots: {} }),
+      resetAll: () =>
+        set({ inputs: {}, settings: { ...DEFAULT_SETTINGS }, research: {}, screenshots: {}, priorityOrder: [] }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 5,
+      version: 6,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -266,6 +313,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.inputs) state.inputs = {};
         if (!state.research) state.research = {};
         if (!state.screenshots) state.screenshots = {};
+        if (!Array.isArray(state.priorityOrder)) state.priorityOrder = [];
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },
