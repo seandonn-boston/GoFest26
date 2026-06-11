@@ -397,7 +397,12 @@ export function buildBlocks(words: Word[]): Block[] {
       host.lines.push(line);
       host.x0 = Math.min(host.x0, line.x0);
       host.x1 = Math.max(host.x1, line.x1);
-      host.tokens.push(...lineToks);
+      // A wrapped "XL" often OCRs as a lone "X". Form letters never follow
+      // CANDY, so a continuation "x" under a candy block IS the XL.
+      const hostCls = classifyLabel(host.tokens);
+      const toks =
+        hostCls?.type === "candy" ? lineToks.map((t) => (t === "x" ? "xl" : t)) : lineToks;
+      host.tokens.push(...toks);
     } else if (lineToks.join("").length > 2) {
       blocks.push({
         lines: [line],
@@ -649,13 +654,21 @@ export function chooseSpecies(
 export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText = ""): ScanResult {
   const res = parsed.resources;
   const valued = res.filter((r) => r.value !== undefined);
-  const candy = valued.find((r) => r.kind === "candy")?.value;
+  const candies = valued.filter((r) => r.kind === "candy");
+  const candy = candies[0]?.value;
+  let xlRead = valued.find((r) => r.kind === "xlCandy")?.value;
+  // The XL cell's wrapped "XL" token can vanish entirely, leaving a SECOND
+  // same-species candy cell — which never legitimately exists. Reading order
+  // puts XL after candy, so the later duplicate is the XL count.
+  if (xlRead === undefined && candies.length >= 2 && candies[0].species === candies[1].species) {
+    xlRead = candies[1].value;
+  }
   // Every Pokémon has an XL pool, but a page can simply not show the cell (Mew,
   // low-level accounts). Candy read + no XL cell anywhere => the XL count is 0.
-  const xlRead = valued.find((r) => r.kind === "xlCandy")?.value;
-  const xlCandy = xlRead ?? (candy !== undefined && !res.some((r) => r.kind === "xlCandy") ? 0 : undefined);
+  const xlCandy =
+    xlRead ?? (candy !== undefined && !res.some((r) => r.kind === "xlCandy") && candies.length < 2 ? 0 : undefined);
   const stardust = valued.find((r) => r.kind === "stardust")?.value;
-  const megaEnergies: EnergyHit[] = valued
+  const allEnergies: EnergyHit[] = valued
     .filter((r) => r.kind === "energy")
     .map((r) => {
       const hit: EnergyHit = { value: r.value!, species: normSpecies(r.species) };
@@ -664,6 +677,13 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
       if (r.flavor) hit.flavor = r.flavor;
       return hit;
     });
+  // A formless energy that duplicates a formed sibling (same species & value)
+  // is a dual-pass merge artifact of a wrapped X/Y line — drop it.
+  const megaEnergies = allEnergies.filter(
+    (e, i) =>
+      e.form ||
+      !allEnergies.some((f, j) => j !== i && f.form && f.species === e.species && f.value === e.value),
+  );
   const items: ItemHit[] = valued
     .filter((r) => r.kind === "item")
     .map((r) => ({ name: r.itemName ?? "Item", value: r.value! }));
@@ -803,13 +823,15 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
       /* the sparse pass alone is still useful */
     }
     let result = assembleScan(parsed, capturedAt, sparse.text);
-    // Dark / low-contrast screenshots can be crushed by the levels curve — if
-    // the processed image read nothing, retry once on the raw file (Tesseract's
-    // own binarization) before giving up.
-    if (!result.readAnything && sparse.preprocessed) {
+    // The preprocessed image can damage digits in ways the raw file doesn't
+    // (and dark screenshots can be crushed by the levels curve outright). If
+    // any classified label ended up without a value — or nothing read at all —
+    // run one more pass on the RAW file and merge what it recovers.
+    const missingValues = parsed.resources.some((r) => r.value === undefined);
+    if ((missingValues || !result.readAnything) && sparse.preprocessed) {
       try {
         const raw = await ocrImage(file, { raw: true, psm: "11" });
-        const retry = scanFromWords(raw.words, raw.text, capturedAt);
+        const retry = assembleScan(mergeParsed(parsed, parsePage(raw)), capturedAt, sparse.text || raw.text);
         if (retry.readAnything || (retry.looksLikePogo && !result.looksLikePogo)) result = retry;
       } catch {
         /* keep the first result */

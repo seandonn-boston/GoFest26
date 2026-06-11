@@ -379,6 +379,46 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.xlCandy).toBe(27);
   });
 
+  it("Giratina: 3-col row where the wrapped 'XL' OCRs as a lone 'X' (live bug)", () => {
+    const r = scanWords([
+      b("1,001,623", 60, 1000, 110),
+      b("487", 320, 1000, 40),
+      b("229", 520, 1000, 40),
+      b("STARDUST", 55, 1040, 90),
+      b("GIRATINA", 245, 1040, 90),
+      b("CANDY", 345, 1040, 65),
+      b("GIRATINA", 470, 1040, 90),
+      b("CANDY", 570, 1040, 65),
+      b("X", 550, 1066, 18), // "XL" misread — forms never follow CANDY
+    ]);
+    expect(r.candy).toBe(487);
+    expect(r.xlCandy).toBe(229);
+    expect(r.species).toBe("giratina");
+  });
+
+  it("a second same-species candy cell with no XL anywhere IS the XL cell", () => {
+    const r = scanWords([
+      b("487", 320, 1000, 40),
+      b("229", 520, 1000, 40),
+      b("GIRATINA", 245, 1040, 90),
+      b("CANDY", 345, 1040, 65),
+      b("GIRATINA", 470, 1040, 90),
+      b("CANDY", 570, 1040, 65),
+    ]);
+    expect(r.candy).toBe(487);
+    expect(r.xlCandy).toBe(229); // not the assumed 0 — the duplicate is the signal
+  });
+
+  it("drops a formless energy duplicating a formed sibling (dual-pass artifact)", () => {
+    const merged = mergeParsed(
+      parseScreenText("0\nMEWTWO MEGA ENERGY"),
+      parseScreenText("0\nMEWTWO MEGA ENERGY\nX"),
+    );
+    expect(assembleScan(merged, 0).megaEnergies).toEqual([
+      { value: 0, species: "mewtwo", kind: "mega", form: "x" },
+    ]);
+  });
+
   it("PoGo crop with no stats section: looksLikePogo, but nothing readable", () => {
     const r = scanWords([
       b("Caterpie", 250, 100, 120, 30),
