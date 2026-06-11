@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { lockBodyScroll } from "@/lib/scrollLock";
 
 /**
  * A small clickable screenshot thumbnail. Tapping it opens a full-screen
@@ -14,12 +15,11 @@ export function ImageThumb({ src, alt, size = 48 }: { src: string; alt: string; 
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    // Lock background scroll while the lightbox is open.
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Lock background scroll while the lightbox is open (iOS-safe).
+    const unlock = lockBodyScroll();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
+      unlock();
     };
   }, [open]);
 

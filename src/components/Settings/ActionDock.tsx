@@ -75,8 +75,28 @@ export function ActionDock() {
             aria-expanded={open}
             className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
           >
-            <span className={`text-4xl font-light leading-none transition-transform duration-200 ${open ? "rotate-45" : ""}`}>
-              +
+            {/* Two-line hamburger → X. Each line spins 225° (top left, bottom
+                right) while sliding to the exact vertical center; closing
+                plays the same transition in reverse. */}
+            <span className="relative block h-6 w-6" aria-hidden="true">
+              <span
+                className="absolute left-1/2 top-1/2 block rounded-full bg-current"
+                style={{
+                  width: 22,
+                  height: 2.5,
+                  transform: `translate(-50%, -50%) translateY(${open ? 0 : -4}px) rotate(${open ? -225 : 0}deg)`,
+                  transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              />
+              <span
+                className="absolute left-1/2 top-1/2 block rounded-full bg-current"
+                style={{
+                  width: 22,
+                  height: 2.5,
+                  transform: `translate(-50%, -50%) translateY(${open ? 0 : 4}px) rotate(${open ? 225 : 0}deg)`,
+                  transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              />
             </span>
           </button>
         </div>
