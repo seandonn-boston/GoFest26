@@ -469,10 +469,19 @@ export function parseScreen(words: Word[]): ParsedScreen {
   const numbers: NumTok[] = [];
   for (const w of words) {
     const v = numVal(w.text);
-    if (v !== null) numbers.push({ value: v, x: wcx(w), y: wcy(w) });
-    // The PoGo zero often reads as a letter O. Track it as a *soft* zero that
-    // only a label with no real digit candidate will claim.
-    else if (w.text.trim().toUpperCase() === "O") numbers.push({ value: 0, x: wcx(w), y: wcy(w), soft: true });
+    if (v !== null) {
+      numbers.push({ value: v, x: wcx(w), y: wcy(w) });
+      continue;
+    }
+    const t = w.text.trim();
+    // The PoGo zero often reads as a letter O, and a gray resource icon can
+    // fuse into the digits as one leading letter ("S27", "J0"). Track these as
+    // *soft* candidates that only a label with no clean digit may claim.
+    if (t.toUpperCase() === "O" || t.toUpperCase() === "Q") numbers.push({ value: 0, x: wcx(w), y: wcy(w), soft: true });
+    else if (/^[A-Za-z][\d.,]+$/.test(t)) {
+      const repaired = numVal(t.slice(1));
+      if (repaired !== null) numbers.push({ value: repaired, x: wcx(w), y: wcy(w), soft: true });
+    }
   }
 
   let markers = 0;
@@ -488,8 +497,9 @@ export function parseScreen(words: Word[]): ParsedScreen {
   }
 
   // Greedy nearest-above pairing: the value sits ~1.5–2.5 line-heights above
-  // its label's first line, horizontally within the label's span. Soft zeros
-  // (letter-O reads) carry a rank penalty so any real digit wins first.
+  // its label's first line, horizontally within the label's span. Soft
+  // candidates (letter-O/Q zeros, icon-fused repairs) carry a rank penalty so
+  // any clean digit wins first.
   const candidates: { ci: number; ni: number; rank: number }[] = [];
   classified.forEach(({ block }, ci) => {
     numbers.forEach((n, ni) => {
@@ -501,13 +511,36 @@ export function parseScreen(words: Word[]): ParsedScreen {
     });
   });
   candidates.sort((a, b) => a.rank - b.rank);
-  const valueOf = new Map<number, number>();
+  const chosen = new Map<number, number>();
   const takenNum = new Set<number>();
   for (const { ci, ni } of candidates) {
-    if (valueOf.has(ci) || takenNum.has(ni)) continue;
-    valueOf.set(ci, numbers[ni].value);
+    if (chosen.has(ci) || takenNum.has(ni)) continue;
+    chosen.set(ci, ni);
     takenNum.add(ni);
   }
+  // Same-height correction: an icon shard misread as a digit sits LEFT of its
+  // cell's real number ("2" beside the real "45"), and a count's "›" arrow can
+  // read as a digit far RIGHT — among a block's same-height candidates, the
+  // real value is the clean number closest to the label's center.
+  for (const [ci, ni] of chosen) {
+    const { block } = classified[ci];
+    const center = (block.x0 + block.x1) / 2;
+    const cur = numbers[ni];
+    let best = ni;
+    for (const c of candidates) {
+      if (c.ci !== ci || c.ni === ni || takenNum.has(c.ni)) continue;
+      const n = numbers[c.ni];
+      if (n.soft || Math.abs(n.y - cur.y) > block.h * 0.8) continue;
+      if (Math.abs(n.x - center) < Math.abs(numbers[best].x - center)) best = c.ni;
+    }
+    if (best !== ni && !cur.soft === !numbers[best].soft) {
+      takenNum.delete(ni);
+      takenNum.add(best);
+      chosen.set(ci, best);
+    }
+  }
+  const valueOf = new Map<number, number>();
+  for (const [ci, ni] of chosen) valueOf.set(ci, numbers[ni].value);
 
   const ordered = classified
     .map(({ block, cls }, ci) => ({ block, cls, value: valueOf.get(ci) }))
@@ -564,8 +597,8 @@ export function parseScreenText(text: string): ParsedScreen {
       if (n !== null) pending = n;
       continue;
     }
-    // A lone "O" line is the PoGo zero misread as a letter.
-    if (line.trim().toUpperCase() === "O" && pending === null) {
+    // A lone "O"/"Q" line is the PoGo zero misread as a letter.
+    if (/^[OQ]$/i.test(line.trim()) && pending === null) {
       pending = 0;
       continue;
     }
@@ -822,7 +855,12 @@ export function scanFromWords(words: Word[], text: string, capturedAt: number): 
  */
 export function mergeParsed(primary: ParsedScreen, secondary: ParsedScreen): ParsedScreen {
   const keyOf = (r: ParsedResource) =>
-    [r.kind, r.energyKind ?? "", r.species ?? "", r.form ?? "", r.flavor ?? "", r.itemName ?? ""].join("|");
+    // Candy/XL/Stardust are singletons per screen — match by kind alone, since
+    // the species STRING often differs between passes. Energies and items need
+    // their full identity.
+    r.kind === "candy" || r.kind === "xlCandy" || r.kind === "stardust"
+      ? r.kind
+      : [r.kind, r.energyKind ?? "", r.species ?? "", r.form ?? "", r.flavor ?? "", r.itemName ?? ""].join("|");
   const resources = primary.resources.map((r) => ({ ...r }));
   const byKey = new Map<string, ParsedResource>();
   for (const r of resources) if (!byKey.has(keyOf(r))) byKey.set(keyOf(r), r);
@@ -834,6 +872,13 @@ export function mergeParsed(primary: ParsedScreen, secondary: ParsedScreen): Par
       byKey.set(keyOf(added), added);
     } else if (hit.value === undefined && r.value !== undefined) {
       hit.value = r.value;
+    } else if (hit.value !== undefined && r.value !== undefined && hit.value !== r.value) {
+      // Conflicting reads where one is a decimal SUFFIX of the other: an icon
+      // fused into the digits only ever ADDS leading glyphs ("1,769" became
+      // "31,769"), so the shorter read is the true value.
+      const a = String(hit.value);
+      const c = String(r.value);
+      if (a.endsWith(c) && a.length - c.length <= 2 && c.length >= 2) hit.value = r.value;
     }
   }
   return {
@@ -844,6 +889,27 @@ export function mergeParsed(primary: ParsedScreen, secondary: ParsedScreen): Par
     grid: primary.grid ?? secondary.grid,
     markerRows: primary.markerRows?.length ? primary.markerRows : secondary.markerRows,
   };
+}
+
+/**
+ * Repair icon-fused values using the raw pass's number bag. A gray resource
+ * icon can fuse into the digits as extra LEADING glyphs ("1,769" reads as
+ * "31,769") — and the raw pass often reads the same cell clean even when it
+ * reads no labels at all. When a claimed value is absent from the raw bag but
+ * exactly one bag number is its 1-2-digit-shorter suffix, take the suffix.
+ */
+export function reconcileFusedValues(parsed: ParsedScreen, rawNumbers: number[]): void {
+  if (!rawNumbers.length) return;
+  const bag = new Set(rawNumbers);
+  for (const r of parsed.resources) {
+    if (r.value === undefined || r.kind === "stardust" || bag.has(r.value)) continue;
+    const v = String(r.value);
+    const fixes = rawNumbers.filter((n) => {
+      const c = String(n);
+      return c.length >= 3 && v.length - c.length >= 1 && v.length - c.length <= 2 && v.endsWith(c);
+    });
+    if (new Set(fixes).size === 1) r.value = fixes[0];
+  }
 }
 
 /** Parse one OCR page: word boxes when present, raw text otherwise. */
@@ -911,9 +977,11 @@ export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[
 export async function scanScreenshot(file: File): Promise<ScanResult> {
   const capturedAt = file.lastModified || Date.now();
   try {
-    // Two passes over the same preprocessed image (the canvas is cached):
-    // sparse-text finds scattered stat cells, auto-layout finds the tiny
-    // wrapped fragments sparse mode skips. Merge recovers both.
+    // Three passes, merged: sparse-text and auto-layout over the preprocessed
+    // canvas (each finds cells the other misses), then the RAW file. The raw
+    // pass matters twice over — Tesseract decodes the original bytes WITHOUT
+    // the browser's Display-P3 color management, and its conflicting reads
+    // expose icon-fused digits via the suffix rule in mergeParsed.
     const sparse = await ocrImage(file, { psm: "11" });
     let parsed = parsePage(sparse);
     try {
@@ -922,22 +990,19 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
     } catch {
       /* the sparse pass alone is still useful */
     }
-    let result = assembleScan(parsed, capturedAt, sparse.text);
-    // The preprocessed image can damage digits in ways the raw file doesn't
-    // (and dark screenshots can be crushed by the levels curve outright). If
-    // any classified label ended up without a value — or nothing read at all —
-    // run one more pass on the RAW file and merge what it recovers.
-    const missingValues = parsed.resources.some((r) => r.value === undefined);
-    if ((missingValues || !result.readAnything) && sparse.preprocessed) {
+    if (sparse.preprocessed) {
       try {
         const raw = await ocrImage(file, { raw: true, psm: "11" });
-        const retry = assembleScan(mergeParsed(parsed, parsePage(raw)), capturedAt, sparse.text || raw.text);
-        if (retry.readAnything || (retry.looksLikePogo && !result.looksLikePogo)) result = retry;
+        parsed = mergeParsed(parsed, parsePage(raw));
+        reconcileFusedValues(
+          parsed,
+          raw.words.map((w) => numVal(w.text)).filter((v): v is number => v !== null),
+        );
       } catch {
-        /* keep the first result */
+        /* keep the preprocessed passes */
       }
     }
-    return result;
+    return assembleScan(parsed, capturedAt, sparse.text);
   } finally {
     // Free this screenshot's preprocessing canvas right away — batches on iOS
     // Safari otherwise accumulate enough canvas memory to get the tab killed.

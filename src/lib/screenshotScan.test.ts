@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assembleScan,
+  reconcileFusedValues,
   chooseSpecies,
   classifyLabel,
   energyChip,
@@ -488,6 +489,37 @@ describe("parseScreen — real screenshot layouts", () => {
     ]);
   });
 
+  it("repairs a letter-prefixed icon fusion ('S27') when no clean digit competes", () => {
+    const r = scanWords([
+      b("S27", 410, 1000, 70),
+      b("MEWTWO", 380, 1040, 75),
+      b("CANDY", 465, 1040, 65),
+      b("XL", 540, 1040, 25),
+    ]);
+    expect(r.xlCandy).toBe(27);
+  });
+
+  it("reads a lone 'Q' above an energy label as zero", () => {
+    const r = scanWords([
+      b("Q", 480, 1000, 20),
+      b("MEWTWO", 380, 1040, 75),
+      b("MEGA", 465, 1040, 55),
+      b("ENERGY", 530, 1040, 75),
+      b("X", 615, 1040, 15),
+    ]);
+    expect(r.megaEnergies).toEqual([{ value: 0, species: "mewtwo", kind: "mega", form: "x" }]);
+  });
+
+  it("an icon shard misread as a digit loses to the clean number nearer the label center", () => {
+    const r = scanWords([
+      b("2", 790, 1004, 16), // stone icon shard, left of center, slightly lower
+      b("45", 862, 1000, 35),
+      b("SINNOH", 774, 1040, 75),
+      b("STONE", 860, 1040, 65),
+    ]);
+    expect(r.items).toEqual([{ name: "Sinnoh Stone", value: 45 }]);
+  });
+
   it("PoGo crop with no stats section: looksLikePogo, but nothing readable", () => {
     const r = scanWords([
       b("Caterpie", 250, 100, 120, 30),
@@ -695,6 +727,22 @@ describe("mergeParsed", () => {
 
   it("parsePage uses boxes when present, text otherwise", () => {
     expect(assembleScan(parsePage({ words: [], text: "26\nMEWTWO CANDY" }), 0).candy).toBe(26);
+  });
+
+  it("a conflicting suffix read exposes an icon-fused value ('31,769' vs '1,769')", () => {
+    const m = mergeParsed(parseScreenText("31,769\nDEINO CANDY"), parseScreenText("1,769\nDEINO CANDY"));
+    expect(assembleScan(m, 0).candy).toBe(1769);
+  });
+
+  it("reconcileFusedValues repairs via the raw number bag, conservatively", () => {
+    const parsed = parseScreenText("31,769\nDEINO CANDY\n206\nDEINO CANDY XL");
+    reconcileFusedValues(parsed, [41001623, 1769, 206]);
+    expect(assembleScan(parsed, 0).candy).toBe(1769);
+    expect(assembleScan(parsed, 0).xlCandy).toBe(206); // present in the bag — untouched
+    // No unique suffix match -> untouched.
+    const p2 = parseScreenText("31,769\nDEINO CANDY");
+    reconcileFusedValues(p2, [1769, 31769]);
+    expect(assembleScan(p2, 0).candy).toBe(31769);
   });
 });
 
