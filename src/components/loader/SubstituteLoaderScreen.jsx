@@ -511,32 +511,21 @@ function buildSubstituteGeometry() {
 /*    0 HP -> knocked down -> randomized bounces -> fade -> reveal.    */
 /* ================================================================== */
 
-const MAX_HP = 114;
+const MAX_HP = 100;
 const LOAD_MSGS = [
-  { at: 0, t: "A wild LOADING appeared!" },
-  { at: 9, t: "TRAINER sent out SUBSTITUTE!" },
-  { at: 32, t: "LOADING used FETCH!" },
-  { at: 55, t: "It's super effective!" },
-  { at: 80, t: "SUBSTITUTE is holding on..." },
+  { at: 0, t: "Website used SUBSTITUTE!" },
+  { at: 25, t: "You used LOAD!" },
+  { at: 55, t: "A critical hit!" },
+  { at: 78, t: "It's super effective!" },
 ];
 const FAINT_MSG = "SUBSTITUTE fainted!";
 
-/**
- * @param {object} props
- * @param {() => void} props.onDone fired once after HP hits 0 → KO → fade
- * @param {number | null} [props.progress] real load progress 0–100 (null =
- *   busy, no measurable signal); omit entirely for the self-driven intro
- */
-function SubstituteLoader({ onDone, progress }) {
+function SubstituteLoader({ onDone }) {
   const glRef = useRef(null);
   const playerRef = useRef(null);
   const msgRef = useRef(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
-  // Live external load progress (0–100; null = busy with no measurable
-  // progress; undefined = self-driven intro). Read by the tick loop.
-  const progressRef = useRef(progress);
-  progressRef.current = progress;
   const simRef = useRef(null);
 
   const motes = useMemo(
@@ -634,22 +623,11 @@ function SubstituteLoader({ onDone, progress }) {
       sim.t += dt;
 
       if (sim.phase === "load") {
-        const ext = progressRef.current;
-        if (ext === undefined) {
-          // Self-driven intro: scripted stalls + a wandering drain rate.
-          if (sim.stallLeft > 0) sim.stallLeft -= dt;
-          else {
-            for (const s of sim.stalls) if (!s.hit && sim.progress >= s.at) { s.hit = true; sim.stallLeft = s.dur; }
-            const rate = 15 + Math.sin(sim.t * 1.9) * 5 + Math.sin(sim.t * 0.7) * 3;
-            sim.progress = Math.min(100, sim.progress + rate * dt);
-          }
-        } else {
-          // Externally driven by real load state: ease the HP drain toward the
-          // reported progress. null = busy with no measurable progress — creep
-          // toward 90 and hold there until the work reports completion.
-          const target = ext === null ? 90 : Math.max(0, Math.min(100, ext));
-          sim.progress += (target - sim.progress) * Math.min(1, dt * (ext === null ? 0.6 : 3.5));
-          if (target >= 100 && sim.progress > 99.4) sim.progress = 100;
+        if (sim.stallLeft > 0) sim.stallLeft -= dt;
+        else {
+          for (const s of sim.stalls) if (!s.hit && sim.progress >= s.at) { s.hit = true; sim.stallLeft = s.dur; }
+          const rate = 15 + Math.sin(sim.t * 1.9) * 5 + Math.sin(sim.t * 0.7) * 3;
+          sim.progress = Math.min(100, sim.progress + rate * dt);
         }
         if (sim.progress >= 100) { sim.phase = "dying"; sim.dieAt = now; }
       }
@@ -714,7 +692,7 @@ function SubstituteLoader({ onDone, progress }) {
       shadowMat.opacity = (0.34 - hn * 0.13) * (1 - sim.fade);
 
       const cur = Math.max(0, Math.ceil(MAX_HP * (1 - sim.progress / 100)));
-      drawPlayerBox(pCtx, "SUBSTITUTE", 36, cur, MAX_HP, now);
+      drawPlayerBox(pCtx, "SUBSTITUTE", 67, cur, MAX_HP, now);
 
       const target =
         sim.phase === "load"

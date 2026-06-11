@@ -15,7 +15,6 @@ import { ResearchPanel } from "@/components/Research/ResearchPanel";
 import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
-import { LoadingScreenOverlay } from "@/components/loader/LoadingScreenOverlay";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 
@@ -135,7 +134,6 @@ export default function Home() {
       </SpriteScaleProvider>
       </main>
       <ActionDock />
-      <LoadingScreenOverlay />
     </>
   );
 }
