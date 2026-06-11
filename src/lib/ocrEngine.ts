@@ -230,7 +230,10 @@ async function preprocess(file: File): Promise<HTMLCanvasElement | File> {
     const mask = new Uint8Array(w * h);
     for (let i = 0, p = 0; i < d.length; i += 4, p++) {
       const chroma = Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
-      if (chroma > 40) mask[p] = 1;
+      // 56, not lower: browsers color-manage Display-P3 screenshots into sRGB,
+      // which amplifies the JPEG chroma fringe on dark digit edges to ~47 —
+      // a lower threshold makes the mask eat the digits themselves.
+      if (chroma > 56) mask[p] = 1;
     }
     const dilated = dilateMask(mask, w, h, 4);
     const Bp = 150;
