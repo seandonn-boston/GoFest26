@@ -755,7 +755,7 @@ function SubstituteLoader({ onDone }) {
       shadowMat.opacity = (0.34 - hn * 0.13) * (1 - sim.fade);
 
       const cur = Math.max(0, Math.ceil(MAX_HP * (1 - sim.progress / 100)));
-      drawPlayerBox(pCtx, "SUBSTITUTE", 67, cur, MAX_HP, now);
+      drawPlayerBox(pCtx, "LOADING", 67, cur, MAX_HP, now);
 
       const target =
         sim.phase === "load"
