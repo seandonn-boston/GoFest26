@@ -1,11 +1,14 @@
 "use client";
 
 import type { PlanSummary } from "@/domain/types";
+import type { WeekendBlockPlan } from "@/domain";
 import { formatRange } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { CapacityGauge } from "./CapacityGauge";
+import { PriorityRanker } from "./PriorityRanker";
+import { BlockBars } from "./BlockBars";
 
-export function SummaryDashboard({ summary }: { summary: PlanSummary }) {
+export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
   const { capacity } = summary;
   const hasGoals = summary.totalRaids.max > 0;
 
@@ -37,6 +40,9 @@ export function SummaryDashboard({ summary }: { summary: PlanSummary }) {
               </p>
             );
           })()}
+
+          <PriorityRanker />
+          <BlockBars plan={blockPlan} />
         </>
       ) : (
         <p className="text-sm text-slate-400">

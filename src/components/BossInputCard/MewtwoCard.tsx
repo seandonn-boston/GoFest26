@@ -7,6 +7,7 @@ import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { ImageThumb } from "@/components/ui/ImageThumb";
@@ -45,6 +46,7 @@ export function MewtwoCard({
   const inputX = usePlannerStore((s) => s.inputs[bossX.id]);
   const inputY = usePlannerStore((s) => s.inputs[bossY.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
+  const setQuantity = usePlannerStore((s) => s.setQuantity);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
@@ -142,6 +144,24 @@ export function MewtwoCard({
               you farm Mewtwo XL from those raids.
             </p>
           ) : null}
+          {/* Max out more than one Mewtwo — scales the shared Candy/XL and each
+              form's Mega Energy alike. */}
+          <div className="mt-3">
+            <QuantityStepper
+              value={owner.quantity ?? 1}
+              label="Max out"
+              onChange={(n) => {
+                setQuantity(bossX.id, n);
+                setQuantity(bossY.id, n);
+              }}
+            />
+            {(owner.quantity ?? 1) > 1 ? (
+              <p className="mt-1 text-[11px] text-slate-500">
+                Planning for {owner.quantity} Mewtwo — Candy, XL, and each form&apos;s Mega Energy are scaled ×
+                {owner.quantity}.
+              </p>
+            ) : null}
+          </div>
         </div>
 
         {/* Per-form (only the forms you selected) */}
