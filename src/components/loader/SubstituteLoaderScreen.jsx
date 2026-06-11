@@ -15,7 +15,7 @@
  * integrity is provable against the offline sculpt-proof renderer.
  */
 
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
 
 /* ================================================================== */
@@ -137,7 +137,6 @@ const UI = {
   green: "#55c23f", greenHi: "#a0e878",
   yellow: "#f5bd33", yellowHi: "#fbe27e",
   red: "#ef4f48", redHi: "#fa9078",
-  exp: "#3fa3ef", expHi: "#8cd2ff",
 };
 
 function pixelPanel(ctx, x, y, w, h, fill, edge) {
@@ -180,20 +179,8 @@ function drawCapsuleBar(ctx, x, y, w, pct, now) {
   }
 }
 
-function drawEnemyBox(ctx, name, lv, pct, now) {
-  const W = 118, H = 30;
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  pixelPanel(ctx, 0, 0, W, H, UI.panel, UI.edge);
-  ctx.fillStyle = UI.panelHi; ctx.fillRect(4, 1, W - 8, 1);
-  ctx.fillStyle = UI.panelLo; ctx.fillRect(4, H - 2, W - 8, 1);
-  shadowText(ctx, name, 7, 5, 1, UI.white, UI.txtShadow);
-  const lvT = "Lv." + lv;
-  shadowText(ctx, lvT, W - 7 - textW(lvT), 5, 1, UI.lv, UI.txtShadow);
-  drawCapsuleBar(ctx, 7, 17, W - 14, pct, now);
-}
-
-function drawPlayerBox(ctx, name, lv, cur, max, expPct, now) {
-  const W = 132, H = 46;
+function drawPlayerBox(ctx, name, lv, cur, max, now) {
+  const W = 132, H = 40;
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   pixelPanel(ctx, 0, 0, W, H, UI.panel, UI.edge);
   ctx.fillStyle = UI.panelHi; ctx.fillRect(4, 1, W - 8, 1);
@@ -204,13 +191,6 @@ function drawPlayerBox(ctx, name, lv, cur, max, expPct, now) {
   drawCapsuleBar(ctx, 7, 17, W - 14, cur / max, now);
   const numT = cur + "/" + max;
   shadowText(ctx, numT, W - 7 - textW(numT), 29, 1, UI.white, UI.txtShadow);
-  ctx.fillStyle = UI.edge; ctx.fillRect(5, H - 6, W - 10, 4);
-  ctx.fillStyle = UI.capsule; ctx.fillRect(6, H - 5, W - 12, 2);
-  const ew = Math.round((W - 12) * Math.max(0, Math.min(1, expPct)));
-  if (ew > 0) {
-    ctx.fillStyle = UI.exp; ctx.fillRect(6, H - 5, ew, 2);
-    ctx.fillStyle = UI.expHi; ctx.fillRect(6, H - 5, ew, 1);
-  }
 }
 
 function wrapWords(text, maxChars) {
@@ -541,13 +521,22 @@ const LOAD_MSGS = [
 ];
 const FAINT_MSG = "SUBSTITUTE fainted!";
 
-function SubstituteLoader({ onDone }) {
+/**
+ * @param {object} props
+ * @param {() => void} props.onDone fired once after HP hits 0 → KO → fade
+ * @param {number | null} [props.progress] real load progress 0–100 (null =
+ *   busy, no measurable signal); omit entirely for the self-driven intro
+ */
+function SubstituteLoader({ onDone, progress }) {
   const glRef = useRef(null);
-  const enemyRef = useRef(null);
   const playerRef = useRef(null);
   const msgRef = useRef(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  // Live external load progress (0–100; null = busy with no measurable
+  // progress; undefined = self-driven intro). Read by the tick loop.
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
   const simRef = useRef(null);
 
   const motes = useMemo(
@@ -560,11 +549,6 @@ function SubstituteLoader({ onDone }) {
     })),
     []
   );
-
-  const skip = useCallback(() => {
-    const s = simRef.current;
-    if (s && s.phase === "load") s.progress = 100;
-  }, []);
 
   useEffect(() => {
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -631,14 +615,12 @@ function SubstituteLoader({ onDone }) {
         cv.style.width = lw * k + "px";
         cv.style.height = lh * k + "px";
       };
-      hud(enemyRef.current, 118, 30, Math.min(W * 0.44, 295));
-      hud(playerRef.current, 132, 46, Math.min(W * 0.48, 350));
+      hud(playerRef.current, 132, 40, Math.min(W * 0.48, 350));
       hud(msgRef.current, 260, 46, Math.min(W * 0.92, 650));
     };
     fit();
     window.addEventListener("resize", fit);
 
-    const eCtx = enemyRef.current.getContext("2d");
     const pCtx = playerRef.current.getContext("2d");
     const mCtx = msgRef.current.getContext("2d");
 
@@ -652,11 +634,22 @@ function SubstituteLoader({ onDone }) {
       sim.t += dt;
 
       if (sim.phase === "load") {
-        if (sim.stallLeft > 0) sim.stallLeft -= dt;
-        else {
-          for (const s of sim.stalls) if (!s.hit && sim.progress >= s.at) { s.hit = true; sim.stallLeft = s.dur; }
-          const rate = 15 + Math.sin(sim.t * 1.9) * 5 + Math.sin(sim.t * 0.7) * 3;
-          sim.progress = Math.min(100, sim.progress + rate * dt);
+        const ext = progressRef.current;
+        if (ext === undefined) {
+          // Self-driven intro: scripted stalls + a wandering drain rate.
+          if (sim.stallLeft > 0) sim.stallLeft -= dt;
+          else {
+            for (const s of sim.stalls) if (!s.hit && sim.progress >= s.at) { s.hit = true; sim.stallLeft = s.dur; }
+            const rate = 15 + Math.sin(sim.t * 1.9) * 5 + Math.sin(sim.t * 0.7) * 3;
+            sim.progress = Math.min(100, sim.progress + rate * dt);
+          }
+        } else {
+          // Externally driven by real load state: ease the HP drain toward the
+          // reported progress. null = busy with no measurable progress — creep
+          // toward 90 and hold there until the work reports completion.
+          const target = ext === null ? 90 : Math.max(0, Math.min(100, ext));
+          sim.progress += (target - sim.progress) * Math.min(1, dt * (ext === null ? 0.6 : 3.5));
+          if (target >= 100 && sim.progress > 99.4) sim.progress = 100;
         }
         if (sim.progress >= 100) { sim.phase = "dying"; sim.dieAt = now; }
       }
@@ -721,8 +714,7 @@ function SubstituteLoader({ onDone }) {
       shadowMat.opacity = (0.34 - hn * 0.13) * (1 - sim.fade);
 
       const cur = Math.max(0, Math.ceil(MAX_HP * (1 - sim.progress / 100)));
-      drawEnemyBox(eCtx, "LOADING", 30, 1, now);
-      drawPlayerBox(pCtx, "SUBSTITUTE", 36, cur, MAX_HP, sim.progress / 100, now);
+      drawPlayerBox(pCtx, "SUBSTITUTE", 36, cur, MAX_HP, now);
 
       const target =
         sim.phase === "load"
@@ -785,29 +777,17 @@ function SubstituteLoader({ onDone }) {
         style={{ width: "72vmin", height: "72vmin", background: "radial-gradient(circle,rgba(158,189,128,0.16),transparent 62%)" }}
       />
 
-      <div className="px-4 pt-4 sm:px-8 sm:pt-7">
-        <canvas ref={enemyRef} width={118} height={30} style={pixel} />
-      </div>
-
-      <div className="flex-1 flex items-center justify-center min-h-0">
+      <div className="flex-1 flex items-center justify-center min-h-0 pt-4 sm:pt-7">
         <canvas ref={glRef} width={320} height={320} style={pixel} />
       </div>
 
       <div className="px-4 sm:px-8 flex justify-end">
-        <canvas ref={playerRef} width={132} height={46} style={pixel} />
+        <canvas ref={playerRef} width={132} height={40} style={pixel} />
       </div>
 
       <div className="flex justify-center px-3 pt-2 pb-4 sm:pb-6">
         <canvas ref={msgRef} width={260} height={46} style={pixel} />
       </div>
-
-      <button
-        onClick={skip}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 tracking-widest px-3 py-1.5 border border-zinc-600 text-zinc-400 hover:text-zinc-100 hover:border-zinc-400 transition-colors"
-        style={{ fontFamily: "ui-monospace, monospace", background: "rgba(13,15,19,0.5)", fontSize: 11 }}
-      >
-        SKIP
-      </button>
     </div>
   );
 }

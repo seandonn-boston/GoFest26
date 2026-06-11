@@ -9,6 +9,7 @@ import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { useLoadingScreen } from "@/store/useLoadingScreen";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 
@@ -96,35 +97,44 @@ export function ScreenshotImporter() {
     setBusy(true);
     setRows([]);
     setSummary(null);
+    // Obscure the scan behind the Substitute loading screen; its HP drains
+    // with the real per-file progress and the KO plays once every file is in.
+    const loading = useLoadingScreen.getState();
+    loading.begin();
     const next: Row[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const blank: ScanResult = {
-        species: null,
-        detectedName: null,
-        megaEnergies: [],
-        items: [],
-        looksLikePogo: false,
-        capturedAt: file.lastModified || 0,
-        readAnything: false,
-      };
-      const tooBig = uploadError(file);
-      if (tooBig) {
-        next.push({ id: i, fileName: file.name, scan: blank, key: "", thumb: null, error: tooBig });
-        continue;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        loading.setProgress((i / files.length) * 100);
+        const blank: ScanResult = {
+          species: null,
+          detectedName: null,
+          megaEnergies: [],
+          items: [],
+          looksLikePogo: false,
+          capturedAt: file.lastModified || 0,
+          readAnything: false,
+        };
+        const tooBig = uploadError(file);
+        if (tooBig) {
+          next.push({ id: i, fileName: file.name, scan: blank, key: "", thumb: null, error: tooBig });
+          continue;
+        }
+        setProgress(`Scanning ${i + 1}/${files.length}…${i === 0 ? " (first run downloads the OCR engine)" : ""}`);
+        let scan: ScanResult;
+        let error: string | undefined;
+        try {
+          scan = await scanScreenshot(file);
+        } catch {
+          scan = blank;
+          if (looksHeic(file)) error = HEIC_HINT;
+        }
+        const thumb = await makeThumbnail(file);
+        const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
+        next.push({ id: i, fileName: file.name, scan, key, thumb, error });
       }
-      setProgress(`Scanning ${i + 1}/${files.length}…${i === 0 ? " (first run downloads the OCR engine)" : ""}`);
-      let scan: ScanResult;
-      let error: string | undefined;
-      try {
-        scan = await scanScreenshot(file);
-      } catch {
-        scan = blank;
-        if (looksHeic(file)) error = HEIC_HINT;
-      }
-      const thumb = await makeThumbnail(file);
-      const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
-      next.push({ id: i, fileName: file.name, scan, key, thumb, error });
+    } finally {
+      loading.finish();
     }
     setRows(next);
     setBusy(false);

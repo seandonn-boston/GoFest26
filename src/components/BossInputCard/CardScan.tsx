@@ -6,6 +6,7 @@ import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
+import { useLoadingScreen } from "@/store/useLoadingScreen";
 
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
 
@@ -52,6 +53,10 @@ export function CardScan({
     setError("");
     setResult(null);
     setThumb(null);
+    // Obscure the scan behind the Substitute loading screen. A single scan has
+    // no measurable progress, so it runs indeterminate until finish().
+    const loading = useLoadingScreen.getState();
+    loading.begin();
     try {
       const scan = await scanScreenshot(file);
       if (scan.species && scan.species !== expectedSpecies) {
@@ -66,6 +71,8 @@ export function CardScan({
     } catch (err) {
       setError(looksHeic(file) ? HEIC_HINT : err instanceof Error ? err.message : "Scan failed");
       setState("error");
+    } finally {
+      loading.finish();
     }
   }
 
