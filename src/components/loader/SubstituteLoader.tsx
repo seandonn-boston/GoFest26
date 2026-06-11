@@ -1,53 +1,53 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { MISSINGNO_VOXELS } from "./voxelData";
-import { decodeMissingnoVoxels } from "./missingnoImage";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { warmupOcr } from "@/lib/ocrEngine";
 
-// The WebGL canvas is client-only; load it lazily with a quiet fallback.
-const LoaderCanvas = dynamic(() => import("./LoaderCanvas"), {
+// The WebGL battle scene is client-only; load it lazily with a quiet fallback.
+const SubstituteScreen = dynamic(() => import("./SubstituteLoaderScreen"), {
   ssr: false,
   loading: () => <div className="h-full w-full" />,
 });
 
 /**
- * Voxel MissingNo loading sequence: the glitch sprite floats while its voxel HP
- * bar depletes, then it faints and the app switches in. The real MissingNo
- * sprite is decoded in the browser when possible; otherwise the bundled
- * transcription is used.
+ * Voxel Substitute loading sequence: the sculpted doll hovers over a battle
+ * platform while a Gen-5 HP bar depletes inversely to load progress. At 0 HP
+ * it is knocked down, bounces, and fades; the overlay then veils out and the
+ * app switches in beneath.
  */
 export function SubstituteLoader({ children }: { children: React.ReactNode }) {
-  const [done, setDone] = useState(false);
-  const [voxels, setVoxels] = useState(MISSINGNO_VOXELS);
+  const [phase, setPhase] = useState<"loading" | "veil" | "app">("loading");
+  const veilTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let active = true;
-    decodeMissingnoVoxels().then((v) => {
-      if (active && v) setVoxels(v);
-    });
     // Use the loader's screen time to pull down the OCR engine (script, WASM
     // core, LSTM weights) so the first screenshot scan starts instantly.
     warmupOcr();
     return () => {
-      active = false;
+      if (veilTimer.current) clearTimeout(veilTimer.current);
     };
+  }, []);
+
+  const handleDone = useCallback(() => {
+    setPhase("veil");
+    veilTimer.current = setTimeout(() => setPhase("app"), 750);
   }, []);
 
   return (
     <>
-      <div className={done ? "switch-in" : "pointer-events-none invisible"}>{children}</div>
+      <div className={phase === "loading" ? "pointer-events-none invisible" : "switch-in"}>{children}</div>
 
-      {!done ? (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gofest-bg">
-          <div className="aspect-square w-full max-w-sm">
-            <LoaderCanvas voxels={voxels} onComplete={() => setDone(true)} />
-          </div>
-          <div className="-mt-2 text-center">
-            <div className="glitch-text text-lg font-bold tracking-[0.3em] text-fuchsia-300">MISSINGNO</div>
-            <div className="mt-1 text-xs text-slate-400">Loading your plan…</div>
-          </div>
+      {phase !== "app" ? (
+        <div
+          className="fixed inset-0 z-50"
+          style={{
+            opacity: phase === "veil" ? 0 : 1,
+            transition: "opacity 0.75s ease",
+            pointerEvents: phase === "veil" ? "none" : "auto",
+          }}
+        >
+          <SubstituteScreen onDone={handleDone} />
         </div>
       ) : null}
     </>
