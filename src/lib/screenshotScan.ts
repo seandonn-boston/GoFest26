@@ -44,6 +44,9 @@ export interface EnergyHit {
   form?: "x" | "y" | null;
   /** Display qualifier for non-mega energies: volt/blaze/solar/lunar/sword/shield/primal. */
   flavor?: string | null;
+  /** True when the slot was filled by species knowledge (sibling completion)
+   *  because its label was unreadable but its number was clearly visible. */
+  inferred?: boolean;
 }
 
 /** An evolution item read off the screen (shown for confirmation, never applied). */
@@ -438,6 +441,12 @@ export interface ParsedScreen {
   resources: ParsedResource[];
   /** Count of recognized PoGo UI markers (POWER UP, WEIGHT, HP, ...). */
   markers: number;
+  /** Numbers no label claimed — candidates for prior-driven slot completion. */
+  spare?: { value: number; x: number; y: number }[];
+  /** Geometry of the claimed stat grid, for plausibility checks. */
+  grid?: { x0: number; x1: number; lastRowCy: number; pitch: number };
+  /** Row centers of recognized UI text (button rows carry cost numbers). */
+  markerRows?: number[];
 }
 
 function toResource(c: Exclude<LabelClass, null | { type: "marker" }>, order: number): ParsedResource {
@@ -467,12 +476,15 @@ export function parseScreen(words: Word[]): ParsedScreen {
   }
 
   let markers = 0;
+  const markerRows: number[] = [];
   const classified: { block: Block; cls: Exclude<LabelClass, null | { type: "marker" }> }[] = [];
   for (const block of blocks) {
     const cls = classifyLabel(block.tokens);
     if (!cls) continue;
-    if (cls.type === "marker") markers++;
-    else classified.push({ block, cls });
+    if (cls.type === "marker") {
+      markers++;
+      markerRows.push(block.topCy);
+    } else classified.push({ block, cls });
   }
 
   // Greedy nearest-above pairing: the value sits ~1.5–2.5 line-heights above
@@ -500,9 +512,34 @@ export function parseScreen(words: Word[]): ParsedScreen {
   const ordered = classified
     .map(({ block, cls }, ci) => ({ block, cls, value: valueOf.get(ci) }))
     .sort((a, b) => a.block.topCy - b.block.topCy || a.block.x0 - b.block.x0);
+
+  // Geometry for the species-prior completion step: which numbers nobody
+  // claimed, where the claimed stat grid sits, and where UI button rows are.
+  const valuedBlocks = ordered.filter((o) => o.value !== undefined).map((o) => o.block);
+  let grid: ParsedScreen["grid"];
+  if (valuedBlocks.length) {
+    const rows: number[] = [];
+    for (const cy of valuedBlocks.map((b) => b.topCy).sort((a, b) => a - b)) {
+      if (!rows.length || cy - rows[rows.length - 1] > valuedBlocks[0].h) rows.push(cy);
+    }
+    const gaps = rows.slice(1).map((cy, i) => cy - rows[i]);
+    grid = {
+      x0: Math.min(...valuedBlocks.map((b) => b.x0)),
+      x1: Math.max(...valuedBlocks.map((b) => b.x1)),
+      lastRowCy: rows[rows.length - 1],
+      pitch: gaps.length ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : valuedBlocks[0].h * 3.5,
+    };
+  }
+  const spare = numbers
+    .filter((n, ni) => !takenNum.has(ni) && !n.soft)
+    .map((n) => ({ value: n.value, x: n.x, y: n.y }));
+
   return {
     resources: ordered.map(({ cls, value }, i) => ({ ...toResource(cls, i), value })),
     markers,
+    spare,
+    grid,
+    markerRows,
   };
 }
 
@@ -650,6 +687,60 @@ export function chooseSpecies(
 // Assembly
 // ---------------------------------------------------------------------------
 
+/**
+ * Species knowledge: families whose energy cells always come in PAIRS — the
+ * branching megas (X/Y), the fusions (Volt/Blaze, Solar/Lunar) and the Ralts
+ * line (Gallade/Gardevoir). When ONE sibling was read, the page must also show
+ * the other.
+ */
+function siblingOf(e: EnergyHit): EnergyHit | null {
+  if (e.form === "x" || e.form === "y") {
+    return { ...e, form: e.form === "x" ? "y" : "x", value: 0 };
+  }
+  const FLAVOR_PAIRS: Record<string, string> = { volt: "blaze", blaze: "volt", solar: "lunar", lunar: "solar" };
+  if (e.flavor && FLAVOR_PAIRS[e.flavor]) {
+    return { ...e, flavor: FLAVOR_PAIRS[e.flavor], value: 0 };
+  }
+  const SPECIES_PAIRS: Record<string, string> = { gallade: "gardevoir", gardevoir: "gallade" };
+  if (e.species && SPECIES_PAIRS[e.species]) {
+    return { ...e, species: SPECIES_PAIRS[e.species], value: 0 };
+  }
+  return null;
+}
+
+const sameSlot = (a: EnergyHit, b: EnergyHit) =>
+  a.species === b.species && (a.form ?? null) === (b.form ?? null) && (a.flavor ?? null) === (b.flavor ?? null);
+
+/**
+ * Prior-driven completion: a paired-energy species (Charizard, Mewtwo, Kyurem,
+ * Necrozma, the Ralts line) ALWAYS shows both energy cells, so when one was
+ * read and the other's label was unreadable (e.g. hidden behind the radial
+ * menu) but its number is clearly visible, assign it. "Clearly visible" is
+ * strict: exactly ONE unclaimed number, in the central band of the stat grid,
+ * within the rows just below the last read cell, and not on a UI button row —
+ * an obscured or ambiguous number stays unread rather than guessed.
+ */
+function completeSiblingEnergy(energies: EnergyHit[], parsed: ParsedScreen): void {
+  const { spare, grid, markerRows = [] } = parsed;
+  if (!spare?.length || !grid) return;
+  for (const e of [...energies]) {
+    const sib = siblingOf(e);
+    if (!sib || energies.some((f) => sameSlot(f, sib))) continue;
+    const bandX0 = grid.x0 + (grid.x1 - grid.x0) * 0.25;
+    const bandX1 = grid.x0 + (grid.x1 - grid.x0) * 0.75;
+    const candidates = spare.filter(
+      (n) =>
+        n.y > grid.lastRowCy &&
+        n.y < grid.lastRowCy + grid.pitch * 2.6 &&
+        n.x >= bandX0 &&
+        n.x <= bandX1 &&
+        !markerRows.some((m) => Math.abs(n.y - m) < grid.pitch * 0.45),
+    );
+    if (candidates.length !== 1) continue;
+    energies.push({ ...sib, value: candidates[0].value, inferred: true });
+  }
+}
+
 /** Build the final ScanResult from a parsed screen (boxes or text path). */
 export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText = ""): ScanResult {
   const res = parsed.resources;
@@ -684,6 +775,7 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
       e.form ||
       !allEnergies.some((f, j) => j !== i && f.form && f.species === e.species && f.value === e.value),
   );
+  completeSiblingEnergy(megaEnergies, parsed);
   const items: ItemHit[] = valued
     .filter((r) => r.kind === "item")
     .map((r) => ({ name: r.itemName ?? "Item", value: r.value! }));
@@ -744,7 +836,14 @@ export function mergeParsed(primary: ParsedScreen, secondary: ParsedScreen): Par
       hit.value = r.value;
     }
   }
-  return { resources, markers: Math.max(primary.markers, secondary.markers) };
+  return {
+    resources,
+    markers: Math.max(primary.markers, secondary.markers),
+    // Geometry travels from whichever pass has it (the sparse pass, normally).
+    spare: primary.spare?.length || !secondary.spare ? primary.spare : secondary.spare,
+    grid: primary.grid ?? secondary.grid,
+    markerRows: primary.markerRows?.length ? primary.markerRows : secondary.markerRows,
+  };
 }
 
 /** Parse one OCR page: word boxes when present, raw text otherwise. */
@@ -759,7 +858,8 @@ export function parsePage(page: { words: Word[]; text: string }): ParsedScreen {
 /** Human chip for an energy hit: "Charizard X En 209" / "Kyurem Volt En 1,420" /
  *  "Groudon Primal En 485" / "Energy 6,212" when the species didn't read. */
 export function energyChip(e: EnergyHit): string {
-  const v = formatNumber(e.value);
+  // "~" marks a value filled in from species knowledge (label was unreadable).
+  const v = `${e.inferred ? "~" : ""}${formatNumber(e.value)}`;
   const qual = e.form ? ` ${e.form.toUpperCase()}` : e.flavor ? ` ${cap(e.flavor)}` : "";
   if (!e.species) return `Energy${qual} ${v}`;
   return `${cap(e.species)}${qual} En ${v}`;

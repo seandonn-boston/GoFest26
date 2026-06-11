@@ -419,6 +419,75 @@ describe("parseScreen — real screenshot layouts", () => {
     ]);
   });
 
+  // Charizard with the radial menu covering the Y-energy label: the species
+  // prior (X/Y always come together) fills the clearly visible fifth number.
+  const occludedCharizard = (extra: Word[] = [], fifth: Word | null = b("211", 290, 1200, 40)) => [
+    b("1,001,623", 100, 1000, 110),
+    b("3,606", 460, 1000, 60),
+    b("STARDUST", 95, 1040, 95),
+    b("CHARMANDER", 380, 1040, 120),
+    b("CANDY", 510, 1040, 65),
+    b("187", 130, 1100, 40),
+    b("209", 470, 1100, 40),
+    b("CHARMANDER", 30, 1140, 120),
+    b("CANDY", 160, 1140, 65),
+    b("XL", 235, 1140, 25),
+    b("CHARIZARD", 390, 1140, 105),
+    b("MEGA", 505, 1140, 55),
+    b("ENERGY", 430, 1166, 75),
+    b("X", 515, 1166, 15),
+    ...(fifth ? [fifth] : []),
+    b("CHARI", 230, 1240, 60), // occluded label remnant — unclassifiable
+    b("EGA", 320, 1240, 45),
+    ...extra,
+  ];
+
+  it("fills the occluded sibling energy when its number is clearly visible (live Charizard bug)", () => {
+    const r = scanWords(occludedCharizard([b("0", 600, 1290, 14)])); // noise far right: outside the central band
+    expect(r.megaEnergies).toEqual([
+      { value: 209, species: "charizard", kind: "mega", form: "x" },
+      { value: 211, species: "charizard", kind: "mega", form: "y", inferred: true },
+    ]);
+    expect(energyChip(r.megaEnergies[1])).toBe("Charizard Y En ~211");
+  });
+
+  it("refuses sibling completion when two candidate numbers are in the window", () => {
+    const r = scanWords(occludedCharizard([b("400", 350, 1205, 40)]));
+    expect(r.megaEnergies).toEqual([{ value: 209, species: "charizard", kind: "mega", form: "x" }]);
+  });
+
+  it("refuses sibling completion for a number sitting on a UI button row", () => {
+    const r = scanWords(
+      occludedCharizard([b("POWER", 60, 1195, 70), b("UP", 140, 1195, 30)], b("2,500", 300, 1200, 60)),
+    );
+    expect(r.megaEnergies).toEqual([{ value: 209, species: "charizard", kind: "mega", form: "x" }]);
+  });
+
+  it("never invents a sibling for single-energy species", () => {
+    const r = scanWords([
+      b("1,274", 460, 1100, 60),
+      b("STEELIX", 380, 1140, 80),
+      b("MEGA", 470, 1140, 55),
+      b("ENERGY", 535, 1140, 75),
+      b("75", 400, 1200, 25), // unclaimed (its Metal Coat label is occluded)
+    ]);
+    expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix", kind: "mega" }]);
+  });
+
+  it("completes the Gallade/Gardevoir pair the same way", () => {
+    const r = scanWords([
+      b("60", 480, 1100, 25),
+      b("GALLADE", 380, 1140, 85),
+      b("MEGA", 475, 1140, 55),
+      b("ENERGY", 540, 1140, 75),
+      b("80", 470, 1200, 25),
+    ]);
+    expect(r.megaEnergies).toEqual([
+      { value: 60, species: "gallade", kind: "mega" },
+      { value: 80, species: "gardevoir", kind: "mega", inferred: true },
+    ]);
+  });
+
   it("PoGo crop with no stats section: looksLikePogo, but nothing readable", () => {
     const r = scanWords([
       b("Caterpie", 250, 100, 120, 30),
