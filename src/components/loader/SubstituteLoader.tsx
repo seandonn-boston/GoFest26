@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { warmupOcr } from "@/lib/ocrEngine";
+import { lockBodyScroll } from "@/lib/scrollLock";
 
 // The WebGL battle scene is client-only; load it lazily with a quiet fallback.
 const SubstituteScreen = dynamic(() => import("./SubstituteLoaderScreen"), {
@@ -18,6 +19,10 @@ const SubstituteScreen = dynamic(() => import("./SubstituteLoaderScreen"), {
  */
 export function SubstituteLoader({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<"loading" | "veil" | "app">("loading");
+  // switch-in's keyframes leave a transform on the wrapper (fill-mode: both),
+  // which would make it the containing block for every fixed-position
+  // descendant (lightboxes, sheets) — strip the class once the reveal ends.
+  const [revealed, setRevealed] = useState(false);
   const veilTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -29,6 +34,13 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // The page beneath must not scroll while the loading screen covers it.
+  const overlayUp = phase !== "app";
+  useEffect(() => {
+    if (!overlayUp) return;
+    return lockBodyScroll();
+  }, [overlayUp]);
+
   const handleDone = useCallback(() => {
     setPhase("veil");
     veilTimer.current = setTimeout(() => setPhase("app"), 750);
@@ -36,9 +48,16 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className={phase === "loading" ? "pointer-events-none invisible" : "switch-in"}>{children}</div>
+      <div
+        className={phase === "loading" ? "pointer-events-none invisible" : revealed ? undefined : "switch-in"}
+        onAnimationEnd={(e) => {
+          if (e.target === e.currentTarget) setRevealed(true);
+        }}
+      >
+        {children}
+      </div>
 
-      {phase !== "app" ? (
+      {overlayUp ? (
         <div
           className="fixed inset-0 z-50"
           style={{
