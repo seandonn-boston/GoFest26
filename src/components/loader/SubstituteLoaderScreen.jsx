@@ -512,9 +512,71 @@ function buildSubstituteGeometry() {
 /* ================================================================== */
 
 const MAX_HP = 100;
-const LOAD_MSGS = [
+// Real Pokémon GO charged attacks (no fast moves) — includes legendary /
+// Community Day exclusives. One is picked at random for each load.
+const CHARGED_MOVES = [
+  // Normal
+  "BODY SLAM", "BOOMBURST", "FRUSTRATION", "GIGA IMPACT", "HORN ATTACK",
+  "HYPER BEAM", "HYPER FANG", "LAST RESORT", "RETURN", "SKULL BASH", "STOMP",
+  "STRUGGLE", "SWIFT", "TECHNO BLAST", "TRI ATTACK", "VISE GRIP", "WEATHER BALL", "WRAP",
+  // Fighting
+  "AURA SPHERE", "BRICK BREAK", "CLOSE COMBAT", "CROSS CHOP", "DYNAMIC PUNCH",
+  "FLYING PRESS", "FOCUS BLAST", "LOW SWEEP", "POWER-UP PUNCH", "SACRED SWORD",
+  "SUBMISSION", "SUPERPOWER",
+  // Flying
+  "ACROBATICS", "AERIAL ACE", "AEROBLAST", "AIR CUTTER", "BRAVE BIRD",
+  "DRAGON ASCENT", "DRILL PECK", "FEATHER DANCE", "FLY", "HURRICANE",
+  "OBLIVION WING", "SKY ATTACK",
+  // Poison
+  "ACID SPRAY", "CROSS POISON", "GUNK SHOT", "POISON FANG", "SLUDGE",
+  "SLUDGE BOMB", "SLUDGE WAVE",
+  // Ground
+  "BONE CLUB", "BULLDOZE", "DIG", "DRILL RUN", "EARTH POWER", "EARTHQUAKE",
+  "HIGH HORSEPOWER", "MUD BOMB", "PRECIPICE BLADES", "SAND TOMB", "SCORCHING SANDS",
+  // Rock
+  "ANCIENT POWER", "METEOR BEAM", "POWER GEM", "ROCK BLAST", "ROCK SLIDE",
+  "ROCK TOMB", "ROCK WRECKER", "STONE EDGE",
+  // Bug
+  "BUG BUZZ", "FELL STINGER", "MEGAHORN", "SIGNAL BEAM", "SILVER WIND", "X-SCISSOR",
+  // Ghost
+  "NIGHT SHADE", "OMINOUS WIND", "SHADOW BALL", "SHADOW BONE", "SHADOW FORCE",
+  "SHADOW PUNCH", "SHADOW SNEAK",
+  // Steel
+  "DOOM DESIRE", "DOUBLE IRON BASH", "FLASH CANNON", "HEAVY SLAM", "IRON HEAD",
+  "MAGNET BOMB", "METEOR MASH", "MIRROR SHOT",
+  // Fire
+  "BLAST BURN", "BLAZE KICK", "FIRE BLAST", "FIRE PUNCH", "FLAME BURST",
+  "FLAME CHARGE", "FLAME WHEEL", "FLAMETHROWER", "FUSION FLARE", "HEAT WAVE",
+  "MAGMA STORM", "MYSTICAL FIRE", "OVERHEAT", "SACRED FIRE", "V-CREATE",
+  // Water
+  "AQUA JET", "AQUA TAIL", "BRINE", "BUBBLE BEAM", "CRABHAMMER", "HYDRO CANNON",
+  "HYDRO PUMP", "LIQUIDATION", "MUDDY WATER", "OCTAZOOKA", "ORIGIN PULSE",
+  "SCALD", "SURF", "WATER PULSE",
+  // Grass
+  "ENERGY BALL", "FRENZY PLANT", "GRASS KNOT", "LEAF BLADE", "LEAF STORM",
+  "LEAF TORNADO", "PETAL BLIZZARD", "POWER WHIP", "SEED BOMB", "SEED FLARE",
+  "SOLAR BEAM", "TRAILBLAZE",
+  // Electric
+  "AURA WHEEL", "DISCHARGE", "FUSION BOLT", "PARABOLIC CHARGE", "THUNDER",
+  "THUNDER PUNCH", "THUNDERBOLT", "WILD CHARGE", "ZAP CANNON",
+  // Psychic
+  "FUTURE SIGHT", "LUSTER PURGE", "MIRROR COAT", "MIST BALL", "PSYBEAM",
+  "PSYCHIC", "PSYCHIC FANGS", "PSYCHO BOOST", "PSYSHOCK", "PSYSTRIKE", "SYNCHRONOISE",
+  // Ice
+  "AURORA BEAM", "AVALANCHE", "BLIZZARD", "GLACIATE", "ICE BEAM", "ICE PUNCH",
+  "ICICLE SPEAR", "ICY WIND", "TRIPLE AXEL",
+  // Dragon
+  "BREAKING SWIPE", "DRACO METEOR", "DRAGON CLAW", "DRAGON PULSE", "OUTRAGE",
+  "ROAR OF TIME", "SPACIAL REND", "TWISTER",
+  // Dark
+  "BRUTAL SWING", "CRUNCH", "DARK PULSE", "FOUL PLAY", "NIGHT SLASH",
+  "OBSTRUCT", "PAYBACK",
+  // Fairy
+  "DAZZLING GLEAM", "DISARMING VOICE", "DRAINING KISS", "MOONBLAST", "PLAY ROUGH",
+];
+const loadMsgs = (move) => [
   { at: 0, t: "Website used SUBSTITUTE!" },
-  { at: 25, t: "You used LOAD!" },
+  { at: 25, t: "You used " + move + "!" },
   { at: 55, t: "A critical hit!" },
   { at: 78, t: "It's super effective!" },
 ];
@@ -541,6 +603,7 @@ function SubstituteLoader({ onDone }) {
 
   useEffect(() => {
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const LOAD_MSGS = loadMsgs(CHARGED_MOVES[Math.floor(Math.random() * CHARGED_MOVES.length)]);
 
     // The sculpt was approved under three r128's raw color pipeline; modern
     // three (r152+) defaults to sRGB color management, which would wash out
