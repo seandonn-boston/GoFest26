@@ -68,7 +68,7 @@ export function BossList() {
               <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
               <span className="ml-1 hidden normal-case text-slate-500 sm:inline">({habitat.types.join("/")})</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {bosses.map((boss) => (
                 <BossSelectChip
                   key={boss.id}

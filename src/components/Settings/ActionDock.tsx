@@ -42,6 +42,7 @@ export function ActionDock() {
   const tiltSupported = useTiltStore((s) => s.supported);
   const tiltEnabled = useTiltStore((s) => s.enabled);
   const requestTilt = useTiltStore((s) => s.request);
+  const setTiltEnabled = useTiltStore((s) => s.setEnabled);
 
   const openPanel = (id: Panel) => {
     setPanel(id);
@@ -54,11 +55,12 @@ export function ActionDock() {
   if (isMobile && tiltSupported) {
     items.push({
       id: "tilt",
-      label: tiltEnabled ? "Tilt on" : "Enable tilt",
+      label: tiltEnabled ? "Tilt: on" : "Tilt: off",
       icon: "🧭",
-      circle: "bg-amber-300 text-black",
+      circle: tiltEnabled ? "bg-amber-300 text-black" : "bg-amber-300/30 text-amber-100",
       onClick: () => {
-        requestTilt();
+        if (tiltEnabled) setTiltEnabled(false);
+        else requestTilt();
         setOpen(false);
       },
     });

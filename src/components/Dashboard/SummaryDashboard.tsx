@@ -6,7 +6,7 @@ import { formatRange } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { CapacityGauge } from "./CapacityGauge";
 import { PriorityRanker } from "./PriorityRanker";
-import { BlockBars } from "./BlockBars";
+import { BlockAccordion } from "./BlockAccordion";
 
 export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
   const { capacity } = summary;
@@ -42,7 +42,7 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
           })()}
 
           <PriorityRanker />
-          <BlockBars plan={blockPlan} />
+          <BlockAccordion plan={blockPlan} />
         </>
       ) : (
         <p className="text-sm text-slate-400">

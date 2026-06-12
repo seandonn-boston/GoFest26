@@ -12,7 +12,6 @@ import { ScreenshotImporter } from "@/components/Settings/ScreenshotImporter";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ResearchPanel } from "@/components/Research/ResearchPanel";
-import { ScheduleView } from "@/components/Schedule/ScheduleView";
 import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
@@ -115,8 +114,6 @@ export default function Home() {
           <SummaryDashboard summary={summary} blockPlan={blockPlan} />
 
           <ResearchPanel />
-
-          <ScheduleView schedule={summary.schedule} />
 
           {summary.schedule.raids.length > 0 ? (
             <section className="flex flex-col gap-2">
