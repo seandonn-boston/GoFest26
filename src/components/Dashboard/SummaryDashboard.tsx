@@ -10,8 +10,13 @@ import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
 
 export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
-  const { capacity } = summary;
+  const { capacity, remotePool } = summary;
   const hasGoals = summary.totalRaids.max > 0;
+  // Max raids the gauge measures against = in-person weekend capacity + the
+  // opted-in remote-pass pool, so the headline number matches the bar.
+  const maxRaids = remotePool > 0
+    ? { min: capacity.totalRaids.min + remotePool, max: capacity.totalRaids.max + remotePool }
+    : capacity.totalRaids;
 
   return (
     <Card className="p-4">
@@ -20,7 +25,11 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
       <div className="mb-4 grid grid-cols-3 gap-4">
         <Stat label="Total raids needed" value={formatRange(summary.totalRaids)} accent="text-gofest-accent2" />
         <Stat label="Raids / hour" value={formatRange(capacity.raidsPerHour)} />
-        <Stat label="Max weekend raids" value={formatRange(capacity.totalRaids)} />
+        <Stat
+          label="Max raids"
+          value={formatRange(maxRaids)}
+          sub={remotePool > 0 ? `incl. ${remotePool} remote` : undefined}
+        />
       </div>
 
       {hasGoals ? (
@@ -56,16 +65,18 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
         Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer
         lobby (~{capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s
         catch per raid plus {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
+        {remotePool > 0 ? ` Plus ${remotePool} remote raid passes.` : ""}
       </p>
     </Card>
   );
 }
 
-function Stat({ label, value, accent = "text-slate-100" }: { label: string; value: string; accent?: string }) {
+function Stat({ label, value, accent = "text-slate-100", sub }: { label: string; value: string; accent?: string; sub?: string }) {
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`text-xl font-bold ${accent}`}>{value}</div>
+      {sub ? <div className="text-[10px] text-gofest-accent">{sub}</div> : null}
     </div>
   );
 }
