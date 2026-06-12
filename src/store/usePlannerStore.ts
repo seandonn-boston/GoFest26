@@ -5,6 +5,7 @@ import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
+import type { ScanResult } from "@/lib/screenshotScan";
 
 export { makeDefaultInput };
 
@@ -14,10 +15,11 @@ type CurrentField = keyof BossInput["current"];
 const MAX_SCREENSHOTS = 12;
 
 /**
- * Debounced, quota-tolerant localStorage. Store updates fire on every keystroke;
- * this batches rapid writes into one (300ms trailing, flushed on tab hide) and
- * swallows QuotaExceededError so a full disk / private mode can never crash a
- * state update. A no-op on the server (no persistence there).
+ * Debounced, quota-tolerant sessionStorage. Store updates fire on every
+ * keystroke; this batches rapid writes into one (300ms trailing, flushed on tab
+ * hide) and swallows QuotaExceededError so a full disk / private mode can never
+ * crash a state update. Session storage keeps the plan intact across refreshes
+ * within the tab (cleared when the tab/browser closes). A no-op on the server.
  */
 function makeSafeStorage() {
   const noop = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
@@ -27,7 +29,7 @@ function makeSafeStorage() {
   const flush = () => {
     if (!queued) return;
     try {
-      window.localStorage.setItem(queued.key, queued.value);
+      window.sessionStorage.setItem(queued.key, queued.value);
     } catch {
       /* quota exceeded / private mode — drop the write rather than throw */
     }
@@ -42,7 +44,7 @@ function makeSafeStorage() {
     getItem: (name: string) => {
       if (queued && queued.key === name) return queued.value; // freshest pending value
       try {
-        return window.localStorage.getItem(name);
+        return window.sessionStorage.getItem(name);
       } catch {
         return null;
       }
@@ -56,7 +58,7 @@ function makeSafeStorage() {
       queued = null;
       if (timer) clearTimeout(timer);
       try {
-        window.localStorage.removeItem(name);
+        window.sessionStorage.removeItem(name);
       } catch {
         /* ignore */
       }
@@ -70,6 +72,23 @@ export interface ScreenshotPreview {
   capturedAt: number;
 }
 
+/** Max imported screenshots retained (data-URL thumbnails) before evicting oldest. */
+const MAX_IMPORTS = 20;
+
+/**
+ * One uploaded-and-scanned screenshot, persisted so the import grid + its
+ * resource pulls survive a refresh without re-running OCR. `key` is the species
+ * the user assigned (or that we auto-detected), "" when unassigned.
+ */
+export interface ImportedShot {
+  id: string;
+  fileName: string;
+  thumb: string | null;
+  scan: ScanResult;
+  key: string;
+  error?: string;
+}
+
 interface PlannerState {
   inputs: Record<string, BossInput>;
   settings: PlannerSettings;
@@ -77,6 +96,8 @@ interface PlannerState {
   research: Record<string, boolean>;
   /** Imported screenshot previews, keyed by species — only the latest is kept. */
   screenshots: Record<string, ScreenshotPreview>;
+  /** Uploaded-and-scanned screenshots (the import grid + resource pulls). */
+  imports: ImportedShot[];
   /**
    * User-ranked priority, highest first, by boss id. Drives card order, bar fill
    * order, and which raids get greyed out when goals exceed capacity (lowest
@@ -97,6 +118,14 @@ interface PlannerState {
   setResearchEnabled: (id: string, enabled: boolean, exclusiveWith?: readonly string[]) => void;
   /** Store a screenshot preview for a species — keeps only the most-recent. */
   setScreenshot: (speciesKey: string, src: string, capturedAt: number) => void;
+  /** Append freshly-scanned screenshots to the import grid (capped, oldest evicted). */
+  addImports: (shots: ImportedShot[]) => void;
+  /** Remove one imported screenshot (and thus its resource pull) by id. */
+  removeImport: (id: string) => void;
+  /** Reassign the species an imported screenshot maps to. */
+  setImportKey: (id: string, key: string) => void;
+  /** Drop every imported screenshot. */
+  clearImports: () => void;
   applyPreset: (bossId: string, presetId: string) => void;
   setSettings: (patch: Partial<PlannerSettings>) => void;
   resetSettings: () => void;
@@ -132,7 +161,24 @@ export const usePlannerStore = create<PlannerState>()(
       settings: { ...DEFAULT_SETTINGS },
       research: {},
       screenshots: {},
+      imports: [],
       priorityOrder: [],
+
+      addImports: (shots) =>
+        set((state) => {
+          const imports = [...state.imports, ...shots];
+          // Cap the persisted imports so thumbnail data-URLs can't blow the
+          // sessionStorage quota — evict the oldest beyond MAX_IMPORTS.
+          return { imports: imports.slice(Math.max(0, imports.length - MAX_IMPORTS)) };
+        }),
+
+      removeImport: (id) =>
+        set((state) => ({ imports: state.imports.filter((s) => s.id !== id) })),
+
+      setImportKey: (id, key) =>
+        set((state) => ({ imports: state.imports.map((s) => (s.id === id ? { ...s, key } : s)) })),
+
+      clearImports: () => set({ imports: [] }),
 
       setScreenshot: (speciesKey, src, capturedAt) =>
         set((state) => {
@@ -299,11 +345,18 @@ export const usePlannerStore = create<PlannerState>()(
       resetSettings: () => set({ settings: { ...DEFAULT_SETTINGS } }),
 
       resetAll: () =>
-        set({ inputs: {}, settings: { ...DEFAULT_SETTINGS }, research: {}, screenshots: {}, priorityOrder: [] }),
+        set({
+          inputs: {},
+          settings: { ...DEFAULT_SETTINGS },
+          research: {},
+          screenshots: {},
+          imports: [],
+          priorityOrder: [],
+        }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 6,
+      version: 7,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -313,6 +366,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.inputs) state.inputs = {};
         if (!state.research) state.research = {};
         if (!state.screenshots) state.screenshots = {};
+        if (!Array.isArray(state.imports)) state.imports = [];
         if (!Array.isArray(state.priorityOrder)) state.priorityOrder = [];
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
