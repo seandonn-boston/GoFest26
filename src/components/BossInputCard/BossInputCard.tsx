@@ -9,6 +9,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { NumberInput } from "@/components/ui/NumberInput";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
@@ -36,6 +37,7 @@ export function BossInputCard({
 }) {
   const input = usePlannerStore((s) => s.inputs[boss.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
+  const setQuantity = usePlannerStore((s) => s.setQuantity);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const sKey = speciesKey(boss.name);
   const preview = usePlannerStore((s) => s.screenshots[sKey]);
@@ -187,6 +189,16 @@ export function BossInputCard({
             ) : null}
           </>
         )}
+      </div>
+
+      {/* Max out more than one — every requirement scales with the count. */}
+      <div className="mt-2">
+        <QuantityStepper value={input.quantity ?? 1} onChange={(n) => setQuantity(boss.id, n)} />
+        {(input.quantity ?? 1) > 1 ? (
+          <p className="mt-1 text-[10px] text-slate-500">
+            Resources &amp; raids above are for {input.quantity} copies.
+          </p>
+        ) : null}
       </div>
       </div>
     </div>

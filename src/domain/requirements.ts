@@ -41,6 +41,14 @@ export function computeGrossRequirement(
     if (energyNeed > 0) out.megaEnergy = energyNeed;
   }
 
+  // Maxing N of a species multiplies every gross requirement: leveling a second
+  // copy costs another full candy/XL climb, and (per product spec) energy scales
+  // too. Net-need then subtracts the single shared on-hand pool.
+  const quantity = Math.max(1, Math.round(input.quantity ?? 1));
+  if (quantity > 1) {
+    for (const key of Object.keys(out) as Currency[]) out[key] = (out[key] ?? 0) * quantity;
+  }
+
   return out;
 }
 

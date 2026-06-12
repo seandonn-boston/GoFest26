@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useTiltStore } from "@/store/useTiltStore";
 
 type DOEWithPermission = typeof window.DeviceOrientationEvent & {
   requestPermission?: () => Promise<"granted" | "denied" | "default">;
@@ -13,11 +14,11 @@ type DOEWithPermission = typeof window.DeviceOrientationEvent & {
  *
  * iOS (Safari 13+) gates the motion sensor behind a permission prompt that can
  * only be requested from a user gesture, and only when "Motion & Orientation
- * Access" is enabled in Settings. We try on the first tap, and also render an
- * explicit "Enable motion tilt" button so there's always a clear way in.
+ * Access" is enabled in Settings. We try on the first tap; the explicit
+ * opt-in lives in the FAB ("Enable tilt"), surfaced via the tilt store. Renders
+ * nothing itself.
  */
 export function TiltProvider() {
-  const [needsPermission, setNeedsPermission] = useState(false);
   const requestRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -114,6 +115,7 @@ export function TiltProvider() {
       if (gyroOn) return;
       gyroOn = true;
       window.addEventListener("deviceorientation", onOrient);
+      useTiltStore.getState()._setEnabled(true);
     };
 
     const DOE = window.DeviceOrientationEvent as DOEWithPermission | undefined;
@@ -122,10 +124,7 @@ export function TiltProvider() {
       if (DOE && typeof DOE.requestPermission === "function") {
         DOE.requestPermission()
           .then((res) => {
-            if (res === "granted") {
-              setNeedsPermission(false);
-              startGyro();
-            }
+            if (res === "granted") startGyro();
           })
           .catch(() => {});
       } else {
@@ -133,10 +132,12 @@ export function TiltProvider() {
       }
     };
 
+    // Expose the opt-in + sensor availability to the FAB control.
+    useTiltStore.getState()._register(() => requestRef.current(), !!DOE);
+
     let onGesture: (() => void) | undefined;
     if (DOE && typeof DOE.requestPermission === "function") {
-      // iOS: needs an explicit opt-in. Offer the button and also try on first tap.
-      setNeedsPermission(true);
+      // iOS: needs an explicit opt-in (offered in the FAB) — also try on first tap.
       onGesture = () => requestRef.current();
       window.addEventListener("pointerdown", onGesture, { once: true });
     } else if (DOE) {
@@ -151,15 +152,5 @@ export function TiltProvider() {
     };
   }, []);
 
-  if (!needsPermission) return null;
-
-  return (
-    <button
-      type="button"
-      onClick={() => requestRef.current()}
-      className="fixed bottom-4 left-4 z-50 flex max-w-[45vw] items-center gap-1.5 truncate rounded-full border border-amber-300/40 bg-black/70 px-3 py-1.5 text-xs font-medium text-amber-100 shadow-lg backdrop-blur active:scale-95"
-    >
-      <span aria-hidden>🧭</span> Enable motion tilt
-    </button>
-  );
+  return null;
 }

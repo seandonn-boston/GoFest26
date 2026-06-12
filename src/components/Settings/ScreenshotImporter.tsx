@@ -8,12 +8,15 @@ import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screensh
 import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
-import { usePlannerStore } from "@/store/usePlannerStore";
+import { usePlannerStore, type ImportedShot } from "@/store/usePlannerStore";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 import { ImageThumb } from "@/components/ui/ImageThumb";
+import { ScreenshotGrid, type ShotStatus } from "./ScreenshotGrid";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
+const uid = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 // One option per species group (Mewtwo X/Y, Giratina A/O, etc. share a key).
 const SPECIES_OPTIONS = (() => {
@@ -32,15 +35,6 @@ const SPECIES_OPTIONS = (() => {
     .sort((a, b) => a.label.localeCompare(b.label));
 })();
 const OPTION_BY_KEY = new Map(SPECIES_OPTIONS.map((o) => [o.key, o]));
-
-interface Row {
-  id: number;
-  fileName: string;
-  scan: ScanResult;
-  key: string; // chosen species key ("" = unassigned)
-  thumb: string | null; // preview data URL
-  error?: string; // pre-flight / decode failure message
-}
 
 /** Why a screenshot produced no values — as specific as the scan allows. */
 function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode {
@@ -76,17 +70,23 @@ function applyScan(
 
 /**
  * Assisted bulk import: OCR the Candy/XL/Energy from each screenshot (reliable),
- * then the user taps which Pokémon each belongs to. Same species → only the
- * most-recent screenshot is applied (values share one pool).
+ * then the user taps which Pokémon each belongs to. Uploaded screenshots persist
+ * (session storage) as a managed grid; each resource pull can be deleted (red ✕)
+ * or applied on its own (green ›), or all at once. Same species → only the most-
+ * recent screenshot is applied (values share one pool).
  */
 export function ScreenshotImporter() {
   const setSelected = usePlannerStore((s) => s.setSelected);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
+  const imports = usePlannerStore((s) => s.imports);
+  const addImports = usePlannerStore((s) => s.addImports);
+  const removeImport = usePlannerStore((s) => s.removeImport);
+  const setImportKey = usePlannerStore((s) => s.setImportKey);
+  const clearImports = usePlannerStore((s) => s.clearImports);
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
-  const [rows, setRows] = useState<Row[]>([]);
   const [summary, setSummary] = useState<string | null>(null);
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
@@ -94,9 +94,8 @@ export function ScreenshotImporter() {
     if (fileRef.current) fileRef.current.value = "";
     if (!files.length) return;
     setBusy(true);
-    setRows([]);
     setSummary(null);
-    const next: Row[] = [];
+    const next: ImportedShot[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const blank: ScanResult = {
@@ -110,7 +109,7 @@ export function ScreenshotImporter() {
       };
       const tooBig = uploadError(file);
       if (tooBig) {
-        next.push({ id: i, fileName: file.name, scan: blank, key: "", thumb: null, error: tooBig });
+        next.push({ id: uid(), fileName: file.name, thumb: null, scan: blank, key: "", error: tooBig });
         continue;
       }
       setProgress(`Scanning ${i + 1}/${files.length}…${i === 0 ? " (first run downloads the OCR engine)" : ""}`);
@@ -124,109 +123,158 @@ export function ScreenshotImporter() {
       }
       const thumb = await makeThumbnail(file);
       const key = scan.species && OPTION_BY_KEY.has(scan.species) ? scan.species : "";
-      next.push({ id: i, fileName: file.name, scan, key, thumb, error });
+      next.push({ id: uid(), fileName: file.name, thumb, scan, key, error });
     }
-    setRows(next);
+    addImports(next);
     setBusy(false);
     setProgress("");
     if (next.length && next.every((r) => !r.scan.readAnything)) {
       setSummary(
         next.some((r) => r.scan.looksLikePogo)
           ? "No values read — make sure each screenshot shows the Stardust/Candy section of a Pokémon's page."
-          : "None of these look like Pokémon GO Pokémon screens.",
+          : "None of those look like Pokémon GO Pokémon screens.",
       );
     }
   }
 
-  function setKey(id: number, key: string) {
-    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, key } : r)));
-    setSummary(null);
+  // Same species → only the latest screenshot counts; earlier ones are duplicates.
+  const latestIdByKey = new Map<string, string>();
+  for (const s of imports) {
+    if (!s.key) continue;
+    const curId = latestIdByKey.get(s.key);
+    const cur = curId ? imports.find((x) => x.id === curId) : undefined;
+    if (!cur || s.scan.capturedAt >= cur.scan.capturedAt) latestIdByKey.set(s.key, s.id);
+  }
+  const isSuperseded = (s: ImportedShot) => !!s.key && latestIdByKey.get(s.key) !== s.id;
+  const assignableOf = (s: ImportedShot) => s.scan.readAnything && !!s.key && OPTION_BY_KEY.has(s.key);
+
+  const statusOf = (s: ImportedShot): ShotStatus => {
+    if (isSuperseded(s)) return "duplicate";
+    if (s.error || !s.scan.readAnything) return "unreadable";
+    if (!assignableOf(s)) return "unavailable";
+    return "viable";
+  };
+
+  function applyOne(s: ImportedShot) {
+    const opt = OPTION_BY_KEY.get(s.key);
+    if (!opt) return;
+    applyScan(s.scan, opt.bosses, setSelected, setCurrent);
+    if (s.thumb) setScreenshot(s.key, s.thumb, s.scan.capturedAt);
+    setSummary(`Filled ${opt.label}.`);
   }
 
   function applyAll() {
     // Same species → keep only the most-recent screenshot (not additive).
-    const byKey = new Map<string, Row>();
-    for (const r of rows) {
-      if (!r.key || !r.scan.readAnything) continue;
-      const prev = byKey.get(r.key);
-      // Ties (identical lastModified — common for iOS photo-library picks) →
-      // the later file in the list wins, matching the render + store ordering.
-      if (!prev || r.scan.capturedAt >= prev.scan.capturedAt) byKey.set(r.key, r);
+    const byKey = new Map<string, ImportedShot>();
+    for (const s of imports) {
+      if (!assignableOf(s)) continue;
+      const prev = byKey.get(s.key);
+      if (!prev || s.scan.capturedAt >= prev.scan.capturedAt) byKey.set(s.key, s);
     }
     const labels: string[] = [];
-    for (const [key, r] of byKey) {
+    for (const [key, s] of byKey) {
       const opt = OPTION_BY_KEY.get(key)!;
-      applyScan(r.scan, opt.bosses, setSelected, setCurrent);
-      if (r.thumb) setScreenshot(key, r.thumb, r.scan.capturedAt);
+      applyScan(s.scan, opt.bosses, setSelected, setCurrent);
+      if (s.thumb) setScreenshot(key, s.thumb, s.scan.capturedAt);
       labels.push(opt.label);
     }
-    setSummary(labels.length ? `Filled ${labels.length}: ${labels.join(", ")}` : "Pick a Pokémon for each screenshot first.");
+    setSummary(labels.length ? `Filled ${labels.length}: ${labels.join(", ")}` : "Assign a Pokémon to a screenshot first.");
   }
 
-  const anyAssignable = rows.some((r) => r.scan.readAnything);
-  // Same species → only the latest screenshot counts; earlier ones are superseded.
-  const latestIdByKey = new Map<string, number>();
-  for (const r of rows) {
-    if (!r.key) continue;
-    const cur = latestIdByKey.get(r.key);
-    const curRow = cur !== undefined ? rows.find((x) => x.id === cur) : undefined;
-    if (!curRow || r.scan.capturedAt >= curRow.scan.capturedAt) latestIdByKey.set(r.key, r.id);
+  function del(id: string) {
+    removeImport(id);
+    setSummary(null);
   }
+
+  const anyAssignable = imports.some(assignableOf);
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-400">
         Upload one or more Pokémon screenshots. We read the Candy / XL / Mega Energy from each — then you
-        tap which Pokémon it is and we fill that card. Same species → only the most-recent is kept.
+        tap which Pokémon it is and apply it. Same species → only the most-recent is kept.
       </p>
 
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={busy}
-        className="flex items-center gap-1.5 rounded-sm border-2 border-black/40 bg-gofest-acid px-3 py-2 font-mono text-xs font-extrabold uppercase tracking-wider text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:shadow-none"
-      >
-        📷 Upload screenshots
-        <span className="rounded-sm border border-black/40 px-1 text-[9px]">beta</span>
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+          className="flex items-center gap-1.5 rounded-sm border-2 border-black/40 bg-gofest-acid px-3 py-2 font-mono text-xs font-extrabold uppercase tracking-wider text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:shadow-none"
+        >
+          📷 Upload screenshots
+          <span className="rounded-sm border border-black/40 px-1 text-[9px]">beta</span>
+        </button>
+        {imports.length ? (
+          <button
+            type="button"
+            onClick={() => {
+              clearImports();
+              setSummary(null);
+            }}
+            className="text-[11px] text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
+          >
+            Clear all
+          </button>
+        ) : null}
+      </div>
 
       {busy ? <p className="text-[11px] text-slate-400">{progress}</p> : null}
 
-      {rows.length ? (
+      {/* Grid of uploaded screenshots with per-shot status (above the pulls). */}
+      {imports.length ? (
+        <div className="space-y-1.5">
+          <ScreenshotGrid shots={imports} statusOf={statusOf} onDelete={del} />
+          <p className="text-[10px] text-slate-500">
+            <span className="text-amber-300">⚠</span> unreadable · <span className="text-sky-300">!</span> not in this
+            event · <span className="text-rose-300">✕</span> duplicate (a newer one is used). Tap a tile to preview or
+            delete it.
+          </p>
+        </div>
+      ) : null}
+
+      {/* Resource pulls — delete (red ✕) or apply just this one (green ›). */}
+      {imports.length ? (
         <ul className="space-y-2">
-          {rows.map((r) => {
-            const superseded = !!r.key && latestIdByKey.get(r.key) !== r.id;
-            // A superseded duplicate: drop its preview/data, just say why.
-            if (superseded) {
-              const label = OPTION_BY_KEY.get(r.key)?.label ?? cap(r.key);
-              return (
-                <li key={r.id} className="rounded-sm border border-dashed border-amber-400/30 bg-gofest-bg/20 px-2 py-1.5">
-                  <p className="text-[11px] text-amber-300/80">
-                    ↪ Dropped an earlier {label} screenshot — only your most-recent one is used.
-                  </p>
-                </li>
-              );
-            }
+          {imports.map((s) => {
+            const assignable = assignableOf(s);
+            const superseded = isSuperseded(s);
             return (
-              <li key={r.id} className="flex gap-2 rounded-sm border border-white/10 bg-gofest-bg/40 p-2">
-                {r.thumb ? <ImageThumb src={r.thumb} alt={r.fileName} size={52} /> : null}
+              <li key={s.id} className="flex items-start gap-2 rounded-sm border border-white/10 bg-gofest-bg/40 p-2">
+                <button
+                  type="button"
+                  onClick={() => del(s.id)}
+                  aria-label={`Delete ${s.fileName}`}
+                  title="Delete this screenshot and its values"
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-rose-400/50 bg-rose-500/15 text-xs font-bold text-rose-300 transition hover:bg-rose-500/30"
+                >
+                  ✕
+                </button>
+                {s.thumb ? <ImageThumb src={s.thumb} alt={s.fileName} size={56} /> : null}
+
                 <div className="min-w-0 flex-1">
-                  {r.scan.readAnything ? (
+                  {s.scan.readAnything ? (
                     <>
                       <div className="mb-1.5">
-                        <ScanChips scan={r.scan} />
+                        <ScanChips scan={s.scan} />
                       </div>
-                      {!OPTION_BY_KEY.has(r.key) && r.scan.detectedName ? (
-                        <p className="mb-1.5 text-[11px] text-amber-300">
-                          ⚠ {cap(r.scan.detectedName)} isn’t available for raids during this event.
+                      {!assignable && s.scan.detectedName ? (
+                        <p className="mb-1.5 text-[11px] text-sky-300">
+                          ❗ {cap(s.scan.detectedName)} isn’t available for raids during this event — pick another below.
+                        </p>
+                      ) : null}
+                      {superseded ? (
+                        <p className="mb-1.5 text-[11px] text-amber-300/80">
+                          ↪ Duplicate {OPTION_BY_KEY.get(s.key)?.label ?? cap(s.key)} — a newer screenshot is used by
+                          “Apply all”. You can still apply this one with ›.
                         </p>
                       ) : null}
                       <select
-                        value={r.key}
-                        onChange={(e) => setKey(r.id, e.target.value)}
+                        value={s.key}
+                        onChange={(e) => setImportKey(s.id, e.target.value)}
                         className={`w-full rounded-sm border bg-gofest-bg/60 px-2 py-1.5 text-sm outline-none focus:border-gofest-accent2 focus-visible:ring-2 focus-visible:ring-gofest-accent2 ${
-                          r.key ? "border-gofest-accent2/50 text-white" : "border-white/15 text-slate-300"
+                          s.key ? "border-gofest-accent2/50 text-white" : "border-white/15 text-slate-300"
                         }`}
                       >
                         <option value="">— pick the Pokémon —</option>
@@ -240,17 +288,29 @@ export function ScreenshotImporter() {
                   ) : (
                     <div>
                       <p className="text-[11px] text-amber-200 break-words">
-                        ⚠ {r.error ? r.error : unreadableMessage(r.scan, r.fileName)}
+                        ⚠ {s.error ? s.error : unreadableMessage(s.scan, s.fileName)}
                       </p>
-                      {!r.error && r.scan.looksLikePogo && r.scan.rawText ? (
+                      {!s.error && s.scan.looksLikePogo && s.scan.rawText ? (
                         <>
-                          <p className="text-[10px] text-slate-500 break-words">OCR saw: “{previewOcr(r.scan.rawText)}”</p>
-                          <CopyOcrButton text={r.scan.rawText} />
+                          <p className="text-[10px] text-slate-500 break-words">OCR saw: “{previewOcr(s.scan.rawText)}”</p>
+                          <CopyOcrButton text={s.scan.rawText} />
                         </>
                       ) : null}
                     </div>
                   )}
                 </div>
+
+                {assignable ? (
+                  <button
+                    type="button"
+                    onClick={() => applyOne(s)}
+                    aria-label={`Apply ${OPTION_BY_KEY.get(s.key)?.label ?? "this"} screenshot`}
+                    title="Apply just this screenshot's values"
+                    className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border border-emerald-400/50 bg-emerald-500/15 text-lg font-bold leading-none text-emerald-300 transition hover:bg-emerald-500/30"
+                  >
+                    ›
+                  </button>
+                ) : null}
               </li>
             );
           })}
@@ -268,7 +328,7 @@ export function ScreenshotImporter() {
       ) : null}
 
       {summary ? <p className="text-[11px] text-emerald-300">✓ {summary}</p> : null}
-      {rows.length ? <p className="text-[10px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
+      {imports.length ? <p className="text-[10px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
     </div>
   );
 }

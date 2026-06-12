@@ -3,18 +3,22 @@
 import { useState } from "react";
 import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { useTiltStore } from "@/store/useTiltStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { AssumptionsControls } from "./AssumptionsControls";
 import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
 
 type Panel = "assumptions" | "location" | "feedback";
 
-const ACTIONS: { id: Panel; label: string; icon: string; circle: string }[] = [
-  // Rendered top → bottom; the last sits nearest the main FAB.
-  { id: "feedback", label: "Feedback", icon: "✎", circle: "bg-gofest-accent text-black" },
-  { id: "location", label: "Location", icon: "📍", circle: "bg-gofest-accent2 text-black" },
-  { id: "assumptions", label: "Assumptions", icon: "⚙", circle: "bg-gofest-mewtwo text-white" },
-];
+interface DialItem {
+  id: string;
+  label: string;
+  icon: string;
+  circle: string;
+  onClick: () => void;
+  badge?: boolean;
+}
 
 const TITLES: Record<Panel, string> = {
   assumptions: "⚙ Assumptions",
@@ -34,11 +38,36 @@ export function ActionDock() {
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<Panel | null>(null);
   const customized = !isDefaultSettings(usePlannerStore((s) => s.settings));
+  const isMobile = useIsMobile();
+  const tiltSupported = useTiltStore((s) => s.supported);
+  const tiltEnabled = useTiltStore((s) => s.enabled);
+  const requestTilt = useTiltStore((s) => s.request);
 
   const openPanel = (id: Panel) => {
     setPanel(id);
     setOpen(false);
   };
+
+  // Rendered top → bottom; the last sits nearest the main FAB. The motion-tilt
+  // opt-in only makes sense on a phone/tablet with a real orientation sensor.
+  const items: DialItem[] = [];
+  if (isMobile && tiltSupported) {
+    items.push({
+      id: "tilt",
+      label: tiltEnabled ? "Tilt on" : "Enable tilt",
+      icon: "🧭",
+      circle: "bg-amber-300 text-black",
+      onClick: () => {
+        requestTilt();
+        setOpen(false);
+      },
+    });
+  }
+  items.push(
+    { id: "feedback", label: "Feedback", icon: "✎", circle: "bg-gofest-accent text-black", onClick: () => openPanel("feedback") },
+    { id: "location", label: "Location", icon: "📍", circle: "bg-gofest-accent2 text-black", onClick: () => openPanel("location") },
+    { id: "assumptions", label: "Assumptions", icon: "⚙", circle: "bg-gofest-mewtwo text-white", onClick: () => openPanel("assumptions"), badge: customized },
+  );
 
   return (
     <>
@@ -48,20 +77,20 @@ export function ActionDock() {
       {/* FAB + speed-dial (hidden while a sheet is open) */}
       {panel === null ? (
         <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
-          {ACTIONS.map((a, i) => (
+          {items.map((a, i) => (
             <div
               key={a.id}
               className={`flex items-center gap-2.5 transition-all duration-200 ${
                 open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
               }`}
-              style={{ transitionDelay: `${open ? (ACTIONS.length - 1 - i) * 40 : 0}ms` }}
+              style={{ transitionDelay: `${open ? (items.length - 1 - i) * 40 : 0}ms` }}
             >
               <span className="rounded-md bg-gofest-bone px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-black shadow">
                 {a.label}
               </span>
-              <button type="button" onClick={() => openPanel(a.id)} className={`relative ${miniFab} ${a.circle}`}>
+              <button type="button" onClick={a.onClick} className={`relative ${miniFab} ${a.circle}`}>
                 {a.icon}
-                {a.id === "assumptions" && customized ? (
+                {a.badge ? (
                   <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-black bg-gofest-accent" />
                 ) : null}
               </button>

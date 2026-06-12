@@ -2,7 +2,7 @@
 
 import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
-import { usePlannerResults } from "@/hooks/usePlannerResults";
+import { usePlannerResults, useBlockPlan } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
@@ -23,6 +23,7 @@ export default function Home() {
   const inputs = usePlannerStore((s) => s.inputs);
   const resetAll = usePlannerStore((s) => s.resetAll);
   const summary = usePlannerResults();
+  const blockPlan = useBlockPlan(summary);
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
@@ -111,7 +112,7 @@ export default function Home() {
             </section>
           ) : null}
 
-          <SummaryDashboard summary={summary} />
+          <SummaryDashboard summary={summary} blockPlan={blockPlan} />
 
           <ResearchPanel />
 
