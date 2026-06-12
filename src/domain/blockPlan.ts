@@ -373,6 +373,51 @@ export function rareCandyForecast(plan: WeekendBlockPlan): { rareCandy: number; 
   return { rareCandy, rareCandyXl };
 }
 
+export interface GoalOdds {
+  /** Probability (0..1) of completing EVERY goal — the product across species. */
+  overall: number;
+  /** Per-boss probability (0..1) of finishing that species' goal, by bossId. */
+  bySpecies: Record<string, number>;
+}
+
+/**
+ * Likelihood of hitting each goal given drop variability. A species needs
+ * somewhere in [min, max] raids (candy luck); the player can do its `fitted`
+ * raids plus whatever spare capacity its block/pool has left to absorb bad luck.
+ * The chance of finishing is where that achievable count lands in the need range
+ * (0 below the lucky floor, 1 at/above the unlucky ceiling, linear between). The
+ * overall odds multiply across species — the chance of completing them all.
+ */
+export function goalLikelihood(plan: WeekendBlockPlan): GoalOdds {
+  const agg = new Map<string, { lo: number; hi: number; cap: number }>();
+  const add = (s: BlockSpeciesShare, free: number) => {
+    const cur = agg.get(s.bossId) ?? { lo: 0, hi: 0, cap: 0 };
+    cur.lo += s.range.min;
+    cur.hi += s.range.max;
+    // Achievable = what fit, plus the block's spare time it could grind into if
+    // drops underperform — capped at the species' worst case.
+    cur.cap += Math.min(s.range.max, s.fitted + Math.max(0, free));
+    agg.set(s.bossId, cur);
+  };
+  for (const b of plan.blocks) {
+    const free = b.capacity.max - b.fitted;
+    for (const s of b.species) add(s, free);
+  }
+  if (plan.remote) {
+    const free = plan.remote.capacity - plan.remote.fitted;
+    for (const s of plan.remote.species) add(s, free);
+  }
+
+  const bySpecies: Record<string, number> = {};
+  let overall = 1;
+  for (const [bossId, v] of agg) {
+    const p = v.hi > v.lo ? Math.max(0, Math.min(1, (v.cap - v.lo) / (v.hi - v.lo))) : v.cap >= v.lo ? 1 : 0;
+    bySpecies[bossId] = p;
+    overall *= p;
+  }
+  return { overall, bySpecies };
+}
+
 /**
  * Build the remote-raid pool from the per-species counts the user assigned. Each
  * share is exactly what they allocated (its candy-luck range scaled to that

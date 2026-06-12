@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeBlockPlan, bandsForSpecies, rareCandyForecast, RISK_BANDS } from "./blockPlan";
+import { computeBlockPlan, bandsForSpecies, rareCandyForecast, goalLikelihood, RISK_BANDS } from "./blockPlan";
 import { computeCapacity } from "./capacity";
 import { makeDefaultInput } from "./defaults";
 import { computeBossResult } from "./raidsNeeded";
@@ -223,6 +223,36 @@ describe("rareCandyForecast", () => {
     const f = rareCandyForecast(plan);
     expect(f.rareCandy).toBeGreaterThan(0);
     expect(f.rareCandyXl).toBe(0); // a Mega raid gives Rare Candy but no Rare Candy XL
+  });
+});
+
+describe("goalLikelihood", () => {
+  it("is near-certain when goals fit with capacity to spare", () => {
+    const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([sat0.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const odds = goalLikelihood(plan);
+    expect(odds.bySpecies[sat0.id]).toBe(1);
+    expect(odds.overall).toBe(1);
+  });
+
+  it("drops below 1 when a block is over capacity, and overall is the product", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const odds = goalLikelihood(plan);
+    expect(odds.bySpecies[boss.id]).toBeLessThan(1);
+    expect(odds.overall).toBeCloseTo(odds.bySpecies[boss.id], 5);
+  });
+
+  it("every probability is within [0, 1]", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
+    const odds = goalLikelihood(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []));
+    for (const p of Object.values(odds.bySpecies)) {
+      expect(p).toBeGreaterThanOrEqual(0);
+      expect(p).toBeLessThanOrEqual(1);
+    }
   });
 });
 
