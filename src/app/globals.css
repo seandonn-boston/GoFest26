@@ -147,8 +147,16 @@ input[type="number"] {
   );
   transform: rotateX(calc(var(--tilt-y, 0) * -22deg)) rotateY(calc(var(--tilt-x, 0) * 22deg));
   transform-style: preserve-3d;
-  transition: transform 90ms linear;
+  transition: transform 90ms linear; /* off-state only: smooths the snap to flat */
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.55);
+}
+/* While the gyroscope is actively driving the tilt: promote each badge to its
+   own compositor layer (the conic-gradient rim paints ONCE, then only the GPU
+   transform updates — no per-frame repaint of 50+ badges) and drop the CSS
+   transition so the JS spring is the sole, snappy smoother (no double lag). */
+.tilt-active .badge {
+  transition: none;
+  will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
   .badge { transition: none; transform: none; }

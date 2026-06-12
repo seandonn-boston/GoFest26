@@ -11,27 +11,30 @@ import { MewtwoSelectTile } from "./MewtwoSelectTile";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
+// Static — depends only on constants, so compute once at module load rather
+// than on every render.
+const MEWTWO_X = getBoss(MEWTWO_X_ID)!;
+const MEWTWO_Y = getBoss(MEWTWO_Y_ID)!;
+const GROUPS = HABITATS.map((h) => ({
+  habitat: h,
+  bosses: RAID_BOSSES.filter(
+    (b) =>
+      b.id !== MEWTWO_X_ID &&
+      b.id !== MEWTWO_Y_ID &&
+      b.windows.some((w) => w.day === h.day && w.startHour === h.startHour && w.endHour === h.endHour),
+  ),
+}));
+
 export function BossList() {
-  const inputs = usePlannerStore((s) => s.inputs);
-  const toggleSelected = usePlannerStore((s) => s.toggleSelected);
+  // Select a primitive count (not the whole inputs map) so editing a card's
+  // currency doesn't re-render the list — only selecting/deselecting does.
+  const selectedCount = usePlannerStore((s) => {
+    let n = 0;
+    for (const id in s.inputs) if (s.inputs[id].selected) n++;
+    return n;
+  });
   const region = usePlannerStore((s) => s.settings.region);
-
-  const selectedCount = Object.values(inputs).filter((i) => i.selected).length;
   const start = GAME_CONFIG.event.hourStartLocal;
-
-  const mewtwoX = getBoss(MEWTWO_X_ID)!;
-  const mewtwoY = getBoss(MEWTWO_Y_ID)!;
-
-  // Group the remaining roster by habitat hour-block (day + time window).
-  const groups = HABITATS.map((h) => ({
-    habitat: h,
-    bosses: RAID_BOSSES.filter(
-      (b) =>
-        b.id !== MEWTWO_X_ID &&
-        b.id !== MEWTWO_Y_ID &&
-        b.windows.some((w) => w.day === h.day && w.startHour === h.startHour && w.endHour === h.endHour),
-    ),
-  }));
 
   return (
     <Card className="p-4">
@@ -46,22 +49,12 @@ export function BossList() {
 
       {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
       <div className="mb-5 grid grid-cols-2 gap-3">
-        <MewtwoSelectTile
-          boss={mewtwoX}
-          dayLabel="Saturday"
-          selected={!!inputs[MEWTWO_X_ID]?.selected}
-          onToggle={() => toggleSelected(MEWTWO_X_ID)}
-        />
-        <MewtwoSelectTile
-          boss={mewtwoY}
-          dayLabel="Sunday"
-          selected={!!inputs[MEWTWO_Y_ID]?.selected}
-          onToggle={() => toggleSelected(MEWTWO_Y_ID)}
-        />
+        <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
+        <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
       </div>
 
       <div className="space-y-4">
-        {groups.map(({ habitat, bosses }) => (
+        {GROUPS.map(({ habitat, bosses }) => (
           <div key={`${habitat.day}-${habitat.startHour}`}>
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
@@ -70,13 +63,7 @@ export function BossList() {
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {bosses.map((boss) => (
-                <BossSelectChip
-                  key={boss.id}
-                  boss={boss}
-                  selected={!!inputs[boss.id]?.selected}
-                  onToggle={() => toggleSelected(boss.id)}
-                  remoteOnly={!bossIsLocal(boss, region)}
-                />
+                <BossSelectChip key={boss.id} boss={boss} remoteOnly={!bossIsLocal(boss, region)} />
               ))}
             </div>
           </div>

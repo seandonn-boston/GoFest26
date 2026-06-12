@@ -1,23 +1,24 @@
 "use client";
 
+import { memo } from "react";
 import type { RaidBoss } from "@/domain/types";
 import { tileTitle } from "@/lib/tileTitle";
 import { regionScopeLabel } from "@/domain/region";
+import { usePlannerStore } from "@/store/usePlannerStore";
 import { TileSprite } from "@/components/ui/TileSprite";
 import { MegaRelief } from "@/components/ui/MegaRelief";
 import { EnamelBadge } from "@/components/ui/EnamelBadge";
 
-export function BossSelectChip({
-  boss,
-  selected,
-  onToggle,
-  remoteOnly = false,
-}: {
-  boss: RaidBoss;
-  selected: boolean;
-  onToggle: () => void;
-  remoteOnly?: boolean;
-}) {
+/**
+ * One selectable roster tile. It subscribes to ITS OWN selected flag (not the
+ * whole inputs map) and is memoized, so toggling one boss — or typing in any
+ * card — re-renders only the tile that actually changed, not all ~50 enamel
+ * badges. `remoteOnly` is derived from the (rarely-changing) region by the parent.
+ */
+function BossSelectChipImpl({ boss, remoteOnly = false }: { boss: RaidBoss; remoteOnly?: boolean }) {
+  const selected = usePlannerStore((s) => !!s.inputs[boss.id]?.selected);
+  const toggleSelected = usePlannerStore((s) => s.toggleSelected);
+
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
   const short = tileTitle(boss);
   const regionLabel = regionScopeLabel(boss.region);
@@ -29,7 +30,7 @@ export function BossSelectChip({
     <EnamelBadge
       types={boss.types}
       selected={selected}
-      onToggle={onToggle}
+      onToggle={() => toggleSelected(boss.id)}
       title={title}
       stageClassName="h-[90px] w-[84px]"
     >
@@ -48,3 +49,5 @@ export function BossSelectChip({
     </EnamelBadge>
   );
 }
+
+export const BossSelectChip = memo(BossSelectChipImpl);

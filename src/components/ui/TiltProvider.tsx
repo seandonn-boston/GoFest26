@@ -44,6 +44,8 @@ export function TiltProvider() {
       root.style.setProperty("--tilt-y", "0");
       return;
     }
+    // Composite the badges (will-change) + drop their CSS transition while live.
+    root.classList.add("tilt-active");
 
     // Latest orientation offset from "held vertical", a slow baseline that
     // absorbs the held angle (high-pass — only motion tilts), and a soft spring.
@@ -59,10 +61,14 @@ export function TiltProvider() {
     let lastX = "";
     let lastY = "";
 
-    const BASE_FOLLOW = 0.02; // how fast a held tilt decays back to flat (~1s)
-    const DEADZONE = 0.12; // firmer nudge required before any motion begins
-    const SPRING = 0.085; // soft spring => sluggish, elastic
-    const DAMP = 0.86; // <1 leaves a little overshoot on the way back
+    // Tuned for a snappy, electric feel: a stiff spring that reacts immediately
+    // to motion, firm damping so it settles fast, and a quick baseline decay that
+    // springs the badges back to neutral. (The JS spring is now the SOLE smoother
+    // — the CSS transition is off while tilting — so it can be this responsive.)
+    const BASE_FOLLOW = 0.1; // fast decay of a held tilt back to flat (~0.2s)
+    const DEADZONE = 0.05; // small threshold => reacts to slight motion
+    const SPRING = 0.32; // stiff => immediate, snappy response
+    const DAMP = 0.7; // firmer damping => quick settle, slight elastic snap
 
     const dz = (v: number) => (v > DEADZONE ? v - DEADZONE : v < -DEADZONE ? v + DEADZONE : 0);
     const clampOri = (v: number) => Math.max(-2, Math.min(2, v));
@@ -71,8 +77,9 @@ export function TiltProvider() {
     const onOrient = (e: DeviceOrientationEvent) => {
       const gamma = e.gamma ?? 0; // left-right (0 held vertically)
       const beta = e.beta ?? 0; // front-back (~90 held vertically)
-      oriX = clampOri(gamma / 16);
-      oriY = clampOri((beta - 90) / 16);
+      // ~12° saturates (was 16) — more sensitive / responsive to small tilts.
+      oriX = clampOri(gamma / 12);
+      oriY = clampOri((beta - 90) / 12);
     };
 
     const loop = () => {
@@ -106,6 +113,7 @@ export function TiltProvider() {
     return () => {
       window.removeEventListener("deviceorientation", onOrient);
       cancelAnimationFrame(raf);
+      root.classList.remove("tilt-active");
       root.style.setProperty("--tilt-x", "0");
       root.style.setProperty("--tilt-y", "0");
     };
