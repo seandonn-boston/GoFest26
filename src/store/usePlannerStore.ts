@@ -100,6 +100,8 @@ interface PlannerState {
   imports: ImportedShot[];
   /** Raids the user has already completed, keyed by `${bossId}@${day}${hour}`. */
   raidsDone: Record<string, number>;
+  /** Remote raids the user assigns to each species, keyed by bossId (sum ≤ 60). */
+  remoteAllocations: Record<string, number>;
   /**
    * User-ranked priority, highest first, by boss id. Drives card order, bar fill
    * order, and which raids get cut when goals exceed a block's capacity (lowest
@@ -114,6 +116,8 @@ interface PlannerState {
   setPriorityOrder: (ids: string[]) => void;
   /** Record how many raids the user has completed toward a per-block target. */
   setRaidsDone: (key: string, value: number) => void;
+  /** Assign remote raids to a species (caps applied by the caller). */
+  setRemoteAllocation: (bossId: string, value: number) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -167,12 +171,19 @@ export const usePlannerStore = create<PlannerState>()(
       screenshots: {},
       imports: [],
       raidsDone: {},
+      remoteAllocations: {},
       priorityOrder: [],
 
       setRaidsDone: (key, value) =>
         set((state) => {
           const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
           return { raidsDone: { ...state.raidsDone, [key]: safe } };
+        }),
+
+      setRemoteAllocation: (bossId, value) =>
+        set((state) => {
+          const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: safe } };
         }),
 
       addImports: (shots) =>
@@ -358,12 +369,13 @@ export const usePlannerStore = create<PlannerState>()(
           screenshots: {},
           imports: [],
           raidsDone: {},
+          remoteAllocations: {},
           priorityOrder: [],
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 8,
+      version: 9,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -376,6 +388,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!Array.isArray(state.priorityOrder)) state.priorityOrder = [];
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
+        if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },

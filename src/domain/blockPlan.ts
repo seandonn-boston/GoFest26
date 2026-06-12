@@ -221,8 +221,12 @@ export function computeBlockPlan(
   capacity: CapacityModel,
   settings: PlannerSettings = DEFAULT_SETTINGS,
   priorityOrder: string[] = [],
+  remoteAllocations: Record<string, number> = {},
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
+  // Remote raids the user assigned to each species reduce that species' in-person
+  // (time-block) demand — only the non-remote remainder needs to fit a block.
+  const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
   const rpH = capacity.raidsPerHour;
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   const inputById = new Map(inputs.map((i) => [i.bossId, i]));
@@ -249,12 +253,16 @@ export function computeBlockPlan(
     if (!boss || !res || !localOf(boss)) continue;
     const total = sized(res.raids, rewardCase);
     if (total <= 0) continue;
+    // What's left after the user does some of this species remotely.
+    const blockTotal = Math.max(0, total - remoteFor(boss.id));
+    if (blockTotal <= 0) continue;
+    const scale = blockTotal / total; // shrink the candy-luck range to the in-person portion
     const idxs = blockIndicesForWindows(boss.windows);
     if (!idxs.length) continue;
     idxs.forEach((bi, k) => {
-      const share = Math.floor(total / idxs.length) + (k < total % idxs.length ? 1 : 0);
+      const share = Math.floor(blockTotal / idxs.length) + (k < blockTotal % idxs.length ? 1 : 0);
       if (share <= 0) return;
-      const frac = share / total;
+      const frac = (share / blockTotal) * scale;
       shares[bi].push({
         bossId: boss.id,
         bossName: boss.name,
@@ -272,14 +280,22 @@ export function computeBlockPlan(
   const xSel = !!inputById.get(MEWTWO_X_ID)?.selected;
   const ySel = !!inputById.get(MEWTWO_Y_ID)?.selected;
 
-  const satLocked = xSel ? sized(xRes?.needs.megaEnergy?.raidsRange, rewardCase) : 0;
-  const sunLocked = ySel ? sized(yRes?.needs.megaEnergy?.raidsRange, rewardCase) : 0;
+  const satEnergy = xSel ? sized(xRes?.needs.megaEnergy?.raidsRange, rewardCase) : 0;
+  const sunEnergy = ySel ? sized(yRes?.needs.megaEnergy?.raidsRange, rewardCase) : 0;
   // Each Mewtwo raid yields both Candy and XL, so the shared leveling demands the
   // larger of the two; the part beyond the day-locked energy raids is flexible.
   const sharedLevel = xSel
     ? Math.max(sized(xRes?.needs.xlCandy?.raidsRange, rewardCase), sized(xRes?.needs.candy?.raidsRange, rewardCase))
     : 0;
-  const fluid = Math.max(0, sharedLevel - satLocked - sunLocked);
+  const fluidNeed = Math.max(0, sharedLevel - satEnergy - sunEnergy);
+
+  // Mewtwo remote raids first cover that form's day-locked energy, then spill into
+  // the shared flexible pool — reducing what Mewtwo needs from the time blocks.
+  const allocX = remoteFor(MEWTWO_X_ID);
+  const allocY = remoteFor(MEWTWO_Y_ID);
+  const satLocked = Math.max(0, satEnergy - allocX);
+  const sunLocked = Math.max(0, sunEnergy - allocY);
+  const fluid = Math.max(0, fluidNeed - Math.max(0, allocX - satEnergy) - Math.max(0, allocY - sunEnergy));
 
   const ratioFor = (res: BossResult | undefined): Range => {
     const e = sized(res?.raids, rewardCase);
@@ -328,11 +344,10 @@ export function computeBlockPlan(
     ...fillShares(orderByPriority(shares[i], priorityOf), capacities[i]),
   }));
 
-  // 4. Remote-raid pool (opt-in): a flat budget of passes, filled by priority —
-  //    region-locked targets (their only option) and any block shortfalls — then
-  //    leftover passes spill into Mewtwo as the equalizer.
+  // 4. Remote-raid pool (opt-in): the per-species counts the user assigned, shown
+  //    against the 60-pass budget. These already reduced the block demand above.
   const remote = settings.useRemoteRaids
-    ? computeRemotePlan(inputs, resultById, blocks, settings, rewardCase, priorityOf, xSel, ySel)
+    ? computeRemotePlan(inputs, resultById, rewardCase, priorityOf, remoteAllocations)
     : undefined;
 
   return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };
@@ -358,74 +373,40 @@ export function rareCandyForecast(plan: WeekendBlockPlan): { rareCandy: number; 
   return { rareCandy, rareCandyXl };
 }
 
-/** Build the remote-raid pool allocation (see RemotePlan). */
+/**
+ * Build the remote-raid pool from the per-species counts the user assigned. Each
+ * share is exactly what they allocated (its candy-luck range scaled to that
+ * count); the bar shows the assignments against the 60-pass budget.
+ */
 function computeRemotePlan(
   inputs: BossInput[],
   resultById: Map<string, BossResult>,
-  blocks: BlockPlan[],
-  settings: PlannerSettings,
   rewardCase: PlannerSettings["rewardCase"],
   priorityOf: (id: string) => number,
-  xSel: boolean,
-  ySel: boolean,
+  remoteAllocations: Record<string, number>,
 ): RemotePlan | undefined {
-  const pool = Math.max(0, Math.min(Math.round(settings.remoteRaidCount), MAX_REMOTE_RAIDS));
-  if (pool <= 0) return undefined;
-
-  // Aggregate each boss's block shortfall (the raids that didn't fit its windows).
-  const shortfall = new Map<string, { raids: number; min: number; max: number; name: string; mewtwo: boolean }>();
-  for (const b of blocks) {
-    for (const s of b.species) {
-      if (s.remaining <= 0) continue;
-      const cur = shortfall.get(s.bossId) ?? { raids: 0, min: 0, max: 0, name: s.bossName, mewtwo: s.mewtwo };
-      const frac = s.raids > 0 ? s.remaining / s.raids : 1;
-      cur.raids += s.remaining;
-      cur.min += Math.round(s.range.min * frac);
-      cur.max += Math.round(s.range.max * frac);
-      shortfall.set(s.bossId, cur);
-    }
-  }
-
-  // One remote need per selected boss: region-locked → its FULL goal (no other
-  // way to raid it); local → its block shortfall. Mewtwo's own shortfall counts here.
-  const needs: RawShare[] = [];
+  const shares: RawShare[] = [];
   for (const input of inputs) {
     if (!input.selected) continue;
+    const alloc = Math.max(0, Math.round(remoteAllocations[input.bossId] ?? 0));
+    if (alloc <= 0) continue;
     const boss = getBoss(input.bossId);
     if (!boss) continue;
-    if (!bossIsLocal(boss, settings.region)) {
-      const res = resultById.get(boss.id);
-      const total = sized(res?.raids, rewardCase);
-      if (total > 0) needs.push({ bossId: boss.id, bossName: boss.name, raids: total, range: res!.raids, mewtwo: false });
-    } else {
-      const sf = shortfall.get(boss.id);
-      if (sf && sf.raids > 0) {
-        needs.push({ bossId: boss.id, bossName: sf.name, raids: sf.raids, range: { min: sf.min, max: sf.max }, mewtwo: sf.mewtwo });
-      }
-    }
+    const res = resultById.get(input.bossId);
+    const total = sized(res?.raids, rewardCase);
+    const range =
+      res && total > 0
+        ? { min: Math.round((alloc * res.raids.min) / total), max: Math.round((alloc * res.raids.max) / total) }
+        : { min: alloc, max: alloc };
+    shares.push({
+      bossId: boss.id,
+      bossName: boss.name,
+      raids: alloc,
+      range,
+      mewtwo: boss.id === MEWTWO_X_ID || boss.id === MEWTWO_Y_ID,
+    });
   }
-  const ordered = orderByPriority(needs, priorityOf);
-
-  // Leftover passes (beyond every goal) spill into Mewtwo — merged onto its need
-  // if it already has one, so there's a single Mewtwo remote card.
-  const totalNeed = ordered.reduce((s, n) => s + n.raids, 0);
-  const leftover = pool - totalNeed;
-  if (leftover > 0 && (xSel || ySel)) {
-    const formId = xSel ? MEWTWO_X_ID : MEWTWO_Y_ID;
-    const existing = ordered.find((n) => n.bossId === formId);
-    if (existing) {
-      existing.raids += leftover;
-      existing.range = { min: existing.range.min, max: existing.range.max + leftover };
-    } else {
-      ordered.push({
-        bossId: formId,
-        bossName: getBoss(formId)?.name ?? "Mega Mewtwo",
-        raids: leftover,
-        range: { min: leftover, max: leftover },
-        mewtwo: true,
-      });
-    }
-  }
-
-  return { capacity: pool, ...fillShares(ordered, { min: pool, max: pool }) };
+  if (!shares.length) return undefined;
+  const ordered = orderByPriority(shares, priorityOf);
+  return { capacity: MAX_REMOTE_RAIDS, ...fillShares(ordered, { min: MAX_REMOTE_RAIDS, max: MAX_REMOTE_RAIDS }) };
 }
