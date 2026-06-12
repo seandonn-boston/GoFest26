@@ -6,6 +6,7 @@ import { formatRange } from "@/lib/format";
 import { Card } from "@/components/ui/Card";
 import { CapacityGauge } from "./CapacityGauge";
 import { PriorityRanker } from "./PriorityRanker";
+import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
 
 export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
@@ -42,6 +43,7 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
           })()}
 
           <PriorityRanker />
+          <RemoteRaidToggle />
           <BlockAccordion plan={blockPlan} />
         </>
       ) : (

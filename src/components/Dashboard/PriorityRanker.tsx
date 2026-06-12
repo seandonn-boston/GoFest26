@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getBoss } from "@/data";
+import { bossIsLocal } from "@/domain/region";
 import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 
@@ -17,6 +18,7 @@ export function PriorityRanker() {
   const priorityOrder = usePlannerStore((s) => s.priorityOrder);
   const setPriorityOrder = usePlannerStore((s) => s.setPriorityOrder);
   const setSelected = usePlannerStore((s) => s.setSelected);
+  const region = usePlannerStore((s) => s.settings.region);
 
   const committed = useMemo(() => selectedInPriorityOrder({ inputs, priorityOrder }), [inputs, priorityOrder]);
   const [draft, setDraft] = useState<string[]>(committed);
@@ -78,6 +80,7 @@ export function PriorityRanker() {
           const boss = getBoss(id);
           if (!boss) return null;
           const dragging = dragId === id;
+          const remoteOnly = !bossIsLocal(boss, region);
           return (
             <li
               key={id}
@@ -100,6 +103,14 @@ export function PriorityRanker() {
               <span className="w-4 text-center font-mono text-xs text-slate-500">{i + 1}</span>
               <Sprite src={boss.sprite} alt={boss.name} size={24} />
               <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{boss.name}</span>
+              {remoteOnly ? (
+                <span
+                  title={`${boss.name} isn't raidable in ${region.label} — needs a Remote Raid Pass`}
+                  className="shrink-0 rounded-sm border border-gofest-accent/50 bg-gofest-accent/15 px-1 py-[1px] font-mono text-[8px] font-extrabold uppercase tracking-wider text-gofest-accent"
+                >
+                  Remote
+                </span>
+              ) : null}
               <button
                 type="button"
                 aria-label={`Remove ${boss.name}`}
