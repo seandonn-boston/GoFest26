@@ -10,7 +10,7 @@ export * from "./types";
 export { computeBossResult } from "./raidsNeeded";
 export { computeCapacity } from "./capacity";
 export { computeSchedule } from "./scheduler";
-export { computeBlockPlan, RISK_BANDS } from "./blockPlan";
+export { computeBlockPlan, rareCandyForecast, RISK_BANDS } from "./blockPlan";
 export type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "./blockPlan";
 export { computeGrossRequirement, computeNetNeed } from "./requirements";
 export { applyResearchCredits } from "./research";

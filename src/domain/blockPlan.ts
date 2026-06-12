@@ -338,6 +338,26 @@ export function computeBlockPlan(
   return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };
 }
 
+/**
+ * Rare Candy / Rare Candy XL the plan's raids will hand out (species-agnostic,
+ * on top of each boss's own candy/energy). Every raid drops ~1 Rare Candy; every
+ * 5★, regional, or super-mega (Mewtwo) raid also drops ~1 Rare Candy XL —
+ * regular Mega raids don't. Counts the raids that actually fit, blocks + remote.
+ */
+export function rareCandyForecast(plan: WeekendBlockPlan): { rareCandy: number; rareCandyXl: number } {
+  let rareCandy = 0;
+  let rareCandyXl = 0;
+  const tally = (species: BlockSpeciesShare[]) => {
+    for (const s of species) {
+      rareCandy += s.fitted;
+      if (getBoss(s.bossId)?.tier !== "mega") rareCandyXl += s.fitted; // 5★/regional/super-mega only
+    }
+  };
+  for (const b of plan.blocks) tally(b.species);
+  if (plan.remote) tally(plan.remote.species);
+  return { rareCandy, rareCandyXl };
+}
+
 /** Build the remote-raid pool allocation (see RemotePlan). */
 function computeRemotePlan(
   inputs: BossInput[],

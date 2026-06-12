@@ -216,7 +216,8 @@ describe("scheduler", () => {
   });
 
   it("flags an unmet goal when a windowed boss needs more raids than its windows allow", () => {
-    const resh = input("reshiram", { level: 40, targetLevel: 50 }); // needs ~111 raids
+    // Maxing 3 Reshiram (3× the XL climb) far exceeds its single 3-hour window.
+    const resh = { ...input("reshiram", { level: 40, targetLevel: 50 }), quantity: 3 };
     const schedule = scheduleFor([resh]);
     const windowSlots = 3 * planningPerHour(); // 3 available hours
     const placed = schedule.raids.length;

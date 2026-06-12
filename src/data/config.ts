@@ -65,11 +65,12 @@ export const GAME_CONFIG = {
 
   // Rewards from *catching* the boss (skipped if you run from the encounter).
   // source: ~3 base candy, doubled to ~6 with a Pinap; transferring it = +1
-  // candy. Legendary/Mythical catches are guaranteed 3 XL (+3 more for an
-  // in-person Tier-5 completion); regular mega-raid catches give 0–3 XL.
+  // candy. Legendary/Mythical catches are guaranteed 3 XL; an in-person Tier-5
+  // completion reliably adds the bonus (→ 5–6). Remote raids (the optional pool)
+  // only see the 3-XL floor, but they're supplementary so we plan for in person.
   catch: {
     candy: { min: 3, max: 6 } as Range, // no berry → Pinap
-    legendaryXl: { min: 3, max: 6 } as Range, // guaranteed 3 + in-person completion
+    legendaryXl: { min: 5, max: 6 } as Range, // in-person Tier-5: guaranteed 3 + completion bonus
     megaXl: { min: 1, max: 3 } as Range, // 0–3 in game; min 1 keeps worst-case finite
     transferCandy: 1,
     // A matching Mega-Evolved buddy adds +1 Candy per catch (and a modest XL
