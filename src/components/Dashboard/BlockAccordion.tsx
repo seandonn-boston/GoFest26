@@ -64,11 +64,12 @@ function TargetCard({ share, dkey }: { share: BlockSpeciesShare; dkey: string })
 
       <div className="flex items-center gap-1 font-mono text-sm font-bold">
         <input
-          type="number"
-          min={0}
+          type="text"
           inputMode="numeric"
-          value={done}
-          onChange={(e) => setRaidsDone(dkey, Number(e.target.value))}
+          pattern="[0-9]*"
+          value={String(done)}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => setRaidsDone(dkey, Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
           aria-label={`Raids completed for ${share.bossName}`}
           className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
         />
@@ -111,7 +112,7 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         <CapacityBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
         {over ? (
           <p className="mt-1 text-[11px] font-medium text-rose-300">
-            ⚠ {block.remaining} raid{block.remaining === 1 ? "" : "s"} can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
+            ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"}{" "}can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
           </p>
         ) : null}
       </button>

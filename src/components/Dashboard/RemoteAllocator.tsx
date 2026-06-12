@@ -54,12 +54,15 @@ export function RemoteAllocator() {
               </span>
             ) : null}
             <input
-              type="number"
-              min={0}
-              max={max}
+              type="text"
               inputMode="numeric"
-              value={val}
-              onChange={(e) => setRemoteAllocation(id, Math.max(0, Math.min(max, Math.round(Number(e.target.value) || 0))))}
+              pattern="[0-9]*"
+              value={String(val)}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const n = Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0);
+                setRemoteAllocation(id, Math.max(0, Math.min(max, n)));
+              }}
               aria-label={`Remote raids for ${boss.name}`}
               className="w-12 shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent"
             />
