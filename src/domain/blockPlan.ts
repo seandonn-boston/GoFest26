@@ -17,8 +17,9 @@
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS } from "@/data/habitats";
 import { midpoint } from "@/lib/math";
-import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
-import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, Range } from "./types";
+import { bossIsLocal } from "./region";
+import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, type PlannerSettings } from "./settings";
+import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, RaidBoss, Range } from "./types";
 
 export type RiskBand = "blue" | "green" | "yellow" | "red";
 
@@ -63,8 +64,25 @@ export interface BlockPlan {
   species: BlockSpeciesShare[];
 }
 
+/**
+ * The Remote Raid pool — a separate, non-time-blocked allocation the user opts
+ * into. Region-locked targets (which can't be raided in person at all) come
+ * first by priority, then block shortfalls, then leftover passes spill into
+ * Mewtwo. `capacity` is the pool size (the bar's 100%).
+ */
+export interface RemotePlan {
+  capacity: number;
+  demand: number;
+  fitted: number;
+  remaining: number;
+  bands: Record<RiskBand, number>;
+  species: BlockSpeciesShare[];
+}
+
 export interface WeekendBlockPlan {
   blocks: BlockPlan[];
+  /** Remote-raid pool, present only when the user opted into remote raids. */
+  remote?: RemotePlan;
   /** True when every block's whole demand fits its capacity (no shortfall). */
   feasible: boolean;
 }
@@ -149,6 +167,48 @@ interface RawShare {
   mewtwo: boolean;
 }
 
+/** Priority order (highest first); ties → fixed species before Mewtwo, then roster order. */
+function orderByPriority(shares: RawShare[], priorityOf: (id: string) => number): RawShare[] {
+  return [...shares].sort((a, z) => {
+    const pa = priorityOf(a.bossId);
+    const pz = priorityOf(z.bossId);
+    if (pa !== pz) return pa - pz;
+    if (a.mewtwo !== z.mewtwo) return a.mewtwo ? 1 : -1;
+    return (getBoss(a.bossId)?.sortPriority ?? 0) - (getBoss(z.bossId)?.sortPriority ?? 0);
+  });
+}
+
+/** Fill an ordered share list into a capacity, banding the part that fits and
+ *  reporting the rest as shortfall. Shared by the habitat blocks and the remote pool. */
+function fillShares(
+  ordered: RawShare[],
+  cap: Range,
+): { species: BlockSpeciesShare[]; demand: number; fitted: number; remaining: number; bands: Record<RiskBand, number> } {
+  let cum = 0;
+  let fitted = 0;
+  let remaining = 0;
+  const agg = emptyBands();
+  const species = ordered.map((sh) => {
+    const fit = Math.max(0, Math.min(sh.raids, cap.max - cum));
+    const bands = bandsForSpecies(fit, sh.raids, sh.range, cum, cap);
+    cum += sh.raids;
+    fitted += fit;
+    remaining += sh.raids - fit;
+    for (const k of RISK_BANDS) agg[k] += bands[k];
+    return {
+      bossId: sh.bossId,
+      bossName: sh.bossName,
+      raids: sh.raids,
+      range: sh.range,
+      fitted: fit,
+      remaining: sh.raids - fit,
+      bands,
+      mewtwo: sh.mewtwo,
+    };
+  });
+  return { species, demand: cum, fitted, remaining, bands: agg };
+}
+
 /**
  * Build the six-block weekend plan from the per-boss results. Fixed-window
  * bosses pin to their habitat block(s); Mewtwo levels the rest (day-locked
@@ -176,13 +236,17 @@ export function computeBlockPlan(
     max: rpH.max * (h.endHour - h.startHour),
   }));
 
-  // 1. Fixed-window species → their habitat block(s). A boss spanning several
-  //    blocks is split evenly (in practice each occupies exactly one block).
+  const localOf = (boss: RaidBoss) => bossIsLocal(boss, settings.region);
+
+  // 1. Fixed-window LOCAL species → their habitat block(s). Region-locked bosses
+  //    can't be raided in person during the event, so they're held back for the
+  //    remote pool below. A boss spanning several blocks is split evenly (in
+  //    practice each occupies exactly one block).
   for (const input of inputs) {
     if (!input.selected || isMewtwo(input.bossId)) continue;
     const boss = getBoss(input.bossId);
     const res = resultById.get(input.bossId);
-    if (!boss || !res) continue;
+    if (!boss || !res || !localOf(boss)) continue;
     const total = sized(res.raids, rewardCase);
     if (total <= 0) continue;
     const idxs = blockIndicesForWindows(boss.windows);
@@ -253,55 +317,95 @@ export function computeBlockPlan(
     });
   });
 
-  // 3. Order each block by priority and risk-band it. Default tie-break: fixed
-  //    species before Mewtwo (the all-weekend filler takes the riskier tail),
-  //    then roster sort order — until the user ranks them explicitly.
-  const blocks: BlockPlan[] = HABITATS.map((h, i) => {
-    const ordered = [...shares[i]].sort((a, z) => {
-      const pa = priorityOf(a.bossId);
-      const pz = priorityOf(z.bossId);
-      if (pa !== pz) return pa - pz;
-      if (a.mewtwo !== z.mewtwo) return a.mewtwo ? 1 : -1;
-      return (getBoss(a.bossId)?.sortPriority ?? 0) - (getBoss(z.bossId)?.sortPriority ?? 0);
-    });
-    const cap = capacities[i];
-    let cum = 0;
-    let fitted = 0;
-    let remaining = 0;
-    const agg = emptyBands();
-    const species: BlockSpeciesShare[] = ordered.map((sh) => {
-      // Fill to 100% in priority order: each species takes as many of its raids
-      // as still fit under capacity.max; the rest are this species' shortfall.
-      const fit = Math.max(0, Math.min(sh.raids, cap.max - cum));
-      const bands = bandsForSpecies(fit, sh.raids, sh.range, cum, cap);
-      cum += sh.raids;
-      fitted += fit;
-      remaining += sh.raids - fit;
-      for (const k of RISK_BANDS) agg[k] += bands[k];
-      return {
-        bossId: sh.bossId,
-        bossName: sh.bossName,
-        raids: sh.raids,
-        range: sh.range,
-        fitted: fit,
-        remaining: sh.raids - fit,
-        bands,
-        mewtwo: sh.mewtwo,
-      };
-    });
-    return {
-      day: h.day,
-      name: h.name,
-      startHour: h.startHour,
-      endHour: h.endHour,
-      capacity: cap,
-      demand: cum,
-      fitted,
-      remaining,
-      bands: agg,
-      species,
-    };
-  });
+  // 3. Order each block by priority and fill to 100% (the tail is cut when over
+  //    capacity). Default tie-break: fixed species before Mewtwo, then roster order.
+  const blocks: BlockPlan[] = HABITATS.map((h, i) => ({
+    day: h.day,
+    name: h.name,
+    startHour: h.startHour,
+    endHour: h.endHour,
+    capacity: capacities[i],
+    ...fillShares(orderByPriority(shares[i], priorityOf), capacities[i]),
+  }));
 
-  return { blocks, feasible: blocks.every((b) => b.remaining === 0) };
+  // 4. Remote-raid pool (opt-in): a flat budget of passes, filled by priority —
+  //    region-locked targets (their only option) and any block shortfalls — then
+  //    leftover passes spill into Mewtwo as the equalizer.
+  const remote = settings.useRemoteRaids
+    ? computeRemotePlan(inputs, resultById, blocks, settings, rewardCase, priorityOf, xSel, ySel)
+    : undefined;
+
+  return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };
+}
+
+/** Build the remote-raid pool allocation (see RemotePlan). */
+function computeRemotePlan(
+  inputs: BossInput[],
+  resultById: Map<string, BossResult>,
+  blocks: BlockPlan[],
+  settings: PlannerSettings,
+  rewardCase: PlannerSettings["rewardCase"],
+  priorityOf: (id: string) => number,
+  xSel: boolean,
+  ySel: boolean,
+): RemotePlan | undefined {
+  const pool = Math.max(0, Math.min(Math.round(settings.remoteRaidCount), MAX_REMOTE_RAIDS));
+  if (pool <= 0) return undefined;
+
+  // Aggregate each boss's block shortfall (the raids that didn't fit its windows).
+  const shortfall = new Map<string, { raids: number; min: number; max: number; name: string; mewtwo: boolean }>();
+  for (const b of blocks) {
+    for (const s of b.species) {
+      if (s.remaining <= 0) continue;
+      const cur = shortfall.get(s.bossId) ?? { raids: 0, min: 0, max: 0, name: s.bossName, mewtwo: s.mewtwo };
+      const frac = s.raids > 0 ? s.remaining / s.raids : 1;
+      cur.raids += s.remaining;
+      cur.min += Math.round(s.range.min * frac);
+      cur.max += Math.round(s.range.max * frac);
+      shortfall.set(s.bossId, cur);
+    }
+  }
+
+  // One remote need per selected boss: region-locked → its FULL goal (no other
+  // way to raid it); local → its block shortfall. Mewtwo's own shortfall counts here.
+  const needs: RawShare[] = [];
+  for (const input of inputs) {
+    if (!input.selected) continue;
+    const boss = getBoss(input.bossId);
+    if (!boss) continue;
+    if (!bossIsLocal(boss, settings.region)) {
+      const res = resultById.get(boss.id);
+      const total = sized(res?.raids, rewardCase);
+      if (total > 0) needs.push({ bossId: boss.id, bossName: boss.name, raids: total, range: res!.raids, mewtwo: false });
+    } else {
+      const sf = shortfall.get(boss.id);
+      if (sf && sf.raids > 0) {
+        needs.push({ bossId: boss.id, bossName: sf.name, raids: sf.raids, range: { min: sf.min, max: sf.max }, mewtwo: sf.mewtwo });
+      }
+    }
+  }
+  const ordered = orderByPriority(needs, priorityOf);
+
+  // Leftover passes (beyond every goal) spill into Mewtwo — merged onto its need
+  // if it already has one, so there's a single Mewtwo remote card.
+  const totalNeed = ordered.reduce((s, n) => s + n.raids, 0);
+  const leftover = pool - totalNeed;
+  if (leftover > 0 && (xSel || ySel)) {
+    const formId = xSel ? MEWTWO_X_ID : MEWTWO_Y_ID;
+    const existing = ordered.find((n) => n.bossId === formId);
+    if (existing) {
+      existing.raids += leftover;
+      existing.range = { min: existing.range.min, max: existing.range.max + leftover };
+    } else {
+      ordered.push({
+        bossId: formId,
+        bossName: getBoss(formId)?.name ?? "Mega Mewtwo",
+        raids: leftover,
+        range: { min: leftover, max: leftover },
+        mewtwo: true,
+      });
+    }
+  }
+
+  return { capacity: pool, ...fillShares(ordered, { min: pool, max: pool }) };
 }

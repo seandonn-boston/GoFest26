@@ -4,7 +4,7 @@ import { useState } from "react";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss } from "@/data";
 import { RISK_BANDS } from "@/domain";
-import type { BlockPlan, BlockSpeciesShare, RiskBand, WeekendBlockPlan } from "@/domain";
+import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import type { EventDay } from "@/domain/types";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -25,19 +25,18 @@ const BAND_LABEL: Record<RiskBand, string> = {
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
 
 const blockKey = (b: BlockPlan) => `${b.day}${b.startHour}`;
-const doneKey = (b: BlockPlan, s: BlockSpeciesShare) => `${s.bossId}@${b.day}${b.startHour}`;
 
-/** The block's capacity bar (colored confidence bands). The bar IS 100%; raids
- *  that don't fit are never drawn — they're reported as the shortfall below. */
-function CapacityBar({ block }: { block: BlockPlan }) {
-  const scale = Math.max(block.capacity.max, 1);
-  const free = Math.max(0, block.capacity.max - block.fitted);
+/** Confidence-banded capacity bar. The bar IS 100%; raids that don't fit are
+ *  never drawn — they're reported as the shortfall beneath it. */
+function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, number>; fitted: number; capacityMax: number }) {
+  const scale = Math.max(capacityMax, 1);
+  const free = Math.max(0, capacityMax - fitted);
   const pct = (n: number) => `${(n / scale) * 100}%`;
   return (
     <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
       {RISK_BANDS.map((b) =>
-        block.bands[b] > 0 ? (
-          <div key={b} className={BAND_COLOR[b]} style={{ width: pct(block.bands[b]) }} title={`${BAND_LABEL[b]}: ${block.bands[b]}`} />
+        bands[b] > 0 ? (
+          <div key={b} className={BAND_COLOR[b]} style={{ width: pct(bands[b]) }} title={`${BAND_LABEL[b]}: ${bands[b]}`} />
         ) : null,
       )}
       {free > 0 ? <div style={{ width: pct(free) }} /> : null}
@@ -45,10 +44,9 @@ function CapacityBar({ block }: { block: BlockPlan }) {
   );
 }
 
-/** One species' target inside a block: completed (editable) / best · avg · worst. */
-function TargetCard({ block, share }: { block: BlockPlan; share: BlockSpeciesShare }) {
-  const key = doneKey(block, share);
-  const done = usePlannerStore((s) => s.raidsDone[key] ?? 0);
+/** One species' target: completed (editable) / best · avg · worst raid counts. */
+function TargetCard({ share, dkey }: { share: BlockSpeciesShare; dkey: string }) {
+  const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
   const boss = getBoss(share.bossId);
 
@@ -68,7 +66,7 @@ function TargetCard({ block, share }: { block: BlockPlan; share: BlockSpeciesSha
           min={0}
           inputMode="numeric"
           value={done}
-          onChange={(e) => setRaidsDone(key, Number(e.target.value))}
+          onChange={(e) => setRaidsDone(dkey, Number(e.target.value))}
           aria-label={`Raids completed for ${share.bossName}`}
           className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
         />
@@ -79,7 +77,7 @@ function TargetCard({ block, share }: { block: BlockPlan; share: BlockSpeciesSha
       </div>
 
       {share.remaining > 0 ? (
-        <span className="shrink-0 text-[10px] text-rose-300" title={`${share.remaining} raids short this block`}>
+        <span className="shrink-0 text-[10px] text-rose-300" title={`${share.remaining} raids short`}>
           {goalPct}%
         </span>
       ) : null}
@@ -108,7 +106,7 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
             {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
           </span>
         </div>
-        <CapacityBar block={block} />
+        <CapacityBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
         {over ? (
           <p className="mt-1 text-[11px] font-medium text-rose-300">
             ⚠ {block.remaining} raid{block.remaining === 1 ? "" : "s"} can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
@@ -119,7 +117,42 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
       {open ? (
         <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
           {block.species.map((s) => (
-            <TargetCard key={s.bossId + (s.mewtwo ? "-m" : "")} block={block} share={s} />
+            <TargetCard key={s.bossId + (s.mewtwo ? "-m" : "")} share={s} dkey={`${s.bossId}@${block.day}${block.startHour}`} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RemoteItem({ remote, open, onToggle }: { remote: RemotePlan; open: boolean; onToggle: () => void }) {
+  const free = Math.max(0, remote.capacity - remote.fitted);
+  const over = remote.remaining > 0;
+  return (
+    <div className="rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.04]">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
+        <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+          <span className="truncate">
+            <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
+            <span className="font-medium text-gofest-accent">Remote raids</span>
+            <span className="ml-1.5 text-slate-500">region-locked targets first</span>
+          </span>
+          <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
+            {remote.fitted}/{remote.capacity} pass{remote.capacity === 1 ? "" : "es"}
+            {over ? ` · ${remote.remaining} short` : free > 0 ? ` · ${free} spare` : " · full"}
+          </span>
+        </div>
+        <CapacityBar bands={remote.bands} fitted={remote.fitted} capacityMax={remote.capacity} />
+        {over ? (
+          <p className="mt-1 text-[11px] font-medium text-rose-300">
+            ⚠ {remote.remaining} more remote raid{remote.remaining === 1 ? "" : "s"} than your {remote.capacity}-pass budget — raise the count or re-rank.
+          </p>
+        ) : null}
+      </button>
+      {open ? (
+        <div className="space-y-1.5 border-t border-gofest-accent/20 px-2.5 py-2">
+          {remote.species.map((s) => (
+            <TargetCard key={s.bossId + (s.mewtwo ? "-m" : "")} share={s} dkey={`${s.bossId}@remote`} />
           ))}
         </div>
       ) : null}
@@ -128,11 +161,11 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
 }
 
 /**
- * The weekend's six habitat blocks as collapsible accordions. Each block's
- * capacity bar is the header (tap to open); the body lists one target card per
- * species — completed (editable) over its best/average/worst raid counts. The
- * bar fills to 100% in priority order, so a block that's over capacity reports
- * its shortfall and per-species achievability rather than overflowing.
+ * The weekend's habitat blocks (plus the opt-in remote-raid pool) as collapsible
+ * accordions. Each capacity bar is a tap-to-expand header; the body lists one
+ * target card per species — completed (editable) over best/average/worst counts.
+ * Bars fill to 100% in priority order, reporting any shortfall rather than
+ * overflowing. Region-locked targets live only in the remote pool.
  */
 export function BlockAccordion({ plan }: { plan: WeekendBlockPlan }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -148,7 +181,8 @@ export function BlockAccordion({ plan }: { plan: WeekendBlockPlan }) {
     const blocks = plan.blocks.filter((b) => b.day === day && b.demand > 0);
     if (blocks.length) byDay.push({ day, blocks });
   }
-  if (!byDay.length) return null;
+  const remote = plan.remote && plan.remote.species.length > 0 ? plan.remote : undefined;
+  if (!byDay.length && !remote) return null;
 
   return (
     <div className="mt-4">
@@ -167,6 +201,12 @@ export function BlockAccordion({ plan }: { plan: WeekendBlockPlan }) {
             </div>
           </div>
         ))}
+        {remote ? (
+          <div>
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gofest-accent">Remote · either day</div>
+            <RemoteItem remote={remote} open={open.has("remote")} onToggle={() => toggle("remote")} />
+          </div>
+        ) : null}
       </div>
       <p className="mt-3 text-[11px] text-slate-500">
         Tap a block to track each target: <span className="font-mono text-slate-300">done</span> ⁄{" "}
