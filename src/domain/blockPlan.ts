@@ -32,6 +32,8 @@ export interface BlockSpeciesShare {
   bossName: string;
   /** Sized raids of this boss demanded in this block. */
   raids: number;
+  /** Candy-luck raid range for this block share: min = best case, max = worst. */
+  range: Range;
   /** Raids that actually fit inside the block's capacity (≤ raids). */
   fitted: number;
   /** Raids that couldn't fit (raids − fitted) — reported, never shown in the bar. */
@@ -280,6 +282,7 @@ export function computeBlockPlan(
         bossId: sh.bossId,
         bossName: sh.bossName,
         raids: sh.raids,
+        range: sh.range,
         fitted: fit,
         remaining: sh.raids - fit,
         bands,
