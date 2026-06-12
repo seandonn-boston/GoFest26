@@ -11,6 +11,7 @@ import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { RemoteAllocator } from "./RemoteAllocator";
+import { GoalLikelihood } from "./GoalLikelihood";
 
 const BAND_COLOR: Record<RiskBand, string> = {
   blue: "bg-sky-500",
@@ -198,6 +199,9 @@ export function BlockAccordion({ plan }: { plan: WeekendBlockPlan }) {
           </div>
         ) : null}
       </div>
+
+      <GoalLikelihood plan={plan} />
+
       <div className="mt-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.05] p-2.5">
         <div className="text-[11px] uppercase tracking-wide text-amber-200/80">Rare Candy from these raids</div>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
