@@ -1,27 +1,23 @@
 "use client";
 
+import { memo } from "react";
 import type { RaidBoss } from "@/domain/types";
+import { usePlannerStore } from "@/store/usePlannerStore";
 import { TileSprite } from "@/components/ui/TileSprite";
 import { MegaRelief } from "@/components/ui/MegaRelief";
 import { EnamelBadge } from "@/components/ui/EnamelBadge";
 
-/** Emphasized, tall 3D enamel badge for a Mega Mewtwo form (the headliners). */
-export function MewtwoSelectTile({
-  boss,
-  dayLabel,
-  selected,
-  onToggle,
-}: {
-  boss: RaidBoss;
-  dayLabel: string;
-  selected: boolean;
-  onToggle: () => void;
-}) {
+/** Emphasized, tall 3D enamel badge for a Mega Mewtwo form (the headliners).
+ *  Self-subscribes to its own selected flag and is memoized (see BossSelectChip). */
+function MewtwoSelectTileImpl({ boss, dayLabel }: { boss: RaidBoss; dayLabel: string }) {
+  const selected = usePlannerStore((s) => !!s.inputs[boss.id]?.selected);
+  const toggleSelected = usePlannerStore((s) => s.toggleSelected);
+
   return (
     <EnamelBadge
       types={boss.types}
       selected={selected}
-      onToggle={onToggle}
+      onToggle={() => toggleSelected(boss.id)}
       title={boss.name}
       stageClassName="min-h-[150px]"
     >
@@ -39,3 +35,5 @@ export function MewtwoSelectTile({
     </EnamelBadge>
   );
 }
+
+export const MewtwoSelectTile = memo(MewtwoSelectTileImpl);
