@@ -77,9 +77,10 @@ export function TiltProvider() {
     const onOrient = (e: DeviceOrientationEvent) => {
       const gamma = e.gamma ?? 0; // left-right (0 held vertically)
       const beta = e.beta ?? 0; // front-back (~90 held vertically)
-      // ~12° saturates (was 16) — more sensitive / responsive to small tilts.
-      oriX = clampOri(gamma / 12);
-      oriY = clampOri((beta - 90) / 12);
+      // Inverted on both axes: tilt the phone left and the badges lean right
+      // (and up/down likewise). ~12° saturates — responsive to small tilts.
+      oriX = clampOri(-gamma / 12);
+      oriY = clampOri(-(beta - 90) / 12);
     };
 
     const loop = () => {
