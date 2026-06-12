@@ -1,20 +1,23 @@
 "use client";
 
 import { getBoss } from "@/data";
+import { autoRemoteAllocations } from "@/domain";
+import type { WeekendBlockPlan } from "@/domain";
+import type { BossResult } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
 import { MAX_REMOTE_RAIDS } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
 /**
- * Opt-in for Remote Raid Passes: a separate budget of up to 60 raids (≈Fri 10 +
- * Sat&Sun 40 + Mon 10 by time zone) that isn't bound to the habitat time blocks.
- * When on, the per-species allocation list appears beneath the remote bar; the
- * total here is just the running sum of those assignments. Sits above the blocks.
+ * Opt-in for Remote Raid Passes: a budget of up to 60 raids (≈Fri 10 + Sat&Sun 40
+ * + Mon 10 by time zone) separate from the habitat time blocks. Ticking it on
+ * auto-assigns passes to the goals that can't be met in person (by priority); the
+ * per-species list beneath the remote bar then lets the user fine-tune.
  */
-export function RemoteRaidToggle() {
+export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlockPlan; results: BossResult[] }) {
   const on = usePlannerStore((s) => s.settings.useRemoteRaids);
   const setSettings = usePlannerStore((s) => s.setSettings);
-  // Running total of the per-species remote allocations (for selected bosses).
+  const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
   const allocated = usePlannerStore((s) => {
     let n = 0;
     for (const id in s.remoteAllocations) {
@@ -22,7 +25,6 @@ export function RemoteRaidToggle() {
     }
     return Math.min(MAX_REMOTE_RAIDS, n);
   });
-  // Any selected target that can't be raided in person (region-locked)?
   const hasRemoteOnly = usePlannerStore((s) => {
     for (const id in s.inputs) {
       if (!s.inputs[id].selected) continue;
@@ -32,6 +34,16 @@ export function RemoteRaidToggle() {
     return false;
   });
 
+  function toggle(checked: boolean) {
+    setSettings({ useRemoteRaids: checked });
+    // On first opt-in, auto-fill the unmet goals from the current (remote-off)
+    // plan, by priority — the user can then adjust each below.
+    if (checked && allocated === 0) {
+      const { inputs, settings, priorityOrder } = usePlannerStore.getState();
+      setRemoteAllocations(autoRemoteAllocations(blockPlan, Object.values(inputs), results, settings, priorityOrder));
+    }
+  }
+
   return (
     <div className="mt-4 rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.05] p-2.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -40,7 +52,7 @@ export function RemoteRaidToggle() {
             type="checkbox"
             className="h-4 w-4 accent-gofest-accent"
             checked={on}
-            onChange={(e) => setSettings({ useRemoteRaids: e.target.checked })}
+            onChange={(e) => toggle(e.target.checked)}
           />
           I&apos;ll do remote raids
         </label>
@@ -53,10 +65,9 @@ export function RemoteRaidToggle() {
 
       {on ? (
         <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-          <span className="font-mono text-slate-400">Fri* 10 · Sat &amp; Sun** 40 · Mon* 10</span>
-          <br />
-          *time-zone dependent, and only the adjacent day&apos;s bosses (Fri → Sat raids, Mon → Sun raids).{" "}
-          **Sat &amp; Sun can pull either day&apos;s bosses. Assign them per species below the remote bar.
+          Auto-assigned to the goals that can&apos;t be met in person, by priority — tweak each below.{" "}
+          <span className="font-mono text-slate-400">Fri* 10 · Sat &amp; Sun** 40 · Mon* 10</span>; *time-zone dependent,
+          adjacent day only (Fri → Sat, Mon → Sun). **Sat &amp; Sun see either day.
         </p>
       ) : null}
       {hasRemoteOnly && !on ? (
