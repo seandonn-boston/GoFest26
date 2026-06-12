@@ -10,6 +10,7 @@ export function usePlannerResults(): PlanSummary {
   const inputs = usePlannerStore((s) => s.inputs);
   const settings = usePlannerStore((s) => s.settings);
   const research = usePlannerStore((s) => s.research);
+  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   return useMemo(() => {
     // Fold enabled research rewards into on-hand currency before planning.
     const credits: ResearchCredit[] = [];
@@ -22,8 +23,8 @@ export function usePlannerResults(): PlanSummary {
       }
     }
     const credited = applyResearchCredits(Object.values(inputs), credits);
-    return computePlanSummary(credited, settings);
-  }, [inputs, settings, research]);
+    return computePlanSummary(credited, settings, remoteAllocations);
+  }, [inputs, settings, research, remoteAllocations]);
 }
 
 /**
@@ -35,8 +36,10 @@ export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
   const inputs = usePlannerStore((s) => s.inputs);
   const settings = usePlannerStore((s) => s.settings);
   const priorityOrder = usePlannerStore((s) => s.priorityOrder);
+  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   return useMemo(
-    () => computeBlockPlan(Object.values(inputs), summary.results, summary.capacity, settings, priorityOrder),
-    [inputs, summary, settings, priorityOrder],
+    () =>
+      computeBlockPlan(Object.values(inputs), summary.results, summary.capacity, settings, priorityOrder, remoteAllocations),
+    [inputs, summary, settings, priorityOrder, remoteAllocations],
   );
 }

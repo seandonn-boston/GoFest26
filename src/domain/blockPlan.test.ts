@@ -165,35 +165,42 @@ describe("computeBlockPlan — allocation", () => {
   });
 });
 
-describe("remote raids", () => {
-  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidCount: MAX_REMOTE_RAIDS };
+describe("remote raids (manual per-species allocation)", () => {
+  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
   const remoteOnly = SORTED_BOSSES.find((b) => !isMewtwo(b.id) && !bossIsLocal(b, DEFAULT_SETTINGS.region));
+  // A 5★ (big XL climb) keeps the in-person demand comfortably above the 5 we shift remote.
+  const localSat = SINGLE_BLOCK.find(
+    (b) => b.windows[0].day === "sat" && b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region),
+  )!;
 
-  it("holds region-locked targets out of the time blocks, placing them in the remote pool", () => {
+  it("keeps region-locked targets out of the blocks; allocated ones land in the remote pool", () => {
     if (!remoteOnly) return;
     const { inputs, results } = buildFor([remoteOnly.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, [], { [remoteOnly.id]: 5 });
     expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === remoteOnly.id))).toBe(false);
-    expect(plan.remote?.species.some((s) => s.bossId === remoteOnly.id)).toBe(true);
+    expect(plan.remote?.species.find((s) => s.bossId === remoteOnly.id)?.raids).toBe(5);
   });
 
-  it("omits the remote pool entirely until the user opts in", () => {
+  it("omits the remote pool until the user opts in", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
-    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []).remote).toBeUndefined();
+    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, [], { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
   });
 
-  it("spills leftover passes into Mewtwo once every goal is covered", () => {
-    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, []);
-    expect(plan.remote).toBeDefined();
-    expect(plan.remote!.species.some((s) => s.mewtwo)).toBe(true);
-    expect(plan.remote!.fitted).toBeLessThanOrEqual(plan.remote!.capacity);
+  it("a remote allocation reduces that species' in-person block demand", () => {
+    const { inputs, results } = buildFor([localSat.id]);
+    const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
+      plan.blocks.reduce((s, b) => s + b.species.filter((x) => x.bossId === localSat.id).reduce((a, x) => a + x.raids, 0), 0);
+    const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []));
+    const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, [], { [localSat.id]: 5 }));
+    expect(before).toBeGreaterThan(5);
+    expect(after).toBe(before - 5);
   });
 
-  it("caps the pool at MAX_REMOTE_RAIDS", () => {
+  it("the remote bar's capacity is the 60-pass budget and reflects the allocations", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, { ...REMOTE_ON, remoteRaidCount: 999 }, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, [], { [MEWTWO_X_ID]: 10 });
     expect(plan.remote!.capacity).toBe(MAX_REMOTE_RAIDS);
+    expect(plan.remote!.fitted).toBe(10);
   });
 });
 

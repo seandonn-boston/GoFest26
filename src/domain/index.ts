@@ -26,6 +26,7 @@ export { bossIsLocal, isScopeLocal, regionScopeLabel } from "./region";
 export function computePlanSummary(
   inputs: BossInput[],
   settings: PlannerSettings = DEFAULT_SETTINGS,
+  remoteAllocations: Record<string, number> = {},
 ): PlanSummary {
   const capacity = computeCapacity(settings);
 
@@ -41,10 +42,14 @@ export function computePlanSummary(
     totalRaids = addRange(totalRaids, result.raids);
   }
 
-  // Remote Raid Passes add a flat pool of capacity on top of the in-person
-  // weekend raids, so the "capacity used" gauge measures demand against both.
+  // Remote Raid Passes add capacity on top of the in-person weekend raids, so the
+  // "capacity used" gauge measures demand against both. The pool is the sum of the
+  // user's per-species remote allocations, capped at the 60-pass budget.
   const remotePool = settings.useRemoteRaids
-    ? Math.max(0, Math.min(Math.round(settings.remoteRaidCount), MAX_REMOTE_RAIDS))
+    ? Math.min(
+        MAX_REMOTE_RAIDS,
+        Object.values(remoteAllocations).reduce((s, n) => s + Math.max(0, Math.round(n || 0)), 0),
+      )
     : 0;
   const effectiveMid = midpoint(capacity.totalRaids) + remotePool;
   const utilization = effectiveMid > 0 ? midpoint(totalRaids) / effectiveMid : 0;

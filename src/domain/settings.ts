@@ -32,14 +32,15 @@ export interface PlannerSettings {
   fridayRemoteRaids: boolean;
   /** The user plans to use Remote Raid Passes (a pool of extra, non-time-blocked raids). */
   useRemoteRaids: boolean;
-  /** How many Remote Raids the user expects to do across the event (0–50). */
-  remoteRaidCount: number;
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
 }
 
 /** Hard ceiling on planned remote raids: Fri 10 + Sat&Sun 40 + Mon 10 (timezone-dependent). */
 export const MAX_REMOTE_RAIDS = 60;
+
+/** Per-species remote cap — one day's bosses fit ~50 remotes; Mewtwo (both days) the full 60. */
+export const MAX_REMOTE_PER_SPECIES = 50;
 
 export const DEFAULT_SETTINGS: PlannerSettings = {
   lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
@@ -52,7 +53,6 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   remotePassesPerDay: GAME_CONFIG.passes.remotePerDay,
   fridayRemoteRaids: false,
   useRemoteRaids: false,
-  remoteRaidCount: MAX_REMOTE_RAIDS,
   region: DEFAULT_REGION,
 };
 
