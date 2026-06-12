@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeBlockPlan, bandsForSpecies, rareCandyForecast, goalLikelihood, RISK_BANDS } from "./blockPlan";
+import { computeBlockPlan, bandsForSpecies, rareCandyForecast, goalProgress, autoRemoteAllocations, RISK_BANDS } from "./blockPlan";
 import { computeCapacity } from "./capacity";
 import { makeDefaultInput } from "./defaults";
 import { computeBossResult } from "./raidsNeeded";
@@ -226,33 +226,45 @@ describe("rareCandyForecast", () => {
   });
 });
 
-describe("goalLikelihood", () => {
-  it("is near-certain when goals fit with capacity to spare", () => {
+describe("goalProgress (achievable / required fraction)", () => {
+  it("is full when goals fit with capacity to spare", () => {
     const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const { inputs, results } = buildFor([sat0.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
-    const odds = goalLikelihood(plan);
-    expect(odds.bySpecies[sat0.id]).toBe(1);
-    expect(odds.overall).toBe(1);
+    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []), results, DEFAULT_SETTINGS);
+    expect(p.achievable).toBe(p.required);
+    expect(p.bySpecies[sat0.id].achievable).toBe(p.bySpecies[sat0.id].required);
   });
 
-  it("drops below 1 when a block is over capacity, and overall is the product", () => {
+  it("achievable < required (but > 0) when a block is over capacity, and totals are the sums", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []), results, DEFAULT_SETTINGS);
+    expect(p.achievable).toBeGreaterThan(0);
+    expect(p.achievable).toBeLessThan(p.required);
+    expect(p.achievable).toBe(p.bySpecies[boss.id].achievable);
+  });
+});
+
+describe("autoRemoteAllocations", () => {
+  it("fills block shortfalls by priority, capped at the 60-pass budget", () => {
+    // One fixed boss far over its window → a big shortfall the pool should cover.
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
-    const odds = goalLikelihood(plan);
-    expect(odds.bySpecies[boss.id]).toBeLessThan(1);
-    expect(odds.overall).toBeCloseTo(odds.bySpecies[boss.id], 5);
+    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
+    const total = Object.values(auto).reduce((s, n) => s + n, 0);
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBeLessThanOrEqual(MAX_REMOTE_RAIDS);
   });
 
-  it("every probability is within [0, 1]", () => {
-    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
-    const odds = goalLikelihood(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []));
-    for (const p of Object.values(odds.bySpecies)) {
-      expect(p).toBeGreaterThanOrEqual(0);
-      expect(p).toBeLessThanOrEqual(1);
-    }
+  it("assigns nothing when every goal already fits in person", () => {
+    const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([sat0.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
+    expect(Object.keys(auto)).toHaveLength(0);
   });
 });
 

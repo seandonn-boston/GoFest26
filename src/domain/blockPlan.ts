@@ -18,7 +18,7 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS } from "@/data/habitats";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
-import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, type PlannerSettings } from "./settings";
+import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, RaidBoss, Range } from "./types";
 
 export type RiskBand = "blue" | "green" | "yellow" | "red";
@@ -373,49 +373,102 @@ export function rareCandyForecast(plan: WeekendBlockPlan): { rareCandy: number; 
   return { rareCandy, rareCandyXl };
 }
 
-export interface GoalOdds {
-  /** Probability (0..1) of completing EVERY goal — the product across species. */
-  overall: number;
-  /** Per-boss probability (0..1) of finishing that species' goal, by bossId. */
-  bySpecies: Record<string, number>;
+export interface GoalProgress {
+  /** Raids you can actually fit (in person + remote). */
+  achievable: number;
+  /** Raids your goals require in total. */
+  required: number;
+  /** Per-boss { achievable, required }. */
+  bySpecies: Record<string, { achievable: number; required: number }>;
 }
 
 /**
- * Likelihood of hitting each goal given drop variability. A species needs
- * somewhere in [min, max] raids (candy luck); the player can do its `fitted`
- * raids plus whatever spare capacity its block/pool has left to absorb bad luck.
- * The chance of finishing is where that achievable count lands in the need range
- * (0 below the lucky floor, 1 at/above the unlucky ceiling, linear between). The
- * overall odds multiply across species — the chance of completing them all.
+ * How much of every goal the plan can actually cover: achievable raids (what
+ * fits, in person + remote) over required raids (the goal's full size, from the
+ * results — so region-locked targets count their whole goal, not just what's
+ * been assigned remotely). A clean fraction rather than a probability, so partial
+ * progress always shows — totalled for the headline and broken out per species.
  */
-export function goalLikelihood(plan: WeekendBlockPlan): GoalOdds {
-  const agg = new Map<string, { lo: number; hi: number; cap: number }>();
-  const add = (s: BlockSpeciesShare, free: number) => {
-    const cur = agg.get(s.bossId) ?? { lo: 0, hi: 0, cap: 0 };
-    cur.lo += s.range.min;
-    cur.hi += s.range.max;
-    // Achievable = what fit, plus the block's spare time it could grind into if
-    // drops underperform — capped at the species' worst case.
-    cur.cap += Math.min(s.range.max, s.fitted + Math.max(0, free));
-    agg.set(s.bossId, cur);
-  };
-  for (const b of plan.blocks) {
-    const free = b.capacity.max - b.fitted;
-    for (const s of b.species) add(s, free);
+export function goalProgress(
+  plan: WeekendBlockPlan,
+  results: BossResult[],
+  settings: PlannerSettings = DEFAULT_SETTINGS,
+): GoalProgress {
+  const fittedById = new Map<string, number>();
+  const add = (s: BlockSpeciesShare) => fittedById.set(s.bossId, (fittedById.get(s.bossId) ?? 0) + s.fitted);
+  for (const b of plan.blocks) for (const s of b.species) add(s);
+  if (plan.remote) for (const s of plan.remote.species) add(s);
+
+  const bySpecies: Record<string, { achievable: number; required: number }> = {};
+  let achievable = 0;
+  let required = 0;
+  for (const res of results) {
+    const need = sized(res.raids, settings.rewardCase);
+    if (need <= 0) continue;
+    const got = Math.min(need, fittedById.get(res.bossId) ?? 0);
+    bySpecies[res.bossId] = { achievable: got, required: need };
+    achievable += got;
+    required += need;
   }
-  if (plan.remote) {
-    const free = plan.remote.capacity - plan.remote.fitted;
-    for (const s of plan.remote.species) add(s, free);
+  return { achievable, required, bySpecies };
+}
+
+/**
+ * Auto-fill remote allocations the moment the user opts in: cover the goals that
+ * can't be met in person — region-locked targets (their full goal) and any block
+ * shortfalls — filled by priority within the 60-pass budget and per-species caps.
+ * `plan` should be the current (remote-off) plan so its shortfalls are accurate.
+ */
+export function autoRemoteAllocations(
+  plan: WeekendBlockPlan,
+  inputs: BossInput[],
+  results: BossResult[],
+  settings: PlannerSettings,
+  priorityOrder: string[],
+): Record<string, number> {
+  const rewardCase = settings.rewardCase;
+  const resultById = new Map(results.map((r) => [r.bossId, r]));
+  const rank = new Map(priorityOrder.map((id, i) => [id, i] as const));
+  const priorityOf = (id: string) => rank.get(id) ?? Infinity;
+  const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
+
+  const shortfall = new Map<string, number>();
+  for (const b of plan.blocks) {
+    for (const s of b.species) {
+      if (s.remaining > 0) shortfall.set(s.bossId, (shortfall.get(s.bossId) ?? 0) + s.remaining);
+    }
   }
 
-  const bySpecies: Record<string, number> = {};
-  let overall = 1;
-  for (const [bossId, v] of agg) {
-    const p = v.hi > v.lo ? Math.max(0, Math.min(1, (v.cap - v.lo) / (v.hi - v.lo))) : v.cap >= v.lo ? 1 : 0;
-    bySpecies[bossId] = p;
-    overall *= p;
+  const needs = inputs
+    .filter((i) => i.selected)
+    .map((i) => getBoss(i.bossId))
+    .filter((b): b is RaidBoss => !!b)
+    .map((b) => ({
+      id: b.id,
+      need: bossIsLocal(b, settings.region) ? shortfall.get(b.id) ?? 0 : sized(resultById.get(b.id)?.raids, rewardCase),
+      mewtwo: isMewtwo(b.id),
+    }))
+    .filter((n) => n.need > 0)
+    .sort((a, z) => {
+      const pa = priorityOf(a.id);
+      const pz = priorityOf(z.id);
+      if (pa !== pz) return pa - pz;
+      if (a.mewtwo !== z.mewtwo) return a.mewtwo ? 1 : -1;
+      return (getBoss(a.id)?.sortPriority ?? 0) - (getBoss(z.id)?.sortPriority ?? 0);
+    });
+
+  const out: Record<string, number> = {};
+  let budget = MAX_REMOTE_RAIDS;
+  for (const n of needs) {
+    if (budget <= 0) break;
+    const cap = n.mewtwo ? MAX_REMOTE_RAIDS : MAX_REMOTE_PER_SPECIES;
+    const give = Math.min(n.need, cap, budget);
+    if (give > 0) {
+      out[n.id] = give;
+      budget -= give;
+    }
   }
-  return { overall, bySpecies };
+  return out;
 }
 
 /**

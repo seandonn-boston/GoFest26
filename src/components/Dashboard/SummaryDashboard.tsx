@@ -52,8 +52,8 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
           })()}
 
           <PriorityRanker />
-          <RemoteRaidToggle />
-          <BlockAccordion plan={blockPlan} />
+          <RemoteRaidToggle blockPlan={blockPlan} results={summary.results} />
+          <BlockAccordion plan={blockPlan} results={summary.results} />
         </>
       ) : (
         <p className="text-sm text-slate-400">

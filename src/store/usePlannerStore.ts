@@ -118,6 +118,8 @@ interface PlannerState {
   setRaidsDone: (key: string, value: number) => void;
   /** Assign remote raids to a species (caps applied by the caller). */
   setRemoteAllocation: (bossId: string, value: number) => void;
+  /** Replace the whole remote-allocation map (used for auto-fill on opt-in). */
+  setRemoteAllocations: (map: Record<string, number>) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -185,6 +187,8 @@ export const usePlannerStore = create<PlannerState>()(
           const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
           return { remoteAllocations: { ...state.remoteAllocations, [bossId]: safe } };
         }),
+
+      setRemoteAllocations: (map) => set({ remoteAllocations: { ...map } }),
 
       addImports: (shots) =>
         set((state) => {
