@@ -20,19 +20,23 @@ import { midpoint } from "@/lib/math";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, Range } from "./types";
 
-export type RiskBand = "blue" | "green" | "yellow" | "red" | "grey";
+export type RiskBand = "blue" | "green" | "yellow" | "red";
 
-/** Render/stack order, safest → cut. */
-export const RISK_BANDS: readonly RiskBand[] = ["blue", "green", "yellow", "red", "grey"];
+/** Render/stack order, safest → least certain. */
+export const RISK_BANDS: readonly RiskBand[] = ["blue", "green", "yellow", "red"];
 
-const emptyBands = (): Record<RiskBand, number> => ({ blue: 0, green: 0, yellow: 0, red: 0, grey: 0 });
+const emptyBands = (): Record<RiskBand, number> => ({ blue: 0, green: 0, yellow: 0, red: 0 });
 
 export interface BlockSpeciesShare {
   bossId: string;
   bossName: string;
-  /** Sized raids of this boss allocated to this block. */
+  /** Sized raids of this boss demanded in this block. */
   raids: number;
-  /** Per-band breakdown of those raids. */
+  /** Raids that actually fit inside the block's capacity (≤ raids). */
+  fitted: number;
+  /** Raids that couldn't fit (raids − fitted) — reported, never shown in the bar. */
+  remaining: number;
+  /** Per-band breakdown of the FITTED raids (sums to `fitted`). */
   bands: Record<RiskBand, number>;
   /** True for a Mewtwo balancing fill (vs. a fixed-window species). */
   mewtwo: boolean;
@@ -43,19 +47,23 @@ export interface BlockPlan {
   name: string;
   startHour: number;
   endHour: number;
-  /** Raids that fit in this block's hours — the time-luck range. */
+  /** Raids that fit in this block's hours — the time-luck range; `max` is 100%. */
   capacity: Range;
   /** Total sized raids demanded in this block (after Mewtwo balancing). */
   demand: number;
-  /** Aggregate band counts for the block. */
+  /** Total raids that fit (the bar fill; never exceeds capacity.max). */
+  fitted: number;
+  /** Total raids that didn't fit — drives the under-bar shortfall warning. */
+  remaining: number;
+  /** Aggregate band counts for the block (sums to `fitted`). */
   bands: Record<RiskBand, number>;
-  /** Species in priority order (highest first); the tail takes red/grey. */
+  /** Species in priority order (highest first); the tail is cut when over capacity. */
   species: BlockSpeciesShare[];
 }
 
 export interface WeekendBlockPlan {
   blocks: BlockPlan[];
-  /** True when no block pushes raids past its best-case capacity (no grey). */
+  /** True when every block's whole demand fits its capacity (no shortfall). */
   feasible: boolean;
 }
 
@@ -79,15 +87,21 @@ function blockIndicesForWindows(windows: HabitatWindow[]): number[] {
 /**
  * Pour `budget` raids into the given blocks, always topping up whichever block
  * currently has the fewest total raids — the classic water-fill that levels the
- * blocks out. Mutates `running` totals and returns the units added per index.
+ * blocks out. When `cap` is given, a block that has reached its capacity is
+ * skipped (Mewtwo is never forced into a block that's already full of fixed
+ * raids); leftover budget that fits nowhere is simply dropped. Mutates `running`
+ * totals and returns the units added per index.
  */
-function waterfill(running: number[], idxs: number[], budget: number): number[] {
+function waterfill(running: number[], idxs: number[], budget: number, cap?: number[]): number[] {
   const add = new Array(running.length).fill(0);
   let remaining = Math.max(0, Math.round(budget));
   while (remaining-- > 0) {
     let lo = -1;
-    for (const i of idxs) if (lo < 0 || running[i] < running[lo]) lo = i;
-    if (lo < 0) break;
+    for (const i of idxs) {
+      if (cap && running[i] >= cap[i]) continue;
+      if (lo < 0 || running[i] < running[lo]) lo = i;
+    }
+    if (lo < 0) break; // every candidate block is full
     running[lo] += 1;
     add[lo] += 1;
   }
@@ -95,26 +109,31 @@ function waterfill(running: number[], idxs: number[], budget: number): number[] 
 }
 
 /**
- * Classify one species' raids in a block into risk bands. The candy-lucky floor
- * (`range.min`) is guaranteed need → blue; the uncertain remainder up to the
- * sized count spreads green:yellow:red in a 5:3:2 ratio so no single species
- * stacks entirely in one color. Time luck then gates by cumulative position:
- * past best-case capacity → grey (won't fit); inside the slow→fast stretch a
- * blue raid is downgraded to green (time no longer guaranteed).
+ * Classify a species' FITTED raids in a block into risk bands. Need-band order
+ * over the species' demanded raids: the candy-lucky floor (`range.min`) is
+ * guaranteed need → blue, then the uncertain remainder spreads green:yellow:red
+ * in a 5:3:2 ratio. Only the first `fitted` raids are colored — when a block is
+ * over capacity the least-certain tail (red) is what gets cut, so a fully-fit
+ * species shows its whole blue→red range while a cut species keeps the certain
+ * part. Time luck downgrades a blue raid to green once past guaranteed pace.
  */
-export function bandsForSpecies(raids: number, range: Range, cumStart: number, capacity: Range): Record<RiskBand, number> {
+export function bandsForSpecies(
+  fitted: number,
+  demand: number,
+  range: Range,
+  cumStart: number,
+  capacity: Range,
+): Record<RiskBand, number> {
   const bands = emptyBands();
-  const sure = Math.min(raids, Math.max(0, Math.round(range.min)));
-  const uncertain = raids - sure;
+  const sure = Math.min(demand, Math.max(0, Math.round(range.min)));
+  const uncertain = demand - sure;
   const green = Math.round((uncertain * 5) / 10);
   const yellow = Math.round((uncertain * 3) / 10);
-  const red = uncertain - green - yellow;
-  for (let k = 0; k < raids; k++) {
+  for (let k = 0; k < fitted; k++) {
     const pos = cumStart + k;
     let band: RiskBand =
       k < sure ? "blue" : k < sure + green ? "green" : k < sure + green + yellow ? "yellow" : "red";
-    if (pos >= capacity.max) band = "grey";
-    else if (band === "blue" && pos >= capacity.min) band = "green";
+    if (band === "blue" && pos >= capacity.min) band = "green";
     bands[band] += 1;
   }
   return bands;
@@ -132,7 +151,7 @@ interface RawShare {
  * Build the six-block weekend plan from the per-boss results. Fixed-window
  * bosses pin to their habitat block(s); Mewtwo levels the rest (day-locked
  * energy + free leveling surplus); each block is then risk-banded in priority
- * order (highest priority claims the safe bands, the tail takes red/grey).
+ * order (highest priority fills first; the tail is cut when over capacity).
  */
 export function computeBlockPlan(
   inputs: BossInput[],
@@ -208,10 +227,13 @@ export function computeBlockPlan(
   const sunIdx = HABITATS.map((h, i) => (h.day === "sun" ? i : -1)).filter((i) => i >= 0);
   const allIdx = HABITATS.map((_, i) => i);
 
+  // Cap Mewtwo so it never inflates a block past its capacity (a block already
+  // full of fixed raids gets no Mewtwo — it can't be raided there anyway).
+  const caps = capacities.map((c) => c.max);
   const running = shares.map((list) => list.reduce((s, sh) => s + sh.raids, 0));
-  const addSat = waterfill(running, satIdx, satLocked);
-  const addSun = waterfill(running, sunIdx, sunLocked);
-  const addFluid = waterfill(running, allIdx, fluid);
+  const addSat = waterfill(running, satIdx, satLocked, caps);
+  const addSun = waterfill(running, sunIdx, sunLocked, caps);
+  const addFluid = waterfill(running, allIdx, fluid, caps);
 
   HABITATS.forEach((h, i) => {
     const n = addSat[i] + addSun[i] + addFluid[i];
@@ -240,25 +262,43 @@ export function computeBlockPlan(
       if (a.mewtwo !== z.mewtwo) return a.mewtwo ? 1 : -1;
       return (getBoss(a.bossId)?.sortPriority ?? 0) - (getBoss(z.bossId)?.sortPriority ?? 0);
     });
+    const cap = capacities[i];
     let cum = 0;
+    let fitted = 0;
+    let remaining = 0;
     const agg = emptyBands();
     const species: BlockSpeciesShare[] = ordered.map((sh) => {
-      const bands = bandsForSpecies(sh.raids, sh.range, cum, capacities[i]);
+      // Fill to 100% in priority order: each species takes as many of its raids
+      // as still fit under capacity.max; the rest are this species' shortfall.
+      const fit = Math.max(0, Math.min(sh.raids, cap.max - cum));
+      const bands = bandsForSpecies(fit, sh.raids, sh.range, cum, cap);
       cum += sh.raids;
+      fitted += fit;
+      remaining += sh.raids - fit;
       for (const k of RISK_BANDS) agg[k] += bands[k];
-      return { bossId: sh.bossId, bossName: sh.bossName, raids: sh.raids, bands, mewtwo: sh.mewtwo };
+      return {
+        bossId: sh.bossId,
+        bossName: sh.bossName,
+        raids: sh.raids,
+        fitted: fit,
+        remaining: sh.raids - fit,
+        bands,
+        mewtwo: sh.mewtwo,
+      };
     });
     return {
       day: h.day,
       name: h.name,
       startHour: h.startHour,
       endHour: h.endHour,
-      capacity: capacities[i],
+      capacity: cap,
       demand: cum,
+      fitted,
+      remaining,
       bands: agg,
       species,
     };
   });
 
-  return { blocks, feasible: blocks.every((b) => b.bands.grey === 0) };
+  return { blocks, feasible: blocks.every((b) => b.remaining === 0) };
 }

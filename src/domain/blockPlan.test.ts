@@ -42,31 +42,33 @@ describe("quantity scaling (requirements ×N)", () => {
 });
 
 describe("bandsForSpecies — dynamic ranges + 5:3:2 spread", () => {
-  const huge: Range = { min: 9999, max: 9999 }; // all positions within guaranteed time, none grey
+  const huge: Range = { min: 9999, max: 9999 }; // all positions within guaranteed time
 
   it("puts the candy-lucky floor in blue and spreads the uncertain 5:3:2", () => {
-    // 10 sure + 10 uncertain → 10 blue, then 5 green / 3 yellow / 2 red.
-    const b = bandsForSpecies(20, { min: 10, max: 30 }, 0, huge);
+    // 10 sure + 10 uncertain → 10 blue, then 5 green / 3 yellow / 2 red (all fit).
+    const b = bandsForSpecies(20, 20, { min: 10, max: 30 }, 0, huge);
     expect(b.blue).toBe(10);
     expect(b.green).toBe(5);
     expect(b.yellow).toBe(3);
     expect(b.red).toBe(2);
-    expect(b.grey).toBe(0);
     expect(sum(b)).toBe(20);
   });
 
-  it("greys raids beyond best-case capacity", () => {
-    const b = bandsForSpecies(20, { min: 0, max: 40 }, 0, { min: 6, max: 12 });
-    expect(b.grey).toBe(8); // positions 12..19
-    expect(sum(b)).toBe(20);
+  it("colors only the fitted raids, cutting the least-certain (red) tail first", () => {
+    // demand 10 (2 blue + 8 uncertain → 4 green/2 yellow/2 red) but only 5 fit.
+    const b = bandsForSpecies(5, 10, { min: 2, max: 18 }, 0, huge);
+    expect(b.blue).toBe(2);
+    expect(b.green).toBe(3);
+    expect(b.yellow).toBe(0);
+    expect(b.red).toBe(0);
+    expect(sum(b)).toBe(5); // never exceeds what fit
   });
 
   it("downgrades guaranteed-need raids out of blue once past guaranteed time", () => {
-    // All 10 are sure-need, but only the first 4 sit within guaranteed time.
-    const b = bandsForSpecies(10, { min: 10, max: 10 }, 0, { min: 4, max: 20 });
+    // All 10 are sure-need and fit, but only the first 4 sit within guaranteed time.
+    const b = bandsForSpecies(10, 10, { min: 10, max: 10 }, 0, { min: 4, max: 20 });
     expect(b.blue).toBe(4);
     expect(b.green).toBe(6);
-    expect(b.grey).toBe(0);
   });
 });
 
@@ -124,21 +126,27 @@ describe("computeBlockPlan — allocation", () => {
     expect(empty.species.some((s) => s.mewtwo && s.bossId === MEWTWO_X_ID)).toBe(true);
   });
 
-  it("flags grey (over-capacity) raids and reports infeasible", () => {
-    // A single fixed boss asked to max 60 copies overruns its one 3-hour block.
+  it("reports a shortfall (never grey, bar capped at 100%) when over capacity", () => {
+    // A single fixed boss asked to max 200 copies overruns its one 3-hour block.
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat")!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
-    const grey = plan.blocks.reduce((s, b) => s + b.bands.grey, 0);
-    expect(grey).toBeGreaterThan(0);
+    const over = plan.blocks.find((b) => b.remaining > 0)!;
+    expect(over).toBeTruthy();
     expect(plan.feasible).toBe(false);
+    // The bar fill never exceeds capacity, and fitted + remaining accounts for all demand.
+    expect(over.fitted).toBeLessThanOrEqual(over.capacity.max);
+    expect(over.fitted + over.remaining).toBe(over.demand);
   });
 
-  it("per-block band counts sum to that block's demand", () => {
+  it("per-block band counts sum to what fit (not the full demand)", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
-    for (const b of plan.blocks) expect(sum(b.bands)).toBe(b.demand);
+    for (const b of plan.blocks) {
+      expect(sum(b.bands)).toBe(b.fitted);
+      expect(b.fitted + b.remaining).toBe(b.demand);
+    }
   });
 
   it("respects explicit priority order (lowest priority takes the risky tail)", () => {

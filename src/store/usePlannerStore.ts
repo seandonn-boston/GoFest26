@@ -100,16 +100,16 @@ interface PlannerState {
   imports: ImportedShot[];
   /**
    * User-ranked priority, highest first, by boss id. Drives card order, bar fill
-   * order, and which raids get greyed out when goals exceed capacity (lowest
-   * priority is cut first). Ids absent from the list sort after, in roster order.
+   * order, and which raids get cut when goals exceed a block's capacity (lowest
+   * priority is filled last / falls short first). Ids absent sort after, in roster order.
    */
   priorityOrder: string[];
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
   setQuantity: (bossId: string, value: number) => void;
-  /** Move a boss one step up (toward higher priority) or down within the order. */
-  reprioritize: (bossId: string, direction: "up" | "down") => void;
+  /** Set the full priority order of the selected bosses (highest first). */
+  setPriorityOrder: (ids: string[]) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -249,17 +249,12 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs: { ...state.inputs, [bossId]: { ...input, quantity: safe } } };
         }),
 
-      reprioritize: (bossId, direction) =>
+      setPriorityOrder: (ids) =>
         set((state) => {
-          const order = selectedInPriorityOrder(state);
-          const i = order.indexOf(bossId);
-          const j = direction === "up" ? i - 1 : i + 1;
-          if (i < 0 || j < 0 || j >= order.length) return state;
-          [order[i], order[j]] = [order[j], order[i]];
-          // Re-materialize the full explicit order: the reordered selected ids
-          // first, then any previously-ranked ids that aren't currently selected.
-          const others = state.priorityOrder.filter((id) => !order.includes(id));
-          return { priorityOrder: [...order, ...others] };
+          // The dragged order of the selected bosses first, then any previously-
+          // ranked ids that aren't currently selected (preserve their relative rank).
+          const others = state.priorityOrder.filter((id) => !ids.includes(id));
+          return { priorityOrder: [...ids, ...others] };
         }),
 
       setCurrent: (bossId, field, value) =>
