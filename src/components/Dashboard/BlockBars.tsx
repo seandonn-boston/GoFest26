@@ -1,6 +1,7 @@
 "use client";
 
 import { GAME_CONFIG } from "@/data/config";
+import { RISK_BANDS } from "@/domain";
 import type { BlockPlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import type { EventDay } from "@/domain/types";
 import { hourLabel } from "@/lib/format";
@@ -10,7 +11,6 @@ const BAND_COLOR: Record<RiskBand, string> = {
   green: "bg-emerald-400",
   yellow: "bg-amber-400",
   red: "bg-rose-500",
-  grey: "bg-slate-600",
 };
 
 const BAND_LABEL: Record<RiskBand, string> = {
@@ -18,19 +18,18 @@ const BAND_LABEL: Record<RiskBand, string> = {
   green: "Safe",
   yellow: "If candy runs short",
   red: "Bad-luck grind",
-  grey: "Won't fit",
 };
 
-const FILL_BANDS: RiskBand[] = ["blue", "green", "yellow", "red"];
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
 
 function BlockRow({ block }: { block: BlockPlan }) {
   const start = GAME_CONFIG.event.hourStartLocal;
-  const nonGrey = FILL_BANDS.reduce((s, b) => s + block.bands[b], 0);
-  const grey = block.bands.grey;
-  const free = Math.max(0, block.capacity.max - nonGrey);
-  const scale = nonGrey + free + grey || 1; // == max(capacity.max, demand)
+  // The bar is exactly the block's best-case capacity (100%). Fitted raids fill
+  // it; anything that doesn't fit is reported below, never drawn past 100%.
+  const scale = Math.max(block.capacity.max, 1);
+  const free = Math.max(0, block.capacity.max - block.fitted);
   const pct = (n: number) => `${(n / scale) * 100}%`;
+  const over = block.remaining > 0;
 
   return (
     <div>
@@ -41,37 +40,45 @@ function BlockRow({ block }: { block: BlockPlan }) {
             {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}
           </span>
         </span>
-        <span className={grey > 0 ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {block.demand} raid{block.demand === 1 ? "" : "s"}
-          {grey > 0 ? ` · ${grey} over` : free > 0 ? ` · ${free} to spare` : " · full"}
+        <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
+          {block.fitted} raid{block.fitted === 1 ? "" : "s"}
+          {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
         </span>
       </div>
 
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
-        {FILL_BANDS.map((b) =>
+        {RISK_BANDS.map((b) =>
           block.bands[b] > 0 ? (
             <div key={b} className={BAND_COLOR[b]} style={{ width: pct(block.bands[b]) }} title={`${BAND_LABEL[b]}: ${block.bands[b]}`} />
           ) : null,
         )}
         {free > 0 ? <div style={{ width: pct(free) }} /> : null}
-        {grey > 0 ? (
-          // Hatched grey overflow — past 100% of even the best-case pace.
-          <div
-            className="bg-slate-600/70"
-            style={{
-              width: pct(grey),
-              backgroundImage:
-                "repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.35) 3px, rgba(0,0,0,0.35) 6px)",
-            }}
-            title={`Won't fit: ${grey}`}
-          />
-        ) : null}
       </div>
 
-      {block.species.length > 0 ? (
+      {over ? (
+        // At the cutoff: warn how many raids won't fit, then per-species
+        // achievability (highest priority is filled first, so it scores best).
+        <div className="mt-1.5 space-y-0.5">
+          <p className="text-[11px] font-medium text-rose-300">
+            ⚠ {block.remaining} raid{block.remaining === 1 ? "" : "s"} can&apos;t fit this 3-hour block.
+          </p>
+          <ul className="space-y-0.5 text-[10px] text-slate-400">
+            {block.species.map((s) => {
+              const goalPct = s.raids > 0 ? Math.round((s.fitted / s.raids) * 100) : 100;
+              const tone = goalPct >= 100 ? "text-emerald-300" : goalPct > 0 ? "text-amber-300" : "text-rose-300";
+              return (
+                <li key={s.bossId + (s.mewtwo ? "-m" : "")}>
+                  <span className="text-slate-300">{s.bossName.replace(/^Mega /, "")}</span>: <span className={tone}>{goalPct}% of goal</span>
+                  {s.remaining > 0 ? ` · ${s.remaining} raid${s.remaining === 1 ? "" : "s"} short` : " · complete"}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : block.species.length > 0 ? (
         <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-slate-500">
           {block.species.map((s) => (
-            <span key={s.bossId + (s.mewtwo ? "-m" : "")} className={s.bands.grey === s.raids ? "text-slate-600 line-through" : ""}>
+            <span key={s.bossId + (s.mewtwo ? "-m" : "")}>
               {s.bossName.replace(/^Mega /, "")} ×{s.raids}
             </span>
           ))}
@@ -82,10 +89,11 @@ function BlockRow({ block }: { block: BlockPlan }) {
 }
 
 /**
- * Per-habitat-block capacity bars. Each bar is the block's best-case raid
- * capacity; colored bands show how confident the player can be of finishing
- * each raid (blue guaranteed → red bad-luck grind), with a hatched overflow for
- * raids that won't fit. Reveals the wiggle room in every time block.
+ * Per-habitat-block capacity bars. Each bar IS the block's best-case raid
+ * capacity (100%); colored bands show how confident the player can be of
+ * finishing each raid (blue guaranteed → red bad-luck grind). When goals exceed
+ * a block, the bar fills to 100% in priority order and the shortfall is reported
+ * beneath it — the bar never overflows.
  */
 export function BlockBars({ plan }: { plan: WeekendBlockPlan }) {
   const byDay: { day: EventDay; blocks: BlockPlan[] }[] = [];
@@ -126,7 +134,7 @@ export function BlockBars({ plan }: { plan: WeekendBlockPlan }) {
 function Legend() {
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-slate-400">
-      {(["blue", "green", "yellow", "red", "grey"] as RiskBand[]).map((b) => (
+      {RISK_BANDS.map((b) => (
         <span key={b} className="flex items-center gap-1">
           <span className={`inline-block h-2 w-2 rounded-sm ${BAND_COLOR[b]}`} />
           {BAND_LABEL[b]}
