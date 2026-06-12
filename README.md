@@ -1,5 +1,11 @@
 # GO Fest 2026 Raid Planner
 
+> A planning tool for Pokémon GO Fest 2026 that calculates exactly how many raids you need to fully max your chosen Pokémon's XL Candy and Mega Energy across the weekend.
+
+GO Fest weekend is a race against the clock — six rotating habitats, a flood of raids, and Mega Mewtwo X and Y debuting. This planner tells you precisely how many raids each goal takes, then maps them onto every time block so you know what to hit and when. Snap a screenshot to auto-fill your current candy and energy, rank your priorities, factor in remote raids, and walk in with a plan instead of guesswork.
+
+---
+
 A mobile-friendly web app to plan your **Pokémon GO Fest 2026: Global** weekend
 (July 11–12, 2026). Pick the raid bosses you actually want to grind, enter the
 Candy / XL Candy / Mega Energy you already have plus your Pokémon's level and
