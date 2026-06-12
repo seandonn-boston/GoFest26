@@ -91,6 +91,13 @@ export function ScreenshotGrid({
           role="dialog"
           aria-modal="true"
         >
+          <button
+            type="button"
+            onClick={() => setOpenId(null)}
+            className="absolute right-4 top-4 rounded-full border border-white/20 bg-black/60 px-3 py-1 font-mono text-xs uppercase tracking-wider text-white"
+          >
+            ✕ Close
+          </button>
           {open.thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -100,25 +107,17 @@ export function ScreenshotGrid({
               onClick={(e) => e.stopPropagation()}
             />
           ) : null}
-          <div className="flex cursor-default items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => {
-                onDelete(open.id);
-                setOpenId(null);
-              }}
-              className="rounded-sm border-2 border-black/40 bg-rose-500 px-4 py-2 font-mono text-xs font-extrabold uppercase tracking-wider text-white shadow-brutal transition active:translate-y-0.5 active:shadow-none"
-            >
-              🗑 Delete screenshot
-            </button>
-            <button
-              type="button"
-              onClick={() => setOpenId(null)}
-              className="rounded-full border border-white/20 bg-black/60 px-3 py-2 font-mono text-xs uppercase tracking-wider text-white"
-            >
-              ✕ Close
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(open.id);
+              setOpenId(null);
+            }}
+            className="w-full max-w-md cursor-default rounded-sm border-2 border-black/40 bg-rose-500 px-4 py-2.5 font-mono text-xs font-extrabold uppercase tracking-wider text-white shadow-brutal transition active:translate-y-0.5 active:shadow-none"
+          >
+            🗑 Delete screenshot
+          </button>
         </div>
       ) : null}
     </>
