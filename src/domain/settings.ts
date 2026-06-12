@@ -38,8 +38,8 @@ export interface PlannerSettings {
   region: UserRegion;
 }
 
-/** Hard ceiling on planned remote raids (≈ 20 Sat + 20 Sun + Friday/Monday spillover). */
-export const MAX_REMOTE_RAIDS = 50;
+/** Hard ceiling on planned remote raids: Fri 10 + Sat&Sun 40 + Mon 10 (timezone-dependent). */
+export const MAX_REMOTE_RAIDS = 60;
 
 export const DEFAULT_SETTINGS: PlannerSettings = {
   lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
