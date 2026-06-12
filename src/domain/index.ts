@@ -3,7 +3,7 @@ import { addRange, midpoint, ZERO_RANGE } from "@/lib/math";
 import { computeCapacity } from "./capacity";
 import { computeBossResult } from "./raidsNeeded";
 import { computeSchedule } from "./scheduler";
-import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
+import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, PlanSummary, Range } from "./types";
 
 export * from "./types";
@@ -41,11 +41,16 @@ export function computePlanSummary(
     totalRaids = addRange(totalRaids, result.raids);
   }
 
-  const capacityMid = midpoint(capacity.totalRaids);
-  const utilization = capacityMid > 0 ? midpoint(totalRaids) / capacityMid : 0;
-  const feasible = totalRaids.max <= capacity.totalRaids.max;
+  // Remote Raid Passes add a flat pool of capacity on top of the in-person
+  // weekend raids, so the "capacity used" gauge measures demand against both.
+  const remotePool = settings.useRemoteRaids
+    ? Math.max(0, Math.min(Math.round(settings.remoteRaidCount), MAX_REMOTE_RAIDS))
+    : 0;
+  const effectiveMid = midpoint(capacity.totalRaids) + remotePool;
+  const utilization = effectiveMid > 0 ? midpoint(totalRaids) / effectiveMid : 0;
+  const feasible = totalRaids.max <= capacity.totalRaids.max + remotePool;
 
   const schedule = computeSchedule(inputs, results, capacity, settings);
 
-  return { results, capacity, schedule, totalRaids, utilization, feasible };
+  return { results, capacity, schedule, totalRaids, remotePool, utilization, feasible };
 }

@@ -207,8 +207,10 @@ export interface PlanSummary {
   schedule: Schedule;
   /** Total raids across all selected bosses. */
   totalRaids: Range;
-  /** Fraction of weekend capacity consumed, using midpoints. */
+  /** Opted-in remote-raid passes — extra capacity on top of the weekend's in-person raids. */
+  remotePool: number;
+  /** Fraction of capacity (in-person + remote) consumed, using midpoints. */
   utilization: number;
-  /** Whether the worst-case plan fits within weekend capacity. */
+  /** Whether the worst-case plan fits within capacity (in-person + remote). */
   feasible: boolean;
 }
