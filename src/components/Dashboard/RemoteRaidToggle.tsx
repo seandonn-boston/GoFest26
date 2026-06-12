@@ -56,6 +56,15 @@ export function RemoteRaidToggle() {
           </label>
         ) : null}
       </div>
+
+      {on ? (
+        <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+          <span className="font-mono text-slate-400">Fri* 10 · Sat &amp; Sun** 40 · Mon* 10</span>
+          <br />
+          *time-zone dependent, and only the adjacent day&apos;s bosses (Fri → Sat raids, Mon → Sun raids).{" "}
+          **Sat &amp; Sun can pull either day&apos;s bosses.
+        </p>
+      ) : null}
       {hasRemoteOnly && !on ? (
         <p className="mt-1.5 text-[11px] text-gofest-accent">
           ⚠ You&apos;ve picked region-locked targets — they can only be done remotely. Turn this on to plan them.
