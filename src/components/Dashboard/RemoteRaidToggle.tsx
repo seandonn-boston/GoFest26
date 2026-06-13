@@ -18,6 +18,7 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
   const on = usePlannerStore((s) => s.settings.useRemoteRaids);
   const setSettings = usePlannerStore((s) => s.setSettings);
   const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
+  const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
   const allocated = usePlannerStore((s) => {
     let n = 0;
     for (const id in s.remoteAllocations) {
@@ -36,11 +37,14 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
 
   function toggle(checked: boolean) {
     setSettings({ useRemoteRaids: checked });
-    // On first opt-in, auto-fill the unmet goals from the current (remote-off)
-    // plan, by priority — the user can then adjust each below.
-    if (checked && allocated === 0) {
-      const { inputs, settings, priorityOrder } = usePlannerStore.getState();
-      setRemoteAllocations(autoRemoteAllocations(blockPlan, Object.values(inputs), results, settings, priorityOrder));
+    if (checked) {
+      // Opting in (re)starts priority-driven auto-balancing; the auto-balance
+      // hook keeps it in sync from here. Seed it now so there's no empty frame.
+      setRemoteAuto(true);
+      if (allocated === 0) {
+        const { inputs, settings, priorityOrder } = usePlannerStore.getState();
+        setRemoteAllocations(autoRemoteAllocations(blockPlan, Object.values(inputs), results, settings, priorityOrder));
+      }
     }
   }
 

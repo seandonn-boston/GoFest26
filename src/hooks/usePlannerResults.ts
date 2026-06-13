@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { computeBlockPlan, computePlanSummary, type WeekendBlockPlan } from "@/domain";
+import { useEffect, useMemo } from "react";
+import { autoRemoteAllocations, computeBlockPlan, computePlanSummary, type WeekendBlockPlan } from "@/domain";
 import { applyResearchCredits, type ResearchCredit } from "@/domain/research";
 import { RESEARCH_LINES } from "@/data/research";
 import type { PlanSummary } from "@/domain/types";
@@ -42,4 +42,47 @@ export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
       computeBlockPlan(Object.values(inputs), summary.results, summary.capacity, settings, priorityOrder, remoteAllocations),
     [inputs, summary, settings, priorityOrder, remoteAllocations],
   );
+}
+
+/** The id→count entries that actually matter (positive), for stable comparison. */
+function sameAllocation(a: Record<string, number>, b: Record<string, number>): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) {
+    if (Math.max(0, a[k] ?? 0) !== Math.max(0, b[k] ?? 0)) return false;
+  }
+  return true;
+}
+
+/**
+ * Keeps remote allocations balanced by priority while in auto mode. Recomputes
+ * from a *remote-off* block plan (so shortfalls are real, not already covered by
+ * the current allocation) every time goals or priority change, and writes the
+ * result back — so dragging the priority list re-flows the 60-pass budget to the
+ * now-higher-priority targets. A single manual edit flips `remoteAuto` off and
+ * this becomes a no-op until the user taps "Auto-balance" again.
+ */
+export function useRemoteAutoBalance(summary: PlanSummary): void {
+  const inputs = usePlannerStore((s) => s.inputs);
+  const settings = usePlannerStore((s) => s.settings);
+  const priorityOrder = usePlannerStore((s) => s.priorityOrder);
+  const remoteAuto = usePlannerStore((s) => s.remoteAuto);
+  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
+  const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
+
+  useEffect(() => {
+    if (!settings.useRemoteRaids || !remoteAuto) return;
+    const inputList = Object.values(inputs);
+    // Shortfalls must be measured with remote OFF, otherwise goals already
+    // covered by the current allocation read as "met" and the budget unwinds.
+    const offPlan = computeBlockPlan(
+      inputList,
+      summary.results,
+      summary.capacity,
+      { ...settings, useRemoteRaids: false },
+      priorityOrder,
+      {},
+    );
+    const desired = autoRemoteAllocations(offPlan, inputList, summary.results, settings, priorityOrder);
+    if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
+  }, [inputs, settings, priorityOrder, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
 }

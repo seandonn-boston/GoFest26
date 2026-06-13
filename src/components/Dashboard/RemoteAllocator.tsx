@@ -20,6 +20,8 @@ export function RemoteAllocator() {
   const priorityOrder = usePlannerStore((s) => s.priorityOrder);
   const allocations = usePlannerStore((s) => s.remoteAllocations);
   const setRemoteAllocation = usePlannerStore((s) => s.setRemoteAllocation);
+  const remoteAuto = usePlannerStore((s) => s.remoteAuto);
+  const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
   const region = usePlannerStore((s) => s.settings.region);
 
   const order = useMemo(() => selectedInPriorityOrder({ inputs, priorityOrder }), [inputs, priorityOrder]);
@@ -29,13 +31,31 @@ export function RemoteAllocator() {
 
   return (
     <div className="mt-2 space-y-1.5">
-      <p className="text-[11px] text-slate-400">
-        Assign remote raids per species — the in-person blocks above drop to match.{" "}
-        <span className={total > MAX_REMOTE_RAIDS ? "text-rose-300" : "text-slate-300"}>
-          {total}/{MAX_REMOTE_RAIDS}
-        </span>{" "}
-        used.
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] text-slate-400">
+          {remoteAuto
+            ? "Auto-balanced by priority — drag the priority list and these re-flow. Edit any number to take over."
+            : "Assign remote raids per species — the in-person blocks above drop to match."}{" "}
+          <span className={total > MAX_REMOTE_RAIDS ? "text-rose-300" : "text-slate-300"}>
+            {total}/{MAX_REMOTE_RAIDS}
+          </span>{" "}
+          used.
+        </p>
+        {remoteAuto ? (
+          <span className="shrink-0 rounded-sm border border-gofest-accent2/40 bg-gofest-accent2/10 px-1.5 py-[1px] font-mono text-[9px] font-bold uppercase tracking-wider text-gofest-accent2">
+            Auto
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setRemoteAuto(true)}
+            title="Re-balance remote passes by priority"
+            className="shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1.5 py-[1px] font-mono text-[9px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-gofest-accent2/50 hover:text-gofest-accent2"
+          >
+            ↻ Auto-balance
+          </button>
+        )}
+      </div>
       {order.map((id) => {
         const boss = getBoss(id);
         if (!boss) return null;

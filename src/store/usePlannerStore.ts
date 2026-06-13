@@ -103,6 +103,12 @@ interface PlannerState {
   /** Remote raids the user assigns to each species, keyed by bossId (sum ≤ 60). */
   remoteAllocations: Record<string, number>;
   /**
+   * When true, remote allocations are auto-balanced by priority (and re-balance
+   * whenever priority/goals change). Editing any single allocation switches this
+   * off so manual tweaks aren't overwritten; "Auto-balance" turns it back on.
+   */
+  remoteAuto: boolean;
+  /**
    * User-ranked priority, highest first, by boss id. Drives card order, bar fill
    * order, and which raids get cut when goals exceed a block's capacity (lowest
    * priority is filled last / falls short first). Ids absent sort after, in roster order.
@@ -116,10 +122,12 @@ interface PlannerState {
   setPriorityOrder: (ids: string[]) => void;
   /** Record how many raids the user has completed toward a per-block target. */
   setRaidsDone: (key: string, value: number) => void;
-  /** Assign remote raids to a species (caps applied by the caller). */
+  /** Assign remote raids to a species (caps applied by the caller). Switches off auto-balance. */
   setRemoteAllocation: (bossId: string, value: number) => void;
-  /** Replace the whole remote-allocation map (used for auto-fill on opt-in). */
+  /** Replace the whole remote-allocation map (auto-balance writer — leaves the auto flag intact). */
   setRemoteAllocations: (map: Record<string, number>) => void;
+  /** Turn priority-driven auto-balancing of remote allocations on/off. */
+  setRemoteAuto: (on: boolean) => void;
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
@@ -174,6 +182,7 @@ export const usePlannerStore = create<PlannerState>()(
       imports: [],
       raidsDone: {},
       remoteAllocations: {},
+      remoteAuto: true,
       priorityOrder: [],
 
       setRaidsDone: (key, value) =>
@@ -185,10 +194,13 @@ export const usePlannerStore = create<PlannerState>()(
       setRemoteAllocation: (bossId, value) =>
         set((state) => {
           const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
-          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: safe } };
+          // A manual edit takes over from auto-balance so the user's tweaks stick.
+          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: safe }, remoteAuto: false };
         }),
 
       setRemoteAllocations: (map) => set({ remoteAllocations: { ...map } }),
+
+      setRemoteAuto: (on) => set({ remoteAuto: on }),
 
       addImports: (shots) =>
         set((state) => {
@@ -374,12 +386,13 @@ export const usePlannerStore = create<PlannerState>()(
           imports: [],
           raidsDone: {},
           remoteAllocations: {},
+          remoteAuto: true,
           priorityOrder: [],
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 9,
+      version: 10,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -393,6 +406,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!Array.isArray(state.priorityOrder)) state.priorityOrder = [];
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
+        if (typeof state.remoteAuto !== "boolean") state.remoteAuto = true;
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },

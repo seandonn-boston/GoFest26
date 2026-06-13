@@ -266,6 +266,31 @@ describe("autoRemoteAllocations", () => {
     const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
     expect(Object.keys(auto)).toHaveLength(0);
   });
+
+  it("re-flows the capped budget to whichever target is higher priority", () => {
+    // Two local bosses sharing one habitat block, each pushed far over its window
+    // so the 60-pass pool (not their windows) is the binding constraint. Whoever
+    // is ranked first should take the larger share — so reordering priority
+    // visibly re-balances the allocation (the bug this guards against).
+    const byBlock = new Map<string, typeof SINGLE_BLOCK>();
+    for (const b of SINGLE_BLOCK) {
+      if (!bossIsLocal(b, DEFAULT_SETTINGS.region)) continue;
+      const key = `${b.windows[0].day}${b.windows[0].startHour}`;
+      byBlock.set(key, [...(byBlock.get(key) ?? []), b]);
+    }
+    const pair = [...byBlock.values()].find((g) => g.length >= 2)!;
+    const [a, b] = pair;
+    const inputs = [a, b].map((boss) => ({ ...makeDefaultInput(boss), quantity: 200 }));
+    const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+
+    const aFirst = autoRemoteAllocations(plan, inputs, results, settings, [a.id, b.id]);
+    const bFirst = autoRemoteAllocations(plan, inputs, results, settings, [b.id, a.id]);
+
+    expect(aFirst[a.id] ?? 0).toBeGreaterThan(aFirst[b.id] ?? 0);
+    expect(bFirst[b.id] ?? 0).toBeGreaterThan(bFirst[a.id] ?? 0);
+  });
 });
 
 it("HABITATS has the six blocks the plan iterates", () => {
