@@ -7,10 +7,12 @@ import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
-import { megaBoostsForBoss } from "@/domain";
+import { megaBoostsForBoss, megaBoostSpecies } from "@/domain";
+import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { CopyableInline } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotScan";
@@ -315,7 +317,13 @@ function FormColumn({
               </span>
               <MegaBoostLegend />
             </div>
-            <MegaBoostRow boosts={boosts} max={8} />
+            <CopyableInline
+              search={buildMegaSearchString(megaBoostSpecies(boosts))}
+              label="mega evolutions"
+              className="flex flex-wrap items-center gap-1"
+            >
+              <MegaBoostRow boosts={boosts} max={8} />
+            </CopyableInline>
             <p className="mt-1.5 text-[10px] text-slate-500">
               Same-type as {title} — evolve one (Mega Level 3) before battling for bonus Candy XL.
             </p>

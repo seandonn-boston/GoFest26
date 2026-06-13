@@ -5,7 +5,8 @@ import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability, bossWindowSlots } from "@/data";
 import { wildTypesForBoss } from "@/data/habitats";
-import { megaBoostsForBoss } from "@/domain";
+import { megaBoostsForBoss, megaBoostSpecies } from "@/domain";
+import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
@@ -15,6 +16,7 @@ import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { CopyableInline } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
@@ -209,7 +211,13 @@ export function BossInputCard({
             </span>
             <MegaBoostLegend />
           </div>
-          <MegaBoostRow boosts={megaBoosts} max={8} />
+          <CopyableInline
+            search={buildMegaSearchString(megaBoostSpecies(megaBoosts))}
+            label="mega evolutions"
+            className="flex flex-wrap items-center gap-1"
+          >
+            <MegaBoostRow boosts={megaBoosts} max={8} />
+          </CopyableInline>
           <p className="mt-1.5 text-[10px] text-slate-500">
             Evolve one (Mega Level 3) before battling — its type matches {boss.name}, so every raid &amp;
             wild catch drops bonus Candy XL. Only one mega counts at a time.
