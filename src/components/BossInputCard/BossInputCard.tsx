@@ -16,7 +16,7 @@ import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
-import { CopyableInline } from "@/components/ui/Copyable";
+import { Copyable } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
@@ -204,25 +204,23 @@ export function BossInputCard({
 
       {/* Mega to Mega-Evolve for the same-type Candy XL boost on this boss. */}
       {megaBoosts.length > 0 ? (
-        <div className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5">
-          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <Copyable
+          search={buildMegaSearchString(megaBoostSpecies(megaBoosts))}
+          label="mega evolutions"
+          className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
+        >
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
             <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
               Mega-evolve for candy
             </span>
             <MegaBoostLegend />
           </div>
-          <CopyableInline
-            search={buildMegaSearchString(megaBoostSpecies(megaBoosts))}
-            label="mega evolutions"
-            className="flex flex-wrap items-center gap-1"
-          >
-            <MegaBoostRow boosts={megaBoosts} max={8} />
-          </CopyableInline>
+          <MegaBoostRow boosts={megaBoosts} max={8} />
           <p className="mt-1.5 text-[10px] text-slate-500">
             Evolve one (Mega Level 3) before battling — its type matches {boss.name}, so every raid &amp;
             wild catch drops bonus Candy XL. Only one mega counts at a time.
           </p>
-        </div>
+        </Copyable>
       ) : null}
 
       {/* Max out more than one — every requirement scales with the count. */}

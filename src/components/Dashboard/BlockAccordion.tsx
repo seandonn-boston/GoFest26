@@ -16,7 +16,7 @@ import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
 import { MegaBoostRow, MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
-import { CopyableInline } from "@/components/ui/Copyable";
+import { CopyableInline, Copyable } from "@/components/ui/Copyable";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
 
@@ -65,6 +65,11 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
   const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);
   const counterSearch = useMemo(() => buildSearchString(counters.map((c) => c.attacker.name)), [counters]);
   const megaSearch = useMemo(() => buildMegaSearchString(megaBoostSpecies(boosts)), [boosts]);
+  const typeIconEls = types.map((t) => (
+    <span key={t} className="inline-flex rounded-full bg-black/40 ring-1 ring-white/15">
+      <TypeIcon type={t} size={14} />
+    </span>
+  ));
 
   const g = share.range.min; // best case
   const r = share.range.max; // worst case
@@ -118,23 +123,20 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
         </CopyableInline>
       ) : null}
 
-      {/* Boss typing + the megas worth evolving for its candy (the megas copy as a string). */}
-      {types.length > 0 || boosts.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]">
-          {types.map((t) => (
-            <span key={t} className="inline-flex rounded-full bg-black/40 ring-1 ring-white/15">
-              <TypeIcon type={t} size={14} />
-            </span>
-          ))}
-          {boosts.length > 0 ? (
-            <>
-              <span className="mx-0.5 text-slate-600" aria-hidden>·</span>
-              <CopyableInline search={megaSearch} label="mega evolutions" className="flex flex-wrap items-center gap-1">
-                <MegaBoostRow boosts={boosts} size={18} max={6} />
-              </CopyableInline>
-            </>
-          ) : null}
-        </div>
+      {/* Boss typing + the megas worth evolving for its candy. The mega sprites
+          copy as a search string, with the copy icon in the row's top-right. */}
+      {boosts.length > 0 ? (
+        <Copyable
+          search={megaSearch}
+          label="mega evolutions"
+          className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px] pr-7"
+        >
+          {typeIconEls}
+          <span className="mx-0.5 text-slate-600" aria-hidden>·</span>
+          <MegaBoostRow boosts={boosts} size={18} max={6} />
+        </Copyable>
+      ) : types.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]">{typeIconEls}</div>
       ) : null}
     </div>
   );

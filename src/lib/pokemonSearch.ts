@@ -1,12 +1,17 @@
 /**
- * Reduces a roster name to the species term you'd type into Pokémon GO's search
- * bar — drops "Mega", Forme qualifiers, parentheticals, and the Mewtwo X/Y
- * suffix. Pokémon GO search treats commas as "or", so a comma-joined list of
- * these surfaces all your targets at once.
+ * Reduces a roster/attacker name to the bare species term you'd type into
+ * Pokémon GO's search bar — Pokémon GO can't search variant words, so we drop
+ * every qualifier: Shadow, Mega, Primal, regional forms (Galarian / Alolan /
+ * Hisuian / Paldean), Forme prefixes, parentheticals, and the Mewtwo X/Y suffix.
+ * What remains is the plain species ("Shadow Swampert" → "Swampert", "Galarian
+ * Darmanitan" → "Darmanitan"); the user picks the right variant themselves.
+ * Commas join as "or", so a deduped list surfaces everything at once.
  */
 export function pokemonSearchName(name: string): string {
-  let s = name;
-  s = s.replace(/^Mega\s+/i, "");
+  let s = name.trim();
+  // Strip leading variant qualifiers (a loop in case any ever stack).
+  const lead = /^(mega|primal|shadow|galarian|alolan|hisuian|paldean|crowned|dynamax|gigantamax)\s+/i;
+  while (lead.test(s)) s = s.replace(lead, "");
   s = s.replace(/^(Origin|Altered|Incarnate|Therian|Hero)\s+Forme\s+/i, "");
   s = s.replace(/\s*\(.*\)\s*$/, ""); // drop "(Origin)", "(Hero of Many Battles)", etc.
   s = s.replace(/\s+[XY]$/, ""); // Mewtwo X / Y
