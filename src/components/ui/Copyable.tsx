@@ -35,7 +35,7 @@ export function Copyable({
   const [copied, copy] = useCopied();
   if (!search) return <div className={className}>{children}</div>;
   return (
-    <div onClick={() => copy(search)} className={`relative cursor-pointer ${className}`} title={`Tap to copy: ${search}`}>
+    <div onClick={() => copy(search)} className={`relative cursor-pointer ${className}`} title={`Tap to copy ${label}`}>
       <button
         type="button"
         onClick={(e) => {
@@ -81,7 +81,7 @@ export function CopyableInline({
         }
       }}
       aria-label={copied ? "Copied to clipboard" : `Copy ${label} as a search string`}
-      title={`Tap to copy: ${search}`}
+      title={`Tap to copy ${label}`}
       className={`group cursor-pointer rounded outline-none focus-visible:ring-1 focus-visible:ring-gofest-accent2 ${className}`}
     >
       {children}
