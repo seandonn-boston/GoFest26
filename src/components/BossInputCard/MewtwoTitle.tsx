@@ -17,7 +17,7 @@ const SPRITE = 97; // ~110% of the X/Y height (px)
 export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: string }) {
   return (
     <div className="mx-auto flex max-w-[350px] items-center justify-center">
-      <span className="relative z-20 -mr-3 left-[6px] shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
+      <span className="relative z-20 -mr-3 left-[8px] shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
         <Sprite src={spriteX} alt="Mega Mewtwo X" size={SPRITE} />
       </span>
 
@@ -28,17 +28,17 @@ export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: 
         <div className="relative flex items-center justify-center" style={{ height: XY }}>
           <span aria-hidden className="absolute inset-0 z-0 flex items-center justify-center gap-[2px]">
             <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>X</span>
-            <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>Y</span>
+            <span className="mewtwo-xy relative left-[2px]" style={{ color: PURPLE, fontSize: XY }}>Y</span>
           </span>
           {/* Offset via `left`, NOT a transform: the glitch animation animates
               `transform`, which clobbers any translate-x utility put here. */}
-          <span className="mewtwo-word relative z-10 left-1" style={{ fontSize: MEWTWO }}>
+          <span className="mewtwo-word relative z-10 left-[6px]" style={{ fontSize: MEWTWO }}>
             Mewtwo
           </span>
         </div>
       </div>
 
-      <span className="relative z-20 -ml-3 -left-[18px] shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
+      <span className="relative z-20 -ml-3 -left-[16px] shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
         <Sprite src={spriteY} alt="Mega Mewtwo Y" size={SPRITE} />
       </span>
     </div>
