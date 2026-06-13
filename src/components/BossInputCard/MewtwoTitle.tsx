@@ -36,7 +36,7 @@ export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: 
         </div>
       </div>
 
-      <span className="relative z-20 -ml-3 shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
+      <span className="relative z-20 -ml-10 shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
         <Sprite src={spriteY} alt="Mega Mewtwo Y" size={SPRITE} />
       </span>
     </div>
