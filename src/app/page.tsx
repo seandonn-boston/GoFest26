@@ -8,6 +8,7 @@ import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
+import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { ScreenshotImporter } from "@/components/Settings/ScreenshotImporter";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
@@ -108,6 +109,7 @@ export default function Home() {
                   />
                 ) : null;
               })}
+              <CounterSearchBar />
             </section>
           ) : null}
 

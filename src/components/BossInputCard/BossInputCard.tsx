@@ -18,6 +18,7 @@ import { speciesKey } from "@/lib/pokemonSearch";
 import { energyForBosses } from "@/lib/screenshotScan";
 import { PresetPicker } from "./PresetPicker";
 import { CardScan } from "./CardScan";
+import { CounterTable } from "./CounterTable";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -191,6 +192,9 @@ export function BossInputCard({
           </>
         )}
       </div>
+
+      {/* Best raid counters for this boss's typing. */}
+      <CounterTable types={boss.types} />
 
       {/* Max out more than one — every requirement scales with the count. */}
       <div className="mt-2">
