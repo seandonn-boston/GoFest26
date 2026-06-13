@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import { counterBreakdown, CATEGORY_ORDER } from "@/domain/counters";
 import type { AttackerCategory } from "@/data/attackers";
 import { TYPE_COLORS } from "@/data/typeVisuals";
+import { buildSearchString } from "@/lib/pokemonSearch";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { Copyable } from "@/components/ui/Copyable";
 
 const CATEGORY_LABEL: Record<AttackerCategory, string> = {
   shadow: "Shadow",
@@ -25,11 +27,20 @@ export function CounterTable({ types, label }: { types?: string[]; label?: strin
 
   // Pure Normal (and the like) have no super-effective answer — nothing to list.
   const hasAny = CATEGORY_ORDER.some((c) => groups[c].length > 0);
+  // The whole table is one copyable search string (deduped to species names).
+  const search = useMemo(
+    () => buildSearchString(CATEGORY_ORDER.flatMap((c) => groups[c]).map((x) => x.attacker.name)),
+    [groups],
+  );
   if (!hasAny) return null;
 
   return (
-    <div className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/40 p-2.5">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+    <Copyable
+      search={search}
+      label={`counters${label ? ` for ${label}` : ""}`}
+      className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/40 p-2.5 transition hover:border-white/25"
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-7">
         <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
           Best counters{label ? ` · ${label}` : ""}
         </span>
@@ -65,6 +76,6 @@ export function CounterTable({ types, label }: { types?: string[]; label?: strin
           ) : null,
         )}
       </div>
-    </div>
+    </Copyable>
   );
 }

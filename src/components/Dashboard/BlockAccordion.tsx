@@ -9,13 +9,14 @@ import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, mega
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
-import { buildMegaSearchString } from "@/lib/pokemonSearch";
+import { buildSearchString, buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
 import { MegaBoostRow, MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
+import { CopyableInline } from "@/components/ui/Copyable";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
 
@@ -62,6 +63,8 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
   const types = boss?.types ?? [];
   const counters = useMemo(() => topCounters(types), [types]);
   const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);
+  const counterSearch = useMemo(() => buildSearchString(counters.map((c) => c.attacker.name)), [counters]);
+  const megaSearch = useMemo(() => buildMegaSearchString(megaBoostSpecies(boosts)), [boosts]);
 
   const g = share.range.min; // best case
   const r = share.range.max; // worst case
@@ -98,9 +101,13 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
         ) : null}
       </div>
 
-      {/* Best raid attackers against this boss (tinted by the move type that wins). */}
+      {/* Best raid attackers — a copyable search string, tinted by the move type that wins. */}
       {counters.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-[36px] text-[11px] leading-relaxed">
+        <CopyableInline
+          search={counterSearch}
+          label="counters"
+          className="mt-1.5 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-[36px] text-[11px] leading-relaxed"
+        >
           <span className="mr-0.5 font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
           {counters.map((c, i) => (
             <span key={c.attacker.name}>
@@ -108,10 +115,10 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
               <span style={{ color: TYPE_COLORS[c.via.toLowerCase()] }}>{c.attacker.name}</span>
             </span>
           ))}
-        </div>
+        </CopyableInline>
       ) : null}
 
-      {/* Boss typing + the megas worth evolving for its candy. */}
+      {/* Boss typing + the megas worth evolving for its candy (the megas copy as a string). */}
       {types.length > 0 || boosts.length > 0 ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]">
           {types.map((t) => (
@@ -119,8 +126,14 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
               <TypeIcon type={t} size={14} />
             </span>
           ))}
-          {boosts.length > 0 ? <span className="mx-0.5 text-slate-600" aria-hidden>·</span> : null}
-          <MegaBoostRow boosts={boosts} size={18} max={6} />
+          {boosts.length > 0 ? (
+            <>
+              <span className="mx-0.5 text-slate-600" aria-hidden>·</span>
+              <CopyableInline search={megaSearch} label="mega evolutions" className="flex flex-wrap items-center gap-1">
+                <MegaBoostRow boosts={boosts} size={18} max={6} />
+              </CopyableInline>
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>
