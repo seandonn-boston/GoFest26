@@ -26,11 +26,9 @@ function MewtwoSelectTileImpl({ boss, dayLabel }: { boss: RaidBoss; dayLabel: st
       <span className="absolute left-2 top-2 z-20 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
         {dayLabel}
       </span>
-      <span className="absolute inset-x-0 bottom-2 z-10 flex flex-col items-center gap-0.5 px-1">
-        <span className="rounded bg-black/60 px-1.5 text-sm font-bold text-white">{boss.name}</span>
-        <span className="rounded bg-black/45 px-1 text-[10px] uppercase tracking-widest text-white/90">
-          Super Mega
-        </span>
+      <span className="absolute inset-x-0 bottom-2 z-10 flex flex-col items-center gap-0.5 px-1 text-center">
+        <span className="enamel-label text-base leading-tight">{boss.name}</span>
+        <span className="enamel-label text-[10px] tracking-widest opacity-90">Super Mega</span>
       </span>
     </EnamelBadge>
   );

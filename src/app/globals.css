@@ -135,17 +135,32 @@ input[type="number"] {
   animation: glitchType 7s infinite steps(1, end);
 }
 
-/* Big italic backdrop letters (Mewtwo X / Y) — neon glow in their own color. */
+/* Big italic backdrop letters (Mewtwo X / Y): purple fills (set inline) with the
+   shiny-Mewtwo spearmint-green chromatic glitch. */
 .mewtwo-xy {
+  --c1: #5be3a8;
+  --c2: #5be3a8;
   font-family: var(--font-display);
   font-weight: 900;
   font-style: italic;
   line-height: 0.8;
-  text-shadow: 0 0 0.35em currentColor, 0.03em 0.03em 0 rgba(0, 0, 0, 0.55);
+  text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1);
+  animation: glitchType 7s infinite steps(1, end);
+}
+
+/* Enamel-pin label: engraved into the badge — warm off-white with a dark halo
+   (legible on any type color) and a faint top sheen, no stuck-on box. */
+.enamel-label {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fbfaf6;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.85), 0 -1px 0 rgba(255, 255, 255, 0.16);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .switch-in, .glitch-title, .ticker, .cyber-title { animation: none; }
+  .switch-in, .glitch-title, .ticker, .cyber-title, .mewtwo-xy { animation: none; }
 }
 
 /* Avant-garde card treatment: a hard neo-brutalist offset shadow + crisp border
