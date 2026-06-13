@@ -133,8 +133,12 @@ input[type="number"] {
    Stage gives perspective; the badge is a metallic bezel that tilts to the
    gyroscope (--tilt-x/y); the face is the enamel with a tilt-tracking specular. */
 .badge-stage {
-  perspective: 460px; /* shorter => stronger, more obvious 3D tilt */
   display: inline-block;
+}
+/* Perspective (and the whole 3D subtree below) only while the gyro is driving
+   the tilt — see .tilt-active .badge. */
+.tilt-active .badge-stage {
+  perspective: 460px; /* shorter => stronger, more obvious 3D tilt */
 }
 .badge {
   position: relative;
@@ -145,21 +149,18 @@ input[type="number"] {
     from 210deg,
     #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5
   );
-  transform: rotateX(calc(var(--tilt-y, 0) * -22deg)) rotateY(calc(var(--tilt-x, 0) * 22deg));
-  transform-style: preserve-3d;
-  transition: transform 90ms linear; /* off-state only: smooths the snap to flat */
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.55);
 }
-/* While the gyroscope is actively driving the tilt: promote each badge to its
-   own compositor layer (the conic-gradient rim paints ONCE, then only the GPU
-   transform updates — no per-frame repaint of 50+ badges) and drop the CSS
-   transition so the JS spring is the sole, snappy smoother (no double lag). */
+/* The gyro tilt — and its preserve-3d/perspective subtree — exists ONLY while
+   active. An idle page (and all of desktop) stays flat 2D, which is visually
+   identical at rest but avoids an iOS Safari bug where taps into a
+   perspective/preserve-3d subtree intermittently fail until a scroll forces a
+   recomposite. While active, each badge gets its own GPU layer (will-change) and
+   the JS spring is the sole smoother (no CSS transition). */
 .tilt-active .badge {
-  transition: none;
+  transform: rotateX(calc(var(--tilt-y, 0) * -22deg)) rotateY(calc(var(--tilt-x, 0) * 22deg));
+  transform-style: preserve-3d;
   will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .badge { transition: none; transform: none; }
 }
 .badge-face {
   position: relative;
