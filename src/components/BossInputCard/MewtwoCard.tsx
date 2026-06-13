@@ -5,7 +5,6 @@ import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
-import { TierBadge } from "@/components/ui/Badge";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
@@ -84,10 +83,7 @@ export function MewtwoCard({
           <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
         </div>
         <MewtwoTitle spriteX={bossX.sprite} spriteY={bossY.sprite} />
-        <div className="mb-1 mt-1.5 flex justify-center">
-          <TierBadge tier="super-mega" />
-        </div>
-        <p className="mb-3 text-xs text-slate-400">
+        <p className="mb-3 mt-2 text-xs text-slate-400">
           One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
           appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
           so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.

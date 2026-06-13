@@ -1,12 +1,9 @@
-import type { CSSProperties } from "react";
 import { Sprite } from "@/components/ui/Sprite";
 
-// Colors pulled from the Mewtwo sprite — purple body / lavender accents — and the
-// shiny's spearmint green for the chromatic glitch.
+// X/Y letter fills pulled from the Mewtwo sprite (purple body / lavender accents).
+// The chromatic glitch colors (purple rest, two shiny greens on jitter) live in CSS.
 const PURPLE = "#8E7CC3"; // X
 const LIGHT_PURPLE = "#CFC3E8"; // Y
-const SPEARMINT = "#5BE3A8"; // shiny-Mewtwo glitch
-const MEWTWO_PURPLE = "#b026ff"; // matches the "RAID" word in the page title (gofest-mewtwo)
 
 const XY = "5.5rem"; // X/Y backdrop size
 const MEWTWO = "2.75rem"; // 50% of the X/Y height
@@ -34,10 +31,7 @@ export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: 
             <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>X</span>
             <span className="mewtwo-xy" style={{ color: LIGHT_PURPLE, fontSize: XY }}>Y</span>
           </span>
-          <span
-            className="cyber-title relative z-10"
-            style={{ "--c1": SPEARMINT, "--c2": SPEARMINT, fontSize: MEWTWO, color: MEWTWO_PURPLE } as CSSProperties}
-          >
+          <span className="mewtwo-word relative z-10" style={{ fontSize: MEWTWO }}>
             Mewtwo
           </span>
         </div>
