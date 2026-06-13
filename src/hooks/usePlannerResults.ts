@@ -1,16 +1,22 @@
-import { useEffect, useMemo } from "react";
+import { useDeferredValue, useEffect, useMemo } from "react";
 import { autoRemoteAllocations, computeBlockPlan, computePlanSummary, type WeekendBlockPlan } from "@/domain";
 import { applyResearchCredits, type ResearchCredit } from "@/domain/research";
 import { RESEARCH_LINES } from "@/data/research";
 import type { PlanSummary } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
-/** Recomputes the full plan summary whenever inputs, settings, or research change. */
+/**
+ * Recomputes the full plan summary whenever inputs, settings, or research
+ * change. The store reads are run through useDeferredValue so a burst of rapid
+ * selections (tapping many bosses fast) coalesces into far fewer of these
+ * expensive recomputes — React keeps the selection UI responsive and runs the
+ * heavy math once the burst settles, instead of synchronously on every tap.
+ */
 export function usePlannerResults(): PlanSummary {
-  const inputs = usePlannerStore((s) => s.inputs);
-  const settings = usePlannerStore((s) => s.settings);
-  const research = usePlannerStore((s) => s.research);
-  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
+  const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
+  const settings = useDeferredValue(usePlannerStore((s) => s.settings));
+  const research = useDeferredValue(usePlannerStore((s) => s.research));
+  const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
   return useMemo(() => {
     // Fold enabled research rewards into on-hand currency before planning.
     const credits: ResearchCredit[] = [];
@@ -33,10 +39,10 @@ export function usePlannerResults(): PlanSummary {
  * lives in the store rather than in the planner settings.
  */
 export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
-  const inputs = usePlannerStore((s) => s.inputs);
-  const settings = usePlannerStore((s) => s.settings);
-  const priorityOrder = usePlannerStore((s) => s.priorityOrder);
-  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
+  const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
+  const settings = useDeferredValue(usePlannerStore((s) => s.settings));
+  const priorityOrder = useDeferredValue(usePlannerStore((s) => s.priorityOrder));
+  const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
   return useMemo(
     () =>
       computeBlockPlan(Object.values(inputs), summary.results, summary.capacity, settings, priorityOrder, remoteAllocations),

@@ -14,6 +14,25 @@ export function ClipboardGlyph({ copied }: { copied?: boolean }) {
   );
 }
 
+/** Standalone copy-icon button (stops propagation so it works inside other
+ *  clickable regions). */
+export function CopyButton({ search, label, className = "" }: { search: string; label: string; className?: string }) {
+  const [copied, copy] = useCopied();
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        copy(search);
+      }}
+      aria-label={copied ? "Copied to clipboard" : `Copy ${label} as a search string`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-sm border border-white/20 bg-black/50 px-1.5 py-1 text-slate-300 transition hover:border-white/50 hover:text-white ${className}`}
+    >
+      <ClipboardGlyph copied={copied} />
+    </button>
+  );
+}
+
 /**
  * A region that copies a Pokémon GO `search` string when clicked anywhere, with
  * a copy icon pinned to its top-right corner. The icon is a real button so

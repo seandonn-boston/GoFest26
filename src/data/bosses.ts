@@ -837,7 +837,7 @@ const SPRITES: Record<string, string> = {
   "thundurus-therian": "pokemon_icon_642_12.png",
   "landorus-incarnate": "pokemon_icon_645_11.png",
   "landorus-therian": "pokemon_icon_645_12.png",
-  "enamorus-incarnate": "pm905.icon.png",
+  "enamorus-incarnate": "pm905.fINCARNATE.icon.png",
   "enamorus-therian": "pm905.fTHERIAN.icon.png",
   regieleki: "pm894.icon.png",
   regidrago: "pm895.icon.png",

@@ -58,6 +58,33 @@ export function speciesIconUrl(species: string): string | undefined {
   return rosterBySpecies.get(key);
 }
 
+// Form-specific icon files for attacker forms whose plain `pm{dex}.icon.png`
+// doesn't exist (or shows the wrong form) — verified PokeMiners filenames, reused
+// from the roster where possible. Keyed by the attacker's display name.
+const FORM_SPRITE: Record<string, string> = {
+  "Thundurus (Therian)": "pokemon_icon_642_12.png",
+  "Tornadus (Therian)": "pokemon_icon_641_12.png",
+  "Landorus (Therian)": "pokemon_icon_645_12.png",
+  "Enamorus (Incarnate)": "pm905.fINCARNATE.icon.png",
+  Kyurem: "pokemon_icon_646_11.png",
+  Genesect: "pokemon_icon_649_11.png",
+  "Deoxys (Attack)": "pokemon_icon_386_11.png",
+  "Origin Forme Giratina": "pokemon_icon_487_12.png",
+  "Giratina (Altered)": "pokemon_icon_487_11.png",
+};
+
+const megaSpriteByName = new Map(MEGAS.map((m) => [m.name, m.sprite]));
+
+/**
+ * Icon for a specific attacker FORM (not just its species): Mega/Primal use the
+ * mega sprite, forme'd legendaries use their form file, and everything else
+ * falls back to the base-species icon (Shadow forms share the base icon). So a
+ * sprite chip shows the variant that's actually the relevant raid attacker.
+ */
+export function attackerIconUrl(attacker: { name: string; species: string }): string | undefined {
+  return megaSpriteByName.get(attacker.name) ?? (FORM_SPRITE[attacker.name] ? SPRITE_BASE + FORM_SPRITE[attacker.name] : speciesIconUrl(attacker.species));
+}
+
 /** Every sprite URL the app references — fed to the loader so they're warm. */
 export function allSpriteUrls(): string[] {
   const urls = new Set<string>();

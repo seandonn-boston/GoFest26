@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { RESEARCH_LINES } from "@/data/research";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
@@ -182,12 +183,15 @@ export function selectedInPriorityOrder(state: {
     .sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
 }
 
+// Every GO Fest research line counts toward goals by default (both on).
+const DEFAULT_RESEARCH: Record<string, boolean> = Object.fromEntries(RESEARCH_LINES.map((l) => [l.id, true]));
+
 export const usePlannerStore = create<PlannerState>()(
   persist(
     (set) => ({
       inputs: {},
       settings: { ...DEFAULT_SETTINGS },
-      research: {},
+      research: { ...DEFAULT_RESEARCH },
       screenshots: {},
       imports: [],
       raidsDone: {},
@@ -397,7 +401,7 @@ export const usePlannerStore = create<PlannerState>()(
         set({
           inputs: {},
           settings: { ...DEFAULT_SETTINGS },
-          research: {},
+          research: { ...DEFAULT_RESEARCH },
           screenshots: {},
           imports: [],
           raidsDone: {},
@@ -408,7 +412,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 11,
+      version: 12,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -416,7 +420,8 @@ export const usePlannerStore = create<PlannerState>()(
         // persisted settings picks up newly-added knobs (lobby size, party play).
         const state = (persisted ?? {}) as Partial<PlannerState>;
         if (!state.inputs) state.inputs = {};
-        if (!state.research) state.research = {};
+        // Default GO Fest research on (both lines) when the user hasn't set any.
+        if (!state.research || Object.keys(state.research).length === 0) state.research = { ...DEFAULT_RESEARCH };
         if (!state.screenshots) state.screenshots = {};
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!Array.isArray(state.priorityOrder)) state.priorityOrder = [];
