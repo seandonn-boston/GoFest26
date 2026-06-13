@@ -13,10 +13,10 @@ export interface SearchSpriteItem {
 }
 
 /**
- * A labelled Pokémon GO search string: a copy icon in the top-right corner, a
- * row of small sprites of the species it searches for, and the string itself.
- * Clicking the icon — or anywhere in the box — copies the string. One component
- * behind every search string on the page (targets, counters, mega boosts).
+ * A labelled, copyable Pokémon GO search string shown as just a row of sprites
+ * (the literal string is hidden) plus a copy icon in the top-right corner.
+ * Clicking the icon, any sprite, or anywhere in the box copies the string. One
+ * component behind every search string on the page (targets, counters, megas).
  */
 export function CopyableSearchString({
   label,
@@ -40,7 +40,7 @@ export function CopyableSearchString({
       </div>
       {caption ? <p className="mb-2 text-[11px] text-slate-400">{caption}</p> : null}
       {items.length > 0 ? (
-        <div className="mb-2 flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1">
           {items.map((it) => (
             <span
               key={it.key}
@@ -52,9 +52,6 @@ export function CopyableSearchString({
           ))}
         </div>
       ) : null}
-      <code className="block max-h-24 overflow-y-auto break-words rounded-sm border border-white/10 bg-gofest-bg/60 p-2 font-mono text-xs leading-relaxed text-slate-200">
-        {search}
-      </code>
     </Copyable>
   );
 }
