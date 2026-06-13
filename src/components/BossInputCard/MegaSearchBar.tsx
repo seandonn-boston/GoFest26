@@ -1,8 +1,9 @@
 "use client";
 
+import { useDeferredValue, useMemo } from "react";
 import { getBoss } from "@/data";
 import { bossDays, wildTypesForBoss } from "@/data/habitats";
-import { megaBoostsForBoss, mergeMegaBoosts, megaBoostSpecies } from "@/domain";
+import { megaBoostsForBoss, mergeMegaBoosts, megaBoostSpecies, type MegaBoost } from "@/domain";
 import type { EventDay } from "@/domain/types";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -13,20 +14,26 @@ import { MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
  * Copyable "& mega3" search strings of the candy-boost megas worth evolving —
  * one for Saturday, one for Sunday — so you can grab the right Mega-Level-3 list
  * the day of. Sprites are outlined by role (attacker / wild / boss); a mega can
- * appear on both days.
+ * appear on both days. Inputs are deferred so rapid selections coalesce.
  */
 export function MegaSearchBar() {
-  const inputs = usePlannerStore((s) => s.inputs);
-  const selected = Object.values(inputs)
-    .filter((i) => i.selected)
-    .map((i) => getBoss(i.bossId))
-    .filter((b): b is NonNullable<typeof b> => !!b);
+  const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
 
-  const dayBar = (day: EventDay, dayLabel: string) => {
-    const lists = selected
-      .filter((b) => bossDays(b).includes(day))
-      .map((b) => megaBoostsForBoss(b.types ?? [], wildTypesForBoss(b)));
-    const boosts = mergeMegaBoosts(lists);
+  const byDay = useMemo(() => {
+    const selected = Object.values(inputs)
+      .filter((i) => i.selected)
+      .map((i) => getBoss(i.bossId))
+      .filter((b): b is NonNullable<typeof b> => !!b);
+    const pick = (day: EventDay) =>
+      mergeMegaBoosts(
+        selected
+          .filter((b) => bossDays(b).includes(day))
+          .map((b) => megaBoostsForBoss(b.types ?? [], wildTypesForBoss(b))),
+      );
+    return { sat: pick("sat"), sun: pick("sun") };
+  }, [inputs]);
+
+  const bar = (boosts: MegaBoost[], dayLabel: string) => {
     const search = buildMegaSearchString(megaBoostSpecies(boosts));
     if (!search) return null;
     return (
@@ -48,8 +55,8 @@ export function MegaSearchBar() {
 
   return (
     <>
-      {dayBar("sat", "Saturday")}
-      {dayBar("sun", "Sunday")}
+      {bar(byDay.sat, "Saturday")}
+      {bar(byDay.sun, "Sunday")}
     </>
   );
 }

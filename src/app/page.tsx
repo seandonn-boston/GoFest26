@@ -13,7 +13,6 @@ import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { ScreenshotImporter } from "@/components/Settings/ScreenshotImporter";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
-import { ResearchPanel } from "@/components/Research/ResearchPanel";
 import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
@@ -91,23 +90,29 @@ export default function Home() {
                 </div>
                 <ScreenshotImporter />
               </div>
+              {/* content-visibility lets the browser skip layout/paint/image-decode
+                  for off-screen cards, so selecting the 60th–70th target stays
+                  cheap instead of re-rendering every detailed card at once. */}
               {mewtwoSelected ? (
-                <MewtwoCard
-                  bossX={getBoss(MEWTWO_X_ID)!}
-                  bossY={getBoss(MEWTWO_Y_ID)!}
-                  resultX={resultById.get(MEWTWO_X_ID)}
-                  resultY={resultById.get(MEWTWO_Y_ID)}
-                />
+                <div className="[content-visibility:auto] [contain-intrinsic-size:auto_560px]">
+                  <MewtwoCard
+                    bossX={getBoss(MEWTWO_X_ID)!}
+                    bossY={getBoss(MEWTWO_Y_ID)!}
+                    resultX={resultById.get(MEWTWO_X_ID)}
+                    resultY={resultById.get(MEWTWO_Y_ID)}
+                  />
+                </div>
               ) : null}
               {otherSelectedBosses.map((boss) => {
                 const result = resultById.get(boss.id);
                 return result ? (
-                  <BossInputCard
-                    key={boss.id}
-                    boss={boss}
-                    result={result}
-                    planningRaidsPerHour={summary.schedule.planningRaidsPerHour}
-                  />
+                  <div key={boss.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_520px]">
+                    <BossInputCard
+                      boss={boss}
+                      result={result}
+                      planningRaidsPerHour={summary.schedule.planningRaidsPerHour}
+                    />
+                  </div>
                 ) : null;
               })}
               <CounterSearchBar />
@@ -116,8 +121,6 @@ export default function Home() {
           ) : null}
 
           <SummaryDashboard summary={summary} blockPlan={blockPlan} />
-
-          <ResearchPanel />
 
           {summary.schedule.raids.length > 0 ? (
             <section className="flex flex-col gap-2">

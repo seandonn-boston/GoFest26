@@ -2,7 +2,7 @@
 // ranked attacker pools (data/attackers.ts) to pick the best counters per
 // category. Pure domain logic — no React/browser APIs, unit-testable.
 
-import { ATTACKERS, type Attacker, type AttackerCategory, type PType } from "@/data/attackers";
+import { ATTACKERS, type Attacker, type PType } from "@/data/attackers";
 
 /** All 18 types, used to scan every attacking type against a boss. */
 const ALL_TYPES: PType[] = [
@@ -103,14 +103,65 @@ export interface ScoredCounter {
   score: number;
 }
 
+/**
+ * The five per-card counter buckets. Finer than the raw attacker category: a
+ * Shadow form of a Legendary/Mythical/UB sorts into its own "Shadow Legendary"
+ * list rather than mixing into plain Shadow, and "regular" is surfaced as the
+ * "Budget" list.
+ */
+export type CounterCategory = "shadow" | "shadowLegendary" | "mega" | "legendary" | "budget";
+
 export interface CounterBreakdown {
   /** Types this boss takes super-effective damage from, strongest first. */
   weaknesses: Weakness[];
   /** Up to five best picks per category, score-ordered. */
-  groups: Record<AttackerCategory, ScoredCounter[]>;
+  groups: Record<CounterCategory, ScoredCounter[]>;
 }
 
-export const CATEGORY_ORDER: AttackerCategory[] = ["shadow", "mega", "legendary", "regular"];
+export const COUNTER_CATEGORIES: CounterCategory[] = [
+  "shadow",
+  "shadowLegendary",
+  "mega",
+  "legendary",
+  "budget",
+];
+
+export const COUNTER_CATEGORY_LABEL: Record<CounterCategory, string> = {
+  shadow: "Shadow",
+  shadowLegendary: "Shadow Legendary",
+  mega: "Mega / Primal",
+  legendary: "Legendary",
+  budget: "Budget",
+};
+
+/**
+ * Pokémon GO search-bar suffix appended (only) to a per-category copy string on
+ * the boss card, so each list filters to exactly its bucket: Shadow excludes
+ * legendaries (they have their own bucket), Legendary excludes shadows, megas
+ * filter to Mega Level 3, and Budget excludes shadows + legendaries.
+ */
+export const COUNTER_CATEGORY_FILTER: Record<CounterCategory, string> = {
+  shadow: "& shadow & !legendary & !mythical & !ultrabeast",
+  shadowLegendary: "& shadow & legendary, mythical, ultrabeast",
+  mega: "& mega3",
+  legendary: "& legendary, mythical, ultrabeast & !shadow",
+  budget: "& !shadow & !legendary & !mythical & !ultrabeast",
+};
+
+// Species that count as Legendary / Mythical / Ultra Beast — derived from the
+// pool's legendary entries, so a Shadow form of one routes to "Shadow Legendary".
+const LEGENDARY_SPECIES = new Set(
+  ATTACKERS.filter((a) => a.category === "legendary").map((a) => a.species.toLowerCase()),
+);
+
+function counterCategoryOf(a: Attacker): CounterCategory {
+  if (a.category === "mega") return "mega";
+  if (a.category === "legendary") return "legendary";
+  if (a.category === "shadow") {
+    return LEGENDARY_SPECIES.has(a.species.toLowerCase()) ? "shadowLegendary" : "shadow";
+  }
+  return "budget";
+}
 
 const TOP_N = 5;
 
@@ -147,10 +198,10 @@ export function counterBreakdown(types: string[]): CounterBreakdown {
     if (best) scored.push(best);
   }
 
-  const groups = {} as Record<AttackerCategory, ScoredCounter[]>;
-  for (const cat of CATEGORY_ORDER) {
+  const groups = {} as Record<CounterCategory, ScoredCounter[]>;
+  for (const cat of COUNTER_CATEGORIES) {
     groups[cat] = scored
-      .filter((s) => s.attacker.category === cat)
+      .filter((s) => counterCategoryOf(s.attacker) === cat)
       .sort((a, b) => b.score - a.score || a.attacker.name.localeCompare(b.attacker.name))
       .slice(0, TOP_N);
   }
@@ -165,7 +216,7 @@ export function counterBreakdown(types: string[]): CounterBreakdown {
  */
 export function topCounters(types: string[], n = 6): ScoredCounter[] {
   const { groups } = counterBreakdown(types);
-  const all = CATEGORY_ORDER.flatMap((c) => groups[c]).sort((a, b) => b.score - a.score);
+  const all = COUNTER_CATEGORIES.flatMap((c) => groups[c]).sort((a, b) => b.score - a.score);
   const seen = new Set<string>();
   const out: ScoredCounter[] = [];
   for (const c of all) {
@@ -180,19 +231,26 @@ export function topCounters(types: string[], n = 6): ScoredCounter[] {
 
 /** All counter species (deduped, final-evolution names) across a set of bosses. */
 export function counterSearchSpecies(bossTypes: string[][]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
+  return counterSearchPicks(bossTypes).map((p) => p.attacker.species);
+}
+
+/**
+ * One pick per counter species across the given bosses — the highest-scoring
+ * form, so a search-string sprite chip can show the relevant variant (e.g.
+ * Therian Landorus, base Kyurem) while the copied string still lists each
+ * species only once. Sorted alphabetically by species.
+ */
+export function counterSearchPicks(bossTypes: string[][]): ScoredCounter[] {
+  const best = new Map<string, ScoredCounter>();
   for (const types of bossTypes) {
     const { groups } = counterBreakdown(types);
-    for (const cat of CATEGORY_ORDER) {
-      for (const { attacker } of groups[cat]) {
-        const key = attacker.species.toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          out.push(attacker.species);
-        }
+    for (const cat of COUNTER_CATEGORIES) {
+      for (const sc of groups[cat]) {
+        const key = sc.attacker.species.toLowerCase();
+        const cur = best.get(key);
+        if (!cur || sc.score > cur.score) best.set(key, sc);
       }
     }
   }
-  return out.sort((a, b) => a.localeCompare(b));
+  return [...best.values()].sort((a, b) => a.attacker.species.localeCompare(b.attacker.species));
 }

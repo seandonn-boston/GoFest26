@@ -1,8 +1,17 @@
 "use client";
 
 import { type PlannerSettings, isDefaultSettings } from "@/domain/settings";
+import { RESEARCH_LINES } from "@/data/research";
+import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { NumberInput } from "@/components/ui/NumberInput";
+import { Badge } from "@/components/ui/Badge";
+
+const RESEARCH_CURRENCY: Record<string, string> = {
+  candy: "Candy",
+  xlCandy: "XL Candy",
+  megaEnergy: "Mega Energy",
+};
 
 const REWARD_CASES: { id: PlannerSettings["rewardCase"]; label: string; hint: string }[] = [
   { id: "optimistic", label: "Best case", hint: "Plan for the highest reward rolls (fewest raids)." },
@@ -15,6 +24,8 @@ export function AssumptionsControls() {
   const settings = usePlannerStore((s) => s.settings);
   const setSettings = usePlannerStore((s) => s.setSettings);
   const resetSettings = usePlannerStore((s) => s.resetSettings);
+  const research = usePlannerStore((s) => s.research);
+  const setResearchEnabled = usePlannerStore((s) => s.setResearchEnabled);
   const isDefault = isDefaultSettings(settings);
 
   return (
@@ -159,6 +170,56 @@ export function AssumptionsControls() {
           </span>
         </span>
       </label>
+
+      {/* GO Fest research — credited toward goals, on by default */}
+      <div>
+        <div className="mb-1.5 text-sm text-slate-300">GO Fest research</div>
+        <p className="mb-2 text-xs text-slate-500">
+          Counts each line’s Candy / XL toward your goals (fewer raids needed). An{" "}
+          <span className="text-amber-300/90">estimate</span> from the Chicago in-person research (via
+          Serebii) — the free Global event hasn’t published its tasks yet.
+        </p>
+        <div className="space-y-2">
+          {RESEARCH_LINES.map((line) => {
+            const checked = !!research[line.id];
+            return (
+              <label
+                key={line.id}
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                  checked ? "border-gofest-accent2/60 bg-gofest-accent2/10" : "border-white/10 bg-white/5"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 accent-gofest-accent2"
+                  checked={checked}
+                  onChange={(e) => setResearchEnabled(line.id, e.target.checked)}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-semibold">{line.name}</span>
+                    <Badge className="uppercase">{line.kind}</Badge>
+                    {line.estimated ? <Badge className="border-amber-400/40 text-amber-200">est.</Badge> : null}
+                  </div>
+                  {line.rewards.length > 0 ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {line.rewards.map((r, i) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-black/40 px-2 py-0.5 text-[11px] text-emerald-200 ring-1 ring-white/10"
+                        >
+                          +{formatNumber(r.amount)} {r.label ?? RESEARCH_CURRENCY[r.currency]}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {line.note ? <p className="mt-1 text-[11px] text-slate-500">💡 {line.note}</p> : null}
+                </div>
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-500">Every edit updates the calculations live.</p>

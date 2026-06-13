@@ -3,7 +3,7 @@ import {
   counterBreakdown,
   counterSearchSpecies,
   effectiveness,
-  CATEGORY_ORDER,
+  COUNTER_CATEGORIES,
 } from "./counters";
 
 describe("effectiveness (dual-type product)", () => {
@@ -45,7 +45,7 @@ describe("counterBreakdown", () => {
 
   it("returns at most five picks per category, score-ordered", () => {
     const { groups } = counterBreakdown(["Psychic"]);
-    for (const cat of CATEGORY_ORDER) {
+    for (const cat of COUNTER_CATEGORIES) {
       expect(groups[cat].length).toBeLessThanOrEqual(5);
       const scores = groups[cat].map((c) => c.score);
       expect([...scores].sort((a, b) => b - a)).toEqual(scores);
@@ -58,10 +58,24 @@ describe("counterBreakdown", () => {
     const { weaknesses, groups } = counterBreakdown(["Normal"]);
     expect(weaknesses.map((w) => w.type)).toEqual(["Fighting"]);
     // Every pick must be super-effective via a Fighting move.
-    for (const cat of CATEGORY_ORDER) {
+    for (const cat of COUNTER_CATEGORIES) {
       for (const c of groups[cat]) expect(c.via).toBe("Fighting");
     }
     expect(groups.mega.length).toBeGreaterThan(0);
+  });
+});
+
+describe("counter categories (5-bucket split)", () => {
+  it("splits legendary shadows into shadowLegendary, keeping shadow & legendary clean", () => {
+    const { groups } = counterBreakdown(["Dragon"]);
+    const names = (cat: "shadow" | "shadowLegendary" | "legendary") => groups[cat].map((c) => c.attacker.name);
+    // Shadow Rayquaza (a Legendary's shadow) lands in shadowLegendary…
+    expect(names("shadowLegendary")).toContain("Shadow Rayquaza");
+    // …not in the plain Shadow bucket, which holds only non-legendary shadows.
+    expect(names("shadow")).not.toContain("Shadow Rayquaza");
+    expect(names("shadow").every((n) => n.startsWith("Shadow"))).toBe(true);
+    // The Legendary bucket never contains a Shadow form.
+    expect(names("legendary").some((n) => n.startsWith("Shadow"))).toBe(false);
   });
 });
 
