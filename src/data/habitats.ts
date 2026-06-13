@@ -35,11 +35,16 @@ export function habitatAt(day: EventDay, hour: number): Habitat | undefined {
 }
 
 /**
- * Featured wild-spawn types across a boss's habitat windows (deduped). Used to
- * flag mega candy-boosts that also help the hour's wild catches. All-weekend
- * bosses (Mega Mewtwo) span every block, so there's no single wild theme — they
- * return none.
+ * Which event days a boss is raidable on — both for all-weekend bosses (Mewtwo),
+ * otherwise the distinct days of its habitat windows. Used to split the counter
+ * and mega search strings into a Saturday list and a Sunday list.
  */
+export function bossDays(boss: RaidBoss): EventDay[] {
+  if (boss.allWeekend) return ["sat", "sun"];
+  const days = new Set<EventDay>();
+  for (const w of boss.windows) days.add(w.day);
+  return (["sat", "sun"] as EventDay[]).filter((d) => days.has(d));
+}
 export function wildTypesForBoss(boss: RaidBoss): string[] {
   if (boss.allWeekend) return [];
   const out = new Set<string>();
