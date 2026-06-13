@@ -3,6 +3,7 @@
 import type { PlanSummary } from "@/domain/types";
 import type { WeekendBlockPlan } from "@/domain";
 import { formatRange } from "@/lib/format";
+import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { Card } from "@/components/ui/Card";
 import { CapacityGauge } from "./CapacityGauge";
 import { PriorityRanker } from "./PriorityRanker";
@@ -10,6 +11,8 @@ import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
 
 export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
+  // Re-balance remote passes by priority while in auto mode (no-op once manual).
+  useRemoteAutoBalance(summary);
   const { capacity, remotePool } = summary;
   const hasGoals = summary.totalRaids.max > 0;
   // Max raids the gauge measures against = in-person weekend capacity + the
