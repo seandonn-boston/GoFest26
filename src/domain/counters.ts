@@ -10,10 +10,10 @@ const ALL_TYPES: PType[] = [
   "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy",
 ];
 
-// Standard type chart, from the attacker's perspective. SUPER = defender types
-// this attacking type is super-effective against; RESIST = types that resist it
-// (immunities folded in — in Pokémon GO an "immunity" is just a second-stage
-// resistance, which the dual-type product handles).
+// Pokémon GO type chart, from the attacker's perspective. SUPER = defender
+// types this attacking type is super-effective against; RESIST = types that
+// resist it. The eight main-series immunities are handled separately (see
+// IMMUNE below) as double resistances, since PoGo has no true immunities.
 const SUPER: Record<PType, PType[]> = {
   Normal: [],
   Fire: ["Grass", "Ice", "Bug", "Steel"],
@@ -57,11 +57,29 @@ const RESIST: Record<PType, PType[]> = {
 };
 
 const SE = 1.6;
-const NVE = 0.625;
+const NVE = 0.625; // 1 / 1.6
+const DOUBLE_NVE = 0.390625; // 1 / 1.6²  — Pokémon GO's stand-in for a main-series immunity
 
-/** Effectiveness of one attacking type against one defending type. */
+// Pokémon GO has NO immunities: every type can damage every other type. The
+// eight main-series immunities are instead doubly-resisted (0.390625×). Listing
+// them separately keeps the resistances above true single-resists (0.625×) and
+// makes dual-type products (e.g. Ground vs a Steel/Flying boss) accurate.
+const IMMUNE: Record<PType, PType[]> = {
+  Normal: ["Ghost"],
+  Fighting: ["Ghost"],
+  Ground: ["Flying"],
+  Electric: ["Ground"],
+  Psychic: ["Dark"],
+  Ghost: ["Normal"],
+  Dragon: ["Fairy"],
+  Poison: ["Steel"],
+  Fire: [], Water: [], Grass: [], Ice: [], Flying: [], Bug: [], Rock: [], Dark: [], Steel: [], Fairy: [],
+};
+
+/** Effectiveness of one attacking type against one defending type (Pokémon GO). */
 function singleMult(atk: PType, def: PType): number {
   if (SUPER[atk].includes(def)) return SE;
+  if (IMMUNE[atk].includes(def)) return DOUBLE_NVE;
   if (RESIST[atk].includes(def)) return NVE;
   return 1;
 }
