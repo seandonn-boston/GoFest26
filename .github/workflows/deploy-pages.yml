@@ -50,6 +50,13 @@ jobs:
 
       - run: npm ci
 
+      # Gate the deploy on green types + tests so a broken plan never ships.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
       - name: Build static export
         env:
           GITHUB_PAGES: "true"

@@ -35,3 +35,14 @@ export function buildSearchString(names: string[]): string {
   }
   return out.join(", ");
 }
+
+/**
+ * Mega-evolution search string: a comma-joined ("or") species list with
+ * `& mega3` appended so Pokémon GO surfaces only your Mega-Level-3 specimens of
+ * those species (the level that grants the same-type Candy XL boost). Species
+ * names only — no forms, types, or pre-evolutions.
+ */
+export function buildMegaSearchString(species: string[]): string {
+  const list = buildSearchString(species);
+  return list ? `${list} & mega3` : "";
+}

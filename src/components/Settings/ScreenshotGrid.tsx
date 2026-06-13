@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { ImportedShot } from "@/store/usePlannerStore";
+import { useDialog } from "@/hooks/useDialog";
 
 /** How an imported screenshot reads against the event roster. */
 export type ShotStatus = "viable" | "duplicate" | "unreadable" | "unavailable";
@@ -30,18 +31,8 @@ export function ScreenshotGrid({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = shots.find((s) => s.id === openId) ?? null;
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenId(null);
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  const close = useCallback(() => setOpenId(null), []);
+  const dialogRef = useDialog<HTMLDivElement>(open !== null, close);
 
   if (!shots.length) return null;
 
@@ -86,10 +77,12 @@ export function ScreenshotGrid({
 
       {open ? (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex cursor-zoom-out flex-col items-center justify-center gap-3 bg-black/85 p-4"
           onClick={() => setOpenId(null)}
           role="dialog"
           aria-modal="true"
+          aria-label={`Screenshot preview: ${open.fileName}`}
         >
           <button
             type="button"

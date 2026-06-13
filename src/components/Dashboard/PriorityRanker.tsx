@@ -69,6 +69,16 @@ export function PriorityRanker() {
     setDragId(null);
   }
 
+  // Keyboard reordering: Arrow Up/Down on a focused grip moves that row.
+  function move(id: string, dir: -1 | 1) {
+    const idx = committed.indexOf(id);
+    const to = idx + dir;
+    if (idx < 0 || to < 0 || to >= committed.length) return;
+    const next = [...committed];
+    [next[idx], next[to]] = [next[to], next[idx]];
+    setPriorityOrder(next);
+  }
+
   return (
     <div className="mt-4">
       <div className="mb-1.5 flex items-baseline justify-between">
@@ -94,9 +104,19 @@ export function PriorityRanker() {
             >
               <span
                 role="button"
-                aria-label={`Drag ${boss.name} to reorder`}
+                tabIndex={0}
+                aria-label={`Reorder ${boss.name} — drag, or focus and press Arrow Up / Arrow Down`}
                 onPointerDown={(e) => startDrag(e, id)}
-                className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center text-slate-500 active:cursor-grabbing"
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    move(id, -1);
+                  } else if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    move(id, 1);
+                  }
+                }}
+                className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
               >
                 ⠿
               </span>

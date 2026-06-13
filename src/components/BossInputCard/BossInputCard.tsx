@@ -4,6 +4,8 @@ import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability, bossWindowSlots } from "@/data";
+import { wildTypesForBoss } from "@/data/habitats";
+import { megaBoostsForBoss } from "@/domain";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
@@ -12,6 +14,7 @@ import { CyberTitle } from "@/components/ui/CyberTitle";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
+import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
@@ -60,6 +63,7 @@ export function BossInputCard({
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
   const windowSlots = bossWindowSlots(boss, planningRaidsPerHour);
+  const megaBoosts = megaBoostsForBoss(boss.types ?? [], wildTypesForBoss(boss));
   const overWindow = result.raids.min > windowSlots && windowSlots > 0;
   const needEntries = Object.entries(result.needs) as [Currency, { needed: number; raidsRange: { min: number; max: number } }][];
 
@@ -195,6 +199,23 @@ export function BossInputCard({
 
       {/* Best raid counters for this boss's typing. */}
       <CounterTable types={boss.types} />
+
+      {/* Mega to Mega-Evolve for the same-type Candy XL boost on this boss. */}
+      {megaBoosts.length > 0 ? (
+        <div className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5">
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+              Mega-evolve for candy
+            </span>
+            <MegaBoostLegend />
+          </div>
+          <MegaBoostRow boosts={megaBoosts} max={8} />
+          <p className="mt-1.5 text-[10px] text-slate-500">
+            Evolve one (Mega Level 3) before battling — its type matches {boss.name}, so every raid &amp;
+            wild catch drops bonus Candy XL. Only one mega counts at a time.
+          </p>
+        </div>
+      ) : null}
 
       {/* Max out more than one — every requirement scales with the count. */}
       <div className="mt-2">

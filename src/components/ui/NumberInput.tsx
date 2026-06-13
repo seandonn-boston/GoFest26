@@ -38,7 +38,10 @@ export function NumberInput({
   function commit(raw: string) {
     if (raw === "") return; // allow empty while editing; don't propagate yet
     const n = Number(raw);
-    if (Number.isFinite(n)) onChange(clamp(n, min, upper));
+    // Only propagate values already in range while typing — never clamp mid-edit
+    // (that snaps a cleared `min: 1` field's first digit up, or caps a number you
+    // haven't finished typing). Out-of-range input is clamped once, on blur.
+    if (Number.isFinite(n) && n >= min && n <= upper) onChange(n);
   }
 
   return (

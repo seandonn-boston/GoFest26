@@ -3,7 +3,20 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { warmupOcr } from "@/lib/ocrEngine";
+import { allSpriteUrls } from "@/data/pokemonSprites";
 import { lockBodyScroll } from "@/lib/scrollLock";
+
+/** Warm the browser cache with every Pokémon icon so search-string sprites and
+ *  cards render instantly (and broken hotlinks surface their fallback) once the
+ *  loading screen lifts. Best-effort — failures are silent. */
+function warmSprites() {
+  if (typeof window === "undefined") return;
+  for (const url of allSpriteUrls()) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = url;
+  }
+}
 
 // The WebGL battle scene is client-only; load it lazily with a quiet fallback.
 const SubstituteScreen = dynamic(() => import("./SubstituteLoaderScreen"), {
@@ -27,8 +40,10 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Use the loader's screen time to pull down the OCR engine (script, WASM
-    // core, LSTM weights) so the first screenshot scan starts instantly.
+    // core, LSTM weights) so the first screenshot scan starts instantly, and to
+    // warm every Pokémon sprite the plan will reference.
     warmupOcr();
+    warmSprites();
     return () => {
       if (veilTimer.current) clearTimeout(veilTimer.current);
     };

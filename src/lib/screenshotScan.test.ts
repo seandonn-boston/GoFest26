@@ -816,8 +816,8 @@ describe("energyForBosses (species-aware association)", () => {
 
   it("a single boss takes the energy matching its species, not the first", () => {
     const energies = [
-      { value: 60, species: "gallade", kind: "mega" },
-      { value: 80, species: "gardevoir", kind: "mega" },
+      { value: 60, species: "gallade", kind: "mega" as const },
+      { value: 80, species: "gardevoir", kind: "mega" as const },
     ];
     expect(energyForBosses(energies, [{ name: "Mega Gardevoir" }])).toEqual([80]);
   });

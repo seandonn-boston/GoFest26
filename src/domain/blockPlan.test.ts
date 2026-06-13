@@ -293,6 +293,30 @@ describe("autoRemoteAllocations", () => {
   });
 });
 
+describe("Mewtwo Y-only leveling", () => {
+  it("places Sunday-only Mewtwo Y's shared XL/Candy leveling raids, not just its energy", () => {
+    const y = getBoss(MEWTWO_Y_ID)!;
+    const base: BossInput = {
+      ...makeDefaultInput(y),
+      selected: true,
+      current: { candy: 0, xlCandy: 0, megaEnergy: 0, level: 40, megaLevel: 0 },
+      target: { level: 40, megaLevel: 1 }, // energy only, no leveling
+    };
+    const leveling: BossInput = { ...base, target: { level: 50, megaLevel: 1 } }; // + big XL goal
+    const mewtwoRaids = (inp: BossInput) => {
+      const res = computeBossResult(y, inp);
+      const plan = computeBlockPlan([inp], [res], ROOMY, DEFAULT_SETTINGS, []);
+      return plan.blocks.reduce(
+        (sum, b) => sum + b.species.filter((s) => s.mewtwo).reduce((t, s) => t + s.raids, 0),
+        0,
+      );
+    };
+    // The leveling goal must add raids beyond the energy-only baseline (it didn't
+    // before the fix — Y-only leveling demand was dropped entirely).
+    expect(mewtwoRaids(leveling)).toBeGreaterThan(mewtwoRaids(base));
+  });
+});
+
 it("HABITATS has the six blocks the plan iterates", () => {
   expect(HABITATS).toHaveLength(6);
   expect(HABITATS.filter((h) => h.day === "sat")).toHaveLength(3);
