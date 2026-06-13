@@ -83,10 +83,8 @@ export function MewtwoCard({
           <span className="text-[10px] leading-none">✦</span>
           <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
         </div>
-        <MewtwoTitle />
-        <div className="mb-1 mt-1 flex items-center justify-center gap-2">
-          <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={36} />
-          <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={36} />
+        <MewtwoTitle spriteX={bossX.sprite} spriteY={bossY.sprite} />
+        <div className="mb-1 mt-1.5 flex justify-center">
           <TierBadge tier="super-mega" />
         </div>
         <p className="mb-3 text-xs text-slate-400">
