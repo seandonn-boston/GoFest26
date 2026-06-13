@@ -22,11 +22,12 @@ describe("tileTitle", () => {
   it("abbreviates single parenthetical Formes", () => {
     expect(t("giratina-altered", "Giratina (Altered)")).toBe("Giratina A");
     expect(t("giratina-origin", "Giratina (Origin)")).toBe("Giratina O");
+    expect(t("tornadus-incarnate", "Tornadus (Incarnate)")).toBe("Tornadus I");
+    expect(t("landorus-therian", "Landorus (Therian)")).toBe("Landorus T");
   });
 
   it("abbreviates combined Formes with a slash", () => {
-    expect(t("tornadus", "Tornadus (Incarnate & Therian)")).toBe("Tornadus I/T");
-    expect(t("thundurus", "Thundurus (Incarnate & Therian)")).toBe("Thundurus I/T");
+    expect(t("genie", "Genie (Incarnate & Therian)")).toBe("Genie I/T");
   });
 
   it("drops the '(all …)' qualifier", () => {
