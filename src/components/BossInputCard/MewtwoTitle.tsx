@@ -16,7 +16,7 @@ const SPRITE = 97; // ~110% of the X/Y height (px)
  */
 export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: string }) {
   return (
-    <div className="mx-auto flex max-w-[350px] -translate-x-2 items-center justify-center">
+    <div className="mx-auto flex max-w-[350px] items-center justify-center">
       <span className="relative z-20 -mr-3 translate-x-3.5 shrink-0 [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]">
         <Sprite src={spriteX} alt="Mega Mewtwo X" size={SPRITE} />
       </span>
