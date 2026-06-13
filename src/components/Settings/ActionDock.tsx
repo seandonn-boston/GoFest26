@@ -79,14 +79,18 @@ export function ActionDock() {
       {/* Speed-dial scrim */}
       {open ? <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" /> : null}
 
-      {/* FAB + speed-dial (hidden while a sheet is open) */}
+      {/* FAB + speed-dial (hidden while a sheet is open). The container is
+          click-through (pointer-events-none): it reserves the open menu's
+          vertical space even while collapsed (items stay mounted for the exit
+          animation), so it must not capture taps over the tiles behind it —
+          only its buttons re-enable pointer events. */}
       {panel === null ? (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+        <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
           {items.map((a, i) => (
             <div
               key={a.id}
               className={`flex items-center gap-2.5 transition-all duration-200 ${
-                open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+                open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
               }`}
               style={{ transitionDelay: `${open ? (items.length - 1 - i) * 40 : 0}ms` }}
             >
@@ -107,7 +111,7 @@ export function ActionDock() {
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
-            className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+            className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
           >
             {/* Two-line hamburger → X. Each line spins 225° (top left, bottom
                 right) while sliding to the exact vertical center; closing
