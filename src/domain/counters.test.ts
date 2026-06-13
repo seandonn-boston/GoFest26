@@ -16,6 +16,18 @@ describe("effectiveness (dual-type product)", () => {
     // Fighting is SE on Normal but resisted by Fairy → neutral on Normal/Fairy.
     expect(effectiveness("Fighting", ["Normal", "Fairy"])).toBeCloseTo(1.0);
   });
+
+  it("models Pokémon GO double-resistances, not main-series immunities", () => {
+    // No type does zero damage in PoGo: former immunities are 0.390625×.
+    expect(effectiveness("Normal", ["Ghost"])).toBeCloseTo(0.390625);
+    expect(effectiveness("Ground", ["Flying"])).toBeCloseTo(0.390625);
+    expect(effectiveness("Psychic", ["Dark"])).toBeCloseTo(0.390625);
+    // A real single-resist stays at 0.625×, distinctly above the double-resist.
+    expect(effectiveness("Fire", ["Water"])).toBeCloseTo(0.625);
+    // Dual: Ground SE on Steel but doubly-resisted by Flying (Skarmory-like).
+    // Main series would be 0 (immune); PoGo is 1.6 × 0.390625 = 0.625.
+    expect(effectiveness("Ground", ["Steel", "Flying"])).toBeCloseTo(0.625);
+  });
 });
 
 describe("counterBreakdown", () => {
