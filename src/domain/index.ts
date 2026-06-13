@@ -3,7 +3,7 @@ import { addRange, midpoint, ZERO_RANGE } from "@/lib/math";
 import { computeCapacity } from "./capacity";
 import { computeBossResult } from "./raidsNeeded";
 import { computeSchedule } from "./scheduler";
-import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, type PlannerSettings } from "./settings";
+import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, PlanSummary, Range } from "./types";
 
 export * from "./types";
@@ -49,7 +49,7 @@ export function computePlanSummary(
   // user's per-species remote allocations, capped at the 60-pass budget.
   const remotePool = settings.useRemoteRaids
     ? Math.min(
-        MAX_REMOTE_RAIDS,
+        settings.remoteRaidBudget,
         Object.values(remoteAllocations).reduce((s, n) => s + Math.max(0, Math.round(n || 0)), 0),
       )
     : 0;

@@ -267,6 +267,20 @@ describe("autoRemoteAllocations", () => {
     expect(Object.keys(auto)).toHaveLength(0);
   });
 
+  it("honors a custom remote-raid budget", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }]; // far over its window
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: 20 };
+    const plan = computeBlockPlan(inputs, results, ROOMY, settings, []);
+    const auto = autoRemoteAllocations(plan, inputs, results, settings, []);
+    const total = Object.values(auto).reduce((s, n) => s + n, 0);
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBeLessThanOrEqual(20); // never exceeds the custom budget
+    const withRemote = computeBlockPlan(inputs, results, ROOMY, settings, [], auto);
+    expect(withRemote.remote?.capacity).toBe(20); // pool bar measures against the budget
+  });
+
   it("re-flows the capped budget to whichever target is higher priority", () => {
     // Two local bosses sharing one habitat block, each pushed far over its window
     // so the 60-pass pool (not their windows) is the binding constraint. Whoever

@@ -32,12 +32,17 @@ export interface PlannerSettings {
   fridayRemoteRaids: boolean;
   /** The user plans to use Remote Raid Passes (a pool of extra, non-time-blocked raids). */
   useRemoteRaids: boolean;
+  /** How many Remote Raid Passes the user plans to spend in total (the pool size). */
+  remoteRaidBudget: number;
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
 }
 
-/** Hard ceiling on planned remote raids: Fri 10 + Sat&Sun 40 + Mon 10 (timezone-dependent). */
+/** Default planned remote raids: Fri 10 + Sat&Sun 40 + Mon 10 (timezone-dependent). */
 export const MAX_REMOTE_RAIDS = 60;
+
+/** Upper bound the user can set their remote-raid budget to. */
+export const MAX_REMOTE_BUDGET = 150;
 
 /** Per-species remote cap — one day's bosses fit ~50 remotes; Mewtwo (both days) the full 60. */
 export const MAX_REMOTE_PER_SPECIES = 50;
@@ -53,6 +58,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   remotePassesPerDay: GAME_CONFIG.passes.remotePerDay,
   fridayRemoteRaids: false,
   useRemoteRaids: false,
+  remoteRaidBudget: MAX_REMOTE_RAIDS,
   region: DEFAULT_REGION,
 };
 
@@ -68,7 +74,8 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.quickCatch === DEFAULT_SETTINGS.quickCatch &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     s.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
-    s.fridayRemoteRaids === DEFAULT_SETTINGS.fridayRemoteRaids
+    s.fridayRemoteRaids === DEFAULT_SETTINGS.fridayRemoteRaids &&
+    s.remoteRaidBudget === DEFAULT_SETTINGS.remoteRaidBudget
   );
 }
 

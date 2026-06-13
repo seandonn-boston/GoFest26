@@ -18,7 +18,7 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS } from "@/data/habitats";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
-import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
+import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, RaidBoss, Range } from "./types";
 
 export type RiskBand = "blue" | "green" | "yellow" | "red";
@@ -351,7 +351,7 @@ export function computeBlockPlan(
   // 4. Remote-raid pool (opt-in): the per-species counts the user assigned, shown
   //    against the 60-pass budget. These already reduced the block demand above.
   const remote = settings.useRemoteRaids
-    ? computeRemotePlan(inputs, resultById, rewardCase, priorityOf, remoteAllocations)
+    ? computeRemotePlan(inputs, resultById, rewardCase, priorityOf, remoteAllocations, settings.remoteRaidBudget)
     : undefined;
 
   return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };
@@ -462,10 +462,10 @@ export function autoRemoteAllocations(
     });
 
   const out: Record<string, number> = {};
-  let budget = MAX_REMOTE_RAIDS;
+  let budget = settings.remoteRaidBudget;
   for (const n of needs) {
     if (budget <= 0) break;
-    const cap = n.mewtwo ? MAX_REMOTE_RAIDS : MAX_REMOTE_PER_SPECIES;
+    const cap = n.mewtwo ? settings.remoteRaidBudget : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
     const give = Math.min(n.need, cap, budget);
     if (give > 0) {
       out[n.id] = give;
@@ -486,6 +486,7 @@ function computeRemotePlan(
   rewardCase: PlannerSettings["rewardCase"],
   priorityOf: (id: string) => number,
   remoteAllocations: Record<string, number>,
+  budget: number,
 ): RemotePlan | undefined {
   const shares: RawShare[] = [];
   for (const input of inputs) {
@@ -510,5 +511,5 @@ function computeRemotePlan(
   }
   if (!shares.length) return undefined;
   const ordered = orderByPriority(shares, priorityOf);
-  return { capacity: MAX_REMOTE_RAIDS, ...fillShares(ordered, { min: MAX_REMOTE_RAIDS, max: MAX_REMOTE_RAIDS }) };
+  return { capacity: budget, ...fillShares(ordered, { min: budget, max: budget }) };
 }

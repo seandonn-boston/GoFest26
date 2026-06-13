@@ -4,12 +4,11 @@ import { useMemo, useState } from "react";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss } from "@/data";
 import { habitatAt } from "@/data/habitats";
-import { speciesIconUrl } from "@/data/pokemonSprites";
+import { TYPE_COLORS } from "@/data/typeVisuals";
 import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
-import { counterSearchSpecies } from "@/domain/counters";
+import { topCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
-import { MAX_REMOTE_RAIDS } from "@/domain/settings";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -61,6 +60,7 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
   const boss = getBoss(share.bossId);
   const types = boss?.types ?? [];
+  const counters = useMemo(() => topCounters(types), [types]);
   const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);
 
   const g = share.range.min; // best case
@@ -98,6 +98,20 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
         ) : null}
       </div>
 
+      {/* Best raid attackers against this boss (tinted by the move type that wins). */}
+      {counters.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-[36px] text-[11px] leading-relaxed">
+          <span className="mr-0.5 font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
+          {counters.map((c, i) => (
+            <span key={c.attacker.name}>
+              {i > 0 ? <span className="text-slate-600"> · </span> : null}
+              <span style={{ color: TYPE_COLORS[c.via.toLowerCase()] }}>{c.attacker.name}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Boss typing + the megas worth evolving for its candy. */}
       {types.length > 0 || boosts.length > 0 ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]">
           {types.map((t) => (
@@ -119,14 +133,14 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   const over = block.remaining > 0;
   const wildTypes = habitatAt(block.day, block.startHour)?.types ?? [];
 
-  // Counter + mega-evolve search strings for this hour-block's roster. Keyed on
-  // the species set + wild theme so they only recompute when the block changes.
+  // Mega-evolve search string for this hour-block's roster (counters now live
+  // per-boss inside the accordion). Keyed on the species set + wild theme so it
+  // only recomputes when the block changes.
   const memoKey = `${block.species.map((s) => s.bossId).join(",")}|${wildTypes.join(",")}`;
-  const { counterSpecies, megaSearch, megaItems } = useMemo(() => {
+  const { megaSearch, megaItems } = useMemo(() => {
     const bossTypes = block.species.map((s) => getBoss(s.bossId)?.types ?? []).filter((t) => t.length > 0);
     const boosts = blockMegaBoosts(wildTypes, bossTypes);
     return {
-      counterSpecies: counterSearchSpecies(bossTypes),
       megaSearch: buildMegaSearchString(megaBoostSpecies(boosts)),
       megaItems: boosts.map((b) => ({ key: b.mega.name, label: b.mega.name, sprite: b.mega.sprite, ring: MEGA_KIND_RING[b.kind] })),
     };
@@ -170,20 +184,11 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         </div>
       ) : null}
 
-      {/* Copyable search strings for the hour-block — kept visible whether the
-          block is expanded or collapsed (mega options vary block to block). */}
-      {counterSpecies.length > 0 || megaSearch ? (
-        <div className="space-y-2 border-t border-white/10 px-2.5 py-2">
-          {counterSpecies.length > 0 ? (
-            <CopyableSearchString
-              label={`Counters · ${block.name}`}
-              search={counterSpecies.join(", ")}
-              items={counterSpecies.map((s) => ({ key: s, label: s, sprite: speciesIconUrl(s) }))}
-            />
-          ) : null}
-          {megaSearch ? (
-            <CopyableSearchString label={`Mega-evolve · ${block.name}`} accent="text-purple-300" search={megaSearch} items={megaItems} />
-          ) : null}
+      {/* Mega-evolve search string for the hour-block — kept visible whether the
+          block is expanded or collapsed (the best mega varies block to block). */}
+      {megaSearch ? (
+        <div className="border-t border-white/10 px-2.5 py-2">
+          <CopyableSearchString label={`Mega-evolve · ${block.name}`} accent="text-purple-300" search={megaSearch} items={megaItems} />
         </div>
       ) : null}
     </div>
@@ -193,14 +198,15 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
 /** Remote-raid section: the assigned passes as a bar (top), then the per-species
  *  allocation inputs (the user types how many of each to do remotely). */
 function RemoteSection({ remote }: { remote?: RemotePlan }) {
-  const free = remote ? Math.max(0, remote.capacity - remote.fitted) : MAX_REMOTE_RAIDS;
+  const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
+  const free = remote ? Math.max(0, remote.capacity - remote.fitted) : budget;
   const over = !!remote && remote.remaining > 0;
   return (
     <div className="rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.04] px-2.5 py-2">
       <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
         <span className="font-medium text-gofest-accent">Remote raids</span>
         <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {remote?.fitted ?? 0}/{MAX_REMOTE_RAIDS} passes
+          {remote?.fitted ?? 0}/{budget} passes
           {over ? ` · ${remote!.remaining} over` : free > 0 ? ` · ${free} spare` : " · full"}
         </span>
       </div>

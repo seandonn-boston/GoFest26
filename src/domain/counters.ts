@@ -158,6 +158,26 @@ export function counterBreakdown(types: string[]): CounterBreakdown {
   return { weaknesses, groups };
 }
 
+/**
+ * The single best raid attackers against a boss, across all categories, deduped
+ * to one entry per species (the highest-scoring form wins) and score-ordered.
+ * For a compact "best counters" list where the four-category split is too much.
+ */
+export function topCounters(types: string[], n = 6): ScoredCounter[] {
+  const { groups } = counterBreakdown(types);
+  const all = CATEGORY_ORDER.flatMap((c) => groups[c]).sort((a, b) => b.score - a.score);
+  const seen = new Set<string>();
+  const out: ScoredCounter[] = [];
+  for (const c of all) {
+    const key = c.attacker.species.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
 /** All counter species (deduped, final-evolution names) across a set of bosses. */
 export function counterSearchSpecies(bossTypes: string[][]): string[] {
   const seen = new Set<string>();
