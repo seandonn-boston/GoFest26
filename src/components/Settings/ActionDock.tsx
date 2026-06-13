@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useTiltStore } from "@/store/useTiltStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useDialog } from "@/hooks/useDialog";
 import { AssumptionsControls } from "./AssumptionsControls";
 import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
@@ -48,6 +49,8 @@ export function ActionDock() {
     setPanel(id);
     setOpen(false);
   };
+  const closePanel = useCallback(() => setPanel(null), []);
+  const sheetRef = useDialog<HTMLDivElement>(panel !== null, closePanel);
 
   // Rendered top → bottom; the last sits nearest the main FAB. The motion-tilt
   // opt-in only makes sense on a phone/tablet with a real orientation sensor.
@@ -141,9 +144,15 @@ export function ActionDock() {
             onClick={() => setPanel(null)}
             aria-hidden="true"
           />
-          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-3xl rounded-t-2xl border-2 border-b-0 border-white/15 bg-gofest-panel shadow-brutal">
+          <div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="action-dock-title"
+            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-3xl rounded-t-2xl border-2 border-b-0 border-white/15 bg-gofest-panel shadow-brutal"
+          >
             <div className="flex items-center justify-between border-b-2 border-white/10 px-4 py-3">
-              <h2 className="font-mono text-sm font-extrabold uppercase tracking-widest text-gofest-acid">
+              <h2 id="action-dock-title" className="font-mono text-sm font-extrabold uppercase tracking-widest text-gofest-acid">
                 {TITLES[panel]}
               </h2>
               <button

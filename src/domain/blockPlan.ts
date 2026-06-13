@@ -284,8 +284,12 @@ export function computeBlockPlan(
   const sunEnergy = ySel ? sized(yRes?.needs.megaEnergy?.raidsRange, rewardCase) : 0;
   // Each Mewtwo raid yields both Candy and XL, so the shared leveling demands the
   // larger of the two; the part beyond the day-locked energy raids is flexible.
-  const sharedLevel = xSel
-    ? Math.max(sized(xRes?.needs.xlCandy?.raidsRange, rewardCase), sized(xRes?.needs.candy?.raidsRange, rewardCase))
+  // The shared Candy/XL/level lives on whichever form owns it (X when selected,
+  // else Y), so read leveling from that form — otherwise a Sunday-only Mewtwo Y
+  // would drop its entire leveling demand.
+  const levelRes = xSel ? xRes : yRes;
+  const sharedLevel = (xSel || ySel)
+    ? Math.max(sized(levelRes?.needs.xlCandy?.raidsRange, rewardCase), sized(levelRes?.needs.candy?.raidsRange, rewardCase))
     : 0;
   const fluidNeed = Math.max(0, sharedLevel - satEnergy - sunEnergy);
 

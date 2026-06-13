@@ -15,7 +15,8 @@ const TIER_KEYS: TierKey[] = ["superMega", "mega", "fiveStar"];
 export function tierBattleSeconds(tier: TierKey, settings: PlannerSettings): number {
   const cfg = GAME_CONFIG.capacity.battle[tier];
   const lobby = clamp(settings.lobbySize ?? 20, cfg.minRaiders, 20);
-  const frac = (lobby - cfg.minRaiders) / (20 - cfg.minRaiders); // 0 at min, 1 at 20
+  const span = 20 - cfg.minRaiders;
+  const frac = span > 0 ? (lobby - cfg.minRaiders) / span : 0; // 0 at min, 1 at 20 (guard /0)
   let sec = cfg.minSec + (cfg.fullSec - cfg.minSec) * frac;
 
   if (settings.partyPlay) {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { lockBodyScroll } from "@/lib/scrollLock";
+import { useCallback, useState } from "react";
+import { useDialog } from "@/hooks/useDialog";
 
 /**
  * A small clickable screenshot thumbnail. Tapping it opens a full-screen
@@ -10,18 +10,9 @@ import { lockBodyScroll } from "@/lib/scrollLock";
  */
 export function ImageThumb({ src, alt, size = 48 }: { src: string; alt: string; size?: number }) {
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKey);
-    // Lock background scroll while the lightbox is open (iOS-safe).
-    const unlock = lockBodyScroll();
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      unlock();
-    };
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  // Escape, focus-trap, scroll-lock, and focus-restore for the lightbox.
+  const dialogRef = useDialog<HTMLDivElement>(open, close);
 
   return (
     <>
@@ -38,10 +29,12 @@ export function ImageThumb({ src, alt, size = 48 }: { src: string; alt: string; 
 
       {open ? (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/85 p-4"
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
+          aria-label={alt}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

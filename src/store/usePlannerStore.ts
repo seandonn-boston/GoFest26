@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getBoss, SORTED_BOSSES } from "@/data";
+import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
-import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
+import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 
@@ -150,6 +150,14 @@ interface PlannerState {
   resetAll: () => void;
 }
 
+// Per-species remote cap: Mewtwo is up both days (full 60-pass budget), every
+// other species is one day's worth (50). Clamp here so no write path — manual,
+// auto-balance, or a corrupted persisted map — can exceed it.
+function clampRemote(bossId: string, value: number): number {
+  const cap = bossId === MEWTWO_X_ID || bossId === MEWTWO_Y_ID ? MAX_REMOTE_RAIDS : MAX_REMOTE_PER_SPECIES;
+  return Math.max(0, Math.min(cap, Number.isFinite(value) ? Math.round(value) : 0));
+}
+
 function ensureInput(state: PlannerState, bossId: string): BossInput | null {
   const existing = state.inputs[bossId];
   if (existing) return existing;
@@ -193,12 +201,16 @@ export const usePlannerStore = create<PlannerState>()(
 
       setRemoteAllocation: (bossId, value) =>
         set((state) => {
-          const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
           // A manual edit takes over from auto-balance so the user's tweaks stick.
-          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: safe }, remoteAuto: false };
+          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: clampRemote(bossId, value) }, remoteAuto: false };
         }),
 
-      setRemoteAllocations: (map) => set({ remoteAllocations: { ...map } }),
+      setRemoteAllocations: (map) =>
+        set(() => {
+          const clamped: Record<string, number> = {};
+          for (const id in map) clamped[id] = clampRemote(id, map[id]);
+          return { remoteAllocations: clamped };
+        }),
 
       setRemoteAuto: (on) => set({ remoteAuto: on }),
 

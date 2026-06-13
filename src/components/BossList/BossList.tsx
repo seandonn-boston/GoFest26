@@ -6,6 +6,7 @@ import { bossIsLocal } from "@/domain/region";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
+import { TypeIcon } from "@/components/ui/TypeIcon";
 import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
 
@@ -59,7 +60,12 @@ export function BossList() {
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
               <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
-              <span className="ml-1 hidden normal-case text-slate-500 sm:inline">({habitat.types.join("/")})</span>
+              <span className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5" title={`Featured wild spawns: ${habitat.types.join(", ")}`}>
+                <span aria-hidden className="text-slate-600">–</span>
+                {habitat.types.map((t) => (
+                  <TypeIcon key={t} type={t} size={14} />
+                ))}
+              </span>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {bosses.map((boss) => (

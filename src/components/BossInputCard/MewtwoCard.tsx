@@ -7,8 +7,10 @@ import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
+import { megaBoostsForBoss } from "@/domain";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotScan";
@@ -302,6 +304,24 @@ function FormColumn({
       </div>
 
       <CounterTable types={types} />
+
+      {(() => {
+        const boosts = megaBoostsForBoss(types ?? []);
+        return boosts.length > 0 ? (
+          <div className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5">
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+                Mega-evolve for candy
+              </span>
+              <MegaBoostLegend />
+            </div>
+            <MegaBoostRow boosts={boosts} max={8} />
+            <p className="mt-1.5 text-[10px] text-slate-500">
+              Same-type as {title} — evolve one (Mega Level 3) before battling for bonus Candy XL.
+            </p>
+          </div>
+        ) : null;
+      })()}
     </div>
   );
 }

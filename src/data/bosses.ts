@@ -783,7 +783,7 @@ const ROSTER: RaidBoss[] = [
 
 // Pokémon GO sprite icon filenames (Leek Duck CDN). Collapsed multi-form groups
 // use their default/representative form's icon.
-const SPRITE_BASE = "https://cdn.leekduck.com/assets/img/pokemon_icons/";
+export const SPRITE_BASE = "https://cdn.leekduck.com/assets/img/pokemon_icons/";
 const SPRITES: Record<string, string> = {
   "mega-mewtwo-x": "pm150.fMEGA_X.icon.png",
   "mega-mewtwo-y": "pm150.fMEGA_Y.icon.png",

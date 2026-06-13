@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss } from "@/data";
-import { RISK_BANDS, rareCandyForecast } from "@/domain";
+import { habitatAt } from "@/data/habitats";
+import { speciesIconUrl } from "@/data/pokemonSprites";
+import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
+import { counterSearchSpecies } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
 import { MAX_REMOTE_RAIDS } from "@/domain/settings";
+import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
+import { TypeIcon } from "@/components/ui/TypeIcon";
+import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
+import { MegaBoostRow, MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
 
@@ -47,11 +54,14 @@ function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, n
   );
 }
 
-/** One species' target: completed (editable) / best · avg · worst raid counts. */
-function TargetCard({ share, dkey }: { share: BlockSpeciesShare; dkey: string }) {
+/** One species' target: completed (editable) / best · avg · worst raid counts,
+ *  with the boss's types + the megas worth evolving for its candy underneath. */
+function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey: string; wildTypes: string[] }) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
   const boss = getBoss(share.bossId);
+  const types = boss?.types ?? [];
+  const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);
 
   const g = share.range.min; // best case
   const r = share.range.max; // worst case
@@ -59,31 +69,45 @@ function TargetCard({ share, dkey }: { share: BlockSpeciesShare; dkey: string })
   const goalPct = share.raids > 0 ? Math.round((share.fitted / share.raids) * 100) : 100;
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5">
-      <Sprite src={boss?.sprite} alt={share.bossName} size={28} />
-      <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
+    <div className="rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5">
+      <div className="flex items-center gap-2">
+        <Sprite src={boss?.sprite} alt={share.bossName} size={28} />
+        <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
 
-      <div className="flex items-center gap-1 font-mono text-sm font-bold">
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={String(done)}
-          onFocus={(e) => e.target.select()}
-          onChange={(e) => setRaidsDone(dkey, Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
-          aria-label={`Raids completed for ${share.bossName}`}
-          className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
-        />
-        <span className="text-slate-500">/</span>
-        <span className="text-emerald-400" title="Best case (fewest raids)">{g}</span>
-        <span className="text-amber-400" title="Average">{y}</span>
-        <span className="text-rose-400" title="Worst case (most raids)">{r}</span>
+        <div className="flex items-center gap-1 font-mono text-sm font-bold">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={String(done)}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setRaidsDone(dkey, Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
+            aria-label={`Raids completed for ${share.bossName}`}
+            className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
+          />
+          <span className="text-slate-500">/</span>
+          <span className="text-emerald-400" title="Best case (fewest raids)">{g}</span>
+          <span className="text-amber-400" title="Average">{y}</span>
+          <span className="text-rose-400" title="Worst case (most raids)">{r}</span>
+        </div>
+
+        {share.remaining > 0 ? (
+          <span className="shrink-0 text-[10px] text-rose-300" title={`${share.remaining} raids short`}>
+            {goalPct}%
+          </span>
+        ) : null}
       </div>
 
-      {share.remaining > 0 ? (
-        <span className="shrink-0 text-[10px] text-rose-300" title={`${share.remaining} raids short`}>
-          {goalPct}%
-        </span>
+      {types.length > 0 || boosts.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]">
+          {types.map((t) => (
+            <span key={t} className="inline-flex rounded-full bg-black/40 ring-1 ring-white/15">
+              <TypeIcon type={t} size={14} />
+            </span>
+          ))}
+          {boosts.length > 0 ? <span className="mx-0.5 text-slate-600" aria-hidden>·</span> : null}
+          <MegaBoostRow boosts={boosts} size={18} max={6} />
+        </div>
       ) : null}
     </div>
   );
@@ -93,6 +117,21 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   const start = GAME_CONFIG.event.hourStartLocal;
   const free = Math.max(0, block.capacity.max - block.fitted);
   const over = block.remaining > 0;
+  const wildTypes = habitatAt(block.day, block.startHour)?.types ?? [];
+
+  // Counter + mega-evolve search strings for this hour-block's roster. Keyed on
+  // the species set + wild theme so they only recompute when the block changes.
+  const memoKey = `${block.species.map((s) => s.bossId).join(",")}|${wildTypes.join(",")}`;
+  const { counterSpecies, megaSearch, megaItems } = useMemo(() => {
+    const bossTypes = block.species.map((s) => getBoss(s.bossId)?.types ?? []).filter((t) => t.length > 0);
+    const boosts = blockMegaBoosts(wildTypes, bossTypes);
+    return {
+      counterSpecies: counterSearchSpecies(bossTypes),
+      megaSearch: buildMegaSearchString(megaBoostSpecies(boosts)),
+      megaItems: boosts.map((b) => ({ key: b.mega.name, label: b.mega.name, sprite: b.mega.sprite, ring: MEGA_KIND_RING[b.kind] })),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- memoKey encodes the inputs
+  }, [memoKey]);
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02]">
@@ -121,8 +160,30 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
       {open ? (
         <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
           {block.species.map((s) => (
-            <TargetCard key={s.bossId + (s.mewtwo ? "-m" : "")} share={s} dkey={`${s.bossId}@${block.day}${block.startHour}`} />
+            <TargetCard
+              key={s.bossId + (s.mewtwo ? "-m" : "")}
+              share={s}
+              dkey={`${s.bossId}@${block.day}${block.startHour}`}
+              wildTypes={wildTypes}
+            />
           ))}
+        </div>
+      ) : null}
+
+      {/* Copyable search strings for the hour-block — kept visible whether the
+          block is expanded or collapsed (mega options vary block to block). */}
+      {counterSpecies.length > 0 || megaSearch ? (
+        <div className="space-y-2 border-t border-white/10 px-2.5 py-2">
+          {counterSpecies.length > 0 ? (
+            <CopyableSearchString
+              label={`Counters · ${block.name}`}
+              search={counterSpecies.join(", ")}
+              items={counterSpecies.map((s) => ({ key: s, label: s, sprite: speciesIconUrl(s) }))}
+            />
+          ) : null}
+          {megaSearch ? (
+            <CopyableSearchString label={`Mega-evolve · ${block.name}`} accent="text-purple-300" search={megaSearch} items={megaItems} />
+          ) : null}
         </div>
       ) : null}
     </div>
