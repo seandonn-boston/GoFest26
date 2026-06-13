@@ -162,12 +162,12 @@ input[type="number"] {
   line-height: 0.8;
 }
 .mewtwo-word {
-  --rest1: #8e7cc3; /* X purple */
-  --rest2: #cfc3e8; /* Y lavender */
+  --rest1: #b026ff; /* vivid purple echo (swapped from the Y letter) */
+  --rest2: #b026ff;
   text-transform: uppercase;
   letter-spacing: -0.01em;
   font-weight: 800;
-  color: #b026ff; /* vivid purple fill */
+  color: #cfc3e8; /* lavender fill (swapped from the Y letter) */
 }
 
 /* Enamel-pin label: engraved into the badge — warm off-white with a dark halo

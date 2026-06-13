@@ -1,9 +1,12 @@
+import type { CSSProperties } from "react";
 import { Sprite } from "@/components/ui/Sprite";
 
 // X/Y letter fills pulled from the Mewtwo sprite (purple body / lavender accents).
-// The chromatic glitch colors (purple rest, two shiny greens on jitter) live in CSS.
-const PURPLE = "#8E7CC3"; // X
-const LIGHT_PURPLE = "#CFC3E8"; // Y
+// X keeps the purple fill / vivid-purple glitch; Y now carries MEWTWO's old scheme
+// (vivid fill, X-purple/Y-lavender glitch) — they were swapped. MEWTWO took Y's.
+const PURPLE = "#8E7CC3"; // X fill
+const LIGHT_PURPLE = "#CFC3E8";
+const VIVID = "#b026ff";
 
 const XY = "5.5rem"; // X/Y backdrop size
 const MEWTWO = "2.75rem"; // 50% of the X/Y height
@@ -29,7 +32,7 @@ export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: 
         <div className="relative flex items-center justify-center" style={{ height: XY }}>
           <span aria-hidden className="absolute inset-0 z-0 flex items-center justify-center gap-[2px]">
             <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>X</span>
-            <span className="mewtwo-xy" style={{ color: LIGHT_PURPLE, fontSize: XY }}>Y</span>
+            <span className="mewtwo-xy" style={{ color: VIVID, "--rest1": PURPLE, "--rest2": LIGHT_PURPLE, fontSize: XY } as CSSProperties}>Y</span>
           </span>
           <span className="mewtwo-word relative z-10" style={{ fontSize: MEWTWO }}>
             Mewtwo
