@@ -30,7 +30,7 @@ export function MewtwoTitle({ spriteX, spriteY }: { spriteX?: string; spriteY?: 
             <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>X</span>
             <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>Y</span>
           </span>
-          <span className="mewtwo-word relative z-10 translate-x-[18px]" style={{ fontSize: MEWTWO }}>
+          <span className="mewtwo-word relative z-10 translate-x-[22px]" style={{ fontSize: MEWTWO }}>
             Mewtwo
           </span>
         </div>
