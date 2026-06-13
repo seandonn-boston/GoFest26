@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss } from "@/data";
 import { habitatAt } from "@/data/habitats";
+import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
 import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
@@ -106,18 +107,23 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
         ) : null}
       </div>
 
-      {/* Best raid attackers — a copyable search string, tinted by the move type that wins. */}
+      {/* Best raid attackers — sprite chips (ringed by the winning move type),
+          copyable as a species search string. */}
       {counters.length > 0 ? (
         <CopyableInline
           search={counterSearch}
           label="counters"
-          className="mt-1.5 flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-[36px] text-[11px] leading-relaxed"
+          className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]"
         >
           <span className="mr-0.5 font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
-          {counters.map((c, i) => (
-            <span key={c.attacker.name}>
-              {i > 0 ? <span className="text-slate-600"> · </span> : null}
-              <span style={{ color: TYPE_COLORS[c.via.toLowerCase()] }}>{c.attacker.name}</span>
+          {counters.map((c) => (
+            <span
+              key={c.attacker.name}
+              title={`${c.attacker.name} · ${c.via}`}
+              className="inline-flex rounded-full bg-black/30 ring-2"
+              style={{ ["--tw-ring-color" as string]: TYPE_COLORS[c.via.toLowerCase()] }}
+            >
+              <Sprite src={attackerIconUrl(c.attacker)} alt={c.attacker.name} size={20} />
             </span>
           ))}
         </CopyableInline>
