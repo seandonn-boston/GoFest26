@@ -14,6 +14,7 @@ import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
+import { MewtwoTitle } from "./MewtwoTitle";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -82,10 +83,10 @@ export function MewtwoCard({
           <span className="text-[10px] leading-none">✦</span>
           <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
         </div>
-        <div className="mb-1 flex items-center gap-2">
-          <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={40} />
-          <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={40} />
-          <h3 className="text-base font-semibold">Mega Mewtwo X &amp; Y</h3>
+        <MewtwoTitle />
+        <div className="mb-1 mt-1 flex items-center justify-center gap-2">
+          <Sprite src={bossX.sprite} alt="Mega Mewtwo X" size={36} />
+          <Sprite src={bossY.sprite} alt="Mega Mewtwo Y" size={36} />
           <TierBadge tier="super-mega" />
         </div>
         <p className="mb-3 text-xs text-slate-400">

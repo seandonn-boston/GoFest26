@@ -8,6 +8,7 @@ import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { CyberTitle } from "@/components/ui/CyberTitle";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Sprite } from "@/components/ui/Sprite";
@@ -80,7 +81,7 @@ export function BossInputCard({
         <Sprite src={boss.sprite} alt={boss.name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="text-sm font-semibold">{boss.name}</h3>
+            <CyberTitle name={boss.name} types={boss.types} className="text-lg" />
             <TierBadge tier={boss.tier} />
             {regionLabel ? <Badge>{regionLabel}</Badge> : null}
             {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}

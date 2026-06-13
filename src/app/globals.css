@@ -114,8 +114,38 @@ input[type="number"] {
   animation: glitchTitle 6s infinite steps(1, end);
 }
 
+/* Per-card chromatic-split title in the species' TYPE colors (--c1 / --c2 set
+   inline). em-based offsets so it scales with the title size. The resting state
+   keeps the split so reduced-motion users still get the cyberpunk look. */
+@keyframes glitchType {
+  0%, 88%, 100% { transform: translate(0, 0); text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1); }
+  90% { transform: translate(-0.04em, 0.02em); text-shadow: 0.11em 0 var(--c2), -0.11em 0 var(--c1); }
+  93% { transform: translate(0.04em, -0.02em); text-shadow: -0.09em 0 var(--c2), 0.09em 0 var(--c1); }
+  96% { transform: translate(-0.02em, 0); text-shadow: 0.07em 0 var(--c2), -0.07em 0 var(--c1); }
+}
+.cyber-title {
+  --c1: var(--neon-magenta);
+  --c2: var(--neon-cyan);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  color: #f4f6fb;
+  text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1);
+  animation: glitchType 7s infinite steps(1, end);
+}
+
+/* Big italic backdrop letters (Mewtwo X / Y) — neon glow in their own color. */
+.mewtwo-xy {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.8;
+  text-shadow: 0 0 0.35em currentColor, 0.03em 0.03em 0 rgba(0, 0, 0, 0.55);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .switch-in, .glitch-title, .ticker { animation: none; }
+  .switch-in, .glitch-title, .ticker, .cyber-title { animation: none; }
 }
 
 /* Avant-garde card treatment: a hard neo-brutalist offset shadow + crisp border
