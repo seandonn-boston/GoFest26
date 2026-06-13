@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
-import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
+import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 
@@ -150,11 +150,13 @@ interface PlannerState {
   resetAll: () => void;
 }
 
-// Per-species remote cap: Mewtwo is up both days (full 60-pass budget), every
-// other species is one day's worth (50). Clamp here so no write path — manual,
-// auto-balance, or a corrupted persisted map — can exceed it.
-function clampRemote(bossId: string, value: number): number {
-  const cap = bossId === MEWTWO_X_ID || bossId === MEWTWO_Y_ID ? MAX_REMOTE_RAIDS : MAX_REMOTE_PER_SPECIES;
+// Per-species remote cap: Mewtwo is up both days (can absorb the whole budget),
+// every other species is one day's worth (≤50, and never more than the budget).
+// Clamp here so no write path — manual, auto-balance, or a corrupted persisted
+// map — can exceed it.
+function clampRemote(bossId: string, value: number, budget: number): number {
+  const isMewtwo = bossId === MEWTWO_X_ID || bossId === MEWTWO_Y_ID;
+  const cap = isMewtwo ? budget : Math.min(MAX_REMOTE_PER_SPECIES, budget);
   return Math.max(0, Math.min(cap, Number.isFinite(value) ? Math.round(value) : 0));
 }
 
@@ -202,13 +204,15 @@ export const usePlannerStore = create<PlannerState>()(
       setRemoteAllocation: (bossId, value) =>
         set((state) => {
           // A manual edit takes over from auto-balance so the user's tweaks stick.
-          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: clampRemote(bossId, value) }, remoteAuto: false };
+          const v = clampRemote(bossId, value, state.settings.remoteRaidBudget);
+          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: v }, remoteAuto: false };
         }),
 
       setRemoteAllocations: (map) =>
-        set(() => {
+        set((state) => {
+          const budget = state.settings.remoteRaidBudget;
           const clamped: Record<string, number> = {};
-          for (const id in map) clamped[id] = clampRemote(id, map[id]);
+          for (const id in map) clamped[id] = clampRemote(id, map[id], budget);
           return { remoteAllocations: clamped };
         }),
 
@@ -404,7 +408,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 10,
+      version: 11,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the

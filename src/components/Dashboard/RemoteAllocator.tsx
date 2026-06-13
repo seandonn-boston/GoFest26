@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { MAX_REMOTE_RAIDS, MAX_REMOTE_PER_SPECIES } from "@/domain/settings";
+import { MAX_REMOTE_PER_SPECIES } from "@/domain/settings";
 import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 
@@ -23,6 +23,7 @@ export function RemoteAllocator() {
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
   const region = usePlannerStore((s) => s.settings.region);
+  const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
 
   const order = useMemo(() => selectedInPriorityOrder({ inputs, priorityOrder }), [inputs, priorityOrder]);
   if (!order.length) return null;
@@ -36,8 +37,8 @@ export function RemoteAllocator() {
           {remoteAuto
             ? "Auto-balanced by priority — drag the priority list and these re-flow. Edit any number to take over."
             : "Assign remote raids per species — the in-person blocks above drop to match."}{" "}
-          <span className={total > MAX_REMOTE_RAIDS ? "text-rose-300" : "text-slate-300"}>
-            {total}/{MAX_REMOTE_RAIDS}
+          <span className={total > budget ? "text-rose-300" : "text-slate-300"}>
+            {total}/{budget}
           </span>{" "}
           used.
         </p>
@@ -60,9 +61,9 @@ export function RemoteAllocator() {
         const boss = getBoss(id);
         if (!boss) return null;
         const val = Math.max(0, allocations[id] ?? 0);
-        const speciesCap = isMewtwo(id) ? MAX_REMOTE_RAIDS : MAX_REMOTE_PER_SPECIES;
-        // Can't push this species past its cap, nor the running total past 60.
-        const max = Math.max(0, Math.min(speciesCap, val + (MAX_REMOTE_RAIDS - total)));
+        const speciesCap = isMewtwo(id) ? budget : Math.min(MAX_REMOTE_PER_SPECIES, budget);
+        // Can't push this species past its cap, nor the running total past the budget.
+        const max = Math.max(0, Math.min(speciesCap, val + (budget - total)));
         const remoteOnly = !bossIsLocal(boss, region);
         return (
           <div key={id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5">
