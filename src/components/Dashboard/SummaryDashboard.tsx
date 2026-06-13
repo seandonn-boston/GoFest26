@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import type { PlanSummary } from "@/domain/types";
 import type { WeekendBlockPlan } from "@/domain";
 import { formatRange } from "@/lib/format";
@@ -21,6 +22,20 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
     ? { min: capacity.totalRaids.min + remotePool, max: capacity.totalRaids.max + remotePool }
     : capacity.totalRaids;
 
+  // Which goals still don't fit, derived from the block plan — so the warning
+  // tracks the priority order (lowest is cut first) and remote-pass offloading,
+  // exactly like the accordion below. A species reappears here only if it has
+  // leftover in-person raids in some block after both are applied.
+  const cutNames = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const block of blockPlan.blocks) {
+      for (const s of block.species) {
+        if (s.remaining > 0 && !byId.has(s.bossId)) byId.set(s.bossId, s.bossName);
+      }
+    }
+    return [...byId.values()];
+  }, [blockPlan]);
+
   return (
     <Card className="p-4">
       <h2 className="mb-3 text-lg font-semibold">Weekend plan</h2>
@@ -39,16 +54,15 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
         <>
           <CapacityGauge utilization={summary.utilization} />
           {(() => {
-            const windowLimited = summary.schedule.unmetGoals.length > 0;
-            const ok = summary.feasible && !windowLimited;
+            const ok = blockPlan.feasible;
             return (
               <p className={`mt-3 text-sm ${ok ? "text-emerald-300" : "text-rose-300"}`}>
                 {ok
                   ? "✓ Your goals fit within the weekend — and inside each boss's time windows."
-                  : windowLimited
-                    ? `⚠ Some goals can't fit their limited time windows: ${summary.schedule.unmetGoals
-                        .map((u) => u.bossName)
-                        .join(", ")}. Each non-Mewtwo boss only spawns for one 3-hour habitat block.`
+                  : cutNames.length > 0
+                    ? `⚠ Some goals can't fit their limited time windows: ${cutNames.join(
+                        ", ",
+                      )}. Each non-Mewtwo boss only spawns for one 3-hour habitat block — reorder priority or assign remote raids to cover them.`
                     : "⚠ Your goals exceed the max raids possible this weekend. Trim targets, use the mega-buddy boost, or prioritize."}
               </p>
             );
