@@ -14,6 +14,7 @@ import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
 import { MewtwoTitle } from "./MewtwoTitle";
+import { CounterTable } from "./CounterTable";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -165,6 +166,7 @@ export function MewtwoCard({
             <FormColumn
               title="Mega Mewtwo X"
               subtitle={describeAvailability(bossX)}
+              types={bossX.types}
               sprite={bossX.sprite}
               energy={inputX!.current.megaEnergy}
               megaLevel={inputX!.current.megaLevel}
@@ -184,6 +186,7 @@ export function MewtwoCard({
             <FormColumn
               title="Mega Mewtwo Y"
               subtitle={describeAvailability(bossY)}
+              types={bossY.types}
               sprite={bossY.sprite}
               energy={inputY!.current.megaEnergy}
               megaLevel={inputY!.current.megaLevel}
@@ -208,6 +211,7 @@ export function MewtwoCard({
 function FormColumn({
   title,
   subtitle,
+  types,
   sprite,
   energy,
   megaLevel,
@@ -224,6 +228,7 @@ function FormColumn({
 }: {
   title: string;
   subtitle: string;
+  types?: string[];
   sprite?: string;
   energy: number;
   megaLevel: number;
@@ -295,6 +300,8 @@ function FormColumn({
           </p>
         ) : null}
       </div>
+
+      <CounterTable types={types} />
     </div>
   );
 }
