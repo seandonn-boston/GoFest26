@@ -38,7 +38,7 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
 
   return (
     <Card className="p-4">
-      <h2 className="mb-3 text-lg font-semibold">Weekend plan</h2>
+      <h2 className="mb-3 text-lg font-semibold">3. Plan your weekend</h2>
 
       <div className="mb-4 grid grid-cols-3 gap-4">
         <Stat label="Total raids needed" value={formatRange(summary.totalRaids)} accent="text-gofest-accent2" />
