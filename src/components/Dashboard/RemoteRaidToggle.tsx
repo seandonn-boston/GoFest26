@@ -1,7 +1,7 @@
 "use client";
 
 import { getBoss } from "@/data";
-import { autoRemoteAllocations } from "@/domain";
+import { autoRemoteAllocations, globalPriorityFromBlocks } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
@@ -43,8 +43,9 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
       // hook keeps it in sync from here. Seed it now so there's no empty frame.
       setRemoteAuto(true);
       if (allocated === 0) {
-        const { inputs, settings, priorityOrder } = usePlannerStore.getState();
-        setRemoteAllocations(autoRemoteAllocations(blockPlan, Object.values(inputs), results, settings, priorityOrder));
+        const { inputs, settings, blockPriority } = usePlannerStore.getState();
+        const order = globalPriorityFromBlocks(blockPriority);
+        setRemoteAllocations(autoRemoteAllocations(blockPlan, Object.values(inputs), results, settings, order));
       }
     }
   }

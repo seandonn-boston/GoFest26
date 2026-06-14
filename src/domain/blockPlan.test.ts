@@ -7,7 +7,7 @@ import { computeGrossRequirement } from "./requirements";
 import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS } from "./settings";
 import { bossIsLocal } from "./region";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID, SORTED_BOSSES } from "@/data";
-import { HABITATS } from "@/data/habitats";
+import { HABITATS, blockKey } from "@/data/habitats";
 import type { BossInput, BossResult, Range } from "./types";
 
 const sum = (b: Record<string, number>) => RISK_BANDS.reduce((s, k) => s + b[k], 0);
@@ -89,7 +89,7 @@ describe("computeBlockPlan — allocation", () => {
   it("pins a fixed-window boss to the habitat block it spawns in", () => {
     const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 0)!;
     const { inputs, results } = buildFor([sat0.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const carrying = plan.blocks.filter((b) => b.species.some((s) => s.bossId === sat0.id));
     expect(carrying).toHaveLength(1);
     expect(carrying[0].day).toBe("sat");
@@ -98,7 +98,7 @@ describe("computeBlockPlan — allocation", () => {
 
   it("keeps Mewtwo X energy raids on Saturday and Y on Sunday", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     for (const block of plan.blocks) {
       for (const s of block.species) {
         if (s.bossId === MEWTWO_X_ID) expect(block.day).toBe("sat");
@@ -115,7 +115,7 @@ describe("computeBlockPlan — allocation", () => {
     const blockB = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 3)!;
     const spread = (ids: string[]) => {
       const { inputs, results } = buildFor(ids);
-      const sat = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []).blocks.filter((b) => b.day === "sat");
+      const sat = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}).blocks.filter((b) => b.day === "sat");
       return { sat, range: Math.max(...sat.map((b) => b.demand)) - Math.min(...sat.map((b) => b.demand)) };
     };
     const before = spread([blockA.id, blockB.id]).range;
@@ -132,7 +132,7 @@ describe("computeBlockPlan — allocation", () => {
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat")!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const over = plan.blocks.find((b) => b.remaining > 0)!;
     expect(over).toBeTruthy();
     expect(plan.feasible).toBe(false);
@@ -143,11 +143,28 @@ describe("computeBlockPlan — allocation", () => {
 
   it("per-block band counts sum to what fit (not the full demand)", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     for (const b of plan.blocks) {
       expect(sum(b.bands)).toBe(b.fitted);
       expect(b.fitted + b.remaining).toBe(b.demand);
     }
+  });
+
+  it("drops Mewtwo from a block when its checkbox is cleared, rebalancing the rest", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID]);
+    const xIn = (plan: ReturnType<typeof computeBlockPlan>, key: string) =>
+      plan.blocks
+        .filter((b) => blockKey(b.day, b.startHour) === key)
+        .reduce((s, b) => s + b.species.filter((sp) => sp.bossId === MEWTWO_X_ID).reduce((t, sp) => t + sp.raids, 0), 0);
+    const total = (plan: ReturnType<typeof computeBlockPlan>) =>
+      ["sat0", "sat3", "sat6"].reduce((s, k) => s + xIn(plan, k), 0);
+
+    const all = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const off0 = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, { [`${MEWTWO_X_ID}@sat0`]: false });
+
+    expect(xIn(all, "sat0")).toBeGreaterThan(0); // targeted everywhere by default
+    expect(xIn(off0, "sat0")).toBe(0); // unchecked → no Mewtwo there
+    expect(total(off0)).toBe(total(all)); // same total X raids, rebalanced to sat3/sat6
   });
 
   it("respects explicit priority order (lowest priority takes the risky tail)", () => {
@@ -158,7 +175,8 @@ describe("computeBlockPlan — allocation", () => {
     if (sat0.length < 2) return;
     const [a, b] = sat0;
     const { inputs, results } = buildFor([a.id, b.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, [b.id, a.id]);
+    // Per-block priority, keyed by the block ("sat0"): rank b above a.
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, { sat0: [b.id, a.id] });
     const block = plan.blocks.find((x) => x.species.length >= 2)!;
     // b is highest priority → appears first in the block's ordered species.
     expect(block.species[0].bossId).toBe(b.id);
@@ -176,29 +194,29 @@ describe("remote raids (manual per-species allocation)", () => {
   it("keeps region-locked targets out of the blocks; allocated ones land in the remote pool", () => {
     if (!remoteOnly) return;
     const { inputs, results } = buildFor([remoteOnly.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, [], { [remoteOnly.id]: 5 });
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, {}, { [remoteOnly.id]: 5 });
     expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === remoteOnly.id))).toBe(false);
     expect(plan.remote?.species.find((s) => s.bossId === remoteOnly.id)?.raids).toBe(5);
   });
 
   it("omits the remote pool until the user opts in", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
-    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, [], { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
+    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, {}, { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
   });
 
   it("a remote allocation reduces that species' in-person block demand", () => {
     const { inputs, results } = buildFor([localSat.id]);
     const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
       plan.blocks.reduce((s, b) => s + b.species.filter((x) => x.bossId === localSat.id).reduce((a, x) => a + x.raids, 0), 0);
-    const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []));
-    const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, [], { [localSat.id]: 5 }));
+    const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}));
+    const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, {}, { [localSat.id]: 5 }));
     expect(before).toBeGreaterThan(5);
     expect(after).toBe(before - 5);
   });
 
   it("the remote bar's capacity is the 60-pass budget and reflects the allocations", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, [], { [MEWTWO_X_ID]: 10 });
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, {}, { [MEWTWO_X_ID]: 10 });
     expect(plan.remote!.capacity).toBe(MAX_REMOTE_RAIDS);
     expect(plan.remote!.fitted).toBe(10);
   });
@@ -207,7 +225,7 @@ describe("remote raids (manual per-species allocation)", () => {
 describe("rareCandyForecast", () => {
   it("gives 1 Rare Candy per raid and 1 Rare Candy XL per non-Mega raid", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const totalRaids = plan.blocks.reduce((s, b) => s + b.fitted, 0);
     const f = rareCandyForecast(plan);
     expect(f.rareCandy).toBe(totalRaids);
@@ -219,7 +237,7 @@ describe("rareCandyForecast", () => {
     const mega = SORTED_BOSSES.find((b) => b.tier === "mega" && !isMewtwo(b.id) && bossIsLocal(b, DEFAULT_SETTINGS.region));
     if (!mega) return;
     const { inputs, results } = buildFor([mega.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const f = rareCandyForecast(plan);
     expect(f.rareCandy).toBeGreaterThan(0);
     expect(f.rareCandyXl).toBe(0); // a Mega raid gives Rare Candy but no Rare Candy XL
@@ -230,7 +248,7 @@ describe("goalProgress (achievable / required fraction)", () => {
   it("is full when goals fit with capacity to spare", () => {
     const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const { inputs, results } = buildFor([sat0.id]);
-    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []), results, DEFAULT_SETTINGS);
+    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}), results, DEFAULT_SETTINGS);
     expect(p.achievable).toBe(p.required);
     expect(p.bySpecies[sat0.id].achievable).toBe(p.bySpecies[sat0.id].required);
   });
@@ -239,7 +257,7 @@ describe("goalProgress (achievable / required fraction)", () => {
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
-    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []), results, DEFAULT_SETTINGS);
+    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}), results, DEFAULT_SETTINGS);
     expect(p.achievable).toBeGreaterThan(0);
     expect(p.achievable).toBeLessThan(p.required);
     expect(p.achievable).toBe(p.bySpecies[boss.id].achievable);
@@ -252,7 +270,7 @@ describe("autoRemoteAllocations", () => {
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
     const total = Object.values(auto).reduce((s, n) => s + n, 0);
     expect(total).toBeGreaterThan(0);
@@ -262,7 +280,7 @@ describe("autoRemoteAllocations", () => {
   it("assigns nothing when every goal already fits in person", () => {
     const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const { inputs, results } = buildFor([sat0.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
     expect(Object.keys(auto)).toHaveLength(0);
   });
@@ -272,12 +290,12 @@ describe("autoRemoteAllocations", () => {
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }]; // far over its window
     const results = inputs.map((i) => computeBossResult(boss, i));
     const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: 20 };
-    const plan = computeBlockPlan(inputs, results, ROOMY, settings, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, settings, {});
     const auto = autoRemoteAllocations(plan, inputs, results, settings, []);
     const total = Object.values(auto).reduce((s, n) => s + n, 0);
     expect(total).toBeGreaterThan(0);
     expect(total).toBeLessThanOrEqual(20); // never exceeds the custom budget
-    const withRemote = computeBlockPlan(inputs, results, ROOMY, settings, [], auto);
+    const withRemote = computeBlockPlan(inputs, results, ROOMY, settings, {}, {}, auto);
     expect(withRemote.remote?.capacity).toBe(20); // pool bar measures against the budget
   });
 
@@ -296,7 +314,7 @@ describe("autoRemoteAllocations", () => {
     const [a, b] = pair;
     const inputs = [a, b].map((boss) => ({ ...makeDefaultInput(boss), quantity: 200 }));
     const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, []);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
 
     const aFirst = autoRemoteAllocations(plan, inputs, results, settings, [a.id, b.id]);
@@ -319,7 +337,7 @@ describe("Mewtwo Y-only leveling", () => {
     const leveling: BossInput = { ...base, target: { level: 50, megaLevel: 1 } }; // + big XL goal
     const mewtwoRaids = (inp: BossInput) => {
       const res = computeBossResult(y, inp);
-      const plan = computeBlockPlan([inp], [res], ROOMY, DEFAULT_SETTINGS, []);
+      const plan = computeBlockPlan([inp], [res], ROOMY, DEFAULT_SETTINGS, {});
       return plan.blocks.reduce(
         (sum, b) => sum + b.species.filter((s) => s.mewtwo).reduce((t, s) => t + s.raids, 0),
         0,

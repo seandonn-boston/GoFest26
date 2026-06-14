@@ -34,6 +34,11 @@ export function habitatAt(day: EventDay, hour: number): Habitat | undefined {
   return HABITATS.find((h) => h.day === day && hour >= h.startHour && hour < h.endHour);
 }
 
+/** Stable key for a habitat block (per-block priority + Mewtwo targeting maps). */
+export function blockKey(day: EventDay, startHour: number): string {
+  return `${day}${startHour}`;
+}
+
 /**
  * Which event days a boss is raidable on — both for all-weekend bosses (Mewtwo),
  * otherwise the distinct days of its habitat windows. Used to split the counter

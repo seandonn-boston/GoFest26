@@ -5,7 +5,7 @@ import { getBoss } from "@/data";
 import { goalProgress } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
-import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
+import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
 
 const ratioTone = (a: number, r: number) => {
   const x = r > 0 ? a / r : 1;
@@ -25,13 +25,13 @@ const ratioBar = (a: number, r: number) => {
 export function GoalProgress({ plan, results }: { plan: WeekendBlockPlan; results: BossResult[] }) {
   const [open, setOpen] = useState(false);
   const inputs = usePlannerStore((s) => s.inputs);
-  const priorityOrder = usePlannerStore((s) => s.priorityOrder);
+  const blockPriority = usePlannerStore((s) => s.blockPriority);
   const settings = usePlannerStore((s) => s.settings);
 
   const progress = useMemo(() => goalProgress(plan, results, settings), [plan, results, settings]);
   const order = useMemo(
-    () => selectedInPriorityOrder({ inputs, priorityOrder }).filter((id) => progress.bySpecies[id] !== undefined),
-    [inputs, priorityOrder, progress],
+    () => selectedInGlobalOrder({ inputs, blockPriority }).filter((id) => progress.bySpecies[id] !== undefined),
+    [inputs, blockPriority, progress],
   );
   if (!order.length || progress.required === 0) return null;
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { GAME_CONFIG } from "@/data/config";
-import { getBoss } from "@/data";
+import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
@@ -12,7 +12,8 @@ import { topCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
 import { buildSearchString, buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
-import { usePlannerStore } from "@/store/usePlannerStore";
+import { usePlannerStore, blockMembersInOrder } from "@/store/usePlannerStore";
+import { useDragList } from "./useDragList";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
@@ -55,9 +56,26 @@ function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, n
   );
 }
 
-/** One species' target: completed (editable) / best · avg · worst raid counts,
- *  with the boss's types + the megas worth evolving for its candy underneath. */
-function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey: string; wildTypes: string[] }) {
+/** One species' target in a block: a drag grip, completed (editable) / best ·
+ *  avg · worst raid counts, the boss's types + candy-boost megas, and its best
+ *  counters. Mewtwo rows also carry a "hunt here" checkbox beside the name. */
+function TargetCard({
+  share,
+  dkey,
+  wildTypes,
+  grip,
+  rowRef,
+  dragging,
+  targeting,
+}: {
+  share: BlockSpeciesShare;
+  dkey: string;
+  wildTypes: string[];
+  grip?: ReactNode;
+  rowRef?: (el: HTMLElement | null) => void;
+  dragging?: boolean;
+  targeting?: { checked: boolean; onToggle: () => void };
+}) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
   const boss = getBoss(share.bossId);
@@ -76,12 +94,35 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
   const r = share.range.max; // worst case
   const y = Math.min(r, Math.max(g, Math.round((g + r) / 2))); // average
   const goalPct = share.raids > 0 ? Math.round((share.fitted / share.raids) * 100) : 100;
+  const muted = !!targeting && !targeting.checked; // un-targeted Mewtwo row
 
   return (
-    <div className="rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5">
+    <div
+      ref={rowRef}
+      className={`rounded-lg border bg-gofest-bg/40 px-2 py-1.5 transition-shadow ${
+        dragging ? "border-gofest-accent2/70 shadow-brutal ring-1 ring-gofest-accent2" : "border-white/10"
+      } ${muted ? "opacity-60" : ""}`}
+    >
       <div className="flex items-center gap-2">
+        {grip}
         <Sprite src={boss?.sprite} alt={share.bossName} size={28} />
         <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
+
+        {targeting ? (
+          <label
+            className="flex shrink-0 cursor-pointer items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400"
+            title={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
+          >
+            <span className="hidden sm:inline">Hunt</span>
+            <input
+              type="checkbox"
+              checked={targeting.checked}
+              onChange={targeting.onToggle}
+              aria-label={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
+              className="h-4 w-4 accent-gofest-mewtwo"
+            />
+          </label>
+        ) : null}
 
         <div className="flex items-center gap-1 font-mono text-sm font-bold">
           <input
@@ -148,11 +189,47 @@ function TargetCard({ share, dkey, wildTypes }: { share: BlockSpeciesShare; dkey
   );
 }
 
+const ZERO_BANDS: Record<RiskBand, number> = { blue: 0, green: 0, yellow: 0, red: 0 };
+
 function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean; onToggle: () => void }) {
   const start = GAME_CONFIG.event.hourStartLocal;
   const free = Math.max(0, block.capacity.max - block.fitted);
   const over = block.remaining > 0;
   const wildTypes = habitatAt(block.day, block.startHour)?.types ?? [];
+  const key = blockKey(block);
+
+  // Per-block drag-to-rank members = this block's fixed bosses + the eligible
+  // Mewtwo form (X on Saturday, Y on Sunday) when selected. Mewtwo always shows
+  // (with a "hunt here" checkbox) even when unchecked / unallocated.
+  const xSel = usePlannerStore((s) => !!s.inputs[MEWTWO_X_ID]?.selected);
+  const ySel = usePlannerStore((s) => !!s.inputs[MEWTWO_Y_ID]?.selected);
+  const order = usePlannerStore((s) => s.blockPriority[key]);
+  const setBlockPriority = usePlannerStore((s) => s.setBlockPriority);
+  const mewtwoTargets = usePlannerStore((s) => s.mewtwoTargets);
+  const toggleMewtwoTarget = usePlannerStore((s) => s.toggleMewtwoTarget);
+
+  const memberIds: string[] = [
+    ...block.species.filter((s) => !s.mewtwo).map((s) => s.bossId),
+    ...(block.day === "sat" && xSel ? [MEWTWO_X_ID] : []),
+    ...(block.day === "sun" && ySel ? [MEWTWO_Y_ID] : []),
+  ];
+  const memberKey = memberIds.join(",");
+  const orderKey = (order ?? []).join(",");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the join keys encode the inputs
+  const orderedIds = useMemo(() => blockMembersInOrder(memberIds, order ?? []), [memberKey, orderKey]);
+  const drag = useDragList(orderedIds, (ids) => setBlockPriority(key, ids));
+
+  const shareFor = (id: string): BlockSpeciesShare =>
+    block.species.find((s) => s.bossId === id) ?? {
+      bossId: id,
+      bossName: getBoss(id)?.name ?? id,
+      raids: 0,
+      range: { min: 0, max: 0 },
+      fitted: 0,
+      remaining: 0,
+      bands: ZERO_BANDS,
+      mewtwo: true,
+    };
 
   // Mega-evolve search string for this hour-block's roster (counters now live
   // per-boss inside the accordion). Keyed on the species set + wild theme so it
@@ -193,15 +270,36 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
       </button>
 
       {open ? (
-        <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
-          {block.species.map((s) => (
-            <TargetCard
-              key={s.bossId + (s.mewtwo ? "-m" : "")}
-              share={s}
-              dkey={`${s.bossId}@${block.day}${block.startHour}`}
-              wildTypes={wildTypes}
-            />
-          ))}
+        <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2" {...drag.containerProps}>
+          <p className="text-[10px] text-slate-500">Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).</p>
+          {drag.list.map((id) => {
+            const isMewtwoForm = id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
+            const share = shareFor(id);
+            const grip = (
+              <span
+                {...drag.gripProps(id, share.bossName)}
+                className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
+              >
+                ⠿
+              </span>
+            );
+            return (
+              <TargetCard
+                key={id}
+                share={share}
+                dkey={`${id}@${key}`}
+                wildTypes={wildTypes}
+                grip={grip}
+                rowRef={(el) => drag.setRow(id, el)}
+                dragging={drag.dragId === id}
+                targeting={
+                  isMewtwoForm
+                    ? { checked: mewtwoTargets[`${id}@${key}`] !== false, onToggle: () => toggleMewtwoTarget(id, key) }
+                    : undefined
+                }
+              />
+            );
+          })}
         </div>
       ) : null}
 

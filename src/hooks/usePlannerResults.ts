@@ -1,5 +1,11 @@
 import { useDeferredValue, useEffect, useMemo } from "react";
-import { autoRemoteAllocations, computeBlockPlan, computePlanSummary, type WeekendBlockPlan } from "@/domain";
+import {
+  autoRemoteAllocations,
+  computeBlockPlan,
+  computePlanSummary,
+  globalPriorityFromBlocks,
+  type WeekendBlockPlan,
+} from "@/domain";
 import { applyResearchCredits, type ResearchCredit } from "@/domain/research";
 import { RESEARCH_LINES } from "@/data/research";
 import type { PlanSummary } from "@/domain/types";
@@ -41,12 +47,21 @@ export function usePlannerResults(): PlanSummary {
 export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
   const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
   const settings = useDeferredValue(usePlannerStore((s) => s.settings));
-  const priorityOrder = useDeferredValue(usePlannerStore((s) => s.priorityOrder));
+  const blockPriority = useDeferredValue(usePlannerStore((s) => s.blockPriority));
+  const mewtwoTargets = useDeferredValue(usePlannerStore((s) => s.mewtwoTargets));
   const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
   return useMemo(
     () =>
-      computeBlockPlan(Object.values(inputs), summary.results, summary.capacity, settings, priorityOrder, remoteAllocations),
-    [inputs, summary, settings, priorityOrder, remoteAllocations],
+      computeBlockPlan(
+        Object.values(inputs),
+        summary.results,
+        summary.capacity,
+        settings,
+        blockPriority,
+        mewtwoTargets,
+        remoteAllocations,
+      ),
+    [inputs, summary, settings, blockPriority, mewtwoTargets, remoteAllocations],
   );
 }
 
@@ -70,7 +85,8 @@ function sameAllocation(a: Record<string, number>, b: Record<string, number>): b
 export function useRemoteAutoBalance(summary: PlanSummary): void {
   const inputs = usePlannerStore((s) => s.inputs);
   const settings = usePlannerStore((s) => s.settings);
-  const priorityOrder = usePlannerStore((s) => s.priorityOrder);
+  const blockPriority = usePlannerStore((s) => s.blockPriority);
+  const mewtwoTargets = usePlannerStore((s) => s.mewtwoTargets);
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
@@ -78,6 +94,9 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
   useEffect(() => {
     if (!settings.useRemoteRaids || !remoteAuto) return;
     const inputList = Object.values(inputs);
+    // Remote raids are an event-wide pool, so they rank by a single priority
+    // derived from the per-block orders.
+    const globalOrder = globalPriorityFromBlocks(blockPriority);
     // Shortfalls must be measured with remote OFF, otherwise goals already
     // covered by the current allocation read as "met" and the budget unwinds.
     const offPlan = computeBlockPlan(
@@ -85,10 +104,11 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       summary.results,
       summary.capacity,
       { ...settings, useRemoteRaids: false },
-      priorityOrder,
+      blockPriority,
+      mewtwoTargets,
       {},
     );
-    const desired = autoRemoteAllocations(offPlan, inputList, summary.results, settings, priorityOrder);
+    const desired = autoRemoteAllocations(offPlan, inputList, summary.results, settings, globalOrder);
     if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
-  }, [inputs, settings, priorityOrder, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
+  }, [inputs, settings, blockPriority, mewtwoTargets, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
 }
