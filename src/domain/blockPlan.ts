@@ -15,7 +15,7 @@
 // whichever day still needs evening out.
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
-import { HABITATS } from "@/data/habitats";
+import { HABITATS, blockKey } from "@/data/habitats";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
@@ -167,7 +167,8 @@ interface RawShare {
   mewtwo: boolean;
 }
 
-/** Priority order (highest first); ties → fixed species before Mewtwo, then roster order. */
+/** Order shares by a priority-rank function (highest first); ties → fixed
+ *  species before Mewtwo, then roster order. Used by the global remote pool. */
 function orderByPriority(shares: RawShare[], priorityOf: (id: string) => number): RawShare[] {
   return [...shares].sort((a, z) => {
     const pa = priorityOf(a.bossId);
@@ -176,6 +177,39 @@ function orderByPriority(shares: RawShare[], priorityOf: (id: string) => number)
     if (a.mewtwo !== z.mewtwo) return a.mewtwo ? 1 : -1;
     return (getBoss(a.bossId)?.sortPriority ?? 0) - (getBoss(z.bossId)?.sortPriority ?? 0);
   });
+}
+
+/** Order a block's shares by that block's explicit priority list (highest
+ *  first); ids not listed fall back to fixed-species-before-Mewtwo, then roster. */
+function orderByBlock(shares: RawShare[], order: string[]): RawShare[] {
+  const rank = new Map(order.map((id, i) => [id, i] as const));
+  const rankOf = (id: string) => rank.get(id) ?? Infinity;
+  return [...shares].sort((a, z) => {
+    const pa = rankOf(a.bossId);
+    const pz = rankOf(z.bossId);
+    if (pa !== pz) return pa - pz;
+    if (a.mewtwo !== z.mewtwo) return a.mewtwo ? 1 : -1;
+    return (getBoss(a.bossId)?.sortPriority ?? 0) - (getBoss(z.bossId)?.sortPriority ?? 0);
+  });
+}
+
+/**
+ * A single global priority sequence derived from the per-block orders — blocks
+ * in chronological order, each block's ranked ids in turn (deduped). Used by the
+ * remote-raid pool, which is event-wide and has no single block of its own.
+ */
+export function globalPriorityFromBlocks(blockPriority: Record<string, string[]>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const h of HABITATS) {
+    for (const id of blockPriority[blockKey(h.day, h.startHour)] ?? []) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        out.push(id);
+      }
+    }
+  }
+  return out;
 }
 
 /** Fill an ordered share list into a capacity, banding the part that fits and
@@ -220,7 +254,8 @@ export function computeBlockPlan(
   results: BossResult[],
   capacity: CapacityModel,
   settings: PlannerSettings = DEFAULT_SETTINGS,
-  priorityOrder: string[] = [],
+  blockPriority: Record<string, string[]> = {},
+  mewtwoTargets: Record<string, boolean> = {},
   remoteAllocations: Record<string, number> = {},
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
@@ -230,9 +265,11 @@ export function computeBlockPlan(
   const rpH = capacity.raidsPerHour;
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   const inputById = new Map(inputs.map((i) => [i.bossId, i]));
-  const rank = new Map(priorityOrder.map((id, i) => [id, i] as const));
-  const priorityOf = (id: string) => rank.get(id) ?? Infinity;
   const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
+  // A Mewtwo form is hunted in a block unless its checkbox was explicitly cleared
+  // (default-on for every eligible — day-matching, selected — block).
+  const keyAt = (i: number) => blockKey(HABITATS[i].day, HABITATS[i].startHour);
+  const targeted = (formId: string, i: number) => mewtwoTargets[`${formId}@${keyAt(i)}`] !== false;
 
   const shares: RawShare[][] = HABITATS.map(() => []);
   const capacities: Range[] = HABITATS.map((h) => ({
@@ -309,9 +346,12 @@ export function computeBlockPlan(
   const xRatio = ratioFor(xRes);
   const yRatio = ratioFor(yRes);
 
-  const satIdx = HABITATS.map((h, i) => (h.day === "sat" ? i : -1)).filter((i) => i >= 0);
-  const sunIdx = HABITATS.map((h, i) => (h.day === "sun" ? i : -1)).filter((i) => i >= 0);
-  const allIdx = HABITATS.map((_, i) => i);
+  // Mewtwo only flows into blocks the user is targeting it in (day-locked: X on
+  // Saturday, Y on Sunday). Energy is day-specific; the shared leveling fluid can
+  // fall on any targeted block.
+  const satIdx = HABITATS.map((h, i) => (h.day === "sat" && xSel && targeted(MEWTWO_X_ID, i) ? i : -1)).filter((i) => i >= 0);
+  const sunIdx = HABITATS.map((h, i) => (h.day === "sun" && ySel && targeted(MEWTWO_Y_ID, i) ? i : -1)).filter((i) => i >= 0);
+  const allIdx = [...satIdx, ...sunIdx];
 
   // Cap Mewtwo so it never inflates a block past its capacity (a block already
   // full of fixed raids gets no Mewtwo — it can't be raided there anyway).
@@ -337,21 +377,26 @@ export function computeBlockPlan(
     });
   });
 
-  // 3. Order each block by priority and fill to 100% (the tail is cut when over
-  //    capacity). Default tie-break: fixed species before Mewtwo, then roster order.
+  // 3. Order each block by ITS OWN priority list and fill to 100% (the tail is cut
+  //    when over capacity). Default tie-break: fixed species before Mewtwo, then
+  //    roster order.
   const blocks: BlockPlan[] = HABITATS.map((h, i) => ({
     day: h.day,
     name: h.name,
     startHour: h.startHour,
     endHour: h.endHour,
     capacity: capacities[i],
-    ...fillShares(orderByPriority(shares[i], priorityOf), capacities[i]),
+    ...fillShares(orderByBlock(shares[i], blockPriority[keyAt(i)] ?? []), capacities[i]),
   }));
 
   // 4. Remote-raid pool (opt-in): the per-species counts the user assigned, shown
-  //    against the 60-pass budget. These already reduced the block demand above.
+  //    against the 60-pass budget. Ordered by a global priority derived from the
+  //    per-block lists. These already reduced the block demand above.
+  const globalOrder = globalPriorityFromBlocks(blockPriority);
+  const remoteRank = new Map(globalOrder.map((id, i) => [id, i] as const));
+  const remotePriorityOf = (id: string) => remoteRank.get(id) ?? Infinity;
   const remote = settings.useRemoteRaids
-    ? computeRemotePlan(inputs, resultById, rewardCase, priorityOf, remoteAllocations, settings.remoteRaidBudget)
+    ? computeRemotePlan(inputs, resultById, rewardCase, remotePriorityOf, remoteAllocations, settings.remoteRaidBudget)
     : undefined;
 
   return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };

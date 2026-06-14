@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { bossIsLocal } from "@/domain/region";
 import { MAX_REMOTE_PER_SPECIES } from "@/domain/settings";
-import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
+import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 
 const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
@@ -17,7 +17,7 @@ const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
  */
 export function RemoteAllocator() {
   const inputs = usePlannerStore((s) => s.inputs);
-  const priorityOrder = usePlannerStore((s) => s.priorityOrder);
+  const blockPriority = usePlannerStore((s) => s.blockPriority);
   const allocations = usePlannerStore((s) => s.remoteAllocations);
   const setRemoteAllocation = usePlannerStore((s) => s.setRemoteAllocation);
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
@@ -25,7 +25,7 @@ export function RemoteAllocator() {
   const region = usePlannerStore((s) => s.settings.region);
   const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
 
-  const order = useMemo(() => selectedInPriorityOrder({ inputs, priorityOrder }), [inputs, priorityOrder]);
+  const order = useMemo(() => selectedInGlobalOrder({ inputs, blockPriority }), [inputs, blockPriority]);
   if (!order.length) return null;
 
   const total = order.reduce((s, id) => s + Math.max(0, allocations[id] ?? 0), 0);

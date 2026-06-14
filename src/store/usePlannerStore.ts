@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { RESEARCH_LINES } from "@/data/research";
+import { globalPriorityFromBlocks } from "@/domain/blockPlan";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
@@ -110,17 +111,25 @@ interface PlannerState {
    */
   remoteAuto: boolean;
   /**
-   * User-ranked priority, highest first, by boss id. Drives card order, bar fill
-   * order, and which raids get cut when goals exceed a block's capacity (lowest
-   * priority is filled last / falls short first). Ids absent sort after, in roster order.
+   * Per-block priority, keyed by block (e.g. "sat0") → ordered boss ids (highest
+   * first). Drives each block's fill / cut order and which species' raids fall
+   * short when that block is over capacity. Ids absent sort after, in roster order.
    */
-  priorityOrder: string[];
+  blockPriority: Record<string, string[]>;
+  /**
+   * Per-block Mewtwo targeting, keyed by `${formId}@${blockKey}`. A form is hunted
+   * in every eligible (day-matching, selected) block by DEFAULT; only an explicit
+   * `false` here opts a block out. Toggling rebalances Mewtwo across the event.
+   */
+  mewtwoTargets: Record<string, boolean>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
   setQuantity: (bossId: string, value: number) => void;
-  /** Set the full priority order of the selected bosses (highest first). */
-  setPriorityOrder: (ids: string[]) => void;
+  /** Set one block's priority order (highest first). */
+  setBlockPriority: (blockKey: string, ids: string[]) => void;
+  /** Toggle whether a Mewtwo form is hunted in a given block (rebalances event-wide). */
+  toggleMewtwoTarget: (formId: string, blockKey: string) => void;
   /** Record how many raids the user has completed toward a per-block target. */
   setRaidsDone: (key: string, value: number) => void;
   /** Assign remote raids to a species (caps applied by the caller). Switches off auto-balance. */
@@ -169,15 +178,31 @@ function ensureInput(state: PlannerState, bossId: string): BossInput | null {
 }
 
 /**
- * The selected bosses in effective priority order (highest first): explicit
- * `priorityOrder` first, then any unranked selected bosses in roster order.
- * Shared by the UI ranking list and the per-block plan so both agree.
+ * One block's selected members (fixed-window bosses in that block + the eligible
+ * Mewtwo form) in effective priority order — the block's explicit order first,
+ * then any unranked members in roster order. Shared by the block UI's drag list
+ * and the plan so both agree.
  */
-export function selectedInPriorityOrder(state: {
+export function blockMembersInOrder(memberIds: string[], order: string[]): string[] {
+  const rank = new Map(order.map((id, i) => [id, i] as const));
+  const roster = new Map(SORTED_BOSSES.map((b, i) => [b.id, i] as const));
+  return [...memberIds].sort(
+    (a, b) =>
+      (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity) ||
+      (roster.get(a) ?? Infinity) - (roster.get(b) ?? Infinity),
+  );
+}
+
+/**
+ * Selected bosses in a single global priority order — derived from the per-block
+ * lists (chronological blocks, each block's ranking), then any unranked selected
+ * bosses in roster order. Used by the event-wide remote pool + goal display.
+ */
+export function selectedInGlobalOrder(state: {
   inputs: Record<string, BossInput>;
-  priorityOrder: string[];
+  blockPriority: Record<string, string[]>;
 }): string[] {
-  const rank = new Map(state.priorityOrder.map((id, i) => [id, i] as const));
+  const rank = new Map(globalPriorityFromBlocks(state.blockPriority).map((id, i) => [id, i] as const));
   return SORTED_BOSSES.filter((b) => state.inputs[b.id]?.selected)
     .map((b) => b.id)
     .sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
@@ -197,7 +222,8 @@ export const usePlannerStore = create<PlannerState>()(
       raidsDone: {},
       remoteAllocations: {},
       remoteAuto: true,
-      priorityOrder: [],
+      blockPriority: {},
+      mewtwoTargets: {},
 
       setRaidsDone: (key, value) =>
         set((state) => {
@@ -307,12 +333,16 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs: { ...state.inputs, [bossId]: { ...input, quantity: safe } } };
         }),
 
-      setPriorityOrder: (ids) =>
+      setBlockPriority: (blockKey, ids) =>
+        set((state) => ({ blockPriority: { ...state.blockPriority, [blockKey]: ids } })),
+
+      toggleMewtwoTarget: (formId, blockKey) =>
         set((state) => {
-          // The dragged order of the selected bosses first, then any previously-
-          // ranked ids that aren't currently selected (preserve their relative rank).
-          const others = state.priorityOrder.filter((id) => !ids.includes(id));
-          return { priorityOrder: [...ids, ...others] };
+          const key = `${formId}@${blockKey}`;
+          // Absent = targeted (default on); flip to the opposite of the current
+          // effective value. Manual remote edits stay; auto-balance picks it up.
+          const currently = state.mewtwoTargets[key] !== false;
+          return { mewtwoTargets: { ...state.mewtwoTargets, [key]: !currently } };
         }),
 
       setCurrent: (bossId, field, value) =>
@@ -407,12 +437,13 @@ export const usePlannerStore = create<PlannerState>()(
           raidsDone: {},
           remoteAllocations: {},
           remoteAuto: true,
-          priorityOrder: [],
+          blockPriority: {},
+          mewtwoTargets: {},
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 12,
+      version: 13,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -424,7 +455,8 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.research || Object.keys(state.research).length === 0) state.research = { ...DEFAULT_RESEARCH };
         if (!state.screenshots) state.screenshots = {};
         if (!Array.isArray(state.imports)) state.imports = [];
-        if (!Array.isArray(state.priorityOrder)) state.priorityOrder = [];
+        if (!state.blockPriority || typeof state.blockPriority !== "object") state.blockPriority = {};
+        if (!state.mewtwoTargets || typeof state.mewtwoTargets !== "object") state.mewtwoTargets = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
         if (typeof state.remoteAuto !== "boolean") state.remoteAuto = true;
