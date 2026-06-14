@@ -117,6 +117,17 @@ describe("multi-form species (shared resources)", () => {
     expect(days.has("sun")).toBe(true); // union windows ⇒ both days even from one forme
   });
 
+  it("labels each block with the forme available there (Dialga base Sat, Origin Sun)", () => {
+    const { inputs, results } = buildFor(["dialga"]);
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const shareOn = (day: string) =>
+      plan.blocks.find((b) => b.day === day && b.species.some((s) => s.bossId === "dialga"))?.species.find(
+        (s) => s.bossId === "dialga",
+      );
+    expect(shareOn("sat")?.formeBossId).toBe("dialga");
+    expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
+  });
+
   it("remote cap: dual-day groups get the full budget; single-day groups 50", () => {
     expect(remoteCapFor(getBoss("dialga")!, 60)).toBe(60);
     expect(remoteCapFor(getBoss("palkia")!, 60)).toBe(60);

@@ -35,6 +35,19 @@ export function planningWindows(boss: RaidBoss): HabitatWindow[] {
   return formMembers(boss.formGroup).flatMap((b) => b.windows);
 }
 
+/**
+ * The forme of a (possibly grouped) boss that's available in a given block — used
+ * so a dual-day species shows its Saturday forme on Saturday and its Origin forme
+ * on Sunday. Falls back to the boss itself (non-grouped, or no forme matches).
+ */
+export function formeInBlock(boss: RaidBoss, block: HabitatWindow): RaidBoss {
+  if (!boss.formGroup) return boss;
+  const hit = formMembers(boss.formGroup).find((m) =>
+    m.windows.some((w) => w.day === block.day && w.startHour < block.endHour && w.endHour > block.startHour),
+  );
+  return hit ?? boss;
+}
+
 /** True when a group's formes appear on both Saturday and Sunday. */
 export function groupSpansBothDays(group: string): boolean {
   const days = new Set(formMembers(group).flatMap((b) => b.windows.map((w) => w.day)));

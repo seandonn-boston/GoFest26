@@ -78,7 +78,9 @@ function TargetCard({
 }) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
-  const boss = getBoss(share.bossId);
+  // For a multi-form species, show the forme available in THIS block (name/sprite/
+  // counters); share.bossId stays the shared primary for result/progress linkage.
+  const boss = getBoss(share.formeBossId ?? share.bossId);
   const types = boss?.types ?? [];
   const counters = useMemo(() => topCounters(types), [types]);
   const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);

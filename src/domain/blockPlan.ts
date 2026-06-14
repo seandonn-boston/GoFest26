@@ -16,7 +16,7 @@
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
-import { collapseForms, planningWindows, remoteCapFor } from "./forms";
+import { collapseForms, planningWindows, remoteCapFor, formeInBlock } from "./forms";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
@@ -32,6 +32,9 @@ const emptyBands = (): Record<RiskBand, number> => ({ blue: 0, green: 0, yellow:
 export interface BlockSpeciesShare {
   bossId: string;
   bossName: string;
+  /** For a multi-form species, the specific forme available in THIS block (its
+   *  name/sprite/counters); bossId stays the shared primary for result linkage. */
+  formeBossId?: string;
   /** Sized raids of this boss demanded in this block. */
   raids: number;
   /** Candy-luck raid range for this block share: min = best case, max = worst. */
@@ -163,6 +166,7 @@ export function bandsForSpecies(
 interface RawShare {
   bossId: string;
   bossName: string;
+  formeBossId?: string;
   raids: number;
   range: Range;
   mewtwo: boolean;
@@ -233,6 +237,7 @@ function fillShares(
     return {
       bossId: sh.bossId,
       bossName: sh.bossName,
+      formeBossId: sh.formeBossId,
       raids: sh.raids,
       range: sh.range,
       fitted: fit,
@@ -306,9 +311,13 @@ export function computeBlockPlan(
       const share = Math.floor(blockTotal / idxs.length) + (k < blockTotal % idxs.length ? 1 : 0);
       if (share <= 0) return;
       const frac = (share / blockTotal) * scale;
+      // Show the forme actually available in this block (Origin Forme Dialga on
+      // Sunday); bossId stays the shared primary so results/progress still link.
+      const forme = formeInBlock(boss, HABITATS[bi]);
       shares[bi].push({
         bossId: boss.id,
-        bossName: boss.name,
+        bossName: forme.name,
+        formeBossId: forme.id,
         raids: share,
         range: { min: Math.round(res.raids.min * frac), max: Math.round(res.raids.max * frac) },
         mewtwo: false,
