@@ -220,6 +220,10 @@ export function ScreenshotImporter() {
         ) : null}
       </div>
 
+      <p className="text-[11px] text-amber-300">
+        <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read yet.
+      </p>
+
       {busy ? <p className="text-[11px] text-slate-400">{progress}</p> : null}
 
       {/* Grid of uploaded screenshots with per-shot status (above the pulls). */}
