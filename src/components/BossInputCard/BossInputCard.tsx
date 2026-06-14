@@ -3,10 +3,10 @@
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
-import { describeAvailability, bossWindowSlots } from "@/data";
+import { describeAvailability } from "@/data";
 import { wildTypesForBoss } from "@/data/habitats";
-import { megaBoostsForBoss, megaBoostSpecies } from "@/domain";
-import { buildMegaSearchString } from "@/lib/pokemonSearch";
+import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows } from "@/domain";
+import { buildMegaSearchString, pokemonSearchName } from "@/lib/pokemonSearch";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
@@ -64,8 +64,19 @@ export function BossInputCard({
   const toMax = xlToMaxRemaining(input.current.level, input.current.xlCandy);
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
-  const windowSlots = bossWindowSlots(boss, planningRaidsPerHour);
-  const megaBoosts = megaBoostsForBoss(boss.types ?? [], wildTypesForBoss(boss));
+  // Multi-form species: the card represents the whole group (one shared pool),
+  // but counters / megas / availability stay per forme.
+  const formes = boss.formGroup ? formMembers(boss.formGroup) : [boss];
+  const isGroup = formes.length > 1;
+  const displayName = isGroup ? pokemonSearchName(boss.name) : boss.name;
+  // De-duplicate the union windows (same-day formes share a block) before counting
+  // capacity, so a dual-day species (Dialga) counts both days but Giratina once.
+  const planWindows = isGroup
+    ? Array.from(
+        new Map(planningWindows(boss).map((w) => [`${w.day}-${w.startHour}-${w.endHour}`, w])).values(),
+      )
+    : boss.windows;
+  const windowSlots = planWindows.reduce((s, wd) => s + (wd.endHour - wd.startHour) * planningRaidsPerHour, 0);
   const overWindow = result.raids.min > windowSlots && windowSlots > 0;
   const needEntries = Object.entries(result.needs) as [Currency, { needed: number; raidsRange: { min: number; max: number } }][];
 
@@ -88,12 +99,19 @@ export function BossInputCard({
         <Sprite src={boss.sprite} alt={boss.name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <CyberTitle name={boss.name} types={boss.types} className="text-lg" />
+            <CyberTitle name={displayName} types={boss.types} className="text-lg" />
             <TierBadge tier={boss.tier} />
             {regionLabel ? <Badge>{regionLabel}</Badge> : null}
             {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
           </div>
-          <p className="mt-0.5 text-[11px] text-slate-400">🗓 {describeAvailability(boss)}</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">
+            🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
+          </p>
+          {isGroup ? (
+            <p className="mt-0.5 text-[11px] text-amber-200/80">
+              Both formes share one Candy pool — pick which to battle each block; rewards stack together.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -199,29 +217,43 @@ export function BossInputCard({
         )}
       </div>
 
-      {/* Best raid counters for this boss's typing. */}
-      <CounterTable types={boss.types} />
-
-      {/* Mega to Mega-Evolve for the same-type Candy XL boost on this boss. */}
-      {megaBoosts.length > 0 ? (
-        <Copyable
-          search={buildMegaSearchString(megaBoostSpecies(megaBoosts))}
-          label="mega evolutions"
-          className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
-        >
-          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
-              Mega-evolve for candy
-            </span>
-            <MegaBoostLegend />
+      {/* Counters + mega suggestions, kept separate PER FORME (formes can differ).
+          For a single-form boss this is just one section with no forme label. */}
+      {formes.map((f) => {
+        const boosts = megaBoostsForBoss(f.types ?? [], wildTypesForBoss(f));
+        return (
+          <div key={f.id} className={isGroup ? "mt-3 rounded-lg border border-white/10 p-2" : ""}>
+            {isGroup ? (
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <Sprite src={f.sprite} alt={f.name} size={20} />
+                <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-amber-200/90">
+                  {f.formLabel} forme
+                </span>
+              </div>
+            ) : null}
+            <CounterTable types={f.types} />
+            {boosts.length > 0 ? (
+              <Copyable
+                search={buildMegaSearchString(megaBoostSpecies(boosts))}
+                label="mega evolutions"
+                className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
+              >
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+                    Mega-evolve for candy
+                  </span>
+                  <MegaBoostLegend />
+                </div>
+                <MegaBoostRow boosts={boosts} max={8} />
+                <p className="mt-1.5 text-[10px] text-slate-500">
+                  Evolve one (Mega Level 3-4) before battling — its type matches {f.name}, so every raid &amp;
+                  wild catch drops bonus Candy XL. Only one mega counts at a time.
+                </p>
+              </Copyable>
+            ) : null}
           </div>
-          <MegaBoostRow boosts={megaBoosts} max={8} />
-          <p className="mt-1.5 text-[10px] text-slate-500">
-            Evolve one (Mega Level 3) before battling — its type matches {boss.name}, so every raid &amp;
-            wild catch drops bonus Candy XL. Only one mega counts at a time.
-          </p>
-        </Copyable>
-      ) : null}
+        );
+      })}
 
       {/* Max out more than one — every requirement scales with the count. */}
       <div className="mt-2">

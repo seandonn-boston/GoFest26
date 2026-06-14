@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { MAX_REMOTE_PER_SPECIES } from "@/domain/settings";
+import { remoteCapFor } from "@/domain/forms";
+import { pokemonSearchName } from "@/lib/pokemonSearch";
 import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
-
-const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
 
 /**
  * Per-species remote-raid allocation. The user types how many of each target to
@@ -61,14 +60,15 @@ export function RemoteAllocator() {
         const boss = getBoss(id);
         if (!boss) return null;
         const val = Math.max(0, allocations[id] ?? 0);
-        const speciesCap = isMewtwo(id) ? budget : Math.min(MAX_REMOTE_PER_SPECIES, budget);
+        const speciesCap = remoteCapFor(boss, budget);
         // Can't push this species past its cap, nor the running total past the budget.
         const max = Math.max(0, Math.min(speciesCap, val + (budget - total)));
         const remoteOnly = !bossIsLocal(boss, region);
+        const label = boss.formGroup ? pokemonSearchName(boss.name) : boss.name;
         return (
           <div key={id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5">
             <Sprite src={boss.sprite} alt={boss.name} size={24} />
-            <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{boss.name}</span>
+            <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{label}</span>
             {remoteOnly ? (
               <span className="shrink-0 rounded-sm border border-gofest-accent/50 bg-gofest-accent/15 px-1 py-[1px] font-mono text-[8px] font-extrabold uppercase tracking-wider text-gofest-accent">
                 Remote
