@@ -5,6 +5,7 @@ import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotScan";
+import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
@@ -35,6 +36,10 @@ const SPECIES_OPTIONS = (() => {
     .sort((a, b) => a.label.localeCompare(b.label));
 })();
 const OPTION_BY_KEY = new Map(SPECIES_OPTIONS.map((o) => [o.key, o]));
+
+/** True when a species group contains a mega-capable boss (has Mega Levels). */
+const optionIsMega = (key: string) =>
+  (OPTION_BY_KEY.get(key)?.bosses ?? []).some((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
 
 /** Why a screenshot produced no values — as specific as the scan allows. */
 function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode {
@@ -129,6 +134,11 @@ export function ScreenshotImporter() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [summary, setSummary] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
+
+  /** A Mega Level screenshot already uploaded for this species group. */
+  const hasMegaLevelShot = (key: string) =>
+    imports.some((i) => i.key === key && i.scan.screenshotKind === "megaLevel" && i.scan.readAnything);
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -248,6 +258,14 @@ export function ScreenshotImporter() {
           📷 Upload screenshots
           <span className="rounded-sm border border-black/40 px-1 text-[9px]">beta</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setShowGuide((v) => !v)}
+          aria-expanded={showGuide}
+          className="flex items-center gap-1 text-[11px] font-medium text-sky-300 underline-offset-2 hover:underline"
+        >
+          <span aria-hidden>ⓘ</span> Which screenshots?
+        </button>
         {imports.length ? (
           <button
             type="button"
@@ -265,6 +283,41 @@ export function ScreenshotImporter() {
       <p className="text-[11px] text-amber-300">
         <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read yet.
       </p>
+
+      {showGuide ? (
+        <div className="rounded-sm border border-sky-400/30 bg-sky-500/[0.06] p-3">
+          <p className="mb-2 text-[11px] text-slate-300">
+            Two kinds of screenshot are read. Upload the first for any Pokémon; add the second for mega-capable
+            (and Primal) targets to capture its current Mega Level. Locate the <b>exact</b> Pokémon you want to max
+            — not just any of the same species.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assetPath(GUIDE_IMAGES.card)}
+                alt="Example Pokémon stats page showing Candy, Candy XL and Mega Energy"
+                className="w-full rounded-sm border border-white/10"
+              />
+              <figcaption className="mt-1 text-[10px] text-slate-400">
+                <b className="text-emerald-300">1 · Pokémon page</b> — any Pokémon. Reads Candy / XL / Mega Energy.
+              </figcaption>
+            </figure>
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assetPath(GUIDE_IMAGES.megaLevel)}
+                alt="Example Mega Level page showing the level banner and Mega Energy"
+                className="w-full rounded-sm border border-white/10"
+              />
+              <figcaption className="mt-1 text-[10px] text-slate-400">
+                <b className="text-purple-300">2 · Mega Level page</b> — mega/Primal only. Reads the current Mega Level.
+                Branching megas (Charizard X/Y, Mewtwo X/Y) need one per line.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      ) : null}
 
       {busy ? <p className="text-[11px] text-slate-400">{progress}</p> : null}
 
@@ -302,12 +355,27 @@ export function ScreenshotImporter() {
                 <div className="min-w-0 flex-1">
                   {s.scan.readAnything ? (
                     <>
-                      <div className="mb-1.5">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                         <ScanChips scan={s.scan} />
+                        {s.scan.megaLevel !== undefined ? (
+                          <span
+                            title="Current Mega Level read from the Mega Level page"
+                            className="rounded-sm bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-bold text-purple-200 ring-1 ring-purple-400/40"
+                          >
+                            Mega L{s.scan.megaLevel}
+                            {s.scan.megaLevelForm ? ` ${s.scan.megaLevelForm.toUpperCase()}` : ""}
+                          </span>
+                        ) : null}
                       </div>
                       {!assignable && s.scan.detectedName ? (
                         <p className="mb-1.5 text-[11px] text-sky-300">
                           ❗ {cap(s.scan.detectedName)} isn’t available for raids during this event — pick another below.
+                        </p>
+                      ) : null}
+                      {assignable && s.scan.screenshotKind === "card" && optionIsMega(s.key) && !hasMegaLevelShot(s.key) ? (
+                        <p className="mb-1.5 text-[11px] text-purple-300">
+                          ➕ Mega target — also upload its <b>Mega Level</b> screenshot to set the current Mega Level
+                          (tap ⓘ above for the example).
                         </p>
                       ) : null}
                       {superseded ? (

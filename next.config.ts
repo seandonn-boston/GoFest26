@@ -8,6 +8,9 @@ const basePath = process.env.PAGES_BASE_PATH || "";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Expose the deploy base path to client code so plain <img>/preload tags can
+  // address files in public/ correctly under a GitHub Pages subpath.
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   ...(isPages
     ? {
         output: "export",
