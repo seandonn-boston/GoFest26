@@ -41,6 +41,10 @@ const OPTION_BY_KEY = new Map(SPECIES_OPTIONS.map((o) => [o.key, o]));
 const optionIsMega = (key: string) =>
   (OPTION_BY_KEY.get(key)?.bosses ?? []).some((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
 
+/** Dedupe identity for "most-recent wins": per species AND per screenshot kind,
+ *  so a Pokémon's stats card and its Mega Level page coexist (different data). */
+const shotDedupeKey = (s: ImportedShot) => `${s.key}|${s.scan.screenshotKind}`;
+
 /** Why a screenshot produced no values — as specific as the scan allows. */
 function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode {
   if (!scan.looksLikePogo) {
@@ -193,11 +197,12 @@ export function ScreenshotImporter() {
   const latestIdByKey = new Map<string, string>();
   for (const s of imports) {
     if (!s.key) continue;
-    const curId = latestIdByKey.get(s.key);
+    const k = shotDedupeKey(s);
+    const curId = latestIdByKey.get(k);
     const cur = curId ? imports.find((x) => x.id === curId) : undefined;
-    if (!cur || s.scan.capturedAt >= cur.scan.capturedAt) latestIdByKey.set(s.key, s.id);
+    if (!cur || s.scan.capturedAt >= cur.scan.capturedAt) latestIdByKey.set(k, s.id);
   }
-  const isSuperseded = (s: ImportedShot) => !!s.key && latestIdByKey.get(s.key) !== s.id;
+  const isSuperseded = (s: ImportedShot) => !!s.key && latestIdByKey.get(shotDedupeKey(s)) !== s.id;
   const assignableOf = (s: ImportedShot) => s.scan.readAnything && !!s.key && OPTION_BY_KEY.has(s.key);
 
   const statusOf = (s: ImportedShot): ShotStatus => {
@@ -216,21 +221,24 @@ export function ScreenshotImporter() {
   }
 
   function applyAll() {
-    // Same species → keep only the most-recent screenshot (not additive).
+    // Most-recent per species AND kind, so a Pokémon's stats card and its Mega
+    // Level page both apply (card → candy/XL/energy, Mega Level page → mega level).
+    // Each writes only its own fields, so neither clobbers the other.
     const byKey = new Map<string, ImportedShot>();
     for (const s of imports) {
       if (!assignableOf(s)) continue;
-      const prev = byKey.get(s.key);
-      if (!prev || s.scan.capturedAt >= prev.scan.capturedAt) byKey.set(s.key, s);
+      const k = shotDedupeKey(s);
+      const prev = byKey.get(k);
+      if (!prev || s.scan.capturedAt >= prev.scan.capturedAt) byKey.set(k, s);
     }
-    const labels: string[] = [];
-    for (const [key, s] of byKey) {
-      const opt = OPTION_BY_KEY.get(key)!;
+    const labels = new Set<string>();
+    for (const s of byKey.values()) {
+      const opt = OPTION_BY_KEY.get(s.key)!;
       applyScan(s.scan, opt.bosses, setSelected, setCurrent);
-      if (s.thumb) setScreenshot(key, s.thumb, s.scan.capturedAt);
-      labels.push(opt.label);
+      if (s.thumb) setScreenshot(s.key, s.thumb, s.scan.capturedAt);
+      labels.add(opt.label);
     }
-    setSummary(labels.length ? `Filled ${labels.length}: ${labels.join(", ")}` : "Assign a Pokémon to a screenshot first.");
+    setSummary(labels.size ? `Filled ${labels.size}: ${[...labels].join(", ")}` : "Assign a Pokémon to a screenshot first.");
   }
 
   function del(id: string) {
