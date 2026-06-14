@@ -16,6 +16,7 @@
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
+import { collapseForms, planningWindows, remoteCapFor } from "./forms";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
@@ -259,6 +260,9 @@ export function computeBlockPlan(
   remoteAllocations: Record<string, number> = {},
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
+  // Multi-form species collapse to one shared-resource target (primary forme),
+  // matching the collapsed results from computePlanSummary.
+  inputs = collapseForms(inputs);
   // Remote raids the user assigned to each species reduce that species' in-person
   // (time-block) demand — only the non-remote remainder needs to fit a block.
   const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
@@ -294,7 +298,9 @@ export function computeBlockPlan(
     const blockTotal = Math.max(0, total - remoteFor(boss.id));
     if (blockTotal <= 0) continue;
     const scale = blockTotal / total; // shrink the candy-luck range to the in-person portion
-    const idxs = blockIndicesForWindows(boss.windows);
+    // A shared-resource multi-form species (Dialga, Palkia, …) spreads its one
+    // pool across every block any forme appears in — possibly both days.
+    const idxs = blockIndicesForWindows(planningWindows(boss));
     if (!idxs.length) continue;
     idxs.forEach((bi, k) => {
       const share = Math.floor(blockTotal / idxs.length) + (k < blockTotal % idxs.length ? 1 : 0);
@@ -476,6 +482,8 @@ export function autoRemoteAllocations(
   priorityOrder: string[],
 ): Record<string, number> {
   const rewardCase = settings.rewardCase;
+  // Multi-form species collapse to one shared-resource target (primary forme).
+  inputs = collapseForms(inputs);
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   const rank = new Map(priorityOrder.map((id, i) => [id, i] as const));
   const priorityOf = (id: string) => rank.get(id) ?? Infinity;
@@ -510,7 +518,8 @@ export function autoRemoteAllocations(
   let budget = settings.remoteRaidBudget;
   for (const n of needs) {
     if (budget <= 0) break;
-    const cap = n.mewtwo ? settings.remoteRaidBudget : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
+    const boss = getBoss(n.id);
+    const cap = boss ? remoteCapFor(boss, settings.remoteRaidBudget) : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
     const give = Math.min(n.need, cap, budget);
     if (give > 0) {
       out[n.id] = give;

@@ -83,6 +83,14 @@ export interface RaidBoss {
   region?: RegionScope;
   /** Optional planning tip (e.g. "wait for the Primal form to get Primal Energy"). */
   note?: string;
+  // ---- Multi-form (shared-resource) species ----
+  /** Group id when this boss is one forme of a shared-Candy species (Giratina,
+   *  Dialga, Palkia, the genie quartet). Siblings share one resource pool. */
+  formGroup?: string;
+  /** Short forme label for the combined card ("Altered", "Origin", "Therian"…). */
+  formLabel?: string;
+  /** True for the group's representative forme that carries the shared pool. */
+  formPrimary?: boolean;
   // ---- Mega-specific fields (only for mega / super-mega bosses) ----
   /** Mega Energy cost of the very first Mega Evolution (e.g. 7,500 for Mewtwo). */
   megaEvolutionEnergyFirst?: number;

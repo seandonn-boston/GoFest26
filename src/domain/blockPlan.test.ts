@@ -6,6 +6,7 @@ import { computeBossResult } from "./raidsNeeded";
 import { computeGrossRequirement } from "./requirements";
 import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS } from "./settings";
 import { bossIsLocal } from "./region";
+import { collapseForms, remoteCapFor, groupSpansBothDays } from "./forms";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID, SORTED_BOSSES } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
 import type { BossInput, BossResult, Range } from "./types";
@@ -84,6 +85,47 @@ const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
 const SINGLE_BLOCK = SORTED_BOSSES.filter(
   (b) => !isMewtwo(b.id) && b.windows.length === 1 && b.windows[0].endHour - b.windows[0].startHour === 3,
 );
+
+describe("multi-form species (shared resources)", () => {
+  const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
+    plan.blocks.reduce((s, b) => s + b.demand, 0);
+
+  it("collapses a form group to one primary target, selected if any forme is", () => {
+    const altered = { ...makeDefaultInput(getBoss("giratina-altered")!), selected: false };
+    const origin = makeDefaultInput(getBoss("giratina-origin")!); // selected
+    const collapsed = collapseForms([altered, origin]);
+    const giratina = collapsed.filter((i) => getBoss(i.bossId)?.formGroup === "giratina");
+    expect(giratina).toHaveLength(1);
+    expect(giratina[0].bossId).toBe("giratina-altered"); // primary carries the pool
+    expect(giratina[0].selected).toBe(true); // any forme selected ⇒ group selected
+  });
+
+  it("does not double-count a shared-resource species across its formes", () => {
+    const both = buildFor(["giratina-altered", "giratina-origin"]);
+    const one = buildFor(["giratina-altered"]);
+    const planBoth = computeBlockPlan(both.inputs, both.results, ROOMY);
+    const planOne = computeBlockPlan(one.inputs, one.results, ROOMY);
+    expect(blockDemand(planBoth)).toBeGreaterThan(0);
+    expect(blockDemand(planBoth)).toBe(blockDemand(planOne)); // one shared pool either way
+  });
+
+  it("splits a dual-day shared species (Dialga) across Saturday and Sunday", () => {
+    const { inputs, results } = buildFor(["dialga"]); // only the base forme picked
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const days = new Set(plan.blocks.filter((b) => b.species.some((s) => s.bossId === "dialga")).map((b) => b.day));
+    expect(days.has("sat")).toBe(true);
+    expect(days.has("sun")).toBe(true); // union windows ⇒ both days even from one forme
+  });
+
+  it("remote cap: dual-day groups get the full budget; single-day groups 50", () => {
+    expect(remoteCapFor(getBoss("dialga")!, 60)).toBe(60);
+    expect(remoteCapFor(getBoss("palkia")!, 60)).toBe(60);
+    expect(remoteCapFor(getBoss("giratina-altered")!, 60)).toBe(50);
+    expect(remoteCapFor(getBoss("tornadus-incarnate")!, 60)).toBe(50);
+    expect(groupSpansBothDays("dialga")).toBe(true);
+    expect(groupSpansBothDays("giratina")).toBe(false);
+  });
+});
 
 describe("computeBlockPlan — allocation", () => {
   it("pins a fixed-window boss to the habitat block it spawns in", () => {

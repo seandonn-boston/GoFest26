@@ -5,6 +5,7 @@ import type {
   RegionScope,
 } from "@/domain/types";
 import { GAME_CONFIG } from "./config";
+import { FORM_META } from "./formGroups";
 
 /**
  * RAID_BOSSES — the GO Fest 2026: Global raid roster.
@@ -874,11 +875,15 @@ const SPRITES: Record<string, string> = {
   zamazenta: "pm889.fHERO.icon.png",
 };
 
-export const RAID_BOSSES: RaidBoss[] = ROSTER.map((b, i) => ({
-  ...b,
-  sortPriority: i,
-  sprite: SPRITES[b.id] ? SPRITE_BASE + SPRITES[b.id] : undefined,
-}));
+export const RAID_BOSSES: RaidBoss[] = ROSTER.map((b, i) => {
+  const form = FORM_META.get(b.id);
+  return {
+    ...b,
+    sortPriority: i,
+    sprite: SPRITES[b.id] ? SPRITE_BASE + SPRITES[b.id] : undefined,
+    ...(form ? { formGroup: form.group, formLabel: form.label, formPrimary: form.primary } : {}),
+  };
+});
 
 /** Sprite URL for Mega Mewtwo Y (used in the combined Mewtwo card). */
 export const MEWTWO_Y_SPRITE = SPRITE_BASE + SPRITES["mega-mewtwo-y"];
