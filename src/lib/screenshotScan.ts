@@ -69,6 +69,19 @@ export interface ScanResult {
   items: ItemHit[];
   /** True when the image showed Pokémon GO UI (labels/markers), even if no values read. */
   looksLikePogo: boolean;
+  /**
+   * Which Pokémon GO screen this is: the universal stats "card" (candy / XL /
+   * energy) or the "megaLevel" page (the Mega Level status screen). Detected from
+   * the Mega Level banner + bonuses markers; defaults to "card".
+   */
+  screenshotKind: "card" | "megaLevel";
+  /**
+   * Current Mega Level (1=Base, 2=High, 3=Max, 4=Super Max) read from the Mega
+   * Level page's banner. Only present on a "megaLevel" screenshot.
+   */
+  megaLevel?: number;
+  /** Mega form (X / Y) this Mega Level page is showing, from its energy label. */
+  megaLevelForm?: "x" | "y" | null;
   /** File timestamp — used to pick the most-recent screenshot per species. */
   capturedAt: number;
   readAnything: boolean;
@@ -775,6 +788,31 @@ function completeSiblingEnergy(energies: EnergyHit[], parsed: ParsedScreen): voi
   }
 }
 
+/**
+ * Read the current Mega Level from a Mega Level page's banner text: Base=1,
+ * High=2, Max=3, Super Max=4. Order matters — "super max" must beat "max", which
+ * must beat the bare-"level" guard. Returns undefined when no banner is present
+ * (i.e. this isn't a Mega Level screenshot).
+ */
+const MEGA_LEVEL_BANNERS: ReadonlyArray<readonly [RegExp, number]> = [
+  [/\bsuper\s*max\s*level\b/i, 4],
+  [/\bmax\s*level\b/i, 3],
+  [/\bhigh\s*level\b/i, 2],
+  [/\bbase\s*level\b/i, 1],
+];
+export function detectMegaLevel(rawText: string): number | undefined {
+  const t = rawText.replace(/\s+/g, " ");
+  for (const [re, level] of MEGA_LEVEL_BANNERS) if (re.test(t)) return level;
+  return undefined;
+}
+
+/** True when the text carries Mega Level page markers (banner / bonuses / level-up). */
+function isMegaLevelPage(rawText: string, megaLevel: number | undefined): boolean {
+  if (megaLevel !== undefined) return true;
+  const t = rawText.replace(/\s+/g, " ");
+  return /mega evolution bonuses/i.test(t) || /to reach .*level/i.test(t);
+}
+
 /** Build the final ScanResult from a parsed screen (boxes or text path). */
 export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText = ""): ScanResult {
   const res = parsed.resources;
@@ -822,6 +860,17 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
     .map((r) => r.species!);
   const resolved = chooseSpecies(energySpecies, candySpecies, ROSTER_VOCAB);
 
+  // Mega Level page: read the level from its banner. The form comes from the
+  // page's energy label (the active X/Y tab), so a branching mega's level lands
+  // on the right line. The energy VALUE on this page is unreliable (it sits right
+  // of the label, next to the red LEVEL UP cost), so it's the card — not this
+  // page — that supplies held energy.
+  const megaLevel = detectMegaLevel(rawText);
+  const megaPage = isMegaLevelPage(rawText, megaLevel);
+  const megaLevelForm = megaPage
+    ? res.find((r) => r.kind === "energy" && r.form)?.form ?? megaEnergies.find((e) => e.form)?.form ?? null
+    : null;
+
   return {
     species: resolved.key,
     detectedName: normSpecies(resolved.name),
@@ -831,8 +880,11 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
     megaEnergies,
     items,
     looksLikePogo: res.length > 0 || parsed.markers >= 2,
+    screenshotKind: megaPage ? "megaLevel" : "card",
+    ...(megaLevel !== undefined ? { megaLevel } : {}),
+    ...(megaPage ? { megaLevelForm } : {}),
     capturedAt,
-    readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0,
+    readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0 || megaLevel !== undefined,
     // Keep the full text (capped generously) so a failed scan can be copied
     // verbatim into a unit test; the UI truncates it for display.
     rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 4000),

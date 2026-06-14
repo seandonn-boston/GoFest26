@@ -49,23 +49,64 @@ function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode 
   );
 }
 
+/** Current-stat fields the importer writes (subset of the store's CurrentField). */
+type CurrentField = "candy" | "xlCandy" | "megaEnergy" | "megaLevel";
+
+/** Trailing X / Y form letter of a boss name ("Mega Mewtwo X" → "x"), else null. */
+const bossFormLetter = (name: string): "x" | "y" | null => {
+  const m = name.trim().toLowerCase().match(/\b([xy])$/);
+  return (m?.[1] as "x" | "y") ?? null;
+};
+
+/**
+ * Apply the current Mega Level read from a Mega Level page to the matching mega
+ * boss. For branching megas (X/Y), the page's form letter picks the line — never
+ * cross-applied to the sibling. A branching page with no readable form is skipped
+ * rather than guessed.
+ */
+function applyMegaLevel(
+  scan: ScanResult,
+  bosses: RaidBoss[],
+  setCurrent: (id: string, field: CurrentField, v: number) => void,
+) {
+  if (scan.megaLevel === undefined) return;
+  const megaBosses = bosses.filter((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
+  if (!megaBosses.length) return;
+  const form = scan.megaLevelForm ?? null;
+  const targets = form
+    ? megaBosses.filter((b) => bossFormLetter(b.name) === form)
+    : megaBosses.length === 1
+      ? megaBosses
+      : []; // ambiguous branching page (no form) → don't guess
+  for (const b of targets) {
+    const max = (b.megaLevelEnergyTotals?.length ?? 1) - 1;
+    setCurrent(b.id, "megaLevel", Math.max(0, Math.min(max, Math.round(scan.megaLevel))));
+  }
+}
+
 function applyScan(
   scan: ScanResult,
   bosses: RaidBoss[],
   setSelected: (id: string, v: boolean) => void,
-  setCurrent: (id: string, field: "candy" | "xlCandy" | "megaEnergy", v: number) => void,
+  setCurrent: (id: string, field: CurrentField, v: number) => void,
 ) {
   const sorted = [...bosses].sort((a, b) => a.sortPriority - b.sortPriority);
-  for (const b of sorted) {
-    setSelected(b.id, true);
-    if (scan.candy !== undefined) setCurrent(b.id, "candy", scan.candy);
-    if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
+  for (const b of sorted) setSelected(b.id, true);
+  // The stats card supplies candy / XL / held energy. The Mega Level page does
+  // not (its energy value is unreliable), so only the card writes those.
+  if (scan.screenshotKind === "card") {
+    for (const b of sorted) {
+      if (scan.candy !== undefined) setCurrent(b.id, "candy", scan.candy);
+      if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
+    }
+    const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
+    const vals = energyForBosses(scan.megaEnergies, energyBosses);
+    energyBosses.forEach((b, i) => {
+      if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
+    });
   }
-  const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
-  const vals = energyForBosses(scan.megaEnergies, energyBosses);
-  energyBosses.forEach((b, i) => {
-    if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
-  });
+  // The Mega Level page supplies the current Mega Level.
+  applyMegaLevel(scan, sorted, setCurrent);
 }
 
 /**
@@ -104,6 +145,7 @@ export function ScreenshotImporter() {
         megaEnergies: [],
         items: [],
         looksLikePogo: false,
+        screenshotKind: "card",
         capturedAt: file.lastModified || 0,
         readAnything: false,
       };

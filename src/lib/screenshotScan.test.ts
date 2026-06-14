@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assembleScan,
+  detectMegaLevel,
   reconcileFusedValues,
   chooseSpecies,
   classifyLabel,
@@ -473,6 +474,35 @@ describe("parseScreen — real screenshot layouts", () => {
       b("75", 400, 1200, 25), // unclaimed (its Metal Coat label is occluded)
     ]);
     expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix", kind: "mega" }]);
+  });
+
+  it("reads the Mega Level from the page banner (Super Max beats Max)", () => {
+    expect(detectMegaLevel("Base Level")).toBe(1);
+    expect(detectMegaLevel("High Level")).toBe(2);
+    expect(detectMegaLevel("Max Level")).toBe(3);
+    expect(detectMegaLevel("Super Max Level")).toBe(4);
+    expect(detectMegaLevel("Candy 1,234  XL 77")).toBeUndefined();
+  });
+
+  it("tags a Mega Level page with its level + form; energy stays card-only", () => {
+    const r = assembleScan(
+      parseScreenText("209\nMEGA CHARIZARD MEGA ENERGY\nX"),
+      0,
+      "High Level MEGA CHARIZARD X MEGA ENERGY 209 MEGA EVOLUTION BONUSES",
+    );
+    expect(r.screenshotKind).toBe("megaLevel");
+    expect(r.megaLevel).toBe(2);
+    expect(r.megaLevelForm).toBe("x");
+  });
+
+  it("treats a regular stats card as the 'card' kind with no mega level", () => {
+    const r = scanWords([
+      b("1,178", 460, 1100, 60),
+      b("GARCHOMP", 380, 1140, 90),
+      b("CANDY", 470, 1140, 65),
+    ]);
+    expect(r.screenshotKind).toBe("card");
+    expect(r.megaLevel).toBeUndefined();
   });
 
   it("does NOT guess the sibling energy for Gallade/Gardevoir (separate final evos)", () => {
