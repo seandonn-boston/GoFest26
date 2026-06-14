@@ -5,7 +5,7 @@ import { autoRemoteAllocations, globalPriorityFromBlocks } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
-import { MAX_REMOTE_BUDGET, SAFE_REMOTE_RAIDS } from "@/domain/settings";
+import { MAX_REMOTE_BUDGET, MAX_REMOTE_RAIDS, SAFE_REMOTE_RAIDS } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
 /**
@@ -85,6 +85,38 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
         <p className="mt-1 text-[11px] text-slate-500">
           <span className="font-mono text-slate-300">{allocated}</span> / {budget} passes assigned below.
         </p>
+      ) : null}
+
+      {on ? (
+        <div className="mt-1.5">
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gofest-bg/60 ring-1 ring-white/10">
+            {/* Reliable Saturday & Sunday remote raids (≤ 40) — normal color. */}
+            <div
+              className="absolute inset-y-0 left-0 bg-emerald-500/70"
+              style={{ width: `${(Math.min(allocated, SAFE_REMOTE_RAIDS) / MAX_REMOTE_RAIDS) * 100}%` }}
+            />
+            {/* High-risk Friday/Monday timezone raids (> 40) — red. */}
+            {allocated > SAFE_REMOTE_RAIDS ? (
+              <div
+                className="absolute inset-y-0 bg-rose-500/80"
+                style={{
+                  left: `${(SAFE_REMOTE_RAIDS / MAX_REMOTE_RAIDS) * 100}%`,
+                  width: `${((Math.min(allocated, MAX_REMOTE_RAIDS) - SAFE_REMOTE_RAIDS) / MAX_REMOTE_RAIDS) * 100}%`,
+                }}
+              />
+            ) : null}
+            {/* The 40-raid Sat&Sun threshold. */}
+            <div
+              className="absolute inset-y-0 w-px bg-white/50"
+              style={{ left: `${(SAFE_REMOTE_RAIDS / MAX_REMOTE_RAIDS) * 100}%` }}
+            />
+          </div>
+          <div className="mt-0.5 flex justify-between text-[9px] text-slate-500">
+            <span>0</span>
+            <span className="text-emerald-400/80">{SAFE_REMOTE_RAIDS} · Sat &amp; Sun</span>
+            <span className="text-rose-400/80">{MAX_REMOTE_RAIDS} · +Fri/Mon</span>
+          </div>
+        </div>
       ) : null}
 
       {on && budget > SAFE_REMOTE_RAIDS ? (
