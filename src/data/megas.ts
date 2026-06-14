@@ -26,7 +26,17 @@ export interface MegaForm {
   sprite: string;
   /** Attacking type → eDPS (from ATTACKERS) for the "also an attacker" tier. */
   attacks: Partial<Record<PType, number>>;
+  /**
+   * True when this species can reach Mega Level 4 ("Super Max"). Level-4 megas
+   * grant an even higher same-type Candy XL raid-loot chance than Level 3, so the
+   * boost engine floats them above level-3 megas regardless of matchup.
+   */
+  superMax: boolean;
 }
+
+// Mega species that can be taken to Mega Level 4 ("Super Max Level"). Keyed by
+// the final-evolution species term. Keep in sync with the in-game Super Max list.
+const SUPER_MAX_SPECIES = new Set<string>(["Mewtwo"]);
 
 // The mega's own (defensive) typing.
 const MEGA_TYPES: Record<string, PType[]> = {
@@ -122,5 +132,12 @@ export const MEGAS: MegaForm[] = ATTACKERS.filter((a) => a.category === "mega").
   if (process.env.NODE_ENV !== "production" && (!types || !file)) {
     throw new Error(`megas.ts: missing ${!types ? "types" : "sprite"} for "${a.name}"`);
   }
-  return { name: a.name, species: a.species, types: types ?? [], sprite: SPRITE_BASE + (file ?? ""), attacks: a.attacks };
+  return {
+    name: a.name,
+    species: a.species,
+    types: types ?? [],
+    sprite: SPRITE_BASE + (file ?? ""),
+    attacks: a.attacks,
+    superMax: SUPER_MAX_SPECIES.has(a.species),
+  };
 });

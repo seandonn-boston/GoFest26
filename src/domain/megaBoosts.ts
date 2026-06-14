@@ -67,7 +67,20 @@ export function megaBoostsForBoss(bossTypes: string[], wildTypes: string[] = [])
     const within = kind === "attacker" ? atk : overlap * 100 + maxDps(mega);
     out.push({ mega, kind, score: TIER[kind] + within });
   }
-  return out.sort((a, b) => b.score - a.score || a.mega.name.localeCompare(b.mega.name));
+  return out.sort(bySuperMaxThenScore);
+}
+
+/**
+ * Sort comparator: Mega-Level-4-capable ("Super Max") species always rank first
+ * (they grant the higher Candy XL loot chance), regardless of attacking power or
+ * wild-spawn matchup; then by candy-boost score, then name.
+ */
+function bySuperMaxThenScore(a: MegaBoost, b: MegaBoost): number {
+  return (
+    Number(b.mega.superMax) - Number(a.mega.superMax) ||
+    b.score - a.score ||
+    a.mega.name.localeCompare(b.mega.name)
+  );
 }
 
 function maxDps(mega: MegaForm): number {
@@ -99,7 +112,7 @@ export function blockMegaBoosts(wildTypes: string[], bossTypesList: string[][]):
     const kind: MegaKind = attackerHits > 0 ? "attacker" : wildHits > 0 ? "wild" : "boss";
     out.push({ mega, kind, score });
   }
-  return out.sort((a, b) => b.score - a.score || a.mega.name.localeCompare(b.mega.name));
+  return out.sort(bySuperMaxThenScore);
 }
 
 /** Merge per-boss boost lists into one ranked list (best kind/score per mega). */
@@ -111,7 +124,7 @@ export function mergeMegaBoosts(lists: MegaBoost[][]): MegaBoost[] {
       if (!cur || b.score > cur.score) best.set(b.mega.name, b);
     }
   }
-  return [...best.values()].sort((a, b) => b.score - a.score || a.mega.name.localeCompare(b.mega.name));
+  return [...best.values()].sort(bySuperMaxThenScore);
 }
 
 /** Deduped species (preserve rank order) for a "& mega3" search string. */
