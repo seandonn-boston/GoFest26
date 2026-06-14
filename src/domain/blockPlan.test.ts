@@ -237,7 +237,7 @@ describe("computeBlockPlan — allocation", () => {
 });
 
 describe("remote raids (manual per-species allocation)", () => {
-  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: MAX_REMOTE_RAIDS };
   const remoteOnly = SORTED_BOSSES.find((b) => !isMewtwo(b.id) && !bossIsLocal(b, DEFAULT_SETTINGS.region));
   // A 5★ (big XL climb) keeps the in-person demand comfortably above the 5 we shift remote.
   const localSat = SINGLE_BLOCK.find(

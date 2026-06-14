@@ -154,23 +154,6 @@ export function AssumptionsControls() {
         </span>
       </label>
 
-      {/* Friday remote raids */}
-      <label className="flex cursor-pointer items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="mt-0.5 h-4 w-4 accent-gofest-accent2"
-          checked={settings.fridayRemoteRaids}
-          onChange={(e) => setSettings({ fridayRemoteRaids: e.target.checked })}
-        />
-        <span className="text-slate-300">
-          Raid Friday night (20 remote raids)
-          <span className="block text-xs text-slate-500">
-            Try-hard mode: +20 remote-raid budget, and the free Friday Orange pass carries over
-            (10 Orange on Saturday).
-          </span>
-        </span>
-      </label>
-
       {/* GO Fest research — credited toward goals, on by default */}
       <div>
         <div className="mb-1.5 text-sm text-slate-300">GO Fest research</div>

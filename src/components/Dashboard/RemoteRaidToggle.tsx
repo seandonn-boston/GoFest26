@@ -5,7 +5,7 @@ import { autoRemoteAllocations, globalPriorityFromBlocks } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
-import { MAX_REMOTE_BUDGET } from "@/domain/settings";
+import { MAX_REMOTE_BUDGET, SAFE_REMOTE_RAIDS } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
 /**
@@ -84,6 +84,17 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
       {on ? (
         <p className="mt-1 text-[11px] text-slate-500">
           <span className="font-mono text-slate-300">{allocated}</span> / {budget} passes assigned below.
+        </p>
+      ) : null}
+
+      {on && budget > SAFE_REMOTE_RAIDS ? (
+        <p className="mt-1.5 rounded-sm border border-rose-400/40 bg-rose-500/10 p-2 text-[10px] leading-relaxed text-rose-200">
+          ⚠ You&apos;ve exceeded the {SAFE_REMOTE_RAIDS} remote raids reliably available Saturday &amp; Sunday, so
+          you&apos;re choosing to remote raid Friday or Monday by taking advantage of time zones. This is viable, but:
+          the Friday cap is 10 and the Monday cap is 10; Friday remote raids can only target Saturday&apos;s bosses and
+          Monday only Sunday&apos;s; there&apos;s no guarantee you&apos;ll find the bosses you want, nor that you can
+          complete them all in time. All Friday/Monday remote raids (above {SAFE_REMOTE_RAIDS}) are shown in red on the
+          bar to flag this high risk.
         </p>
       ) : null}
 

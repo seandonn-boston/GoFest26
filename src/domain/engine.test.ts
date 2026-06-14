@@ -204,15 +204,12 @@ describe("scheduler", () => {
     expect(kar?.passType).not.toBe("remote");
   });
 
-  it("caps remote-only bosses at the remote-raid budget (and Friday adds more)", () => {
+  it("caps remote-only bosses at the per-day remote-raid budget", () => {
     // Celesteela is Southern-only → remote for Boston; a level 40→50 goal needs
-    // far more than the per-day remote cap.
+    // far more than the per-day remote cap, so the schedule fills only the cap.
     const cel = input("celesteela", { level: 40, targetLevel: 50 });
     const base = scheduleFor([cel]);
     expect(base.raids.filter((r) => r.bossId === "celesteela").length).toBe(20);
-
-    const withFriday = scheduleFor([cel], { ...DEFAULT_SETTINGS, fridayRemoteRaids: true });
-    expect(withFriday.raids.filter((r) => r.bossId === "celesteela").length).toBe(40);
   });
 
   it("flags an unmet goal when a windowed boss needs more raids than its windows allow", () => {
