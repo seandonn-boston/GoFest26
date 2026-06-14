@@ -721,10 +721,15 @@ export function chooseSpecies(
 // ---------------------------------------------------------------------------
 
 /**
- * Species knowledge: families whose energy cells always come in PAIRS — the
- * branching megas (X/Y), the fusions (Volt/Blaze, Solar/Lunar) and the Ralts
- * line (Gallade/Gardevoir). When ONE sibling was read, the page must also show
- * the other.
+ * Species knowledge: families whose energy cells always come in PAIRS on a SINGLE
+ * page — the branching megas (X/Y, both shown on one Mega Level page) and the
+ * fusions (Volt/Blaze, Solar/Lunar, shown together). When ONE sibling was read,
+ * the page must also show the other.
+ *
+ * NOTE: Gallade and Gardevoir are deliberately NOT paired here. They are separate
+ * final evolutions of Ralts with their OWN Mega Energy, and each one's screenshot
+ * shows only its own energy — so inferring the sibling's amount is a misleading
+ * guess. Only a base-Ralts page lists both, and there both are read directly.
  */
 function siblingOf(e: EnergyHit): EnergyHit | null {
   if (e.form === "x" || e.form === "y") {
@@ -734,10 +739,6 @@ function siblingOf(e: EnergyHit): EnergyHit | null {
   if (e.flavor && FLAVOR_PAIRS[e.flavor]) {
     return { ...e, flavor: FLAVOR_PAIRS[e.flavor], value: 0 };
   }
-  const SPECIES_PAIRS: Record<string, string> = { gallade: "gardevoir", gardevoir: "gallade" };
-  if (e.species && SPECIES_PAIRS[e.species]) {
-    return { ...e, species: SPECIES_PAIRS[e.species], value: 0 };
-  }
   return null;
 }
 
@@ -746,7 +747,7 @@ const sameSlot = (a: EnergyHit, b: EnergyHit) =>
 
 /**
  * Prior-driven completion: a paired-energy species (Charizard, Mewtwo, Kyurem,
- * Necrozma, the Ralts line) ALWAYS shows both energy cells, so when one was
+ * Necrozma) ALWAYS shows both energy cells on one page, so when one was
  * read and the other's label was unreadable (e.g. hidden behind the radial
  * menu) but its number is clearly visible, assign it. "Clearly visible" is
  * strict: exactly ONE unclaimed number, in the central band of the stat grid,

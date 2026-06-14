@@ -475,7 +475,10 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix", kind: "mega" }]);
   });
 
-  it("completes the Gallade/Gardevoir pair the same way", () => {
+  it("does NOT guess the sibling energy for Gallade/Gardevoir (separate final evos)", () => {
+    // Gallade and Gardevoir each have their own Mega Energy and a final-evolution
+    // screenshot shows only its own — so the unclaimed 80 must NOT be guessed as
+    // the sibling's energy (that misled users with a phantom "~" amount).
     const r = scanWords([
       b("60", 480, 1100, 25),
       b("GALLADE", 380, 1140, 85),
@@ -483,10 +486,7 @@ describe("parseScreen — real screenshot layouts", () => {
       b("ENERGY", 540, 1140, 75),
       b("80", 470, 1200, 25),
     ]);
-    expect(r.megaEnergies).toEqual([
-      { value: 60, species: "gallade", kind: "mega" },
-      { value: 80, species: "gardevoir", kind: "mega", inferred: true },
-    ]);
+    expect(r.megaEnergies).toEqual([{ value: 60, species: "gallade", kind: "mega" }]);
   });
 
   it("repairs a letter-prefixed icon fusion ('S27') when no clean digit competes", () => {
