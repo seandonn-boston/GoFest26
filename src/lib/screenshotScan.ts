@@ -213,10 +213,17 @@ const UI_MARKERS = new Set([
   "reversion",
 ]);
 
+/** Pokémon TYPE words. They appear on every Pokémon page ("ROCK / POISON") but
+ *  are never a resource label nor part of a species name, so they're pure noise. */
+const TYPE_WORDS = new Set([
+  "normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground",
+  "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy",
+]);
+
 /** UI words (and their OCR near-misses) never belong in a species name —
  *  "GROUDON PRIMAL ENERGY" must not pick up a fused "TRAINER BATTLES". */
 const isNoiseTok = (t: string) => {
-  if (UI_MARKERS.has(t)) return true;
+  if (UI_MARKERS.has(t) || TYPE_WORDS.has(t)) return true;
   for (const m of UI_MARKERS) if (m.length >= 4 && like(t, m)) return true;
   return false;
 };
@@ -296,7 +303,11 @@ export function classifyLabel(toks: string[]): LabelClass {
       }
     }
   }
-  if (toks.length <= 3 && ITEM_SUFFIXES.some((s) => like(toks[toks.length - 1], s))) {
+  // Evolution items are always a qualifier + material ("King's Rock", "Sun
+  // Stone", "Metal Coat") — never a bare word. Requiring ≥2 tokens stops a lone
+  // Pokémon TYPE that happens to end in a material ("ROCK", from the "ROCK /
+  // POISON" type line) from being mis-read as a "Rock" item.
+  if (toks.length >= 2 && toks.length <= 3 && ITEM_SUFFIXES.some((s) => like(toks[toks.length - 1], s))) {
     return { type: "item", name: toks.map(cap).join(" ") };
   }
 

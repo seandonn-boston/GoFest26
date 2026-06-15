@@ -635,6 +635,14 @@ describe("classifyLabel (resource grammar)", () => {
     expect(classifyLabel(["shiny", "stone"])).toEqual({ type: "item", name: "Shiny Stone" });
   });
 
+  it("a bare Pokémon type ('ROCK') is not a 'Rock' item or any resource", () => {
+    expect(classifyLabel(["rock"])).toBeNull(); // type word alone
+    expect(classifyLabel(["rock", "poison"])).toBeNull(); // the full "ROCK / POISON" type line
+    expect(classifyLabel(["fairy"])).toBeNull();
+    // a real qualifier + material item still classifies via the suffix catch-all
+    expect(classifyLabel(["shiny", "stone"])).toEqual({ type: "item", name: "Shiny Stone" });
+  });
+
   it("UI text is a marker; arbitrary words are nothing", () => {
     expect(classifyLabel(["power", "up"])).toEqual({ type: "marker" });
     expect(classifyLabel(["weight"])).toEqual({ type: "marker" });
