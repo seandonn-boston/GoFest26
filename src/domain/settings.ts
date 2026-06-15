@@ -15,8 +15,6 @@ export interface PlannerSettings {
   partyPlay: boolean;
   /** Party size 2–4, used when partyPlay is on. */
   partySize: number;
-  /** Quick-catch (throw + back out to skip the animation): ~5s catch vs. ~100s. */
-  quickCatch: boolean;
   /** Walking / setup time between raids. */
   downtimeSecRange: Range;
   /**
@@ -54,7 +52,6 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
   partyPlay: false,
   partySize: 4,
-  quickCatch: false,
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
@@ -73,7 +70,6 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
-    s.quickCatch === DEFAULT_SETTINGS.quickCatch &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     s.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
     s.remoteRaidBudget === DEFAULT_SETTINGS.remoteRaidBudget

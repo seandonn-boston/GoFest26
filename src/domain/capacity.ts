@@ -42,9 +42,10 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
   const battles = TIER_KEYS.map((t) => tierBattleSeconds(t, settings));
   const battleSecRange = { min: Math.min(...battles), max: Math.max(...battles) };
 
-  const catchSec = settings.quickCatch
-    ? GAME_CONFIG.capacity.catchSec.quick
-    : GAME_CONFIG.capacity.catchSec.normal;
+  // Baseline assumes a full (normal) catch — the realistic ceiling when you're
+  // catching for Candy. Quick-catch is now an opt-in per species per time block
+  // (it trades that catch Candy/XL for speed) and is modelled in the block plan.
+  const catchSec = GAME_CONFIG.capacity.catchSec.normal;
 
   // Best case = fastest battle + least downtime; worst case = slowest + most.
   const perRaidFast = battleSecRange.min + catchSec + downtimeSecRange.min;

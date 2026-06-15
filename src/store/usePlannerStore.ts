@@ -150,6 +150,12 @@ interface PlannerState {
    * `false` here opts a block out. Toggling rebalances Mewtwo across the event.
    */
   mewtwoTargets: Record<string, boolean>;
+  /**
+   * Per species, per time block: `${bossId}@${blockKey}` → true means quick-catch
+   * those raids (saves time but forfeits catch Candy/XL — only completion rewards
+   * like Mega Energy / Rare Candy). Absent = off (normal catch). Off by default.
+   */
+  quickCatchBlocks: Record<string, boolean>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
@@ -158,6 +164,8 @@ interface PlannerState {
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Toggle whether a Mewtwo form is hunted in a given block (rebalances event-wide). */
   toggleMewtwoTarget: (formId: string, blockKey: string) => void;
+  /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
+  toggleQuickCatch: (bossId: string, blockKey: string) => void;
   /** Record how many raids the user has completed toward a per-block target. */
   setRaidsDone: (key: string, value: number) => void;
   /** Assign remote raids to a species (caps applied by the caller). Switches off auto-balance. */
@@ -256,6 +264,7 @@ export const usePlannerStore = create<PlannerState>()(
       remoteAuto: true,
       blockPriority: {},
       mewtwoTargets: {},
+      quickCatchBlocks: {},
 
       setRaidsDone: (key, value) =>
         set((state) => {
@@ -368,6 +377,12 @@ export const usePlannerStore = create<PlannerState>()(
           return { mewtwoTargets: { ...state.mewtwoTargets, [key]: !currently } };
         }),
 
+      toggleQuickCatch: (bossId, blockKey) =>
+        set((state) => {
+          const key = `${bossId}@${blockKey}`;
+          return { quickCatchBlocks: { ...state.quickCatchBlocks, [key]: !state.quickCatchBlocks[key] } };
+        }),
+
       setCurrent: (bossId, field, value) =>
         set((state) => {
           const input = ensureInput(state, bossId);
@@ -462,11 +477,12 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAuto: true,
           blockPriority: {},
           mewtwoTargets: {},
+          quickCatchBlocks: {},
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 13,
+      version: 14,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -480,6 +496,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!state.blockPriority || typeof state.blockPriority !== "object") state.blockPriority = {};
         if (!state.mewtwoTargets || typeof state.mewtwoTargets !== "object") state.mewtwoTargets = {};
+        if (!state.quickCatchBlocks || typeof state.quickCatchBlocks !== "object") state.quickCatchBlocks = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
         if (typeof state.remoteAuto !== "boolean") state.remoteAuto = true;

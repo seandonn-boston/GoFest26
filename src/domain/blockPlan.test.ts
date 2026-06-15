@@ -14,7 +14,7 @@ import type { BossInput, BossResult, Range } from "./types";
 const sum = (b: Record<string, number>) => RISK_BANDS.reduce((s, k) => s + b[k], 0);
 
 // A roomy capacity so nothing falls into grey unless we mean it to.
-const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, quickCatch: true });
+const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, downtimeSecRange: { min: 0, max: 0 } });
 
 describe("quantity scaling (requirements ×N)", () => {
   const boss = getBoss(MEWTWO_X_ID)!;
@@ -135,6 +135,21 @@ describe("multi-form species (shared resources)", () => {
     expect(remoteCapFor(getBoss("tornadus-incarnate")!, 60)).toBe(50);
     expect(groupSpansBothDays("dialga")).toBe(true);
     expect(groupSpansBothDays("giratina")).toBe(false);
+  });
+});
+
+describe("per-block quick-catch", () => {
+  it("a quick-catch block earns no catch Candy/XL toward a catch-bound goal", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([boss.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const blk = plan.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
+    const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
+    const normal = goalProgress(plan, results, DEFAULT_SETTINGS);
+    const quick = goalProgress(plan, results, DEFAULT_SETTINGS, { [qkey]: true });
+    expect(normal.bySpecies[boss.id].achievable).toBeGreaterThan(0);
+    // Its only block is quick-catch → no XL earned → zero progress toward the goal.
+    expect(quick.bySpecies[boss.id].achievable).toBe(0);
   });
 });
 

@@ -457,11 +457,25 @@ export function goalProgress(
   plan: WeekendBlockPlan,
   results: BossResult[],
   settings: PlannerSettings = DEFAULT_SETTINGS,
+  quickCatchBlocks: Record<string, boolean> = {},
 ): GoalProgress {
-  const fittedById = new Map<string, number>();
-  const add = (s: BlockSpeciesShare) => fittedById.set(s.bossId, (fittedById.get(s.bossId) ?? 0) + s.fitted);
-  for (const b of plan.blocks) for (const s of b.species) add(s);
-  if (plan.remote) for (const s of plan.remote.species) add(s);
+  const resById = new Map(results.map((r) => [r.bossId, r]));
+  // Catch-bound species (Candy / XL goal) gain nothing from quick-catch blocks;
+  // completion-bound species (Mega Energy) still earn from every raid.
+  const isCatchBound = (id: string) => {
+    const bc = resById.get(id)?.bindingCurrency;
+    return bc === "candy" || bc === "xlCandy";
+  };
+  const fittedAll = new Map<string, number>();
+  const fittedNormal = new Map<string, number>(); // excludes quick-catch blocks
+  const add = (s: BlockSpeciesShare, bkey: string | null) => {
+    fittedAll.set(s.bossId, (fittedAll.get(s.bossId) ?? 0) + s.fitted);
+    if (!bkey || !quickCatchBlocks[`${s.bossId}@${bkey}`]) {
+      fittedNormal.set(s.bossId, (fittedNormal.get(s.bossId) ?? 0) + s.fitted);
+    }
+  };
+  for (const b of plan.blocks) for (const s of b.species) add(s, blockKey(b.day, b.startHour));
+  if (plan.remote) for (const s of plan.remote.species) add(s, null);
 
   const bySpecies: Record<string, { achievable: number; required: number }> = {};
   let achievable = 0;
@@ -469,7 +483,8 @@ export function goalProgress(
   for (const res of results) {
     const need = sized(res.raids, settings.rewardCase);
     if (need <= 0) continue;
-    const got = Math.min(need, fittedById.get(res.bossId) ?? 0);
+    const fitted = (isCatchBound(res.bossId) ? fittedNormal : fittedAll).get(res.bossId) ?? 0;
+    const got = Math.min(need, fitted);
     bySpecies[res.bossId] = { achievable: got, required: need };
     achievable += got;
     required += need;
