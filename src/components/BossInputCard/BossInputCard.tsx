@@ -94,7 +94,7 @@ export function BossInputCard({
       >
         <span
           aria-hidden
-          className={`absolute right-2 top-2 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}
+          className={`absolute right-3 top-2 text-2xl leading-none text-slate-300 transition-transform ${open ? "rotate-90" : ""}`}
           title={open ? "Collapse" : "Expand"}
         >
           ▸
