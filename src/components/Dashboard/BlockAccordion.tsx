@@ -112,40 +112,6 @@ function TargetCard({
         <Sprite src={boss?.sprite} alt={share.bossName} size={28} />
         <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
 
-        {quickCatch ? (
-          <label
-            className={`flex shrink-0 cursor-pointer items-center gap-1 text-[9px] font-semibold uppercase tracking-wide ${
-              quickCatch.on ? "text-amber-300" : "text-slate-500"
-            }`}
-            title="Quick-catch these raids — saves time, but no catch Candy/XL this block (only completion rewards like Mega Energy / Rare Candy)"
-          >
-            <span className="hidden sm:inline">Quick</span>
-            <input
-              type="checkbox"
-              checked={quickCatch.on}
-              onChange={quickCatch.onToggle}
-              aria-label={`Quick-catch ${share.bossName.replace(/^Mega /, "")} this block (no catch Candy/XL)`}
-              className="h-4 w-4 accent-amber-400"
-            />
-          </label>
-        ) : null}
-
-        {targeting ? (
-          <label
-            className="flex shrink-0 cursor-pointer items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400"
-            title={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
-          >
-            <span className="hidden sm:inline">Hunt</span>
-            <input
-              type="checkbox"
-              checked={targeting.checked}
-              onChange={targeting.onToggle}
-              aria-label={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
-              className="h-4 w-4 accent-gofest-mewtwo"
-            />
-          </label>
-        ) : null}
-
         <div className="flex items-center gap-1 font-mono text-sm font-bold">
           <input
             type="text"
@@ -169,6 +135,48 @@ function TargetCard({
           </span>
         ) : null}
       </div>
+
+      {/* Per-block toggles — labeled, sitting below the name and above the
+          counters: whether to hunt the (Mewtwo) form here, and whether to
+          quick-catch this block (saves time, forfeits catch Candy/XL). */}
+      {targeting || quickCatch ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[36px]">
+          {targeting ? (
+            <label
+              className={`flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
+                targeting.checked ? "text-gofest-mewtwo" : "text-slate-500"
+              }`}
+              title={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
+            >
+              <input
+                type="checkbox"
+                checked={targeting.checked}
+                onChange={targeting.onToggle}
+                aria-label={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
+                className="h-4 w-4 accent-gofest-mewtwo"
+              />
+              Hunt here
+            </label>
+          ) : null}
+          {quickCatch ? (
+            <label
+              className={`flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
+                quickCatch.on ? "text-amber-300" : "text-slate-500"
+              }`}
+              title="Quick-catch these raids — saves time, but no catch Candy/XL this block (only completion rewards like Mega Energy / Rare Candy)"
+            >
+              <input
+                type="checkbox"
+                checked={quickCatch.on}
+                onChange={quickCatch.onToggle}
+                aria-label={`Quick-catch ${share.bossName.replace(/^Mega /, "")} this block (no catch Candy/XL)`}
+                className="h-4 w-4 accent-amber-400"
+              />
+              Quick-catch
+            </label>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Best raid attackers — sprite chips (ringed by the winning move type),
           copyable as a species search string. */}
