@@ -151,6 +151,20 @@ describe("per-block quick-catch", () => {
     // Its only block is quick-catch → no XL earned → zero progress toward the goal.
     expect(quick.bySpecies[boss.id].achievable).toBe(0);
   });
+
+  it("quick-catch fits MORE raids in a capacity-limited block (saves time)", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const input = { ...makeDefaultInput(boss), quantity: 4 }; // heavy enough to overflow one block
+    const results = [computeBossResult(boss, input)];
+    const tight = computeCapacity(DEFAULT_SETTINGS); // normal-catch (no extra roominess)
+    const normal = computeBlockPlan([input], results, tight);
+    const blk = normal.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
+    const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
+    const quick = computeBlockPlan([input], results, tight, DEFAULT_SETTINGS, {}, {}, {}, { [qkey]: true });
+    const fittedOf = (p: ReturnType<typeof computeBlockPlan>) => p.blocks.reduce((s, b) => s + b.fitted, 0);
+    expect(fittedOf(normal)).toBeGreaterThan(0);
+    expect(fittedOf(quick)).toBeGreaterThan(fittedOf(normal)); // same time, more quick raids
+  });
 });
 
 describe("computeBlockPlan — allocation", () => {

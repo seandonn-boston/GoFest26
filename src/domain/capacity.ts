@@ -61,6 +61,15 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
     max: raidsPerHour.max * hoursPerDay * days,
   };
 
+  // How much faster a quick-catch raid is than a normal one (battle + downtime
+  // are shared; only the catch differs). A quick raid "costs" this fraction of a
+  // normal raid-slot, so a block set to quick-catch fits proportionally more.
+  const battleMid = (battleSecRange.min + battleSecRange.max) / 2;
+  const downtimeMid = (downtimeSecRange.min + downtimeSecRange.max) / 2;
+  const normalMid = battleMid + GAME_CONFIG.capacity.catchSec.normal + downtimeMid;
+  const quickMid = battleMid + GAME_CONFIG.capacity.catchSec.quick + downtimeMid;
+  const quickCatchSlotFactor = normalMid > 0 ? quickMid / normalMid : 1;
+
   return {
     hoursPerDay,
     days,
@@ -70,5 +79,6 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
     downtimeSecRange,
     raidsPerHour,
     totalRaids,
+    quickCatchSlotFactor,
   };
 }

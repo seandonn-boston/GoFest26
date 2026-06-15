@@ -159,11 +159,14 @@ export interface CapacityModel {
   lobbySize: number;
   /** Battle seconds spread across tiers given the lobby/party settings. */
   battleSecRange: Range;
-  /** Catch time per raid (5s when quick-catching, ~100s otherwise). */
+  /** Catch time per raid for the normal (Candy-earning) catch baseline (~100s). */
   catchSec: number;
   downtimeSecRange: Range;
   raidsPerHour: Range;
   totalRaids: Range;
+  /** A quick-catch raid's time as a fraction of a normal raid's (≈0.5): used to
+   *  fit more raids in a block when a species' block is set to quick-catch. */
+  quickCatchSlotFactor: number;
 }
 
 // orange = free Premium/Orange pass (limited), green = free Green pass / Link
