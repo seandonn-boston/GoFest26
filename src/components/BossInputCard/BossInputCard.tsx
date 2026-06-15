@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
@@ -54,6 +55,7 @@ export function BossInputCard({
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const applyPreset = usePlannerStore((s) => s.applyPreset);
   const region = usePlannerStore((s) => s.settings.region);
+  const [open, setOpen] = useState(false); // cards start collapsed (inputs hidden)
 
   if (!input) return null;
 
@@ -83,40 +85,57 @@ export function BossInputCard({
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(boss.types)}>
       <div className="relative z-10 rounded-[12px] p-3" style={typePanelStyle(boss.types)}>
-      <div className="mt-1 flex justify-center gap-1">
-        {(boss.types ?? []).map((t) => (
-          <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
-            <TypeIcon type={t} size={24} />
-          </span>
-        ))}
-      </div>
-      <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
-        <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-300/50" />
-        <span className="text-[10px] leading-none">✦</span>
-        <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-300/50" />
-      </div>
-      <div className="flex items-start gap-3">
-        <Sprite src={boss.sprite} alt={boss.name} size={44} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <CyberTitle name={displayName} types={boss.types} className="text-lg" />
-            <TierBadge tier={boss.tier} />
-            {regionLabel ? <Badge>{regionLabel}</Badge> : null}
-            {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
-          </div>
-          <p className="mt-0.5 text-[11px] text-slate-400">
-            🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
-          </p>
-          {isGroup ? (
-            <p className="mt-0.5 text-[11px] text-amber-200/80">
-              Both formes share one Candy pool — pick which to battle each block; rewards stack together.
-            </p>
-          ) : null}
+      {/* Header — always shown; tapping it expands/collapses the inputs below. */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="block w-full text-left"
+      >
+        <span
+          aria-hidden
+          className={`absolute right-2 top-2 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}
+          title={open ? "Collapse" : "Expand"}
+        >
+          ▸
+        </span>
+        <div className="mt-1 flex justify-center gap-1">
+          {(boss.types ?? []).map((t) => (
+            <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
+              <TypeIcon type={t} size={24} />
+            </span>
+          ))}
         </div>
-      </div>
+        <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
+          <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-300/50" />
+          <span className="text-[10px] leading-none">✦</span>
+          <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-300/50" />
+        </div>
+        <div className="flex items-start gap-3">
+          <Sprite src={boss.sprite} alt={boss.name} size={44} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <CyberTitle name={displayName} types={boss.types} className="text-lg" />
+              <TierBadge tier={boss.tier} />
+              {regionLabel ? <Badge>{regionLabel}</Badge> : null}
+              {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
+            </div>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
+            </p>
+            {isGroup ? (
+              <p className="mt-0.5 text-[11px] text-amber-200/80">
+                Both formes share one Candy pool — pick which to battle each block; rewards stack together.
+              </p>
+            ) : null}
+          </div>
+        </div>
 
-      {boss.note ? <p className="mt-2 text-[11px] text-slate-400">💡 {boss.note}</p> : null}
+        {boss.note ? <p className="mt-2 text-[11px] text-slate-400">💡 {boss.note}</p> : null}
+      </button>
 
+      {!open ? null : (
+      <>
       <div className="mt-3 flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <CardScan
@@ -264,6 +283,8 @@ export function BossInputCard({
           </p>
         ) : null}
       </div>
+      </>
+      )}
       </div>
     </div>
   );
