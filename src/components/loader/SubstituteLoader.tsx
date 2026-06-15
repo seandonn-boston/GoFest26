@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { warmupOcr } from "@/lib/ocrEngine";
 import { allSpriteUrls } from "@/data/pokemonSprites";
+import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { lockBodyScroll } from "@/lib/scrollLock";
 
 /** Warm the browser cache with every Pokémon icon so search-string sprites and
@@ -15,6 +16,17 @@ function warmSprites() {
     const img = new Image();
     img.decoding = "async";
     img.src = url;
+  }
+}
+
+/** Front-load the importer's two example screenshots so the "Which screenshots?"
+ *  guide renders instantly when opened. Best-effort. */
+function warmGuideImages() {
+  if (typeof window === "undefined") return;
+  for (const path of Object.values(GUIDE_IMAGES)) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = assetPath(path);
   }
 }
 
@@ -44,6 +56,7 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
     // warm every Pokémon sprite the plan will reference.
     warmupOcr();
     warmSprites();
+    warmGuideImages();
     return () => {
       if (veilTimer.current) clearTimeout(veilTimer.current);
     };

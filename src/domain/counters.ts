@@ -138,12 +138,13 @@ export const COUNTER_CATEGORY_LABEL: Record<CounterCategory, string> = {
  * Pokémon GO search-bar suffix appended (only) to a per-category copy string on
  * the boss card, so each list filters to exactly its bucket: Shadow excludes
  * legendaries (they have their own bucket), Legendary excludes shadows, megas
- * filter to Mega Level 3, and Budget excludes shadows + legendaries.
+ * filter to Mega Level 3-4 (both grant the same-type Candy XL boost), and Budget
+ * excludes shadows + legendaries.
  */
 export const COUNTER_CATEGORY_FILTER: Record<CounterCategory, string> = {
   shadow: "& shadow & !legendary & !mythical & !ultrabeast",
   shadowLegendary: "& shadow & legendary, mythical, ultrabeast",
-  mega: "& mega3",
+  mega: "& mega3-4",
   legendary: "& legendary, mythical, ultrabeast & !shadow",
   budget: "& !shadow & !legendary & !mythical & !ultrabeast",
 };

@@ -5,6 +5,7 @@ import { RAID_BOSSES } from "@/data";
 import type { RaidBoss } from "@/domain/types";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotScan";
+import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
@@ -36,6 +37,14 @@ const SPECIES_OPTIONS = (() => {
 })();
 const OPTION_BY_KEY = new Map(SPECIES_OPTIONS.map((o) => [o.key, o]));
 
+/** True when a species group contains a mega-capable boss (has Mega Levels). */
+const optionIsMega = (key: string) =>
+  (OPTION_BY_KEY.get(key)?.bosses ?? []).some((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
+
+/** Dedupe identity for "most-recent wins": per species AND per screenshot kind,
+ *  so a Pokémon's stats card and its Mega Level page coexist (different data). */
+const shotDedupeKey = (s: ImportedShot) => `${s.key}|${s.scan.screenshotKind}`;
+
 /** Why a screenshot produced no values — as specific as the scan allows. */
 function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode {
   if (!scan.looksLikePogo) {
@@ -49,23 +58,64 @@ function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode 
   );
 }
 
+/** Current-stat fields the importer writes (subset of the store's CurrentField). */
+type CurrentField = "candy" | "xlCandy" | "megaEnergy" | "megaLevel";
+
+/** Trailing X / Y form letter of a boss name ("Mega Mewtwo X" → "x"), else null. */
+const bossFormLetter = (name: string): "x" | "y" | null => {
+  const m = name.trim().toLowerCase().match(/\b([xy])$/);
+  return (m?.[1] as "x" | "y") ?? null;
+};
+
+/**
+ * Apply the current Mega Level read from a Mega Level page to the matching mega
+ * boss. For branching megas (X/Y), the page's form letter picks the line — never
+ * cross-applied to the sibling. A branching page with no readable form is skipped
+ * rather than guessed.
+ */
+function applyMegaLevel(
+  scan: ScanResult,
+  bosses: RaidBoss[],
+  setCurrent: (id: string, field: CurrentField, v: number) => void,
+) {
+  if (scan.megaLevel === undefined) return;
+  const megaBosses = bosses.filter((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
+  if (!megaBosses.length) return;
+  const form = scan.megaLevelForm ?? null;
+  const targets = form
+    ? megaBosses.filter((b) => bossFormLetter(b.name) === form)
+    : megaBosses.length === 1
+      ? megaBosses
+      : []; // ambiguous branching page (no form) → don't guess
+  for (const b of targets) {
+    const max = (b.megaLevelEnergyTotals?.length ?? 1) - 1;
+    setCurrent(b.id, "megaLevel", Math.max(0, Math.min(max, Math.round(scan.megaLevel))));
+  }
+}
+
 function applyScan(
   scan: ScanResult,
   bosses: RaidBoss[],
   setSelected: (id: string, v: boolean) => void,
-  setCurrent: (id: string, field: "candy" | "xlCandy" | "megaEnergy", v: number) => void,
+  setCurrent: (id: string, field: CurrentField, v: number) => void,
 ) {
   const sorted = [...bosses].sort((a, b) => a.sortPriority - b.sortPriority);
-  for (const b of sorted) {
-    setSelected(b.id, true);
-    if (scan.candy !== undefined) setCurrent(b.id, "candy", scan.candy);
-    if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
+  for (const b of sorted) setSelected(b.id, true);
+  // The stats card supplies candy / XL / held energy. The Mega Level page does
+  // not (its energy value is unreliable), so only the card writes those.
+  if (scan.screenshotKind === "card") {
+    for (const b of sorted) {
+      if (scan.candy !== undefined) setCurrent(b.id, "candy", scan.candy);
+      if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
+    }
+    const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
+    const vals = energyForBosses(scan.megaEnergies, energyBosses);
+    energyBosses.forEach((b, i) => {
+      if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
+    });
   }
-  const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
-  const vals = energyForBosses(scan.megaEnergies, energyBosses);
-  energyBosses.forEach((b, i) => {
-    if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
-  });
+  // The Mega Level page supplies the current Mega Level.
+  applyMegaLevel(scan, sorted, setCurrent);
 }
 
 /**
@@ -88,6 +138,11 @@ export function ScreenshotImporter() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [summary, setSummary] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
+
+  /** A Mega Level screenshot already uploaded for this species group. */
+  const hasMegaLevelShot = (key: string) =>
+    imports.some((i) => i.key === key && i.scan.screenshotKind === "megaLevel" && i.scan.readAnything);
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -104,6 +159,7 @@ export function ScreenshotImporter() {
         megaEnergies: [],
         items: [],
         looksLikePogo: false,
+        screenshotKind: "card",
         capturedAt: file.lastModified || 0,
         readAnything: false,
       };
@@ -141,11 +197,12 @@ export function ScreenshotImporter() {
   const latestIdByKey = new Map<string, string>();
   for (const s of imports) {
     if (!s.key) continue;
-    const curId = latestIdByKey.get(s.key);
+    const k = shotDedupeKey(s);
+    const curId = latestIdByKey.get(k);
     const cur = curId ? imports.find((x) => x.id === curId) : undefined;
-    if (!cur || s.scan.capturedAt >= cur.scan.capturedAt) latestIdByKey.set(s.key, s.id);
+    if (!cur || s.scan.capturedAt >= cur.scan.capturedAt) latestIdByKey.set(k, s.id);
   }
-  const isSuperseded = (s: ImportedShot) => !!s.key && latestIdByKey.get(s.key) !== s.id;
+  const isSuperseded = (s: ImportedShot) => !!s.key && latestIdByKey.get(shotDedupeKey(s)) !== s.id;
   const assignableOf = (s: ImportedShot) => s.scan.readAnything && !!s.key && OPTION_BY_KEY.has(s.key);
 
   const statusOf = (s: ImportedShot): ShotStatus => {
@@ -164,21 +221,24 @@ export function ScreenshotImporter() {
   }
 
   function applyAll() {
-    // Same species → keep only the most-recent screenshot (not additive).
+    // Most-recent per species AND kind, so a Pokémon's stats card and its Mega
+    // Level page both apply (card → candy/XL/energy, Mega Level page → mega level).
+    // Each writes only its own fields, so neither clobbers the other.
     const byKey = new Map<string, ImportedShot>();
     for (const s of imports) {
       if (!assignableOf(s)) continue;
-      const prev = byKey.get(s.key);
-      if (!prev || s.scan.capturedAt >= prev.scan.capturedAt) byKey.set(s.key, s);
+      const k = shotDedupeKey(s);
+      const prev = byKey.get(k);
+      if (!prev || s.scan.capturedAt >= prev.scan.capturedAt) byKey.set(k, s);
     }
-    const labels: string[] = [];
-    for (const [key, s] of byKey) {
-      const opt = OPTION_BY_KEY.get(key)!;
+    const labels = new Set<string>();
+    for (const s of byKey.values()) {
+      const opt = OPTION_BY_KEY.get(s.key)!;
       applyScan(s.scan, opt.bosses, setSelected, setCurrent);
-      if (s.thumb) setScreenshot(key, s.thumb, s.scan.capturedAt);
-      labels.push(opt.label);
+      if (s.thumb) setScreenshot(s.key, s.thumb, s.scan.capturedAt);
+      labels.add(opt.label);
     }
-    setSummary(labels.length ? `Filled ${labels.length}: ${labels.join(", ")}` : "Assign a Pokémon to a screenshot first.");
+    setSummary(labels.size ? `Filled ${labels.size}: ${[...labels].join(", ")}` : "Assign a Pokémon to a screenshot first.");
   }
 
   function del(id: string) {
@@ -206,6 +266,14 @@ export function ScreenshotImporter() {
           📷 Upload screenshots
           <span className="rounded-sm border border-black/40 px-1 text-[9px]">beta</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setShowGuide((v) => !v)}
+          aria-expanded={showGuide}
+          className="flex items-center gap-1 text-[11px] font-medium text-sky-300 underline-offset-2 hover:underline"
+        >
+          <span aria-hidden>ⓘ</span> Which screenshots?
+        </button>
         {imports.length ? (
           <button
             type="button"
@@ -219,6 +287,45 @@ export function ScreenshotImporter() {
           </button>
         ) : null}
       </div>
+
+      <p className="text-[11px] text-amber-300">
+        <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read yet.
+      </p>
+
+      {showGuide ? (
+        <div className="rounded-sm border border-sky-400/30 bg-sky-500/[0.06] p-3">
+          <p className="mb-2 text-[11px] text-slate-300">
+            Two kinds of screenshot are read. Upload the first for any Pokémon; add the second for mega-capable
+            (and Primal) targets to capture its current Mega Level. Locate the <b>exact</b> Pokémon you want to max
+            — not just any of the same species.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assetPath(GUIDE_IMAGES.card)}
+                alt="Example Pokémon stats page showing Candy, Candy XL and Mega Energy"
+                className="w-full rounded-sm border border-white/10"
+              />
+              <figcaption className="mt-1 text-[10px] text-slate-400">
+                <b className="text-emerald-300">1 · Pokémon page</b> — any Pokémon. Reads Candy / XL / Mega Energy.
+              </figcaption>
+            </figure>
+            <figure className="m-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={assetPath(GUIDE_IMAGES.megaLevel)}
+                alt="Example Mega Level page showing the level banner and Mega Energy"
+                className="w-full rounded-sm border border-white/10"
+              />
+              <figcaption className="mt-1 text-[10px] text-slate-400">
+                <b className="text-purple-300">2 · Mega Level page</b> — mega/Primal only. Reads the current Mega Level.
+                Branching megas (Charizard X/Y, Mewtwo X/Y) need one per line.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      ) : null}
 
       {busy ? <p className="text-[11px] text-slate-400">{progress}</p> : null}
 
@@ -256,12 +363,27 @@ export function ScreenshotImporter() {
                 <div className="min-w-0 flex-1">
                   {s.scan.readAnything ? (
                     <>
-                      <div className="mb-1.5">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                         <ScanChips scan={s.scan} />
+                        {s.scan.megaLevel !== undefined ? (
+                          <span
+                            title="Current Mega Level read from the Mega Level page"
+                            className="rounded-sm bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-bold text-purple-200 ring-1 ring-purple-400/40"
+                          >
+                            Mega L{s.scan.megaLevel}
+                            {s.scan.megaLevelForm ? ` ${s.scan.megaLevelForm.toUpperCase()}` : ""}
+                          </span>
+                        ) : null}
                       </div>
                       {!assignable && s.scan.detectedName ? (
                         <p className="mb-1.5 text-[11px] text-sky-300">
                           ❗ {cap(s.scan.detectedName)} isn’t available for raids during this event — pick another below.
+                        </p>
+                      ) : null}
+                      {assignable && s.scan.screenshotKind === "card" && optionIsMega(s.key) && !hasMegaLevelShot(s.key) ? (
+                        <p className="mb-1.5 text-[11px] text-purple-300">
+                          ➕ Mega target — also upload its <b>Mega Level</b> screenshot to set the current Mega Level
+                          (tap ⓘ above for the example).
                         </p>
                       ) : null}
                       {superseded ? (

@@ -5,7 +5,7 @@ import { autoRemoteAllocations, globalPriorityFromBlocks } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
-import { MAX_REMOTE_BUDGET } from "@/domain/settings";
+import { MAX_REMOTE_BUDGET, MAX_REMOTE_RAIDS, SAFE_REMOTE_RAIDS } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
 /**
@@ -84,6 +84,49 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
       {on ? (
         <p className="mt-1 text-[11px] text-slate-500">
           <span className="font-mono text-slate-300">{allocated}</span> / {budget} passes assigned below.
+        </p>
+      ) : null}
+
+      {on ? (
+        <div className="mt-1.5">
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gofest-bg/60 ring-1 ring-white/10">
+            {/* Reliable Saturday & Sunday remote raids (≤ 40) — normal color. */}
+            <div
+              className="absolute inset-y-0 left-0 bg-emerald-500/70"
+              style={{ width: `${(Math.min(allocated, SAFE_REMOTE_RAIDS) / MAX_REMOTE_RAIDS) * 100}%` }}
+            />
+            {/* High-risk Friday/Monday timezone raids (> 40) — red. */}
+            {allocated > SAFE_REMOTE_RAIDS ? (
+              <div
+                className="absolute inset-y-0 bg-rose-500/80"
+                style={{
+                  left: `${(SAFE_REMOTE_RAIDS / MAX_REMOTE_RAIDS) * 100}%`,
+                  width: `${((Math.min(allocated, MAX_REMOTE_RAIDS) - SAFE_REMOTE_RAIDS) / MAX_REMOTE_RAIDS) * 100}%`,
+                }}
+              />
+            ) : null}
+            {/* The 40-raid Sat&Sun threshold. */}
+            <div
+              className="absolute inset-y-0 w-px bg-white/50"
+              style={{ left: `${(SAFE_REMOTE_RAIDS / MAX_REMOTE_RAIDS) * 100}%` }}
+            />
+          </div>
+          <div className="mt-0.5 flex justify-between text-[9px] text-slate-500">
+            <span>0</span>
+            <span className="text-emerald-400/80">{SAFE_REMOTE_RAIDS} · Sat &amp; Sun</span>
+            <span className="text-rose-400/80">{MAX_REMOTE_RAIDS} · +Fri/Mon</span>
+          </div>
+        </div>
+      ) : null}
+
+      {on && budget > SAFE_REMOTE_RAIDS ? (
+        <p className="mt-1.5 rounded-sm border border-rose-400/40 bg-rose-500/10 p-2 text-[10px] leading-relaxed text-rose-200">
+          ⚠ You&apos;ve exceeded the {SAFE_REMOTE_RAIDS} remote raids reliably available Saturday &amp; Sunday, so
+          you&apos;re choosing to remote raid Friday or Monday by taking advantage of time zones. This is viable, but:
+          the Friday cap is 10 and the Monday cap is 10; Friday remote raids can only target Saturday&apos;s bosses and
+          Monday only Sunday&apos;s; there&apos;s no guarantee you&apos;ll find the bosses you want, nor that you can
+          complete them all in time. All Friday/Monday remote raids (above {SAFE_REMOTE_RAIDS}) are shown in red on the
+          bar to flag this high risk.
         </p>
       ) : null}
 

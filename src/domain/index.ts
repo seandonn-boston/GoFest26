@@ -1,6 +1,7 @@
 import { getBoss } from "@/data";
 import { addRange, midpoint, ZERO_RANGE } from "@/lib/math";
 import { computeCapacity } from "./capacity";
+import { collapseForms } from "./forms";
 import { computeBossResult } from "./raidsNeeded";
 import { computeSchedule } from "./scheduler";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
@@ -20,6 +21,15 @@ export type { ResearchCredit } from "./research";
 export { DEFAULT_SETTINGS } from "./settings";
 export type { PlannerSettings } from "./settings";
 export { bossIsLocal, isScopeLocal, regionScopeLabel } from "./region";
+export {
+  collapseForms,
+  formMembers,
+  isSecondaryForm,
+  primaryFormId,
+  planningWindows,
+  groupSpansBothDays,
+  remoteCapFor,
+} from "./forms";
 
 /**
  * Top-level engine entry point: given the user's per-boss inputs, computes
@@ -31,6 +41,10 @@ export function computePlanSummary(
   remoteAllocations: Record<string, number> = {},
 ): PlanSummary {
   const capacity = computeCapacity(settings);
+
+  // Multi-form species (Giratina, Dialga, …) collapse to one shared-resource
+  // target so their Candy/XL pool isn't counted twice.
+  inputs = collapseForms(inputs);
 
   const results: BossResult[] = [];
   let totalRaids: Range = { ...ZERO_RANGE };

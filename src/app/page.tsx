@@ -4,6 +4,7 @@ import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePlannerResults, useBlockPlan } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { isSecondaryForm } from "@/domain";
 import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
@@ -27,9 +28,15 @@ export default function Home() {
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
-  // Mewtwo X & Y share one combined card; other selected bosses get their own.
+  // Mewtwo X & Y share one combined card; multi-form species (Giratina, Dialga,
+  // …) collapse to their primary forme's card (shared resource pool); other
+  // selected bosses get their own.
   const otherSelectedBosses = SORTED_BOSSES.filter(
-    (b) => inputs[b.id]?.selected && b.id !== MEWTWO_X_ID && b.id !== MEWTWO_Y_ID,
+    (b) =>
+      inputs[b.id]?.selected &&
+      b.id !== MEWTWO_X_ID &&
+      b.id !== MEWTWO_Y_ID &&
+      !isSecondaryForm(b),
   );
   const anySelected = mewtwoSelected || otherSelectedBosses.length > 0;
 

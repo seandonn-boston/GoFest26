@@ -6,6 +6,7 @@ import { computeBossResult } from "./raidsNeeded";
 import { computeGrossRequirement } from "./requirements";
 import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS } from "./settings";
 import { bossIsLocal } from "./region";
+import { collapseForms, remoteCapFor, groupSpansBothDays } from "./forms";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID, SORTED_BOSSES } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
 import type { BossInput, BossResult, Range } from "./types";
@@ -13,7 +14,7 @@ import type { BossInput, BossResult, Range } from "./types";
 const sum = (b: Record<string, number>) => RISK_BANDS.reduce((s, k) => s + b[k], 0);
 
 // A roomy capacity so nothing falls into grey unless we mean it to.
-const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, quickCatch: true });
+const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, downtimeSecRange: { min: 0, max: 0 } });
 
 describe("quantity scaling (requirements ×N)", () => {
   const boss = getBoss(MEWTWO_X_ID)!;
@@ -84,6 +85,87 @@ const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
 const SINGLE_BLOCK = SORTED_BOSSES.filter(
   (b) => !isMewtwo(b.id) && b.windows.length === 1 && b.windows[0].endHour - b.windows[0].startHour === 3,
 );
+
+describe("multi-form species (shared resources)", () => {
+  const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
+    plan.blocks.reduce((s, b) => s + b.demand, 0);
+
+  it("collapses a form group to one primary target, selected if any forme is", () => {
+    const altered = { ...makeDefaultInput(getBoss("giratina-altered")!), selected: false };
+    const origin = makeDefaultInput(getBoss("giratina-origin")!); // selected
+    const collapsed = collapseForms([altered, origin]);
+    const giratina = collapsed.filter((i) => getBoss(i.bossId)?.formGroup === "giratina");
+    expect(giratina).toHaveLength(1);
+    expect(giratina[0].bossId).toBe("giratina-altered"); // primary carries the pool
+    expect(giratina[0].selected).toBe(true); // any forme selected ⇒ group selected
+  });
+
+  it("does not double-count a shared-resource species across its formes", () => {
+    const both = buildFor(["giratina-altered", "giratina-origin"]);
+    const one = buildFor(["giratina-altered"]);
+    const planBoth = computeBlockPlan(both.inputs, both.results, ROOMY);
+    const planOne = computeBlockPlan(one.inputs, one.results, ROOMY);
+    expect(blockDemand(planBoth)).toBeGreaterThan(0);
+    expect(blockDemand(planBoth)).toBe(blockDemand(planOne)); // one shared pool either way
+  });
+
+  it("splits a dual-day shared species (Dialga) across Saturday and Sunday", () => {
+    const { inputs, results } = buildFor(["dialga"]); // only the base forme picked
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const days = new Set(plan.blocks.filter((b) => b.species.some((s) => s.bossId === "dialga")).map((b) => b.day));
+    expect(days.has("sat")).toBe(true);
+    expect(days.has("sun")).toBe(true); // union windows ⇒ both days even from one forme
+  });
+
+  it("labels each block with the forme available there (Dialga base Sat, Origin Sun)", () => {
+    const { inputs, results } = buildFor(["dialga"]);
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const shareOn = (day: string) =>
+      plan.blocks.find((b) => b.day === day && b.species.some((s) => s.bossId === "dialga"))?.species.find(
+        (s) => s.bossId === "dialga",
+      );
+    expect(shareOn("sat")?.formeBossId).toBe("dialga");
+    expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
+  });
+
+  it("remote cap: dual-day groups get the full budget; single-day groups 50", () => {
+    expect(remoteCapFor(getBoss("dialga")!, 60)).toBe(60);
+    expect(remoteCapFor(getBoss("palkia")!, 60)).toBe(60);
+    expect(remoteCapFor(getBoss("giratina-altered")!, 60)).toBe(50);
+    expect(remoteCapFor(getBoss("tornadus-incarnate")!, 60)).toBe(50);
+    expect(groupSpansBothDays("dialga")).toBe(true);
+    expect(groupSpansBothDays("giratina")).toBe(false);
+  });
+});
+
+describe("per-block quick-catch", () => {
+  it("a quick-catch block earns no catch Candy/XL toward a catch-bound goal", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([boss.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const blk = plan.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
+    const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
+    const normal = goalProgress(plan, results, DEFAULT_SETTINGS);
+    const quick = goalProgress(plan, results, DEFAULT_SETTINGS, { [qkey]: true });
+    expect(normal.bySpecies[boss.id].achievable).toBeGreaterThan(0);
+    // Its only block is quick-catch → no XL earned → zero progress toward the goal.
+    expect(quick.bySpecies[boss.id].achievable).toBe(0);
+  });
+
+  it("quick-catch fits MORE raids in a capacity-limited block (saves time)", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const input = { ...makeDefaultInput(boss), quantity: 4 }; // heavy enough to overflow one block
+    const results = [computeBossResult(boss, input)];
+    const tight = computeCapacity(DEFAULT_SETTINGS); // normal-catch (no extra roominess)
+    const normal = computeBlockPlan([input], results, tight);
+    const blk = normal.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
+    const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
+    const quick = computeBlockPlan([input], results, tight, DEFAULT_SETTINGS, {}, {}, {}, { [qkey]: true });
+    const fittedOf = (p: ReturnType<typeof computeBlockPlan>) => p.blocks.reduce((s, b) => s + b.fitted, 0);
+    expect(fittedOf(normal)).toBeGreaterThan(0);
+    expect(fittedOf(quick)).toBeGreaterThan(fittedOf(normal)); // same time, more quick raids
+  });
+});
 
 describe("computeBlockPlan — allocation", () => {
   it("pins a fixed-window boss to the habitat block it spawns in", () => {
@@ -184,7 +266,7 @@ describe("computeBlockPlan — allocation", () => {
 });
 
 describe("remote raids (manual per-species allocation)", () => {
-  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: MAX_REMOTE_RAIDS };
   const remoteOnly = SORTED_BOSSES.find((b) => !isMewtwo(b.id) && !bossIsLocal(b, DEFAULT_SETTINGS.region));
   // A 5★ (big XL climb) keeps the in-person demand comfortably above the 5 we shift remote.
   const localSat = SINGLE_BLOCK.find(

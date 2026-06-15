@@ -50,6 +50,7 @@ export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
   const blockPriority = useDeferredValue(usePlannerStore((s) => s.blockPriority));
   const mewtwoTargets = useDeferredValue(usePlannerStore((s) => s.mewtwoTargets));
   const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
+  const quickCatchBlocks = useDeferredValue(usePlannerStore((s) => s.quickCatchBlocks));
   return useMemo(
     () =>
       computeBlockPlan(
@@ -60,8 +61,9 @@ export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
         blockPriority,
         mewtwoTargets,
         remoteAllocations,
+        quickCatchBlocks,
       ),
-    [inputs, summary, settings, blockPriority, mewtwoTargets, remoteAllocations],
+    [inputs, summary, settings, blockPriority, mewtwoTargets, remoteAllocations, quickCatchBlocks],
   );
 }
 

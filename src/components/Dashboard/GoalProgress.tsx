@@ -27,8 +27,12 @@ export function GoalProgress({ plan, results }: { plan: WeekendBlockPlan; result
   const inputs = usePlannerStore((s) => s.inputs);
   const blockPriority = usePlannerStore((s) => s.blockPriority);
   const settings = usePlannerStore((s) => s.settings);
+  const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
 
-  const progress = useMemo(() => goalProgress(plan, results, settings), [plan, results, settings]);
+  const progress = useMemo(
+    () => goalProgress(plan, results, settings, quickCatchBlocks),
+    [plan, results, settings, quickCatchBlocks],
+  );
   const order = useMemo(
     () => selectedInGlobalOrder({ inputs, blockPriority }).filter((id) => progress.bySpecies[id] !== undefined),
     [inputs, blockPriority, progress],

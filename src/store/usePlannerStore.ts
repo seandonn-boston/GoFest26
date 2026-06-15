@@ -1,17 +1,45 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { FORM_META } from "@/data/formGroups";
 import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
+import { remoteCapFor } from "@/domain/forms";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 
 export { makeDefaultInput };
 
 type CurrentField = keyof BossInput["current"];
+
+/** Boss ids sharing a form group with this one (incl. itself), else just it. */
+function formFamilyIds(bossId: string): string[] {
+  const meta = FORM_META.get(bossId);
+  return meta ? [bossId, ...meta.siblings] : [bossId];
+}
+
+/**
+ * Set `selected` on a boss AND its shared-resource formes, so a multi-form
+ * species (Giratina, Dialga, …) toggles as one unit while both formes still show
+ * in the selection list. Non-grouped bosses are unaffected.
+ */
+function selectFamily(
+  inputs: Record<string, BossInput>,
+  bossId: string,
+  selected: boolean,
+): Record<string, BossInput> {
+  const next = { ...inputs };
+  for (const id of formFamilyIds(bossId)) {
+    const boss = getBoss(id);
+    if (!boss) continue;
+    const existing = next[id];
+    next[id] = existing ? { ...existing, selected } : { ...makeDefaultInput(boss), selected };
+  }
+  return next;
+}
 
 /** Max persisted screenshot previews (data URLs) before evicting the oldest. */
 const MAX_SCREENSHOTS = 12;
@@ -122,6 +150,12 @@ interface PlannerState {
    * `false` here opts a block out. Toggling rebalances Mewtwo across the event.
    */
   mewtwoTargets: Record<string, boolean>;
+  /**
+   * Per species, per time block: `${bossId}@${blockKey}` → true means quick-catch
+   * those raids (saves time but forfeits catch Candy/XL — only completion rewards
+   * like Mega Energy / Rare Candy). Absent = off (normal catch). Off by default.
+   */
+  quickCatchBlocks: Record<string, boolean>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
@@ -130,6 +164,8 @@ interface PlannerState {
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Toggle whether a Mewtwo form is hunted in a given block (rebalances event-wide). */
   toggleMewtwoTarget: (formId: string, blockKey: string) => void;
+  /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
+  toggleQuickCatch: (bossId: string, blockKey: string) => void;
   /** Record how many raids the user has completed toward a per-block target. */
   setRaidsDone: (key: string, value: number) => void;
   /** Assign remote raids to a species (caps applied by the caller). Switches off auto-balance. */
@@ -165,8 +201,8 @@ interface PlannerState {
 // Clamp here so no write path — manual, auto-balance, or a corrupted persisted
 // map — can exceed it.
 function clampRemote(bossId: string, value: number, budget: number): number {
-  const isMewtwo = bossId === MEWTWO_X_ID || bossId === MEWTWO_Y_ID;
-  const cap = isMewtwo ? budget : Math.min(MAX_REMOTE_PER_SPECIES, budget);
+  const boss = getBoss(bossId);
+  const cap = boss ? remoteCapFor(boss, budget) : Math.min(MAX_REMOTE_PER_SPECIES, budget);
   return Math.max(0, Math.min(cap, Number.isFinite(value) ? Math.round(value) : 0));
 }
 
@@ -203,7 +239,11 @@ export function selectedInGlobalOrder(state: {
   blockPriority: Record<string, string[]>;
 }): string[] {
   const rank = new Map(globalPriorityFromBlocks(state.blockPriority).map((id, i) => [id, i] as const));
-  return SORTED_BOSSES.filter((b) => state.inputs[b.id]?.selected)
+  return SORTED_BOSSES.filter((b) => {
+    if (!state.inputs[b.id]?.selected) return false;
+    const m = FORM_META.get(b.id);
+    return !m || m.primary; // collapse a multi-form species to its primary forme
+  })
     .map((b) => b.id)
     .sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
 }
@@ -224,6 +264,7 @@ export const usePlannerStore = create<PlannerState>()(
       remoteAuto: true,
       blockPriority: {},
       mewtwoTargets: {},
+      quickCatchBlocks: {},
 
       setRaidsDone: (key, value) =>
         set((state) => {
@@ -294,24 +335,15 @@ export const usePlannerStore = create<PlannerState>()(
 
       toggleSelected: (bossId) =>
         set((state) => {
-          const boss = getBoss(bossId);
-          if (!boss) return state;
-          const existing = state.inputs[bossId];
-          const next = existing
-            ? { ...existing, selected: !existing.selected }
-            : makeDefaultInput(boss);
-          return { inputs: { ...state.inputs, [bossId]: next } };
+          if (!getBoss(bossId)) return state;
+          const cur = state.inputs[bossId]?.selected ?? false;
+          return { inputs: selectFamily(state.inputs, bossId, !cur) };
         }),
 
       setSelected: (bossId, selected) =>
         set((state) => {
-          const boss = getBoss(bossId);
-          if (!boss) return state;
-          const existing = state.inputs[bossId];
-          const next = existing
-            ? { ...existing, selected }
-            : { ...makeDefaultInput(boss), selected };
-          return { inputs: { ...state.inputs, [bossId]: next } };
+          if (!getBoss(bossId)) return state;
+          return { inputs: selectFamily(state.inputs, bossId, selected) };
         }),
 
       setCount: (bossId, variant, value) =>
@@ -343,6 +375,12 @@ export const usePlannerStore = create<PlannerState>()(
           // effective value. Manual remote edits stay; auto-balance picks it up.
           const currently = state.mewtwoTargets[key] !== false;
           return { mewtwoTargets: { ...state.mewtwoTargets, [key]: !currently } };
+        }),
+
+      toggleQuickCatch: (bossId, blockKey) =>
+        set((state) => {
+          const key = `${bossId}@${blockKey}`;
+          return { quickCatchBlocks: { ...state.quickCatchBlocks, [key]: !state.quickCatchBlocks[key] } };
         }),
 
       setCurrent: (bossId, field, value) =>
@@ -439,11 +477,12 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAuto: true,
           blockPriority: {},
           mewtwoTargets: {},
+          quickCatchBlocks: {},
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 13,
+      version: 14,
       storage: createJSONStorage(makeSafeStorage),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
@@ -457,6 +496,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!state.blockPriority || typeof state.blockPriority !== "object") state.blockPriority = {};
         if (!state.mewtwoTargets || typeof state.mewtwoTargets !== "object") state.mewtwoTargets = {};
+        if (!state.quickCatchBlocks || typeof state.quickCatchBlocks !== "object") state.quickCatchBlocks = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
         if (typeof state.remoteAuto !== "boolean") state.remoteAuto = true;

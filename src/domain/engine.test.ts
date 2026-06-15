@@ -141,13 +141,6 @@ describe("capacity", () => {
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });
 
-  it("quick catch shrinks per-raid time, so more raids fit", () => {
-    const normal = computeCapacity({ ...DEFAULT_SETTINGS, quickCatch: false });
-    const quick = computeCapacity({ ...DEFAULT_SETTINGS, quickCatch: true });
-    expect(quick.catchSec).toBe(GAME_CONFIG.capacity.catchSec.quick);
-    expect(quick.raidsPerHour.max).toBeGreaterThan(normal.raidsPerHour.max);
-  });
-
   it("thinner lobbies mean longer battles and fewer raids", () => {
     const full = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20 });
     const thin = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 4 });
@@ -204,15 +197,12 @@ describe("scheduler", () => {
     expect(kar?.passType).not.toBe("remote");
   });
 
-  it("caps remote-only bosses at the remote-raid budget (and Friday adds more)", () => {
+  it("caps remote-only bosses at the per-day remote-raid budget", () => {
     // Celesteela is Southern-only → remote for Boston; a level 40→50 goal needs
-    // far more than the per-day remote cap.
+    // far more than the per-day remote cap, so the schedule fills only the cap.
     const cel = input("celesteela", { level: 40, targetLevel: 50 });
     const base = scheduleFor([cel]);
     expect(base.raids.filter((r) => r.bossId === "celesteela").length).toBe(20);
-
-    const withFriday = scheduleFor([cel], { ...DEFAULT_SETTINGS, fridayRemoteRaids: true });
-    expect(withFriday.raids.filter((r) => r.bossId === "celesteela").length).toBe(40);
   });
 
   it("flags an unmet goal when a windowed boss needs more raids than its windows allow", () => {
@@ -238,16 +228,14 @@ describe("scheduler", () => {
 
 describe("settings", () => {
   it("derives raids/hour from custom raid timing", () => {
-    // Full lobby (fastest tier battle = 30s) + quick catch (5s) + no downtime
-    // => best-case per raid = 35s.
+    // Full lobby (fastest tier battle) + a normal catch + no downtime.
     const settings: PlannerSettings = {
       ...DEFAULT_SETTINGS,
       lobbySize: 20,
-      quickCatch: true,
       downtimeSecRange: { min: 0, max: 0 },
     };
     const cap = computeCapacity(settings);
-    const perRaidFast = cap.battleSecRange.min + cap.catchSec; // 30 + 5
+    const perRaidFast = cap.battleSecRange.min + cap.catchSec;
     expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });

@@ -112,10 +112,9 @@ export function computeSchedule(
 
   // 4. Assign each boss into its tightest open slots (fewest alternatives first).
   // Out-of-region (remote-only) bosses are also capped by the Remote Raid budget:
-  // up to remotePassesPerDay per day, plus an optional Friday-night pool.
+  // up to remotePassesPerDay per day.
   const maxRemote = Math.max(0, settings.remotePassesPerDay);
   const dayRemote: Record<EventDay, number> = { sat: 0, sun: 0 };
-  let fridayPool = settings.fridayRemoteRaids ? maxRemote : 0;
 
   const unmetGoals: UnmetGoal[] = [];
   for (const bossId of order) {
@@ -136,7 +135,6 @@ export function computeSchedule(
       if (assigned >= need) break;
       if (remote) {
         if (dayRemote[slot.day] < maxRemote) dayRemote[slot.day]++;
-        else if (fridayPool > 0) fridayPool--;
         else break; // remote-raid budget exhausted
       }
       slot.bossId = bossId;
@@ -163,10 +161,9 @@ export function computeSchedule(
       return x.slotInHour - y.slotInHour;
     });
 
-  // Free Orange passes per day. A Friday pass (collected the night before) is
-  // saved for Saturday, so Saturday gets +1 when the Friday option is on.
+  // Free Orange passes per day.
   const orangeCap: Record<EventDay, number> = {
-    sat: settings.freeDailyPerDay + (settings.fridayRemoteRaids ? 1 : 0),
+    sat: settings.freeDailyPerDay,
     sun: settings.freeDailyPerDay,
   };
   const orangeUsed: Record<EventDay, number> = { sat: 0, sun: 0 };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -58,6 +59,7 @@ export function MewtwoCard({
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const preview = usePlannerStore((s) => s.screenshots["mewtwo"]);
+  const [open, setOpen] = useState(false); // collapsed by default (inputs hidden)
 
   const selectedX = !!inputX?.selected;
   const selectedY = !!inputY?.selected;
@@ -75,25 +77,41 @@ export function MewtwoCard({
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
       <div className="relative z-10 rounded-[12px] p-4" style={typePanelStyle(MEWTWO_TYPES)}>
-        <div className="mt-1 flex justify-center gap-1">
-          {MEWTWO_TYPES.map((t) => (
-            <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
-              <TypeIcon type={t} size={24} />
-            </span>
-          ))}
-        </div>
-        <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
-          <span className="h-px w-12 bg-gradient-to-r from-transparent to-amber-300/50" />
-          <span className="text-[10px] leading-none">✦</span>
-          <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
-        </div>
-        <MewtwoTitle spriteX={bossX.sprite} spriteY={bossY.sprite} />
-        <p className="mb-3 mt-2 text-xs text-slate-400">
-          One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
-          appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
-          so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
-        </p>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="block w-full text-left"
+        >
+          <span
+            aria-hidden
+            className={`absolute right-2 top-2 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}
+            title={open ? "Collapse" : "Expand"}
+          >
+            ▸
+          </span>
+          <div className="mt-1 flex justify-center gap-1">
+            {MEWTWO_TYPES.map((t) => (
+              <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
+                <TypeIcon type={t} size={24} />
+              </span>
+            ))}
+          </div>
+          <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
+            <span className="h-px w-12 bg-gradient-to-r from-transparent to-amber-300/50" />
+            <span className="text-[10px] leading-none">✦</span>
+            <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
+          </div>
+          <MewtwoTitle spriteX={bossX.sprite} spriteY={bossY.sprite} />
+          <p className="mb-3 mt-2 text-xs text-slate-400">
+            One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
+            appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
+            so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
+          </p>
+        </button>
 
+        {!open ? null : (
+        <>
         <div className="mb-4 flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <CardScan
@@ -207,6 +225,8 @@ export function MewtwoCard({
             />
           ) : null}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

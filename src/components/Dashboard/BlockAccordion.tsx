@@ -67,6 +67,7 @@ function TargetCard({
   rowRef,
   dragging,
   targeting,
+  quickCatch,
 }: {
   share: BlockSpeciesShare;
   dkey: string;
@@ -75,10 +76,13 @@ function TargetCard({
   rowRef?: (el: HTMLElement | null) => void;
   dragging?: boolean;
   targeting?: { checked: boolean; onToggle: () => void };
+  quickCatch?: { on: boolean; onToggle: () => void };
 }) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
-  const boss = getBoss(share.bossId);
+  // For a multi-form species, show the forme available in THIS block (name/sprite/
+  // counters); share.bossId stays the shared primary for result/progress linkage.
+  const boss = getBoss(share.formeBossId ?? share.bossId);
   const types = boss?.types ?? [];
   const counters = useMemo(() => topCounters(types), [types]);
   const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);
@@ -107,6 +111,24 @@ function TargetCard({
         {grip}
         <Sprite src={boss?.sprite} alt={share.bossName} size={28} />
         <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
+
+        {quickCatch ? (
+          <label
+            className={`flex shrink-0 cursor-pointer items-center gap-1 text-[9px] font-semibold uppercase tracking-wide ${
+              quickCatch.on ? "text-amber-300" : "text-slate-500"
+            }`}
+            title="Quick-catch these raids — saves time, but no catch Candy/XL this block (only completion rewards like Mega Energy / Rare Candy)"
+          >
+            <span className="hidden sm:inline">Quick</span>
+            <input
+              type="checkbox"
+              checked={quickCatch.on}
+              onChange={quickCatch.onToggle}
+              aria-label={`Quick-catch ${share.bossName.replace(/^Mega /, "")} this block (no catch Candy/XL)`}
+              className="h-4 w-4 accent-amber-400"
+            />
+          </label>
+        ) : null}
 
         {targeting ? (
           <label
@@ -207,6 +229,8 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   const setBlockPriority = usePlannerStore((s) => s.setBlockPriority);
   const mewtwoTargets = usePlannerStore((s) => s.mewtwoTargets);
   const toggleMewtwoTarget = usePlannerStore((s) => s.toggleMewtwoTarget);
+  const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
+  const toggleQuickCatch = usePlannerStore((s) => s.toggleQuickCatch);
 
   const memberIds: string[] = [
     ...block.species.filter((s) => !s.mewtwo).map((s) => s.bossId),
@@ -297,6 +321,7 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
                     ? { checked: mewtwoTargets[`${id}@${key}`] !== false, onToggle: () => toggleMewtwoTarget(id, key) }
                     : undefined
                 }
+                quickCatch={{ on: !!quickCatchBlocks[`${id}@${key}`], onToggle: () => toggleQuickCatch(id, key) }}
               />
             );
           })}

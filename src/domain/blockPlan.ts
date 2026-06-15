@@ -16,6 +16,7 @@
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
+import { collapseForms, planningWindows, remoteCapFor, formeInBlock } from "./forms";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
@@ -31,6 +32,9 @@ const emptyBands = (): Record<RiskBand, number> => ({ blue: 0, green: 0, yellow:
 export interface BlockSpeciesShare {
   bossId: string;
   bossName: string;
+  /** For a multi-form species, the specific forme available in THIS block (its
+   *  name/sprite/counters); bossId stays the shared primary for result linkage. */
+  formeBossId?: string;
   /** Sized raids of this boss demanded in this block. */
   raids: number;
   /** Candy-luck raid range for this block share: min = best case, max = worst. */
@@ -112,17 +116,25 @@ function blockIndicesForWindows(windows: HabitatWindow[]): number[] {
  * raids); leftover budget that fits nowhere is simply dropped. Mutates `running`
  * totals and returns the units added per index.
  */
-function waterfill(running: number[], idxs: number[], budget: number, cap?: number[]): number[] {
+function waterfill(
+  running: number[],
+  idxs: number[],
+  budget: number,
+  cap?: number[],
+  costOf: (i: number) => number = () => 1,
+): number[] {
   const add = new Array(running.length).fill(0);
   let remaining = Math.max(0, Math.round(budget));
   while (remaining-- > 0) {
     let lo = -1;
     for (const i of idxs) {
-      if (cap && running[i] >= cap[i]) continue;
+      // `running` and `cap` are in time-slots; a quick-catch raid costs < 1 slot,
+      // so more fit before the block is full.
+      if (cap && running[i] + costOf(i) > cap[i] + 1e-9) continue;
       if (lo < 0 || running[i] < running[lo]) lo = i;
     }
     if (lo < 0) break; // every candidate block is full
-    running[lo] += 1;
+    running[lo] += costOf(lo);
     add[lo] += 1;
   }
   return add;
@@ -143,6 +155,7 @@ export function bandsForSpecies(
   range: Range,
   cumStart: number,
   capacity: Range,
+  slotCost = 1,
 ): Record<RiskBand, number> {
   const bands = emptyBands();
   const sure = Math.min(demand, Math.max(0, Math.round(range.min)));
@@ -150,7 +163,9 @@ export function bandsForSpecies(
   const green = Math.round((uncertain * 5) / 10);
   const yellow = Math.round((uncertain * 3) / 10);
   for (let k = 0; k < fitted; k++) {
-    const pos = cumStart + k;
+    // Position is measured in time-slots; a quick-catch raid advances it by less,
+    // so more of the species' raids land inside guaranteed time.
+    const pos = cumStart + k * slotCost;
     let band: RiskBand =
       k < sure ? "blue" : k < sure + green ? "green" : k < sure + green + yellow ? "yellow" : "red";
     if (band === "blue" && pos >= capacity.min) band = "green";
@@ -162,9 +177,12 @@ export function bandsForSpecies(
 interface RawShare {
   bossId: string;
   bossName: string;
+  formeBossId?: string;
   raids: number;
   range: Range;
   mewtwo: boolean;
+  /** This species' block is set to quick-catch → its raids take less time. */
+  quick?: boolean;
 }
 
 /** Order shares by a priority-rank function (highest first); ties → fixed
@@ -217,21 +235,29 @@ export function globalPriorityFromBlocks(blockPriority: Record<string, string[]>
 function fillShares(
   ordered: RawShare[],
   cap: Range,
+  quickFactor = 1,
 ): { species: BlockSpeciesShare[]; demand: number; fitted: number; remaining: number; bands: Record<RiskBand, number> } {
+  // `cum` is measured in normal-raid time-slots: a quick-catch raid costs only
+  // `quickFactor` (<1) of a slot, so the block fits more of them before its
+  // capacity (in slots) is reached.
   let cum = 0;
+  let demand = 0;
   let fitted = 0;
   let remaining = 0;
   const agg = emptyBands();
   const species = ordered.map((sh) => {
-    const fit = Math.max(0, Math.min(sh.raids, cap.max - cum));
-    const bands = bandsForSpecies(fit, sh.raids, sh.range, cum, cap);
-    cum += sh.raids;
+    const slotCost = sh.quick ? quickFactor : 1;
+    const fit = Math.max(0, Math.min(sh.raids, Math.floor((cap.max - cum) / slotCost + 1e-9)));
+    const bands = bandsForSpecies(fit, sh.raids, sh.range, cum, cap, slotCost);
+    cum += sh.raids * slotCost;
+    demand += sh.raids;
     fitted += fit;
     remaining += sh.raids - fit;
     for (const k of RISK_BANDS) agg[k] += bands[k];
     return {
       bossId: sh.bossId,
       bossName: sh.bossName,
+      formeBossId: sh.formeBossId,
       raids: sh.raids,
       range: sh.range,
       fitted: fit,
@@ -240,7 +266,7 @@ function fillShares(
       mewtwo: sh.mewtwo,
     };
   });
-  return { species, demand: cum, fitted, remaining, bands: agg };
+  return { species, demand, fitted, remaining, bands: agg };
 }
 
 /**
@@ -257,8 +283,15 @@ export function computeBlockPlan(
   blockPriority: Record<string, string[]> = {},
   mewtwoTargets: Record<string, boolean> = {},
   remoteAllocations: Record<string, number> = {},
+  quickCatchBlocks: Record<string, boolean> = {},
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
+  const quickFactor = capacity.quickCatchSlotFactor ?? 1;
+  const isQuick = (bossId: string, blockIdx: number) =>
+    !!quickCatchBlocks[`${bossId}@${keyAt(blockIdx)}`];
+  // Multi-form species collapse to one shared-resource target (primary forme),
+  // matching the collapsed results from computePlanSummary.
+  inputs = collapseForms(inputs);
   // Remote raids the user assigned to each species reduce that species' in-person
   // (time-block) demand — only the non-remote remainder needs to fit a block.
   const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
@@ -294,18 +327,25 @@ export function computeBlockPlan(
     const blockTotal = Math.max(0, total - remoteFor(boss.id));
     if (blockTotal <= 0) continue;
     const scale = blockTotal / total; // shrink the candy-luck range to the in-person portion
-    const idxs = blockIndicesForWindows(boss.windows);
+    // A shared-resource multi-form species (Dialga, Palkia, …) spreads its one
+    // pool across every block any forme appears in — possibly both days.
+    const idxs = blockIndicesForWindows(planningWindows(boss));
     if (!idxs.length) continue;
     idxs.forEach((bi, k) => {
       const share = Math.floor(blockTotal / idxs.length) + (k < blockTotal % idxs.length ? 1 : 0);
       if (share <= 0) return;
       const frac = (share / blockTotal) * scale;
+      // Show the forme actually available in this block (Origin Forme Dialga on
+      // Sunday); bossId stays the shared primary so results/progress still link.
+      const forme = formeInBlock(boss, HABITATS[bi]);
       shares[bi].push({
         bossId: boss.id,
-        bossName: boss.name,
+        bossName: forme.name,
+        formeBossId: forme.id,
         raids: share,
         range: { min: Math.round(res.raids.min * frac), max: Math.round(res.raids.max * frac) },
         mewtwo: false,
+        quick: isQuick(boss.id, bi),
       });
     });
   }
@@ -355,11 +395,14 @@ export function computeBlockPlan(
 
   // Cap Mewtwo so it never inflates a block past its capacity (a block already
   // full of fixed raids gets no Mewtwo — it can't be raided there anyway).
+  // `running`/`caps` are in time-slots; quick-catch raids cost less than a slot.
+  const mewtwoFormAt = (i: number) => (HABITATS[i].day === "sat" ? MEWTWO_X_ID : MEWTWO_Y_ID);
+  const mewtwoCost = (i: number) => (isQuick(mewtwoFormAt(i), i) ? quickFactor : 1);
   const caps = capacities.map((c) => c.max);
-  const running = shares.map((list) => list.reduce((s, sh) => s + sh.raids, 0));
-  const addSat = waterfill(running, satIdx, satLocked, caps);
-  const addSun = waterfill(running, sunIdx, sunLocked, caps);
-  const addFluid = waterfill(running, allIdx, fluid, caps);
+  const running = shares.map((list) => list.reduce((s, sh) => s + sh.raids * (sh.quick ? quickFactor : 1), 0));
+  const addSat = waterfill(running, satIdx, satLocked, caps, mewtwoCost);
+  const addSun = waterfill(running, sunIdx, sunLocked, caps, mewtwoCost);
+  const addFluid = waterfill(running, allIdx, fluid, caps, mewtwoCost);
 
   HABITATS.forEach((h, i) => {
     const n = addSat[i] + addSun[i] + addFluid[i];
@@ -374,6 +417,7 @@ export function computeBlockPlan(
       raids: n,
       range: { min: Math.round(n * rt.min), max: Math.round(n * rt.max) },
       mewtwo: true,
+      quick: isQuick(formId, i),
     });
   });
 
@@ -386,7 +430,7 @@ export function computeBlockPlan(
     startHour: h.startHour,
     endHour: h.endHour,
     capacity: capacities[i],
-    ...fillShares(orderByBlock(shares[i], blockPriority[keyAt(i)] ?? []), capacities[i]),
+    ...fillShares(orderByBlock(shares[i], blockPriority[keyAt(i)] ?? []), capacities[i], quickFactor),
   }));
 
   // 4. Remote-raid pool (opt-in): the per-species counts the user assigned, shown
@@ -442,11 +486,25 @@ export function goalProgress(
   plan: WeekendBlockPlan,
   results: BossResult[],
   settings: PlannerSettings = DEFAULT_SETTINGS,
+  quickCatchBlocks: Record<string, boolean> = {},
 ): GoalProgress {
-  const fittedById = new Map<string, number>();
-  const add = (s: BlockSpeciesShare) => fittedById.set(s.bossId, (fittedById.get(s.bossId) ?? 0) + s.fitted);
-  for (const b of plan.blocks) for (const s of b.species) add(s);
-  if (plan.remote) for (const s of plan.remote.species) add(s);
+  const resById = new Map(results.map((r) => [r.bossId, r]));
+  // Catch-bound species (Candy / XL goal) gain nothing from quick-catch blocks;
+  // completion-bound species (Mega Energy) still earn from every raid.
+  const isCatchBound = (id: string) => {
+    const bc = resById.get(id)?.bindingCurrency;
+    return bc === "candy" || bc === "xlCandy";
+  };
+  const fittedAll = new Map<string, number>();
+  const fittedNormal = new Map<string, number>(); // excludes quick-catch blocks
+  const add = (s: BlockSpeciesShare, bkey: string | null) => {
+    fittedAll.set(s.bossId, (fittedAll.get(s.bossId) ?? 0) + s.fitted);
+    if (!bkey || !quickCatchBlocks[`${s.bossId}@${bkey}`]) {
+      fittedNormal.set(s.bossId, (fittedNormal.get(s.bossId) ?? 0) + s.fitted);
+    }
+  };
+  for (const b of plan.blocks) for (const s of b.species) add(s, blockKey(b.day, b.startHour));
+  if (plan.remote) for (const s of plan.remote.species) add(s, null);
 
   const bySpecies: Record<string, { achievable: number; required: number }> = {};
   let achievable = 0;
@@ -454,7 +512,8 @@ export function goalProgress(
   for (const res of results) {
     const need = sized(res.raids, settings.rewardCase);
     if (need <= 0) continue;
-    const got = Math.min(need, fittedById.get(res.bossId) ?? 0);
+    const fitted = (isCatchBound(res.bossId) ? fittedNormal : fittedAll).get(res.bossId) ?? 0;
+    const got = Math.min(need, fitted);
     bySpecies[res.bossId] = { achievable: got, required: need };
     achievable += got;
     required += need;
@@ -476,6 +535,8 @@ export function autoRemoteAllocations(
   priorityOrder: string[],
 ): Record<string, number> {
   const rewardCase = settings.rewardCase;
+  // Multi-form species collapse to one shared-resource target (primary forme).
+  inputs = collapseForms(inputs);
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   const rank = new Map(priorityOrder.map((id, i) => [id, i] as const));
   const priorityOf = (id: string) => rank.get(id) ?? Infinity;
@@ -510,7 +571,8 @@ export function autoRemoteAllocations(
   let budget = settings.remoteRaidBudget;
   for (const n of needs) {
     if (budget <= 0) break;
-    const cap = n.mewtwo ? settings.remoteRaidBudget : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
+    const boss = getBoss(n.id);
+    const cap = boss ? remoteCapFor(boss, settings.remoteRaidBudget) : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
     const give = Math.min(n.need, cap, budget);
     if (give > 0) {
       out[n.id] = give;

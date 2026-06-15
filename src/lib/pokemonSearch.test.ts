@@ -26,8 +26,8 @@ describe("buildSearchString", () => {
     expect(list).toBe("Swampert, Feraligatr");
   });
 
-  it("mega string is species-only, deduped, with the mega3 filter", () => {
-    expect(buildMegaSearchString(["Charizard", "Charizard", "Venusaur"])).toBe("Charizard, Venusaur & mega3");
+  it("mega string is species-only, deduped, with the mega3-4 filter", () => {
+    expect(buildMegaSearchString(["Charizard", "Charizard", "Venusaur"])).toBe("Charizard, Venusaur & mega3-4");
     expect(buildMegaSearchString([])).toBe("");
   });
 });

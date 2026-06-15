@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assembleScan,
+  detectMegaLevel,
   reconcileFusedValues,
   chooseSpecies,
   classifyLabel,
@@ -475,7 +476,39 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix", kind: "mega" }]);
   });
 
-  it("completes the Gallade/Gardevoir pair the same way", () => {
+  it("reads the Mega Level from the page banner (Super Max beats Max)", () => {
+    expect(detectMegaLevel("Base Level")).toBe(1);
+    expect(detectMegaLevel("High Level")).toBe(2);
+    expect(detectMegaLevel("Max Level")).toBe(3);
+    expect(detectMegaLevel("Super Max Level")).toBe(4);
+    expect(detectMegaLevel("Candy 1,234  XL 77")).toBeUndefined();
+  });
+
+  it("tags a Mega Level page with its level + form; energy stays card-only", () => {
+    const r = assembleScan(
+      parseScreenText("209\nMEGA CHARIZARD MEGA ENERGY\nX"),
+      0,
+      "High Level MEGA CHARIZARD X MEGA ENERGY 209 MEGA EVOLUTION BONUSES",
+    );
+    expect(r.screenshotKind).toBe("megaLevel");
+    expect(r.megaLevel).toBe(2);
+    expect(r.megaLevelForm).toBe("x");
+  });
+
+  it("treats a regular stats card as the 'card' kind with no mega level", () => {
+    const r = scanWords([
+      b("1,178", 460, 1100, 60),
+      b("GARCHOMP", 380, 1140, 90),
+      b("CANDY", 470, 1140, 65),
+    ]);
+    expect(r.screenshotKind).toBe("card");
+    expect(r.megaLevel).toBeUndefined();
+  });
+
+  it("does NOT guess the sibling energy for Gallade/Gardevoir (separate final evos)", () => {
+    // Gallade and Gardevoir each have their own Mega Energy and a final-evolution
+    // screenshot shows only its own — so the unclaimed 80 must NOT be guessed as
+    // the sibling's energy (that misled users with a phantom "~" amount).
     const r = scanWords([
       b("60", 480, 1100, 25),
       b("GALLADE", 380, 1140, 85),
@@ -483,10 +516,7 @@ describe("parseScreen — real screenshot layouts", () => {
       b("ENERGY", 540, 1140, 75),
       b("80", 470, 1200, 25),
     ]);
-    expect(r.megaEnergies).toEqual([
-      { value: 60, species: "gallade", kind: "mega" },
-      { value: 80, species: "gardevoir", kind: "mega", inferred: true },
-    ]);
+    expect(r.megaEnergies).toEqual([{ value: 60, species: "gallade", kind: "mega" }]);
   });
 
   it("repairs a letter-prefixed icon fusion ('S27') when no clean digit competes", () => {
@@ -602,6 +632,14 @@ describe("classifyLabel (resource grammar)", () => {
     expect(classifyLabel(["upgrade"])).toEqual({ type: "item", name: "Upgrade" });
     expect(classifyLabel(["zygarde", "cell"])).toEqual({ type: "item", name: "Zygarde Cell" });
     // Unknown-but-itemish phrase via the suffix heuristic.
+    expect(classifyLabel(["shiny", "stone"])).toEqual({ type: "item", name: "Shiny Stone" });
+  });
+
+  it("a bare Pokémon type ('ROCK') is not a 'Rock' item or any resource", () => {
+    expect(classifyLabel(["rock"])).toBeNull(); // type word alone
+    expect(classifyLabel(["rock", "poison"])).toBeNull(); // the full "ROCK / POISON" type line
+    expect(classifyLabel(["fairy"])).toBeNull();
+    // a real qualifier + material item still classifies via the suffix catch-all
     expect(classifyLabel(["shiny", "stone"])).toEqual({ type: "item", name: "Shiny Stone" });
   });
 

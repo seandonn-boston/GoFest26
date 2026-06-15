@@ -138,38 +138,8 @@ export function AssumptionsControls() {
         ) : null}
       </div>
 
-      {/* Quick catch */}
-      <label className="flex cursor-pointer items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="mt-0.5 h-4 w-4 accent-gofest-accent2"
-          checked={settings.quickCatch}
-          onChange={(e) => setSettings({ quickCatch: e.target.checked })}
-        />
-        <span className="text-slate-300">
-          Quick catch
-          <span className="block text-xs text-slate-500">
-            Throw and back out to skip the catch animation — ~5s per catch instead of ~100s.
-          </span>
-        </span>
-      </label>
-
-      {/* Friday remote raids */}
-      <label className="flex cursor-pointer items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="mt-0.5 h-4 w-4 accent-gofest-accent2"
-          checked={settings.fridayRemoteRaids}
-          onChange={(e) => setSettings({ fridayRemoteRaids: e.target.checked })}
-        />
-        <span className="text-slate-300">
-          Raid Friday night (20 remote raids)
-          <span className="block text-xs text-slate-500">
-            Try-hard mode: +20 remote-raid budget, and the free Friday Orange pass carries over
-            (10 Orange on Saturday).
-          </span>
-        </span>
-      </label>
+      {/* Quick-catch is now chosen per species per time block on each target row
+          (it forfeits catch Candy/XL for speed), not as a global assumption. */}
 
       {/* GO Fest research — credited toward goals, on by default */}
       <div>

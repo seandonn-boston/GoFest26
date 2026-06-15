@@ -15,8 +15,6 @@ export interface PlannerSettings {
   partyPlay: boolean;
   /** Party size 2–4, used when partyPlay is on. */
   partySize: number;
-  /** Quick-catch (throw + back out to skip the animation): ~5s catch vs. ~100s. */
-  quickCatch: boolean;
   /** Walking / setup time between raids. */
   downtimeSecRange: Range;
   /**
@@ -28,8 +26,6 @@ export interface PlannerSettings {
   freeDailyPerDay: number;
   /** Max Remote Raids per day (for out-of-region, remote-only bosses). */
   remotePassesPerDay: number;
-  /** Try-hard option: also do a day of Remote Raids the Friday night before. */
-  fridayRemoteRaids: boolean;
   /** The user plans to use Remote Raid Passes (a pool of extra, non-time-blocked raids). */
   useRemoteRaids: boolean;
   /** How many Remote Raid Passes the user plans to spend in total (the pool size). */
@@ -38,11 +34,16 @@ export interface PlannerSettings {
   region: UserRegion;
 }
 
-/** Default planned remote raids: Fri 10 + Sat&Sun 40 + Mon 10 (timezone-dependent). */
+/** Hard cap on planned remote raids: Sat & Sun 40 + Fri 10 + Mon 10 (timezone). */
 export const MAX_REMOTE_RAIDS = 60;
 
-/** Upper bound the user can set their remote-raid budget to. */
-export const MAX_REMOTE_BUDGET = 150;
+/** Remote raids reliably available Saturday + Sunday. Beyond this the user is
+ *  relying on Friday/Monday timezone raids (capped 10 each, adjacent day only) —
+ *  high-risk, shown red. */
+export const SAFE_REMOTE_RAIDS = 40;
+
+/** Upper bound the user can set their remote-raid budget to (the 60-raid cap). */
+export const MAX_REMOTE_BUDGET = MAX_REMOTE_RAIDS;
 
 /** Per-species remote cap — one day's bosses fit ~50 remotes; Mewtwo (both days) the full 60. */
 export const MAX_REMOTE_PER_SPECIES = 50;
@@ -51,14 +52,12 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
   partyPlay: false,
   partySize: 4,
-  quickCatch: false,
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
   remotePassesPerDay: GAME_CONFIG.passes.remotePerDay,
-  fridayRemoteRaids: false,
   useRemoteRaids: false,
-  remoteRaidBudget: MAX_REMOTE_RAIDS,
+  remoteRaidBudget: SAFE_REMOTE_RAIDS,
   region: DEFAULT_REGION,
 };
 
@@ -71,10 +70,8 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
-    s.quickCatch === DEFAULT_SETTINGS.quickCatch &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     s.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
-    s.fridayRemoteRaids === DEFAULT_SETTINGS.fridayRemoteRaids &&
     s.remoteRaidBudget === DEFAULT_SETTINGS.remoteRaidBudget
   );
 }
