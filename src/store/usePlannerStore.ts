@@ -102,8 +102,14 @@ export interface ScreenshotPreview {
   capturedAt: number;
 }
 
-/** Max imported screenshots retained (data-URL thumbnails) before evicting oldest. */
-const MAX_IMPORTS = 20;
+/** Max imported screenshots retained (in-memory list) before evicting oldest —
+ *  generous so a full-roster upload session is never truncated. */
+const MAX_IMPORTS = 100;
+/** How many of the most-recent imports keep their (heavy data-URL) thumbnail in
+ *  the persisted snapshot. Older imports still persist their small scan result —
+ *  just without the preview — so a big batch can't exceed the sessionStorage
+ *  quota and cause the whole-store write to be dropped. */
+const MAX_PERSISTED_THUMBS = 24;
 
 /**
  * One uploaded-and-scanned screenshot, persisted so the import grid + its
@@ -243,6 +249,17 @@ export function selectedInGlobalOrder(state: {
 // Every GO Fest research line counts toward goals by default (both on).
 const DEFAULT_RESEARCH: Record<string, boolean> = Object.fromEntries(RESEARCH_LINES.map((l) => [l.id, true]));
 
+/** Drop all but the most-recent imports' thumbnails from the PERSISTED snapshot.
+ *  The live in-memory list keeps every preview; this only bounds what's written
+ *  to sessionStorage so a large import batch can't blow the quota (which would
+ *  silently drop the entire store write). Older imports keep their scan result —
+ *  the grid just shows a placeholder until re-uploaded. */
+function trimPersistedImports(imports: ImportedShot[]): ImportedShot[] {
+  const keepFrom = imports.length - MAX_PERSISTED_THUMBS;
+  if (keepFrom <= 0) return imports;
+  return imports.map((s, i) => (i < keepFrom && s.thumb ? { ...s, thumb: null } : s));
+}
+
 export const usePlannerStore = create<PlannerState>()(
   persist(
     (set) => ({
@@ -283,8 +300,9 @@ export const usePlannerStore = create<PlannerState>()(
       addImports: (shots) =>
         set((state) => {
           const imports = [...state.imports, ...shots];
-          // Cap the persisted imports so thumbnail data-URLs can't blow the
-          // sessionStorage quota — evict the oldest beyond MAX_IMPORTS.
+          // Retain a generous in-memory history; evict only the very oldest past
+          // MAX_IMPORTS. Persisted size is bounded separately (partialize trims
+          // older thumbnails), so the list isn't capped by the storage quota.
           return { imports: imports.slice(Math.max(0, imports.length - MAX_IMPORTS)) };
         }),
 
@@ -465,6 +483,9 @@ export const usePlannerStore = create<PlannerState>()(
       name: "gofest26-planner-v1",
       version: 14,
       storage: createJSONStorage(makeSafeStorage),
+      // Persist everything, but bound the import thumbnails so a big upload batch
+      // can't exceed the storage quota and drop the whole-store write.
+      partialize: (state) => ({ ...state, imports: trimPersistedImports(state.imports) }),
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
         // store always has a valid shape. Merging DEFAULT_SETTINGS under any
