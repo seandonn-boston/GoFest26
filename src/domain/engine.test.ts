@@ -256,4 +256,30 @@ describe("computePlanSummary", () => {
     expect(summary.results).toHaveLength(1);
     expect(summary.results[0].bossId).toBe("mega-mewtwo-x");
   });
+
+  it("splits the shared Mewtwo 40→50 XL climb evenly across both forms", () => {
+    // The shared leveling is stored on X (as the UI does); Y carries only energy.
+    const sel = (id: string, ov = {}) => ({ ...input(id, ov), selected: true, quantity: 2 });
+    const x = sel("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 1, targetMegaLevel: 4 });
+    const y = sel("mega-mewtwo-y", { level: 40, targetLevel: 40, megaLevel: 1, targetMegaLevel: 4 });
+    const { results } = computePlanSummary([x, y]);
+    const xr = results.find((r) => r.bossId === "mega-mewtwo-x")!;
+    const yr = results.find((r) => r.bossId === "mega-mewtwo-y")!;
+
+    // Both forms now carry XL, split evenly, summing to the full shared climb.
+    expect(xr.needs.xlCandy?.needed).toBe(yr.needs.xlCandy?.needed);
+    expect((xr.needs.xlCandy?.needed ?? 0) + (yr.needs.xlCandy?.needed ?? 0)).toBe(computeNetNeed(mewtwoX, x).xlCandy);
+
+    // X no longer absorbs the entire climb — its raids drop well below the
+    // all-on-X figure, and the two forms come out comparable (≈ a day each).
+    expect(xr.raids.max).toBeLessThan(computeBossResult(mewtwoX, x).raids.max);
+    expect(Math.abs(xr.raids.max - yr.raids.max)).toBeLessThanOrEqual(2);
+  });
+
+  it("keeps the whole climb on the sole form when only one Mewtwo is raided", () => {
+    const x = { ...input("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 1, targetMegaLevel: 4 }), selected: true };
+    const { results } = computePlanSummary([x]);
+    const xr = results.find((r) => r.bossId === "mega-mewtwo-x")!;
+    expect(xr.needs.xlCandy?.needed).toBe(computeNetNeed(mewtwoX, x).xlCandy);
+  });
 });
