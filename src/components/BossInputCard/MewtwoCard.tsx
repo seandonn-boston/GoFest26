@@ -158,8 +158,9 @@ export function MewtwoCard({
           </div>
           {wantsLeveling ? (
             <p className="mt-2 text-xs text-slate-500">
-              Leveling to {owner.target.level} (XL Candy) is counted under the form you raid, since
-              you farm Mewtwo XL from those raids.
+              {selectedX && selectedY
+                ? `Leveling to ${owner.target.level} (XL Candy) is split across both forms — you farm Mewtwo XL from X (Sat) and Y (Sun) raids alike, so neither day carries the whole climb.`
+                : `Leveling to ${owner.target.level} (XL Candy) is counted under the form you raid, since you farm Mewtwo XL from those raids.`}
             </p>
           ) : null}
           {/* Max out more than one Mewtwo — scales the shared Candy/XL and each

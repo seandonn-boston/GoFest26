@@ -61,8 +61,20 @@ function bindingOf(perCurrency: Partial<Record<Currency, Range>>): Currency | nu
 }
 
 export function computeBossResult(boss: RaidBoss, input: BossInput): BossResult {
-  const net = computeNetNeed(boss, input);
+  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input));
+}
 
+/**
+ * Build a result from an explicit net-need map (rather than the boss's own
+ * computed needs). Used to re-split the shared Mega Mewtwo leveling across both
+ * forms: the XL/Candy climb is farmed from X (Sat) AND Y (Sun) raids alike, so
+ * each form should carry half of it on top of its own day-locked Mega Energy.
+ */
+export function bossResultFromNeeds(
+  boss: RaidBoss,
+  input: BossInput,
+  net: Partial<Record<Currency, number>>,
+): BossResult {
   const needs: Partial<Record<Currency, CurrencyNeed>> = {};
   const ranges: Partial<Record<Currency, Range>> = {};
 
