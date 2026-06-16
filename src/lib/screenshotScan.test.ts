@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   assembleScan,
-  detectMegaLevel,
   reconcileFusedValues,
   chooseSpecies,
   classifyLabel,
@@ -474,73 +473,6 @@ describe("parseScreen — real screenshot layouts", () => {
       b("75", 400, 1200, 25), // unclaimed (its Metal Coat label is occluded)
     ]);
     expect(r.megaEnergies).toEqual([{ value: 1274, species: "steelix", kind: "mega" }]);
-  });
-
-  it("reads the Mega Level from the page banner (Super Max beats Max)", () => {
-    expect(detectMegaLevel("Base Level")).toBe(1);
-    expect(detectMegaLevel("High Level")).toBe(2);
-    expect(detectMegaLevel("Max Level")).toBe(3);
-    expect(detectMegaLevel("Super Max Level")).toBe(4);
-    expect(detectMegaLevel("Candy 1,234  XL 77")).toBeUndefined();
-  });
-
-  it("infers the current Mega Level from the 'To Reach <next> Level' line", () => {
-    // The body names the NEXT level; current is one below. This is the legible
-    // signal when the short colored ribbon doesn't OCR.
-    expect(detectMegaLevel("To Reach High Level: Mega Evolve Garchomp 3 more times")).toBe(1);
-    expect(detectMegaLevel("To Reach Max Level: Mega Evolve Salamence 21 more times")).toBe(2);
-    expect(detectMegaLevel("To Reach Super Max Level")).toBe(3);
-  });
-
-  it("does not misread a High page as Max when the body says 'To Reach Max Level'", () => {
-    // Both the "High Level" ribbon and the "To Reach Max Level" body text are
-    // present — the "To Reach" line wins, so the current level reads as High (2),
-    // not Max (3).
-    expect(detectMegaLevel("High Level To Reach Max Level MEGA EVOLUTION BONUSES")).toBe(2);
-  });
-
-  it("reads a Max page (banner + 'To Reach Super Max Level') as Max, not Super Max", () => {
-    // The Dragonite Mega Level page: "Max Level" ribbon, body "To Reach Super Max
-    // Level". The body names the NEXT level, so current is Max (3) — the "To
-    // Reach" line must win over the bare "super max level" substring it contains.
-    expect(
-      detectMegaLevel("Max Level To Reach Super Max Level DRAGONITE MEGA ENERGY 3985 MEGA EVOLUTION BONUSES"),
-    ).toBe(3);
-  });
-
-  it("a Mega Level page with an unreadable level is still tagged megaLevel (not a card)", () => {
-    // Garbled banner + "MEGA EVOLUTION BONUSES" marker: no level reads, but the
-    // page is known to be a Mega Level screen so the importer can say so rather
-    // than asking for a Stardust/Candy section.
-    const r = assembleScan(
-      parseScreenText("SALAMENCE MEGA ENERGY 863"),
-      0,
-      "G M L T R H L SALAMENCE MEGA ENERGY 863 MEGA EVOLUTION BONUSES",
-    );
-    expect(r.screenshotKind).toBe("megaLevel");
-    expect(r.megaLevel).toBeUndefined();
-    expect(r.detectedName).toBe("salamence");
-  });
-
-  it("tags a Mega Level page with its level + form; energy stays card-only", () => {
-    const r = assembleScan(
-      parseScreenText("209\nMEGA CHARIZARD MEGA ENERGY\nX"),
-      0,
-      "High Level MEGA CHARIZARD X MEGA ENERGY 209 MEGA EVOLUTION BONUSES",
-    );
-    expect(r.screenshotKind).toBe("megaLevel");
-    expect(r.megaLevel).toBe(2);
-    expect(r.megaLevelForm).toBe("x");
-  });
-
-  it("treats a regular stats card as the 'card' kind with no mega level", () => {
-    const r = scanWords([
-      b("1,178", 460, 1100, 60),
-      b("GARCHOMP", 380, 1140, 90),
-      b("CANDY", 470, 1140, 65),
-    ]);
-    expect(r.screenshotKind).toBe("card");
-    expect(r.megaLevel).toBeUndefined();
   });
 
   it("does NOT guess the sibling energy for Gallade/Gardevoir (separate final evos)", () => {

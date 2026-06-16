@@ -5,10 +5,9 @@
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-/** Two hardcoded example screenshots for the importer guide (full resolution). */
+/** Example screenshot for the importer guide (full resolution). */
 export const GUIDE_IMAGES = {
   card: "/help/screenshot-pokemon-card.jpeg",
-  megaLevel: "/help/screenshot-mega-level.jpeg",
 } as const;
 
 /** Prefix a public/ path with the deploy base path. */

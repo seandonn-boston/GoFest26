@@ -43,30 +43,13 @@ const SPECIES_OPTIONS = (() => {
 })();
 const OPTION_BY_KEY = new Map(SPECIES_OPTIONS.map((o) => [o.key, o]));
 
-/** True when a species group contains a mega-capable boss (has Mega Levels). */
-const optionIsMega = (key: string) =>
-  (OPTION_BY_KEY.get(key)?.bosses ?? []).some((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
-
-/** Dedupe identity for "most-recent wins": per species AND per screenshot kind,
- *  so a Pokémon's stats card and its Mega Level page coexist (different data). */
-const shotDedupeKey = (s: ImportedShot) => `${s.key}|${s.scan.screenshotKind}`;
+/** Dedupe identity for "most-recent wins": one screenshot per species. */
+const shotDedupeKey = (s: ImportedShot) => s.key;
 
 /** Why a screenshot produced no values — as specific as the scan allows. */
 function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode {
   if (!scan.looksLikePogo) {
     return <>This doesn’t look like a Pokémon GO Pokémon screen ({fileName}).</>;
-  }
-  // A recognized Mega Level page that read no level: the data it carries is the
-  // current Mega Level (from the top banner), not Candy/Stardust — so point at
-  // the banner rather than asking for a stats section that isn't on this screen.
-  if (scan.screenshotKind === "megaLevel") {
-    const whose = scan.detectedName ? `${cap(scan.detectedName)}’s` : "a";
-    return (
-      <>
-        Looks like {whose} Mega Level page, but the level (Base / High / Max) wasn’t readable in {fileName}
-        {" "}— re-take it with the level banner near the top fully visible.
-      </>
-    );
   }
   return (
     <>
@@ -77,39 +60,7 @@ function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode 
 }
 
 /** Current-stat fields the importer writes (subset of the store's CurrentField). */
-type CurrentField = "candy" | "xlCandy" | "megaEnergy" | "megaLevel";
-
-/** Trailing X / Y form letter of a boss name ("Mega Mewtwo X" → "x"), else null. */
-const bossFormLetter = (name: string): "x" | "y" | null => {
-  const m = name.trim().toLowerCase().match(/\b([xy])$/);
-  return (m?.[1] as "x" | "y") ?? null;
-};
-
-/**
- * Apply the current Mega Level read from a Mega Level page to the matching mega
- * boss. For branching megas (X/Y), the page's form letter picks the line — never
- * cross-applied to the sibling. A branching page with no readable form is skipped
- * rather than guessed.
- */
-function applyMegaLevel(
-  scan: ScanResult,
-  bosses: RaidBoss[],
-  setCurrent: (id: string, field: CurrentField, v: number) => void,
-) {
-  if (scan.megaLevel === undefined) return;
-  const megaBosses = bosses.filter((b) => (b.megaLevelEnergyTotals?.length ?? 0) > 1);
-  if (!megaBosses.length) return;
-  const form = scan.megaLevelForm ?? null;
-  const targets = form
-    ? megaBosses.filter((b) => bossFormLetter(b.name) === form)
-    : megaBosses.length === 1
-      ? megaBosses
-      : []; // ambiguous branching page (no form) → don't guess
-  for (const b of targets) {
-    const max = (b.megaLevelEnergyTotals?.length ?? 1) - 1;
-    setCurrent(b.id, "megaLevel", Math.max(0, Math.min(max, Math.round(scan.megaLevel))));
-  }
-}
+type CurrentField = "candy" | "xlCandy" | "megaEnergy";
 
 function applyScan(
   scan: ScanResult,
@@ -119,21 +70,15 @@ function applyScan(
 ) {
   const sorted = [...bosses].sort((a, b) => a.sortPriority - b.sortPriority);
   for (const b of sorted) setSelected(b.id, true);
-  // The stats card supplies candy / XL / held energy. The Mega Level page does
-  // not (its energy value is unreliable), so only the card writes those.
-  if (scan.screenshotKind === "card") {
-    for (const b of sorted) {
-      if (scan.candy !== undefined) setCurrent(b.id, "candy", scan.candy);
-      if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
-    }
-    const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
-    const vals = energyForBosses(scan.megaEnergies, energyBosses);
-    energyBosses.forEach((b, i) => {
-      if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
-    });
+  for (const b of sorted) {
+    if (scan.candy !== undefined) setCurrent(b.id, "candy", scan.candy);
+    if (scan.xlCandy !== undefined) setCurrent(b.id, "xlCandy", scan.xlCandy);
   }
-  // The Mega Level page supplies the current Mega Level.
-  applyMegaLevel(scan, sorted, setCurrent);
+  const energyBosses = sorted.filter((b) => b.rewardsCurrencies.includes("megaEnergy"));
+  const vals = energyForBosses(scan.megaEnergies, energyBosses);
+  energyBosses.forEach((b, i) => {
+    if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
+  });
 }
 
 /**
@@ -158,10 +103,6 @@ export function ScreenshotImporter() {
   const [summary, setSummary] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
-  /** A Mega Level screenshot already uploaded for this species group. */
-  const hasMegaLevelShot = (key: string) =>
-    imports.some((i) => i.key === key && i.scan.screenshotKind === "megaLevel" && i.scan.readAnything);
-
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (fileRef.current) fileRef.current.value = "";
@@ -177,7 +118,6 @@ export function ScreenshotImporter() {
         megaEnergies: [],
         items: [],
         looksLikePogo: false,
-        screenshotKind: "card",
         capturedAt: file.lastModified || 0,
         readAnything: false,
       };
@@ -204,11 +144,9 @@ export function ScreenshotImporter() {
     setProgress("");
     if (next.length && next.every((r) => !r.scan.readAnything)) {
       setSummary(
-        next.some((r) => r.scan.screenshotKind === "megaLevel")
-          ? "No values read — for a Pokémon page include the Stardust/Candy section; for a Mega Level page make sure the level banner (Base / High / Max) near the top is visible."
-          : next.some((r) => r.scan.looksLikePogo)
-            ? "No values read — make sure each screenshot shows the Stardust/Candy section of a Pokémon's page."
-            : "None of those look like Pokémon GO Pokémon screens.",
+        next.some((r) => r.scan.looksLikePogo)
+          ? "No values read — make sure each screenshot shows the Stardust/Candy section of a Pokémon's page."
+          : "None of those look like Pokémon GO Pokémon screens.",
       );
     }
   }
@@ -241,9 +179,7 @@ export function ScreenshotImporter() {
   }
 
   function applyAll() {
-    // Most-recent per species AND kind, so a Pokémon's stats card and its Mega
-    // Level page both apply (card → candy/XL/energy, Mega Level page → mega level).
-    // Each writes only its own fields, so neither clobbers the other.
+    // Same species → only the most-recent screenshot's values apply.
     const byKey = new Map<string, ImportedShot>();
     for (const s of imports) {
       if (!assignableOf(s)) continue;
@@ -315,35 +251,20 @@ export function ScreenshotImporter() {
       {showGuide ? (
         <div className="rounded-sm border border-sky-400/30 bg-sky-500/[0.06] p-3">
           <p className="mb-2 text-[11px] text-slate-300">
-            Two kinds of screenshot are read. Upload the first for any Pokémon; add the second for mega-capable
-            (and Primal) targets to capture its current Mega Level. Locate the <b>exact</b> Pokémon you want to max
-            — not just any of the same species.
+            Upload a Pokémon&apos;s stats page — the one showing Candy / Candy XL / Mega Energy. Locate the{" "}
+            <b>exact</b> Pokémon you want to max — not just any of the same species.
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <figure className="m-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={assetPath(GUIDE_IMAGES.card)}
-                alt="Example Pokémon stats page showing Candy, Candy XL and Mega Energy"
-                className="w-full rounded-sm border border-white/10"
-              />
-              <figcaption className="mt-1 text-[10px] text-slate-400">
-                <b className="text-emerald-300">1 · Pokémon page</b> — any Pokémon. Reads Candy / XL / Mega Energy.
-              </figcaption>
-            </figure>
-            <figure className="m-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={assetPath(GUIDE_IMAGES.megaLevel)}
-                alt="Example Mega Level page showing the level banner and Mega Energy"
-                className="w-full rounded-sm border border-white/10"
-              />
-              <figcaption className="mt-1 text-[10px] text-slate-400">
-                <b className="text-purple-300">2 · Mega Level page</b> — mega/Primal only. Reads the current Mega Level.
-                Branching megas (Charizard X/Y, Mewtwo X/Y) need one per line.
-              </figcaption>
-            </figure>
-          </div>
+          <figure className="m-0 max-w-[50%]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={assetPath(GUIDE_IMAGES.card)}
+              alt="Example Pokémon stats page showing Candy, Candy XL and Mega Energy"
+              className="w-full rounded-sm border border-white/10"
+            />
+            <figcaption className="mt-1 text-[10px] text-slate-400">
+              <b className="text-emerald-300">Pokémon page</b> — reads Candy / XL / Mega Energy.
+            </figcaption>
+          </figure>
         </div>
       ) : null}
 
@@ -385,25 +306,10 @@ export function ScreenshotImporter() {
                     <>
                       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                         <ScanChips scan={s.scan} />
-                        {s.scan.megaLevel !== undefined ? (
-                          <span
-                            title="Current Mega Level read from the Mega Level page"
-                            className="rounded-sm bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-bold text-purple-200 ring-1 ring-purple-400/40"
-                          >
-                            Mega L{s.scan.megaLevel}
-                            {s.scan.megaLevelForm ? ` ${s.scan.megaLevelForm.toUpperCase()}` : ""}
-                          </span>
-                        ) : null}
                       </div>
                       {!assignable && s.scan.detectedName ? (
                         <p className="mb-1.5 text-[11px] text-sky-300">
                           ❗ {cap(s.scan.detectedName)} isn’t available for raids during this event — pick another below.
-                        </p>
-                      ) : null}
-                      {assignable && s.scan.screenshotKind === "card" && optionIsMega(s.key) && !hasMegaLevelShot(s.key) ? (
-                        <p className="mb-1.5 text-[11px] text-purple-300">
-                          ➕ Mega target — also upload its <b>Mega Level</b> screenshot to set the current Mega Level
-                          (tap ⓘ above for the example).
                         </p>
                       ) : null}
                       {superseded ? (
