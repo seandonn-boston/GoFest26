@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { RAID_BOSSES } from "@/data";
+import { RAID_BOSSES, getBoss } from "@/data";
 import type { RaidBoss } from "@/domain/types";
+import { primaryFormId, groupDisplayName } from "@/domain";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotScan";
 import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
@@ -19,11 +20,15 @@ const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t)
 const uid = () =>
   typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-// One option per species group (Mewtwo X/Y, Giratina A/O, etc. share a key).
+// One option per species group. Most groups already share a species key
+// (Giratina A/O, the genie formes); a shared-candy group across DISTINCT species
+// (Solgaleo + Lunala, one Cosmog pool) is collapsed under its primary forme's
+// key, so either forme's screenshot lands on the same combined target.
 const SPECIES_OPTIONS = (() => {
   const byKey = new Map<string, RaidBoss[]>();
   for (const b of RAID_BOSSES) {
-    const k = speciesKey(b.name);
+    const primary = b.formGroup ? getBoss(primaryFormId(b.formGroup)) ?? b : b;
+    const k = speciesKey(primary.name);
     const arr = byKey.get(k) ?? [];
     arr.push(b);
     byKey.set(k, arr);
@@ -31,7 +36,8 @@ const SPECIES_OPTIONS = (() => {
   return Array.from(byKey.entries())
     .map(([key, bosses]) => {
       const sorted = [...bosses].sort((a, b) => a.sortPriority - b.sortPriority);
-      return { key, bosses: sorted, label: pokemonSearchName(sorted[0].name) };
+      const label = sorted[0].formGroup ? groupDisplayName(sorted[0]) : pokemonSearchName(sorted[0].name);
+      return { key, bosses: sorted, label };
     })
     .sort((a, b) => a.label.localeCompare(b.label));
 })();

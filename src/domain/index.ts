@@ -24,6 +24,7 @@ export { bossIsLocal, isScopeLocal, regionScopeLabel } from "./region";
 export {
   collapseForms,
   formMembers,
+  groupDisplayName,
   isSecondaryForm,
   primaryFormId,
   planningWindows,

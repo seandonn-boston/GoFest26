@@ -712,6 +712,15 @@ export function fuzzyMatchSpecies(text: string, vocab: SpeciesVocab[]): string |
 }
 
 /**
+ * Base-evolution candy whose name isn't itself a raid target, but is spent on
+ * one (or more) that ARE. Pokémon GO names a candy after the lowest evolution,
+ * so a 5★ Solgaleo / Lunala card shows only "COSMOG CANDY" with no other species
+ * label — both share that one Cosmog pool, so it resolves to their group's
+ * primary forme (Solgaleo). Keys/values are normalized (lowercase, a–z only).
+ */
+const CANDY_SPECIES_ALIASES: Record<string, string> = { cosmog: "solgaleo" };
+
+/**
  * Resolve the species from the candy/energy LABELS only (never arbitrary text,
  * which used to match e.g. "Max Spirit" -> Mesprit). Energy labels (the evolved
  * form, e.g. GARDEVOIR — or the implied fusion species) win over candy labels
@@ -725,7 +734,9 @@ export function chooseSpecies(
 ): { key: string | null; name: string | null } {
   const candidates = [...energySpecies, ...candySpecies]
     .map((s) => s.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    // A base-evolution candy (Cosmog) stands in for its raid target (Solgaleo).
+    .map((c) => CANDY_SPECIES_ALIASES[c] ?? c);
   let key: string | null = null;
   for (const c of candidates) {
     const m = fuzzyMatchSpecies(c, vocab);

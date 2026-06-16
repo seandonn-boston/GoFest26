@@ -6,12 +6,27 @@
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { FORM_GROUPS, PRIMARY_FORM_ID } from "@/data/formGroups";
+import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
 import { MAX_REMOTE_PER_SPECIES } from "./settings";
 import type { BossInput, HabitatWindow, RaidBoss } from "./types";
 
 /** All forme bosses of a group (primary first), resolved from the roster. */
 export function formMembers(group: string): RaidBoss[] {
   return (FORM_GROUPS[group] ?? []).map((m) => getBoss(m.id)).filter((b): b is RaidBoss => !!b);
+}
+
+/**
+ * The title for a (possibly grouped) boss's combined card / option. A same-
+ * species forme group reads as the plain species ("Giratina"); a cross-species
+ * shared-candy group (Solgaleo + Lunala, both Cosmog Candy) joins its members'
+ * labels so the one combined card names both. Non-grouped bosses pass through.
+ */
+export function groupDisplayName(boss: RaidBoss): string {
+  if (!boss.formGroup) return boss.name;
+  const members = formMembers(boss.formGroup);
+  const distinct = new Set(members.map((m) => speciesKey(m.name)));
+  if (distinct.size <= 1) return pokemonSearchName(boss.name);
+  return members.map((m) => m.formLabel ?? pokemonSearchName(m.name)).join(" & ");
 }
 
 /** True for a non-primary forme (its pool lives on the group's primary forme). */

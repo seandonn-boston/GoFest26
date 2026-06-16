@@ -837,6 +837,13 @@ describe("chooseSpecies (from candy/energy labels only)", () => {
     const v = [...vocab, { key: "giratina", name: "GIRATINA" }];
     expect(chooseSpecies([], ["stardust giratina"], v)).toEqual({ key: "giratina", name: "giratina" });
   });
+
+  it("resolves Cosmog Candy to its shared raid target (Solgaleo/Lunala group)", () => {
+    // A 5★ Solgaleo or Lunala card shows only "COSMOG CANDY" — both spend one
+    // shared Cosmog pool, so the candy alias resolves to the group's primary.
+    const v = [...vocab, { key: "solgaleo", name: "SOLGALEO" }, { key: "lunala", name: "LUNALA" }];
+    expect(chooseSpecies([], ["cosmog"], v)).toEqual({ key: "solgaleo", name: "solgaleo" });
+  });
 });
 
 describe("fuzzyMatchSpecies (vocabulary-validated)", () => {
