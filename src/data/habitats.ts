@@ -34,7 +34,7 @@ export function habitatAt(day: EventDay, hour: number): Habitat | undefined {
   return HABITATS.find((h) => h.day === day && hour >= h.startHour && hour < h.endHour);
 }
 
-/** Stable key for a habitat block (per-block priority + Mewtwo targeting maps). */
+/** Stable key for a habitat block (per-block priority + quick-catch maps). */
 export function blockKey(day: EventDay, startHour: number): string {
   return `${day}${startHour}`;
 }

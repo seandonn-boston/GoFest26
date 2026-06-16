@@ -712,6 +712,15 @@ export function fuzzyMatchSpecies(text: string, vocab: SpeciesVocab[]): string |
 }
 
 /**
+ * Base-evolution candy whose name isn't itself a raid target, but is spent on
+ * one (or more) that ARE. Pokémon GO names a candy after the lowest evolution,
+ * so a 5★ Solgaleo / Lunala card shows only "COSMOG CANDY" with no other species
+ * label — both share that one Cosmog pool, so it resolves to their group's
+ * primary forme (Solgaleo). Keys/values are normalized (lowercase, a–z only).
+ */
+const CANDY_SPECIES_ALIASES: Record<string, string> = { cosmog: "solgaleo" };
+
+/**
  * Resolve the species from the candy/energy LABELS only (never arbitrary text,
  * which used to match e.g. "Max Spirit" -> Mesprit). Energy labels (the evolved
  * form, e.g. GARDEVOIR — or the implied fusion species) win over candy labels
@@ -725,7 +734,9 @@ export function chooseSpecies(
 ): { key: string | null; name: string | null } {
   const candidates = [...energySpecies, ...candySpecies]
     .map((s) => s.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    // A base-evolution candy (Cosmog) stands in for its raid target (Solgaleo).
+    .map((c) => CANDY_SPECIES_ALIASES[c] ?? c);
   let key: string | null = null;
   for (const c of candidates) {
     const m = fuzzyMatchSpecies(c, vocab);
@@ -800,11 +811,26 @@ function completeSiblingEnergy(energies: EnergyHit[], parsed: ParsedScreen): voi
 }
 
 /**
- * Read the current Mega Level from a Mega Level page's banner text: Base=1,
- * High=2, Max=3, Super Max=4. Order matters — "super max" must beat "max", which
- * must beat the bare-"level" guard. Returns undefined when no banner is present
- * (i.e. this isn't a Mega Level screenshot).
+ * Read the current Mega Level from a Mega Level page: Base=1, High=2, Max=3,
+ * Super Max=4. Returns undefined when no Mega Level markers are present (i.e.
+ * this isn't a Mega Level screenshot).
+ *
+ * Two signals, in priority order:
+ *  1. The "To Reach <next> Level" body line — it names the NEXT level, so the
+ *     current level is one below it. This dark body text is far more legible
+ *     than the short colored level ribbon, AND it disambiguates: a High page's
+ *     body literally reads "...Max Level", which would otherwise make the banner
+ *     match below misread the page as Max (an off-by-one).
+ *  2. The current-level ribbon itself ("Base/High/Max/Super Max Level"), used
+ *     only when there's no "To Reach" line — i.e. the page is already fully
+ *     maxed. Order matters there: "super max" must beat "max" must beat "high".
  */
+const LEVEL_NAMES: ReadonlyArray<readonly [RegExp, number]> = [
+  [/\bsuper\s*max\b/i, 4],
+  [/\bmax\b/i, 3],
+  [/\bhigh\b/i, 2],
+  [/\bbase\b/i, 1],
+];
 const MEGA_LEVEL_BANNERS: ReadonlyArray<readonly [RegExp, number]> = [
   [/\bsuper\s*max\s*level\b/i, 4],
   [/\bmax\s*level\b/i, 3],
@@ -813,15 +839,28 @@ const MEGA_LEVEL_BANNERS: ReadonlyArray<readonly [RegExp, number]> = [
 ];
 export function detectMegaLevel(rawText: string): number | undefined {
   const t = rawText.replace(/\s+/g, " ");
+  const reach = t.match(/to\s*reach\s+(super\s*max|max|high)\s*level/i);
+  if (reach) {
+    const next = LEVEL_NAMES.find(([re]) => re.test(reach[1]))?.[1];
+    if (next) return next - 1;
+  }
   for (const [re, level] of MEGA_LEVEL_BANNERS) if (re.test(t)) return level;
   return undefined;
 }
 
-/** True when the text carries Mega Level page markers (banner / bonuses / level-up). */
+/** True when the text carries Mega Level page markers (banner / bonuses /
+ *  level-up / rest period). These markers identify the page as a Mega Level
+ *  screen even when the level itself was too garbled to read, so the importer
+ *  can say so instead of asking for a (nonexistent) Stardust/Candy section. */
 function isMegaLevelPage(rawText: string, megaLevel: number | undefined): boolean {
   if (megaLevel !== undefined) return true;
   const t = rawText.replace(/\s+/g, " ");
-  return /mega evolution bonuses/i.test(t) || /to reach .*level/i.test(t);
+  return (
+    /mega evolution bonuses/i.test(t) ||
+    /to reach .*level/i.test(t) ||
+    /rest period/i.test(t) ||
+    /mega evolve\b/i.test(t)
+  );
 }
 
 /** Build the final ScanResult from a parsed screen (boxes or text path). */

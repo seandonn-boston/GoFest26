@@ -6,8 +6,8 @@ import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability } from "@/data";
 import { wildTypesForBoss } from "@/data/habitats";
-import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows } from "@/domain";
-import { buildMegaSearchString, pokemonSearchName } from "@/lib/pokemonSearch";
+import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows, groupDisplayName } from "@/domain";
+import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge, TierBadge } from "@/components/ui/Badge";
@@ -70,7 +70,7 @@ export function BossInputCard({
   // but counters / megas / availability stay per forme.
   const formes = boss.formGroup ? formMembers(boss.formGroup) : [boss];
   const isGroup = formes.length > 1;
-  const displayName = isGroup ? pokemonSearchName(boss.name) : boss.name;
+  const displayName = isGroup ? groupDisplayName(boss) : boss.name;
   // De-duplicate the union windows (same-day formes share a block) before counting
   // capacity, so a dual-day species (Dialga) counts both days but Giratina once.
   const planWindows = isGroup

@@ -1,9 +1,15 @@
-// Shared-resource multi-form raid species. The two formes of these species draw
-// from ONE Candy / Candy XL pool, so the planner treats each group as a SINGLE
+// Shared-resource multi-form raid species. The members of each group draw from
+// ONE Candy / Candy XL pool, so the planner treats each group as a SINGLE
 // resource target (one raids-needed total) that can be hunted across whichever
-// time blocks its formes appear in — while counters / mega suggestions stay
-// per-forme. The first member listed is the "primary" forme that carries the
-// shared input + represents the group in the plan.
+// time blocks its members appear in — while counters / mega suggestions stay
+// per-member. The first member listed is the "primary" that carries the shared
+// input + represents the group in the plan.
+//
+// Most groups are two FORMES of one species (Giratina Altered/Origin, …) that
+// literally share that species' Candy. The "cosmog" group is the other shape:
+// two DISTINCT species (Solgaleo, Lunala) that both evolve from Cosmog, so in
+// Pokémon GO both spend the same "Cosmog Candy" pool — the same shared-resource
+// treatment, just across an evolutionary line instead of one species' formes.
 //
 // Mewtwo X/Y is intentionally NOT here: its X and Y Mega Energy are separate
 // pools and it already has bespoke day-locked handling.
@@ -43,6 +49,12 @@ export const FORM_GROUPS: Record<string, FormMember[]> = {
   enamorus: [
     { id: "enamorus-incarnate", label: "Incarnate" },
     { id: "enamorus-therian", label: "Therian" },
+  ],
+  // Two distinct species that both evolve from Cosmog → one shared Cosmog Candy
+  // pool (unlike the forme groups above, which share one species' candy).
+  cosmog: [
+    { id: "solgaleo", label: "Solgaleo" },
+    { id: "lunala", label: "Lunala" },
   ],
 };
 

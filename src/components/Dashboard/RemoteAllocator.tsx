@@ -3,8 +3,7 @@
 import { useMemo } from "react";
 import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { remoteCapFor } from "@/domain/forms";
-import { pokemonSearchName } from "@/lib/pokemonSearch";
+import { remoteCapFor, groupDisplayName } from "@/domain/forms";
 import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 
@@ -64,7 +63,7 @@ export function RemoteAllocator() {
         // Can't push this species past its cap, nor the running total past the budget.
         const max = Math.max(0, Math.min(speciesCap, val + (budget - total)));
         const remoteOnly = !bossIsLocal(boss, region);
-        const label = boss.formGroup ? pokemonSearchName(boss.name) : boss.name;
+        const label = groupDisplayName(boss);
         return (
           <div key={id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5">
             <Sprite src={boss.sprite} alt={boss.name} size={24} />

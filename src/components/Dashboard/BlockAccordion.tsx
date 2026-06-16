@@ -58,7 +58,7 @@ function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, n
 
 /** One species' target in a block: a drag grip, completed (editable) / best ·
  *  avg · worst raid counts, the boss's types + candy-boost megas, and its best
- *  counters. Mewtwo rows also carry a "hunt here" checkbox beside the name. */
+ *  counters, plus a per-block quick-catch toggle. */
 function TargetCard({
   share,
   dkey,
@@ -66,7 +66,6 @@ function TargetCard({
   grip,
   rowRef,
   dragging,
-  targeting,
   quickCatch,
 }: {
   share: BlockSpeciesShare;
@@ -75,7 +74,6 @@ function TargetCard({
   grip?: ReactNode;
   rowRef?: (el: HTMLElement | null) => void;
   dragging?: boolean;
-  targeting?: { checked: boolean; onToggle: () => void };
   quickCatch?: { on: boolean; onToggle: () => void };
 }) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
@@ -98,14 +96,13 @@ function TargetCard({
   const r = share.range.max; // worst case
   const y = Math.min(r, Math.max(g, Math.round((g + r) / 2))); // average
   const goalPct = share.raids > 0 ? Math.round((share.fitted / share.raids) * 100) : 100;
-  const muted = !!targeting && !targeting.checked; // un-targeted Mewtwo row
 
   return (
     <div
       ref={rowRef}
       className={`rounded-lg border bg-gofest-bg/40 px-2 py-1.5 transition-shadow ${
         dragging ? "border-gofest-accent2/70 shadow-brutal ring-1 ring-gofest-accent2" : "border-white/10"
-      } ${muted ? "opacity-60" : ""}`}
+      }`}
     >
       <div className="flex items-center gap-2">
         {grip}
@@ -136,28 +133,10 @@ function TargetCard({
         ) : null}
       </div>
 
-      {/* Per-block toggles — labeled, sitting below the name and above the
-          counters: whether to hunt the (Mewtwo) form here, and whether to
-          quick-catch this block (saves time, forfeits catch Candy/XL). */}
-      {targeting || quickCatch ? (
+      {/* Per-block quick-catch toggle — sits below the name and above the
+          counters (saves time, forfeits catch Candy/XL this block). */}
+      {quickCatch ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[36px]">
-          {targeting ? (
-            <label
-              className={`flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
-                targeting.checked ? "text-gofest-mewtwo" : "text-slate-500"
-              }`}
-              title={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
-            >
-              <input
-                type="checkbox"
-                checked={targeting.checked}
-                onChange={targeting.onToggle}
-                aria-label={`Hunt ${share.bossName.replace(/^Mega /, "")} during this block`}
-                className="h-4 w-4 accent-gofest-mewtwo"
-              />
-              Hunt here
-            </label>
-          ) : null}
           {quickCatch ? (
             <label
               className={`flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
@@ -230,13 +209,11 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
 
   // Per-block drag-to-rank members = this block's fixed bosses + the eligible
   // Mewtwo form (X on Saturday, Y on Sunday) when selected. Mewtwo always shows
-  // (with a "hunt here" checkbox) even when unchecked / unallocated.
+  // even when unallocated, so its block priority can still be ranked.
   const xSel = usePlannerStore((s) => !!s.inputs[MEWTWO_X_ID]?.selected);
   const ySel = usePlannerStore((s) => !!s.inputs[MEWTWO_Y_ID]?.selected);
   const order = usePlannerStore((s) => s.blockPriority[key]);
   const setBlockPriority = usePlannerStore((s) => s.setBlockPriority);
-  const mewtwoTargets = usePlannerStore((s) => s.mewtwoTargets);
-  const toggleMewtwoTarget = usePlannerStore((s) => s.toggleMewtwoTarget);
   const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
   const toggleQuickCatch = usePlannerStore((s) => s.toggleQuickCatch);
 
@@ -305,7 +282,6 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2" {...drag.containerProps}>
           <p className="text-[10px] text-slate-500">Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).</p>
           {drag.list.map((id) => {
-            const isMewtwoForm = id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
             const share = shareFor(id);
             const grip = (
               <span
@@ -324,11 +300,6 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
                 grip={grip}
                 rowRef={(el) => drag.setRow(id, el)}
                 dragging={drag.dragId === id}
-                targeting={
-                  isMewtwoForm
-                    ? { checked: mewtwoTargets[`${id}@${key}`] !== false, onToggle: () => toggleMewtwoTarget(id, key) }
-                    : undefined
-                }
                 quickCatch={{ on: !!quickCatchBlocks[`${id}@${key}`], onToggle: () => toggleQuickCatch(id, key) }}
               />
             );

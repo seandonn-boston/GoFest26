@@ -48,7 +48,6 @@ export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
   const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
   const settings = useDeferredValue(usePlannerStore((s) => s.settings));
   const blockPriority = useDeferredValue(usePlannerStore((s) => s.blockPriority));
-  const mewtwoTargets = useDeferredValue(usePlannerStore((s) => s.mewtwoTargets));
   const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
   const quickCatchBlocks = useDeferredValue(usePlannerStore((s) => s.quickCatchBlocks));
   return useMemo(
@@ -59,11 +58,10 @@ export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
         summary.capacity,
         settings,
         blockPriority,
-        mewtwoTargets,
         remoteAllocations,
         quickCatchBlocks,
       ),
-    [inputs, summary, settings, blockPriority, mewtwoTargets, remoteAllocations, quickCatchBlocks],
+    [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks],
   );
 }
 
@@ -88,7 +86,6 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
   const inputs = usePlannerStore((s) => s.inputs);
   const settings = usePlannerStore((s) => s.settings);
   const blockPriority = usePlannerStore((s) => s.blockPriority);
-  const mewtwoTargets = usePlannerStore((s) => s.mewtwoTargets);
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
@@ -107,10 +104,9 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       summary.capacity,
       { ...settings, useRemoteRaids: false },
       blockPriority,
-      mewtwoTargets,
       {},
     );
     const desired = autoRemoteAllocations(offPlan, inputList, summary.results, settings, globalOrder);
     if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
-  }, [inputs, settings, blockPriority, mewtwoTargets, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
+  }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
 }

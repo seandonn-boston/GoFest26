@@ -160,7 +160,7 @@ describe("per-block quick-catch", () => {
     const normal = computeBlockPlan([input], results, tight);
     const blk = normal.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
     const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
-    const quick = computeBlockPlan([input], results, tight, DEFAULT_SETTINGS, {}, {}, {}, { [qkey]: true });
+    const quick = computeBlockPlan([input], results, tight, DEFAULT_SETTINGS, {}, {}, { [qkey]: true });
     const fittedOf = (p: ReturnType<typeof computeBlockPlan>) => p.blocks.reduce((s, b) => s + b.fitted, 0);
     expect(fittedOf(normal)).toBeGreaterThan(0);
     expect(fittedOf(quick)).toBeGreaterThan(fittedOf(normal)); // same time, more quick raids
@@ -232,21 +232,17 @@ describe("computeBlockPlan — allocation", () => {
     }
   });
 
-  it("drops Mewtwo from a block when its checkbox is cleared, rebalancing the rest", () => {
+  it("spreads Mewtwo across every day-matching block its form is selected for", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
     const xIn = (plan: ReturnType<typeof computeBlockPlan>, key: string) =>
       plan.blocks
         .filter((b) => blockKey(b.day, b.startHour) === key)
         .reduce((s, b) => s + b.species.filter((sp) => sp.bossId === MEWTWO_X_ID).reduce((t, sp) => t + sp.raids, 0), 0);
-    const total = (plan: ReturnType<typeof computeBlockPlan>) =>
-      ["sat0", "sat3", "sat6"].reduce((s, k) => s + xIn(plan, k), 0);
 
     const all = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const off0 = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, { [`${MEWTWO_X_ID}@sat0`]: false });
-
-    expect(xIn(all, "sat0")).toBeGreaterThan(0); // targeted everywhere by default
-    expect(xIn(off0, "sat0")).toBe(0); // unchecked → no Mewtwo there
-    expect(total(off0)).toBe(total(all)); // same total X raids, rebalanced to sat3/sat6
+    // Every Saturday block carries some Mega Mewtwo X — emphasis is steered by
+    // each block's priority order, not a per-block hunt toggle.
+    for (const key of ["sat0", "sat3", "sat6"]) expect(xIn(all, key)).toBeGreaterThan(0);
   });
 
   it("respects explicit priority order (lowest priority takes the risky tail)", () => {
@@ -276,14 +272,14 @@ describe("remote raids (manual per-species allocation)", () => {
   it("keeps region-locked targets out of the blocks; allocated ones land in the remote pool", () => {
     if (!remoteOnly) return;
     const { inputs, results } = buildFor([remoteOnly.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, {}, { [remoteOnly.id]: 5 });
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [remoteOnly.id]: 5 });
     expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === remoteOnly.id))).toBe(false);
     expect(plan.remote?.species.find((s) => s.bossId === remoteOnly.id)?.raids).toBe(5);
   });
 
   it("omits the remote pool until the user opts in", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
-    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, {}, { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
+    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
   });
 
   it("a remote allocation reduces that species' in-person block demand", () => {
@@ -291,14 +287,14 @@ describe("remote raids (manual per-species allocation)", () => {
     const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
       plan.blocks.reduce((s, b) => s + b.species.filter((x) => x.bossId === localSat.id).reduce((a, x) => a + x.raids, 0), 0);
     const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}));
-    const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, {}, { [localSat.id]: 5 }));
+    const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [localSat.id]: 5 }));
     expect(before).toBeGreaterThan(5);
     expect(after).toBe(before - 5);
   });
 
   it("the remote bar's capacity is the 60-pass budget and reflects the allocations", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, {}, { [MEWTWO_X_ID]: 10 });
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [MEWTWO_X_ID]: 10 });
     expect(plan.remote!.capacity).toBe(MAX_REMOTE_RAIDS);
     expect(plan.remote!.fitted).toBe(10);
   });
@@ -377,7 +373,7 @@ describe("autoRemoteAllocations", () => {
     const total = Object.values(auto).reduce((s, n) => s + n, 0);
     expect(total).toBeGreaterThan(0);
     expect(total).toBeLessThanOrEqual(20); // never exceeds the custom budget
-    const withRemote = computeBlockPlan(inputs, results, ROOMY, settings, {}, {}, auto);
+    const withRemote = computeBlockPlan(inputs, results, ROOMY, settings, {}, auto);
     expect(withRemote.remote?.capacity).toBe(20); // pool bar measures against the budget
   });
 
