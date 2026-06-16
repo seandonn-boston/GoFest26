@@ -1,5 +1,5 @@
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
-import { addRange, midpoint, ZERO_RANGE } from "@/lib/math";
+import { addRange, clamp, midpoint, ZERO_RANGE } from "@/lib/math";
 import { computeCapacity } from "./capacity";
 import { collapseForms } from "./forms";
 import { bossResultFromNeeds, computeBossResult } from "./raidsNeeded";
@@ -106,10 +106,30 @@ function splitMewtwoLeveling(results: BossResult[], inputs: BossInput[]): void {
   const levelCandy = (netX.candy ?? 0) + (netY.candy ?? 0);
   if (levelXl <= 0 && levelCandy <= 0) return;
 
-  // Even split; ceil/floor keeps the two integer halves summing to the whole.
-  const half = (n: number): [number, number] => [Math.ceil(n / 2), Math.floor(n / 2)];
-  const [xlX, xlY] = half(levelXl);
-  const [candyX, candyY] = half(levelCandy);
+  // Smart balance (not a blind 50/50): each form's own day-locked Mega Energy
+  // raids already yield XL, so weigh the climb by that. Convert energy + leveling
+  // to raids and load-balance the leveling so the two forms' TOTAL raids come out
+  // as even as possible — if one form's energy alone already exceeds half the
+  // climb it keeps its energy raids and the lighter form absorbs the remainder;
+  // when leveling dominates both, it settles to an even split. `fracX` is X's
+  // share of the leveling currency.
+  const enMid = bossX.rewards.megaEnergy ? midpoint(bossX.rewards.megaEnergy) : 0;
+  const xlMid = bossX.rewards.xlCandy ? midpoint(bossX.rewards.xlCandy) : 0;
+  const ex = enMid > 0 ? (netX.megaEnergy ?? 0) / enMid : 0; // X energy in raids
+  const ey = enMid > 0 ? (netY.megaEnergy ?? 0) / enMid : 0; // Y energy in raids
+  const lr = xlMid > 0 ? levelXl / xlMid : 0; // leveling in raids
+  let fracX = 0.5;
+  if (lr > 0) {
+    const total = Math.max(ex + ey, lr); // minimal combined raids
+    const rx = clamp(total / 2, ex, total - ey); // X's balanced total, ≥ its energy floor
+    fracX = total > 0 ? rx / total : 0.5;
+  }
+  const split = (n: number): [number, number] => {
+    const x = Math.round(n * fracX);
+    return [x, n - x];
+  };
+  const [xlX, xlY] = split(levelXl);
+  const [candyX, candyY] = split(levelCandy);
   const needsFor = (energy: number | undefined, xl: number, candy: number): Partial<Record<Currency, number>> => {
     const out: Partial<Record<Currency, number>> = {};
     if (energy && energy > 0) out.megaEnergy = energy;

@@ -257,8 +257,9 @@ describe("computePlanSummary", () => {
     expect(summary.results[0].bossId).toBe("mega-mewtwo-x");
   });
 
-  it("splits the shared Mewtwo 40→50 XL climb evenly across both forms", () => {
+  it("balances the shared Mewtwo 40→50 XL climb across both forms (even when symmetric)", () => {
     // The shared leveling is stored on X (as the UI does); Y carries only energy.
+    // Equal Mega Energy goals → the load-balance settles to an even split.
     const sel = (id: string, ov = {}) => ({ ...input(id, ov), selected: true, quantity: 2 });
     const x = sel("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 1, targetMegaLevel: 4 });
     const y = sel("mega-mewtwo-y", { level: 40, targetLevel: 40, megaLevel: 1, targetMegaLevel: 4 });
@@ -266,7 +267,7 @@ describe("computePlanSummary", () => {
     const xr = results.find((r) => r.bossId === "mega-mewtwo-x")!;
     const yr = results.find((r) => r.bossId === "mega-mewtwo-y")!;
 
-    // Both forms now carry XL, split evenly, summing to the full shared climb.
+    // Both forms now carry XL, splitting evenly here, summing to the full climb.
     expect(xr.needs.xlCandy?.needed).toBe(yr.needs.xlCandy?.needed);
     expect((xr.needs.xlCandy?.needed ?? 0) + (yr.needs.xlCandy?.needed ?? 0)).toBe(computeNetNeed(mewtwoX, x).xlCandy);
 
@@ -274,6 +275,22 @@ describe("computePlanSummary", () => {
     // all-on-X figure, and the two forms come out comparable (≈ a day each).
     expect(xr.raids.max).toBeLessThan(computeBossResult(mewtwoX, x).raids.max);
     expect(Math.abs(xr.raids.max - yr.raids.max)).toBeLessThanOrEqual(2);
+  });
+
+  it("weights the leveling toward the heavier-energy form (smart balance, not 50/50)", () => {
+    // X has the bigger Mega Energy climb (0→4 incl. first-evolution cost) and Y a
+    // small one (3→4); the shared leveling is small, so X's energy raids already
+    // produce most of its XL — it should carry MORE of the leveling than Y.
+    const sel = (id: string, ov = {}) => ({ ...input(id, ov), selected: true });
+    const x = sel("mega-mewtwo-x", { level: 49, targetLevel: 50, megaLevel: 0, targetMegaLevel: 4 });
+    const y = sel("mega-mewtwo-y", { level: 40, targetLevel: 40, megaLevel: 3, targetMegaLevel: 4 });
+    const { results } = computePlanSummary([x, y]);
+    const xr = results.find((r) => r.bossId === "mega-mewtwo-x")!;
+    const yr = results.find((r) => r.bossId === "mega-mewtwo-y")!;
+
+    expect(xr.needs.xlCandy!.needed).toBeGreaterThan(yr.needs.xlCandy!.needed);
+    // Still conserves the full climb across the two forms.
+    expect(xr.needs.xlCandy!.needed + yr.needs.xlCandy!.needed).toBe(computeNetNeed(mewtwoX, x).xlCandy);
   });
 
   it("keeps the whole climb on the sole form when only one Mewtwo is raided", () => {
