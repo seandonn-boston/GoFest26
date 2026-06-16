@@ -145,12 +145,6 @@ interface PlannerState {
    */
   blockPriority: Record<string, string[]>;
   /**
-   * Per-block Mewtwo targeting, keyed by `${formId}@${blockKey}`. A form is hunted
-   * in every eligible (day-matching, selected) block by DEFAULT; only an explicit
-   * `false` here opts a block out. Toggling rebalances Mewtwo across the event.
-   */
-  mewtwoTargets: Record<string, boolean>;
-  /**
    * Per species, per time block: `${bossId}@${blockKey}` → true means quick-catch
    * those raids (saves time but forfeits catch Candy/XL — only completion rewards
    * like Mega Energy / Rare Candy). Absent = off (normal catch). Off by default.
@@ -162,8 +156,6 @@ interface PlannerState {
   setQuantity: (bossId: string, value: number) => void;
   /** Set one block's priority order (highest first). */
   setBlockPriority: (blockKey: string, ids: string[]) => void;
-  /** Toggle whether a Mewtwo form is hunted in a given block (rebalances event-wide). */
-  toggleMewtwoTarget: (formId: string, blockKey: string) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
   toggleQuickCatch: (bossId: string, blockKey: string) => void;
   /** Record how many raids the user has completed toward a per-block target. */
@@ -263,7 +255,6 @@ export const usePlannerStore = create<PlannerState>()(
       remoteAllocations: {},
       remoteAuto: true,
       blockPriority: {},
-      mewtwoTargets: {},
       quickCatchBlocks: {},
 
       setRaidsDone: (key, value) =>
@@ -368,15 +359,6 @@ export const usePlannerStore = create<PlannerState>()(
       setBlockPriority: (blockKey, ids) =>
         set((state) => ({ blockPriority: { ...state.blockPriority, [blockKey]: ids } })),
 
-      toggleMewtwoTarget: (formId, blockKey) =>
-        set((state) => {
-          const key = `${formId}@${blockKey}`;
-          // Absent = targeted (default on); flip to the opposite of the current
-          // effective value. Manual remote edits stay; auto-balance picks it up.
-          const currently = state.mewtwoTargets[key] !== false;
-          return { mewtwoTargets: { ...state.mewtwoTargets, [key]: !currently } };
-        }),
-
       toggleQuickCatch: (bossId, blockKey) =>
         set((state) => {
           const key = `${bossId}@${blockKey}`;
@@ -476,7 +458,6 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAllocations: {},
           remoteAuto: true,
           blockPriority: {},
-          mewtwoTargets: {},
           quickCatchBlocks: {},
         }),
     }),
@@ -495,7 +476,6 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.screenshots) state.screenshots = {};
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!state.blockPriority || typeof state.blockPriority !== "object") state.blockPriority = {};
-        if (!state.mewtwoTargets || typeof state.mewtwoTargets !== "object") state.mewtwoTargets = {};
         if (!state.quickCatchBlocks || typeof state.quickCatchBlocks !== "object") state.quickCatchBlocks = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};

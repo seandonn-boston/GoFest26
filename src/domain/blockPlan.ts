@@ -281,7 +281,6 @@ export function computeBlockPlan(
   capacity: CapacityModel,
   settings: PlannerSettings = DEFAULT_SETTINGS,
   blockPriority: Record<string, string[]> = {},
-  mewtwoTargets: Record<string, boolean> = {},
   remoteAllocations: Record<string, number> = {},
   quickCatchBlocks: Record<string, boolean> = {},
 ): WeekendBlockPlan {
@@ -299,10 +298,7 @@ export function computeBlockPlan(
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   const inputById = new Map(inputs.map((i) => [i.bossId, i]));
   const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
-  // A Mewtwo form is hunted in a block unless its checkbox was explicitly cleared
-  // (default-on for every eligible — day-matching, selected — block).
   const keyAt = (i: number) => blockKey(HABITATS[i].day, HABITATS[i].startHour);
-  const targeted = (formId: string, i: number) => mewtwoTargets[`${formId}@${keyAt(i)}`] !== false;
 
   const shares: RawShare[][] = HABITATS.map(() => []);
   const capacities: Range[] = HABITATS.map((h) => ({
@@ -386,11 +382,12 @@ export function computeBlockPlan(
   const xRatio = ratioFor(xRes);
   const yRatio = ratioFor(yRes);
 
-  // Mewtwo only flows into blocks the user is targeting it in (day-locked: X on
-  // Saturday, Y on Sunday). Energy is day-specific; the shared leveling fluid can
-  // fall on any targeted block.
-  const satIdx = HABITATS.map((h, i) => (h.day === "sat" && xSel && targeted(MEWTWO_X_ID, i) ? i : -1)).filter((i) => i >= 0);
-  const sunIdx = HABITATS.map((h, i) => (h.day === "sun" && ySel && targeted(MEWTWO_Y_ID, i) ? i : -1)).filter((i) => i >= 0);
+  // Mewtwo flows into every day-matching block its form is selected for (day-
+  // locked: X on Saturday, Y on Sunday). Energy is day-specific; the shared
+  // leveling fluid can fall on any of those blocks. Per-block emphasis is the
+  // user's job via each block's priority order (the lowest is cut first).
+  const satIdx = HABITATS.map((h, i) => (h.day === "sat" && xSel ? i : -1)).filter((i) => i >= 0);
+  const sunIdx = HABITATS.map((h, i) => (h.day === "sun" && ySel ? i : -1)).filter((i) => i >= 0);
   const allIdx = [...satIdx, ...sunIdx];
 
   // Cap Mewtwo so it never inflates a block past its capacity (a block already
