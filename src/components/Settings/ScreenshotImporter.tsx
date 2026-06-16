@@ -50,6 +50,18 @@ function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode 
   if (!scan.looksLikePogo) {
     return <>This doesn’t look like a Pokémon GO Pokémon screen ({fileName}).</>;
   }
+  // A recognized Mega Level page that read no level: the data it carries is the
+  // current Mega Level (from the top banner), not Candy/Stardust — so point at
+  // the banner rather than asking for a stats section that isn't on this screen.
+  if (scan.screenshotKind === "megaLevel") {
+    const whose = scan.detectedName ? `${cap(scan.detectedName)}’s` : "a";
+    return (
+      <>
+        Looks like {whose} Mega Level page, but the level (Base / High / Max) wasn’t readable in {fileName}
+        {" "}— re-take it with the level banner near the top fully visible.
+      </>
+    );
+  }
   return (
     <>
       Looks like Pokémon GO, but the stats aren’t visible in {fileName} — include the Stardust/Candy
@@ -186,9 +198,11 @@ export function ScreenshotImporter() {
     setProgress("");
     if (next.length && next.every((r) => !r.scan.readAnything)) {
       setSummary(
-        next.some((r) => r.scan.looksLikePogo)
-          ? "No values read — make sure each screenshot shows the Stardust/Candy section of a Pokémon's page."
-          : "None of those look like Pokémon GO Pokémon screens.",
+        next.some((r) => r.scan.screenshotKind === "megaLevel")
+          ? "No values read — for a Pokémon page include the Stardust/Candy section; for a Mega Level page make sure the level banner (Base / High / Max) near the top is visible."
+          : next.some((r) => r.scan.looksLikePogo)
+            ? "No values read — make sure each screenshot shows the Stardust/Candy section of a Pokémon's page."
+            : "None of those look like Pokémon GO Pokémon screens.",
       );
     }
   }
