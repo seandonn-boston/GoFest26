@@ -69,19 +69,6 @@ export interface ScanResult {
   items: ItemHit[];
   /** True when the image showed Pokémon GO UI (labels/markers), even if no values read. */
   looksLikePogo: boolean;
-  /**
-   * Which Pokémon GO screen this is: the universal stats "card" (candy / XL /
-   * energy) or the "megaLevel" page (the Mega Level status screen). Detected from
-   * the Mega Level banner + bonuses markers; defaults to "card".
-   */
-  screenshotKind: "card" | "megaLevel";
-  /**
-   * Current Mega Level (1=Base, 2=High, 3=Max, 4=Super Max) read from the Mega
-   * Level page's banner. Only present on a "megaLevel" screenshot.
-   */
-  megaLevel?: number;
-  /** Mega form (X / Y) this Mega Level page is showing, from its energy label. */
-  megaLevelForm?: "x" | "y" | null;
   /** File timestamp — used to pick the most-recent screenshot per species. */
   capturedAt: number;
   readAnything: boolean;
@@ -810,59 +797,6 @@ function completeSiblingEnergy(energies: EnergyHit[], parsed: ParsedScreen): voi
   }
 }
 
-/**
- * Read the current Mega Level from a Mega Level page: Base=1, High=2, Max=3,
- * Super Max=4. Returns undefined when no Mega Level markers are present (i.e.
- * this isn't a Mega Level screenshot).
- *
- * Two signals, in priority order:
- *  1. The "To Reach <next> Level" body line — it names the NEXT level, so the
- *     current level is one below it. This dark body text is far more legible
- *     than the short colored level ribbon, AND it disambiguates: a High page's
- *     body literally reads "...Max Level", which would otherwise make the banner
- *     match below misread the page as Max (an off-by-one).
- *  2. The current-level ribbon itself ("Base/High/Max/Super Max Level"), used
- *     only when there's no "To Reach" line — i.e. the page is already fully
- *     maxed. Order matters there: "super max" must beat "max" must beat "high".
- */
-const LEVEL_NAMES: ReadonlyArray<readonly [RegExp, number]> = [
-  [/\bsuper\s*max\b/i, 4],
-  [/\bmax\b/i, 3],
-  [/\bhigh\b/i, 2],
-  [/\bbase\b/i, 1],
-];
-const MEGA_LEVEL_BANNERS: ReadonlyArray<readonly [RegExp, number]> = [
-  [/\bsuper\s*max\s*level\b/i, 4],
-  [/\bmax\s*level\b/i, 3],
-  [/\bhigh\s*level\b/i, 2],
-  [/\bbase\s*level\b/i, 1],
-];
-export function detectMegaLevel(rawText: string): number | undefined {
-  const t = rawText.replace(/\s+/g, " ");
-  const reach = t.match(/to\s*reach\s+(super\s*max|max|high)\s*level/i);
-  if (reach) {
-    const next = LEVEL_NAMES.find(([re]) => re.test(reach[1]))?.[1];
-    if (next) return next - 1;
-  }
-  for (const [re, level] of MEGA_LEVEL_BANNERS) if (re.test(t)) return level;
-  return undefined;
-}
-
-/** True when the text carries Mega Level page markers (banner / bonuses /
- *  level-up / rest period). These markers identify the page as a Mega Level
- *  screen even when the level itself was too garbled to read, so the importer
- *  can say so instead of asking for a (nonexistent) Stardust/Candy section. */
-function isMegaLevelPage(rawText: string, megaLevel: number | undefined): boolean {
-  if (megaLevel !== undefined) return true;
-  const t = rawText.replace(/\s+/g, " ");
-  return (
-    /mega evolution bonuses/i.test(t) ||
-    /to reach .*level/i.test(t) ||
-    /rest period/i.test(t) ||
-    /mega evolve\b/i.test(t)
-  );
-}
-
 /** Build the final ScanResult from a parsed screen (boxes or text path). */
 export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText = ""): ScanResult {
   const res = parsed.resources;
@@ -910,17 +844,6 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
     .map((r) => r.species!);
   const resolved = chooseSpecies(energySpecies, candySpecies, ROSTER_VOCAB);
 
-  // Mega Level page: read the level from its banner. The form comes from the
-  // page's energy label (the active X/Y tab), so a branching mega's level lands
-  // on the right line. The energy VALUE on this page is unreliable (it sits right
-  // of the label, next to the red LEVEL UP cost), so it's the card — not this
-  // page — that supplies held energy.
-  const megaLevel = detectMegaLevel(rawText);
-  const megaPage = isMegaLevelPage(rawText, megaLevel);
-  const megaLevelForm = megaPage
-    ? res.find((r) => r.kind === "energy" && r.form)?.form ?? megaEnergies.find((e) => e.form)?.form ?? null
-    : null;
-
   return {
     species: resolved.key,
     detectedName: normSpecies(resolved.name),
@@ -930,11 +853,8 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
     megaEnergies,
     items,
     looksLikePogo: res.length > 0 || parsed.markers >= 2,
-    screenshotKind: megaPage ? "megaLevel" : "card",
-    ...(megaLevel !== undefined ? { megaLevel } : {}),
-    ...(megaPage ? { megaLevelForm } : {}),
     capturedAt,
-    readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0 || megaLevel !== undefined,
+    readAnything: candy !== undefined || xlCandy !== undefined || megaEnergies.length > 0,
     // Keep the full text (capped generously) so a failed scan can be copied
     // verbatim into a unit test; the UI truncates it for display.
     rawText: rawText.replace(/\s+/g, " ").trim().slice(0, 4000),
@@ -1087,16 +1007,9 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
     // expose icon-fused digits via the suffix rule in mergeParsed.
     const sparse = await ocrImage(file, { psm: "11" });
     let parsed = parsePage(sparse);
-    // Collect every pass's raw text for the Mega Level banner / "To Reach … Level"
-    // detection. The sparse (PSM 11) pass scatters text and mangles the banner's
-    // running line; the auto (PSM 3) pass reads coherent lines like "To Reach
-    // Super Max Level" far better — so the level read must see ALL of them, not
-    // just the sparse pass (which is why a clearly-visible banner read as blank).
-    const texts = [sparse.text];
     try {
       const auto = await ocrImage(file, { psm: "3" });
       parsed = mergeParsed(parsed, parsePage(auto));
-      texts.push(auto.text);
     } catch {
       /* the sparse pass alone is still useful */
     }
@@ -1104,7 +1017,6 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
       try {
         const raw = await ocrImage(file, { raw: true, psm: "11" });
         parsed = mergeParsed(parsed, parsePage(raw));
-        texts.push(raw.text);
         reconcileFusedValues(
           parsed,
           raw.words.map((w) => numVal(w.text)).filter((v): v is number => v !== null),
@@ -1113,7 +1025,7 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
         /* keep the preprocessed passes */
       }
     }
-    return assembleScan(parsed, capturedAt, texts.join("\n"));
+    return assembleScan(parsed, capturedAt, sparse.text);
   } finally {
     // Free this screenshot's preprocessing canvas right away — batches on iOS
     // Safari otherwise accumulate enough canvas memory to get the tab killed.
