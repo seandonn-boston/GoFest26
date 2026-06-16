@@ -71,6 +71,12 @@ export function BossInputCard({
   const formes = boss.formGroup ? formMembers(boss.formGroup) : [boss];
   const isGroup = formes.length > 1;
   const displayName = isGroup ? groupDisplayName(boss) : boss.name;
+  // A cross-species shared-candy group (Solgaleo + Lunala) shows BOTH species'
+  // sprites, types and colors; same-species formes (Giratina) look alike, so the
+  // primary alone is enough. Card theming uses the union of every forme's types.
+  const crossSpecies = isGroup && new Set(formes.map((f) => speciesKey(f.name))).size > 1;
+  const cardTypes = isGroup ? Array.from(new Set(formes.flatMap((f) => f.types ?? []))) : boss.types ?? [];
+  const headerFormes = crossSpecies ? formes : [boss];
   // De-duplicate the union windows (same-day formes share a block) before counting
   // capacity, so a dual-day species (Dialga) counts both days but Giratina once.
   const planWindows = isGroup
@@ -83,8 +89,8 @@ export function BossInputCard({
   const needEntries = Object.entries(result.needs) as [Currency, { needed: number; raidsRange: { min: number; max: number } }][];
 
   return (
-    <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(boss.types)}>
-      <div className="relative z-10 rounded-[12px] p-3" style={typePanelStyle(boss.types)}>
+    <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(cardTypes)}>
+      <div className="relative z-10 rounded-[12px] p-3" style={typePanelStyle(cardTypes)}>
       {/* Header — always shown; tapping it expands/collapses the inputs below. */}
       <button
         type="button"
@@ -100,7 +106,7 @@ export function BossInputCard({
           ▸
         </span>
         <div className="mt-1 flex justify-center gap-1">
-          {(boss.types ?? []).map((t) => (
+          {cardTypes.map((t) => (
             <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
               <TypeIcon type={t} size={24} />
             </span>
@@ -112,10 +118,14 @@ export function BossInputCard({
           <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-300/50" />
         </div>
         <div className="flex items-start gap-3">
-          <Sprite src={boss.sprite} alt={boss.name} size={44} />
+          <div className="flex shrink-0 items-center gap-1">
+            {headerFormes.map((f) => (
+              <Sprite key={f.id} src={f.sprite} alt={f.name} size={44} />
+            ))}
+          </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <CyberTitle name={displayName} types={boss.types} className="text-lg" />
+              <CyberTitle name={displayName} types={cardTypes} className="text-lg" />
               <TierBadge tier={boss.tier} />
               {regionLabel ? <Badge>{regionLabel}</Badge> : null}
               {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
