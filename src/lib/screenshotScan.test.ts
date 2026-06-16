@@ -499,6 +499,15 @@ describe("parseScreen — real screenshot layouts", () => {
     expect(detectMegaLevel("High Level To Reach Max Level MEGA EVOLUTION BONUSES")).toBe(2);
   });
 
+  it("reads a Max page (banner + 'To Reach Super Max Level') as Max, not Super Max", () => {
+    // The Dragonite Mega Level page: "Max Level" ribbon, body "To Reach Super Max
+    // Level". The body names the NEXT level, so current is Max (3) — the "To
+    // Reach" line must win over the bare "super max level" substring it contains.
+    expect(
+      detectMegaLevel("Max Level To Reach Super Max Level DRAGONITE MEGA ENERGY 3985 MEGA EVOLUTION BONUSES"),
+    ).toBe(3);
+  });
+
   it("a Mega Level page with an unreadable level is still tagged megaLevel (not a card)", () => {
     // Garbled banner + "MEGA EVOLUTION BONUSES" marker: no level reads, but the
     // page is known to be a Mega Level screen so the importer can say so rather
