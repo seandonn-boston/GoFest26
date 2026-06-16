@@ -1087,9 +1087,16 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
     // expose icon-fused digits via the suffix rule in mergeParsed.
     const sparse = await ocrImage(file, { psm: "11" });
     let parsed = parsePage(sparse);
+    // Collect every pass's raw text for the Mega Level banner / "To Reach … Level"
+    // detection. The sparse (PSM 11) pass scatters text and mangles the banner's
+    // running line; the auto (PSM 3) pass reads coherent lines like "To Reach
+    // Super Max Level" far better — so the level read must see ALL of them, not
+    // just the sparse pass (which is why a clearly-visible banner read as blank).
+    const texts = [sparse.text];
     try {
       const auto = await ocrImage(file, { psm: "3" });
       parsed = mergeParsed(parsed, parsePage(auto));
+      texts.push(auto.text);
     } catch {
       /* the sparse pass alone is still useful */
     }
@@ -1097,6 +1104,7 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
       try {
         const raw = await ocrImage(file, { raw: true, psm: "11" });
         parsed = mergeParsed(parsed, parsePage(raw));
+        texts.push(raw.text);
         reconcileFusedValues(
           parsed,
           raw.words.map((w) => numVal(w.text)).filter((v): v is number => v !== null),
@@ -1105,7 +1113,7 @@ export async function scanScreenshot(file: File): Promise<ScanResult> {
         /* keep the preprocessed passes */
       }
     }
-    return assembleScan(parsed, capturedAt, sparse.text);
+    return assembleScan(parsed, capturedAt, texts.join("\n"));
   } finally {
     // Free this screenshot's preprocessing canvas right away — batches on iOS
     // Safari otherwise accumulate enough canvas memory to get the tab killed.
