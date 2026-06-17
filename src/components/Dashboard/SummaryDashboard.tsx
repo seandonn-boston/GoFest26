@@ -67,7 +67,7 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
             );
           })()}
 
-          <RemoteRaidToggle blockPlan={blockPlan} results={summary.results} />
+          <RemoteRaidToggle />
           <BlockAccordion plan={blockPlan} results={summary.results} />
         </>
       ) : (
