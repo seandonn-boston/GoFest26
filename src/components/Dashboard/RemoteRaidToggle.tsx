@@ -1,9 +1,6 @@
 "use client";
 
 import { getBoss } from "@/data";
-import { autoRemoteAllocations, globalPriorityFromBlocks } from "@/domain";
-import type { WeekendBlockPlan } from "@/domain";
-import type { BossResult } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
 import { MAX_REMOTE_BUDGET, MAX_REMOTE_RAIDS, SAFE_REMOTE_RAIDS } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -11,14 +8,14 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 /**
  * Opt-in for Remote Raid Passes: a budget of up to 60 raids (≈Fri 10 + Sat&Sun 40
  * + Mon 10 by time zone) separate from the habitat time blocks. Ticking it on
- * auto-assigns passes to the goals that can't be met in person (by priority); the
- * per-species list beneath the remote bar then lets the user fine-tune.
+ * starts every allocation at 0 — the user assigns passes themselves in the
+ * per-species list beneath the remote bar (with an Auto-balance button there to
+ * fill by priority if they want it).
  */
-export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlockPlan; results: BossResult[] }) {
+export function RemoteRaidToggle() {
   const on = usePlannerStore((s) => s.settings.useRemoteRaids);
   const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
   const setSettings = usePlannerStore((s) => s.setSettings);
-  const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
   const allocated = usePlannerStore((s) => {
     let n = 0;
@@ -38,16 +35,10 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
 
   function toggle(checked: boolean) {
     setSettings({ useRemoteRaids: checked });
-    if (checked) {
-      // Opting in (re)starts priority-driven auto-balancing; the auto-balance
-      // hook keeps it in sync from here. Seed it now so there's no empty frame.
-      setRemoteAuto(true);
-      if (allocated === 0) {
-        const { inputs, settings, blockPriority } = usePlannerStore.getState();
-        const order = globalPriorityFromBlocks(blockPriority);
-        setRemoteAllocations(autoRemoteAllocations(blockPlan, Object.values(inputs), results, settings, order));
-      }
-    }
+    // Opting in starts in MANUAL mode: leave every allocation at 0 so the user
+    // assigns passes themselves rather than the planner pre-filling them. The
+    // per-species "Auto-balance" button opts into priority-driven filling.
+    if (checked) setRemoteAuto(false);
   }
 
   return (
@@ -132,7 +123,7 @@ export function RemoteRaidToggle({ blockPlan, results }: { blockPlan: WeekendBlo
 
       {on ? (
         <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-          Auto-assigned to the goals that can&apos;t be met in person, by priority — tweak each below.{" "}
+          Assign passes to each target below (all start at 0) — or tap Auto-balance there to fill by priority.{" "}
           <span className="font-mono text-slate-400">Fri* 10 · Sat &amp; Sun** 40 · Mon* 10</span>; *time-zone dependent,
           adjacent day only (Fri → Sat, Mon → Sun). **Sat &amp; Sun see either day.
         </p>

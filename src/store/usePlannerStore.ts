@@ -140,8 +140,9 @@ interface PlannerState {
   remoteAllocations: Record<string, number>;
   /**
    * When true, remote allocations are auto-balanced by priority (and re-balance
-   * whenever priority/goals change). Editing any single allocation switches this
-   * off so manual tweaks aren't overwritten; "Auto-balance" turns it back on.
+   * whenever priority/goals change). Off by default and when opting into remote
+   * raids, so allocations start at 0 for the user to assign; editing any single
+   * allocation keeps it off, and "Auto-balance" opts in.
    */
   remoteAuto: boolean;
   /**
@@ -270,7 +271,7 @@ export const usePlannerStore = create<PlannerState>()(
       imports: [],
       raidsDone: {},
       remoteAllocations: {},
-      remoteAuto: true,
+      remoteAuto: false,
       blockPriority: {},
       quickCatchBlocks: {},
 
@@ -474,7 +475,7 @@ export const usePlannerStore = create<PlannerState>()(
           imports: [],
           raidsDone: {},
           remoteAllocations: {},
-          remoteAuto: true,
+          remoteAuto: false,
           blockPriority: {},
           quickCatchBlocks: {},
         }),
@@ -500,7 +501,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.quickCatchBlocks || typeof state.quickCatchBlocks !== "object") state.quickCatchBlocks = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
-        if (typeof state.remoteAuto !== "boolean") state.remoteAuto = true;
+        if (typeof state.remoteAuto !== "boolean") state.remoteAuto = false;
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },
