@@ -51,9 +51,21 @@ describe("blockMegaBoosts", () => {
   });
 
   it("excludes megas that boost no target in the block", () => {
-    const ranked = blockMegaBoosts([], [["Normal"]]);
-    // No mega is Normal-typed except Mega Pidgeot (Normal/Flying) — it should be the only match.
-    expect(names(ranked)).toEqual(["Mega Pidgeot"]);
+    const ranked = blockMegaBoosts([], [["Fairy"]]);
+    // Every match genuinely shares the boss's type; an off-type mega like the
+    // pure-Normal Mega Kangaskhan must not appear.
+    expect(ranked.length).toBeGreaterThan(0);
+    expect(ranked.every((b) => b.mega.types.includes("Fairy"))).toBe(true);
+    expect(names(ranked)).not.toContain("Mega Kangaskhan");
+  });
+
+  it("suggests EVERY type-sharing mega, including candy-boost-only ones (not just attackers)", () => {
+    // Normal bosses (e.g. Regigigas) boost all Normal-typed megas, not only the
+    // attacker-pool Mega Pidgeot.
+    const boosts = megaBoostsForBoss(["Normal"]);
+    const n = names(boosts);
+    expect(n).toEqual(expect.arrayContaining(["Mega Pidgeot", "Mega Kangaskhan", "Mega Lopunny", "Mega Audino"]));
+    expect(boosts.every((b) => b.mega.types.includes("Normal"))).toBe(true);
   });
 });
 

@@ -1,6 +1,6 @@
 /**
- * MEGAS — every Mega / Primal Evolution in the attacker pool, with the data the
- * candy-boost engine needs that the raw ATTACKERS list doesn't carry:
+ * MEGAS — every released Mega / Primal Evolution, with the data the candy-boost
+ * engine needs that the raw ATTACKERS list doesn't carry:
  *
  *   - `types`:  the mega's OWN (defensive) typing. Mega-Evolving grants a same-
  *               type Candy / Candy XL bonus on every raid completed and wild
@@ -9,8 +9,12 @@
  *   - `sprite`: the mega's icon (Leek Duck / PokeMiners assets), for the boost
  *               suggestion rows and the "& mega3" search string.
  *
- * Attacking eDPS is reused from ATTACKERS (single source of truth) so a mega
- * that ALSO happens to be super-effective can be ranked as an attacker too.
+ * The list is the union of the attacker-pool megas AND candy-boost-only megas
+ * (e.g. Mega Audino, Lopunny, Kangaskhan) that aren't strong attackers but are
+ * still valid same-type boosts — because for the candy bonus only the type
+ * matters, not combat power. Attacking eDPS is reused from ATTACKERS (single
+ * source of truth) so a mega that ALSO happens to be super-effective ranks as an
+ * attacker too; the rest carry no attacks and surface in the candy-only tier.
  */
 import { ATTACKERS, type PType } from "./attackers";
 import { SPRITE_BASE } from "./bosses";
@@ -69,6 +73,19 @@ const MEGA_TYPES: Record<string, PType[]> = {
   "Mega Diancie": ["Rock", "Fairy"],
   "Mega Absol": ["Dark"],
   "Mega Banette": ["Ghost"],
+  // Candy-boost-only megas: valid same-type boosts that aren't in the attacker
+  // pool, so they previously never surfaced as suggestions.
+  "Mega Kangaskhan": ["Normal"],
+  "Mega Lopunny": ["Normal", "Fighting"],
+  "Mega Audino": ["Normal", "Fairy"],
+  "Mega Slowbro": ["Water", "Psychic"],
+  "Mega Sharpedo": ["Water", "Dark"],
+  "Mega Steelix": ["Steel", "Ground"],
+  "Mega Mawile": ["Steel", "Fairy"],
+  "Mega Sableye": ["Dark", "Ghost"],
+  "Mega Medicham": ["Fighting", "Psychic"],
+  "Mega Altaria": ["Dragon", "Fairy"],
+  "Mega Latias": ["Dragon", "Psychic"],
 };
 
 // Icon filenames (Leek Duck CDN). Reuses the exact known-good filenames from the
@@ -114,13 +131,49 @@ const MEGA_SPRITE: Record<string, string> = {
   "Mega Diancie": "pm719.fMEGA.icon.png",
   "Mega Absol": "pm359.fMEGA.icon.png",
   "Mega Banette": "pm354.fMEGA.icon.png",
+  "Mega Kangaskhan": "pm115.fMEGA.icon.png",
+  "Mega Lopunny": "pm428.fMEGA.icon.png",
+  "Mega Audino": "pm531.fMEGA.icon.png",
+  "Mega Slowbro": "pm80.fMEGA.icon.png",
+  "Mega Sharpedo": "pm319.fMEGA.icon.png",
+  "Mega Steelix": "pm208.fMEGA.icon.png",
+  "Mega Mawile": "pm303.fMEGA.icon.png",
+  "Mega Sableye": "pm302.fMEGA.icon.png",
+  "Mega Medicham": "pm308.fMEGA.icon.png",
+  "Mega Altaria": "pm334.fMEGA.icon.png",
+  "Mega Latias": "pm380.fMEGA.icon.png",
 };
 
-export const MEGAS: MegaForm[] = ATTACKERS.filter((a) => a.category === "mega").map((a) => {
-  const types = MEGA_TYPES[a.name];
-  const file = MEGA_SPRITE[a.name];
-  if (process.env.NODE_ENV !== "production" && (!types || !file)) {
-    throw new Error(`megas.ts: missing ${!types ? "types" : "sprite"} for "${a.name}"`);
+const MEGA_ATTACKERS = ATTACKERS.filter((a) => a.category === "mega");
+const ATTACKER_BY_NAME = new Map(MEGA_ATTACKERS.map((a) => [a.name, a]));
+
+/** Final-evolution species term from a mega's display name (for the search string). */
+function megaSpecies(name: string): string {
+  return name.replace(/^(Mega|Primal)\s+/, "").replace(/\s+[XY]$/, "").trim();
+}
+
+// Build from the full type table (not just attackers) so every released mega is a
+// candy-boost candidate. Attacks come from the attacker pool when present; a
+// candy-boost-only mega carries none and surfaces in the candy-only tier.
+export const MEGAS: MegaForm[] = Object.entries(MEGA_TYPES).map(([name, types]) => {
+  const atk = ATTACKER_BY_NAME.get(name);
+  const file = MEGA_SPRITE[name];
+  if (process.env.NODE_ENV !== "production" && !file) {
+    throw new Error(`megas.ts: missing sprite for "${name}"`);
   }
-  return { name: a.name, species: a.species, types: types ?? [], sprite: SPRITE_BASE + (file ?? ""), attacks: a.attacks };
+  return {
+    name,
+    species: atk?.species ?? megaSpecies(name),
+    types,
+    sprite: SPRITE_BASE + (file ?? ""),
+    attacks: atk?.attacks ?? {},
+  };
 });
+
+// Safety net: an attacking mega without a type entry would silently vanish from
+// candy-boost suggestions.
+if (process.env.NODE_ENV !== "production") {
+  for (const a of MEGA_ATTACKERS) {
+    if (!MEGA_TYPES[a.name]) throw new Error(`megas.ts: attacker mega "${a.name}" missing from MEGA_TYPES`);
+  }
+}
