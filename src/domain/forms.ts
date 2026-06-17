@@ -4,7 +4,7 @@
 // that can be hunted across every block any forme appears in — while counters and
 // mega suggestions stay per-forme. Mewtwo X/Y is excluded (separate energy pools).
 
-import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { getBoss } from "@/data";
 import { FORM_GROUPS, PRIMARY_FORM_ID } from "@/data/formGroups";
 import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
 import { MAX_REMOTE_PER_SPECIES } from "./settings";
@@ -70,14 +70,29 @@ export function groupSpansBothDays(group: string): boolean {
 }
 
 /**
- * Per-species remote-raid cap. Mewtwo X/Y each absorb the full budget (separate
- * energy pools on opposite days); a shared-resource group spanning both days can
- * likewise be remoted across both (up to the full budget); everything else is one
- * day's worth (≤ MAX_REMOTE_PER_SPECIES).
+ * Which weekend day(s) a target can be remote-raided on. A single-day boss is
+ * reachable on its day plus the ADJACENT-timezone day only — Saturday bosses
+ * Fri–Sun, Sunday bosses Sat–Mon — so it can never use both the Friday AND Monday
+ * windows, capping its whole side at one day's worth (Fri/Mon 10 + shared 40 =
+ * 50). A both-day shared-resource group (Dialga, Palkia) has a forme each day, so
+ * it spans both and can use the full budget. Mewtwo X (Sat) / Y (Sun) are each
+ * single-day — you allocate them separately, one per side.
+ */
+export function remoteDaySide(boss: RaidBoss): "sat" | "sun" | "both" {
+  if (boss.formGroup && groupSpansBothDays(boss.formGroup)) return "both";
+  const days = new Set(planningWindows(boss).map((w) => w.day));
+  if (days.has("sat") && days.has("sun")) return "both";
+  return days.has("sun") ? "sun" : "sat";
+}
+
+/**
+ * Per-species remote-raid cap. A both-day species (Dialga, Palkia) can be remoted
+ * across both days, up to the full budget; a single-day target (Celesteela, and
+ * each Mewtwo form on its own day) is one day's worth — Fri/Mon 10 + shared 40,
+ * i.e. ≤ MAX_REMOTE_PER_SPECIES (50).
  */
 export function remoteCapFor(boss: RaidBoss, budget: number): number {
-  if (boss.id === MEWTWO_X_ID || boss.id === MEWTWO_Y_ID) return budget;
-  if (boss.formGroup && groupSpansBothDays(boss.formGroup)) return budget;
+  if (remoteDaySide(boss) === "both") return budget;
   return Math.min(MAX_REMOTE_PER_SPECIES, budget);
 }
 

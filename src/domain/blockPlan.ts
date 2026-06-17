@@ -16,7 +16,7 @@
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
-import { collapseForms, planningWindows, remoteCapFor, formeInBlock } from "./forms";
+import { collapseForms, planningWindows, remoteCapFor, remoteDaySide, formeInBlock } from "./forms";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
@@ -565,14 +565,21 @@ export function autoRemoteAllocations(
 
   const out: Record<string, number> = {};
   let budget = settings.remoteRaidBudget;
+  // A weekend day's exclusive targets share that day's window (Fri/Mon 10 + shared
+  // 40 = ≤ MAX_REMOTE_PER_SPECIES), so cap each side's total, not just per-species.
+  const sideCap = Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
+  const sideLeft: Record<"sat" | "sun", number> = { sat: sideCap, sun: sideCap };
   for (const n of needs) {
     if (budget <= 0) break;
     const boss = getBoss(n.id);
     const cap = boss ? remoteCapFor(boss, settings.remoteRaidBudget) : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
-    const give = Math.min(n.need, cap, budget);
+    const side = boss ? remoteDaySide(boss) : "both";
+    const sideRoom = side === "both" ? Infinity : sideLeft[side];
+    const give = Math.min(n.need, cap, budget, sideRoom);
     if (give > 0) {
       out[n.id] = give;
       budget -= give;
+      if (side !== "both") sideLeft[side] -= give;
     }
   }
   return out;
