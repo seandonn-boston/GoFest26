@@ -3,15 +3,18 @@
 import { useMemo } from "react";
 import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { remoteCapFor, groupDisplayName } from "@/domain/forms";
+import { remoteCapFor, remoteDaySide, groupDisplayName } from "@/domain/forms";
+import { MAX_REMOTE_PER_SPECIES } from "@/domain/settings";
 import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 
 /**
  * Per-species remote-raid allocation. The user types how many of each target to
- * do remotely; those raids drop out of the in-person time blocks. Each species is
- * capped at 50 (one day's bosses), Mewtwo at the full 60 (it's up both days), and
- * the running total can't exceed the 60-pass budget.
+ * do remotely; those raids drop out of the in-person time blocks. Single-day
+ * targets are reachable only on their day + adjacent timezone day, so ALL of a
+ * given day's exclusive targets together cap at 50 (Fri/Mon 10 + shared 40);
+ * both-day species (Dialga, Palkia) span both. The running total can't exceed
+ * the 60-pass budget.
  */
 export function RemoteAllocator() {
   const inputs = usePlannerStore((s) => s.inputs);
@@ -27,6 +30,17 @@ export function RemoteAllocator() {
   if (!order.length) return null;
 
   const total = order.reduce((s, id) => s + Math.max(0, allocations[id] ?? 0), 0);
+  // One weekend day's exclusive targets share that day's window (Fri/Mon 10 +
+  // shared 40 = 50). Sum per side so a single day can't be pushed past it.
+  const sideCap = Math.min(MAX_REMOTE_PER_SPECIES, budget);
+  const sideTotal = (want: "sat" | "sun") =>
+    order.reduce((s, id) => {
+      const b = getBoss(id);
+      return s + (b && remoteDaySide(b) === want ? Math.max(0, allocations[id] ?? 0) : 0);
+    }, 0);
+  const satSide = sideTotal("sat");
+  const sunSide = sideTotal("sun");
+  const overSide = (satSide > sideCap ? 1 : 0) + (sunSide > sideCap ? 1 : 0);
 
   return (
     <div className="mt-2 space-y-1.5">
@@ -55,13 +69,25 @@ export function RemoteAllocator() {
           </button>
         )}
       </div>
+      {overSide ? (
+        <p className="rounded-sm border border-rose-400/40 bg-rose-500/10 px-2 py-1 text-[10px] leading-relaxed text-rose-200">
+          ⚠ {satSide > sideCap ? "Saturday" : ""}{satSide > sideCap && sunSide > sideCap ? " and " : ""}
+          {sunSide > sideCap ? "Sunday" : ""}-only targets exceed {sideCap} passes. Those bosses can only be
+          remote-raided on their day plus one adjacent-timezone day (Sat: Fri–Sun, Sun: Sat–Mon), so each day&apos;s
+          exclusive targets share just {sideCap} passes — trim them back.
+        </p>
+      ) : null}
       {order.map((id) => {
         const boss = getBoss(id);
         if (!boss) return null;
         const val = Math.max(0, allocations[id] ?? 0);
         const speciesCap = remoteCapFor(boss, budget);
-        // Can't push this species past its cap, nor the running total past the budget.
-        const max = Math.max(0, Math.min(speciesCap, val + (budget - total)));
+        const side = remoteDaySide(boss);
+        // Can't push this species past its cap, the running total past the budget,
+        // nor its weekend day's exclusive targets past that day's 50-pass window.
+        const sideRoom =
+          side === "both" ? Infinity : val + Math.max(0, sideCap - (side === "sat" ? satSide : sunSide));
+        const max = Math.max(0, Math.min(speciesCap, val + (budget - total), sideRoom));
         const remoteOnly = !bossIsLocal(boss, region);
         const label = groupDisplayName(boss);
         return (

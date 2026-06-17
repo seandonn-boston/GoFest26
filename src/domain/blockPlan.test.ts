@@ -6,7 +6,7 @@ import { computeBossResult } from "./raidsNeeded";
 import { computeGrossRequirement } from "./requirements";
 import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS } from "./settings";
 import { bossIsLocal } from "./region";
-import { collapseForms, remoteCapFor, groupSpansBothDays } from "./forms";
+import { collapseForms, remoteCapFor, remoteDaySide, groupSpansBothDays } from "./forms";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID, SORTED_BOSSES } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
 import type { BossInput, BossResult, Range } from "./types";
@@ -128,13 +128,43 @@ describe("multi-form species (shared resources)", () => {
     expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
   });
 
-  it("remote cap: dual-day groups get the full budget; single-day groups 50", () => {
+  it("remote cap: dual-day groups get the full budget; single-day targets 50", () => {
     expect(remoteCapFor(getBoss("dialga")!, 60)).toBe(60);
     expect(remoteCapFor(getBoss("palkia")!, 60)).toBe(60);
     expect(remoteCapFor(getBoss("giratina-altered")!, 60)).toBe(50);
     expect(remoteCapFor(getBoss("tornadus-incarnate")!, 60)).toBe(50);
+    // Each Mewtwo form is single-day (X Sat / Y Sun), so it's one day's worth, not
+    // the full budget.
+    expect(remoteCapFor(getBoss(MEWTWO_X_ID)!, 60)).toBe(50);
+    expect(remoteCapFor(getBoss(MEWTWO_Y_ID)!, 60)).toBe(50);
     expect(groupSpansBothDays("dialga")).toBe(true);
     expect(groupSpansBothDays("giratina")).toBe(false);
+  });
+
+  it("sides each remote target by the days it can be raided", () => {
+    expect(remoteDaySide(getBoss(MEWTWO_X_ID)!)).toBe("sat");
+    expect(remoteDaySide(getBoss(MEWTWO_Y_ID)!)).toBe("sun");
+    expect(remoteDaySide(getBoss("dialga")!)).toBe("both"); // forme each day
+    expect(remoteDaySide(getBoss("celesteela")!)).toBe("sun"); // Sunday-only
+    expect(remoteDaySide(getBoss("xurkitree")!)).toBe("sun");
+  });
+
+  it("auto-balance can't push one day's exclusive targets past 50 combined", () => {
+    // Two Sunday-only (region-locked) targets with big goals: Sunday bosses share
+    // a single 50-pass window (Sat+Sun+Mon, never Friday), so their auto-assigned
+    // total must not exceed 50 even though the budget is 60.
+    const { inputs, results } = buildFor(["xurkitree", "celesteela"]);
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: MAX_REMOTE_RAIDS };
+    const alloc = autoRemoteAllocations(
+      computeBlockPlan(inputs, results, ROOMY, settings),
+      inputs,
+      results,
+      settings,
+      ["xurkitree", "celesteela"],
+    );
+    const sunTotal = (alloc["xurkitree"] ?? 0) + (alloc["celesteela"] ?? 0);
+    expect(sunTotal).toBeGreaterThan(0);
+    expect(sunTotal).toBeLessThanOrEqual(50);
   });
 });
 
