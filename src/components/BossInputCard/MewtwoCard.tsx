@@ -20,6 +20,8 @@ import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
 import { MewtwoTitle } from "./MewtwoTitle";
 import { CounterTable } from "./CounterTable";
+import { PresetPicker } from "./PresetPicker";
+import { PRESETS } from "@/data/presets";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -55,6 +57,7 @@ export function MewtwoCard({
   const setQuantity = usePlannerStore((s) => s.setQuantity);
   const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
+  const applyPreset = usePlannerStore((s) => s.applyPreset);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
@@ -73,6 +76,17 @@ export function MewtwoCard({
   const owner = (selectedX ? inputX : inputY)!;
   const wantsLeveling = owner.target.level > owner.current.level;
   const toMax = xlToMaxRemaining(owner.current.level, owner.current.xlCandy);
+
+  // Presets: a leveling preset sets the shared target level (on the owner form);
+  // a mega-level preset applies to BOTH forms (each has its own Mega Level).
+  const applyMewtwoPreset = (presetId: string) => {
+    if (PRESETS.find((p) => p.id === presetId)?.kind === "mega") {
+      applyPreset(bossX.id, presetId);
+      applyPreset(bossY.id, presetId);
+    } else {
+      applyPreset(ownerId, presetId);
+    }
+  };
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
@@ -128,6 +142,12 @@ export function MewtwoCard({
             />
           </div>
           {preview ? <ImageThumb src={preview.src} alt="Mewtwo screenshot" size={56} /> : null}
+        </div>
+
+        {/* Quick presets — above the inputs they fill (leveling → shared target,
+            mega level → both forms). */}
+        <div className="mb-4">
+          <PresetPicker boss={bossX} activePresetId={owner.presetId} onApply={applyMewtwoPreset} />
         </div>
 
         {/* Shared Mewtwo */}

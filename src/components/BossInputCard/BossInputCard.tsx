@@ -165,6 +165,11 @@ export function BossInputCard({
         {preview ? <ImageThumb src={preview.src} alt={`${boss.name} screenshot`} size={56} /> : null}
       </div>
 
+      {/* Quick presets — above the inputs they fill */}
+      <div className="mt-3">
+        <PresetPicker boss={boss} activePresetId={input.presetId} onApply={(id) => applyPreset(boss.id, id)} />
+      </div>
+
       {/* Inputs */}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {boss.rewardsCurrencies.map((c) => (
@@ -204,10 +209,6 @@ export function BossInputCard({
           <p className="mt-1 text-[10px] text-slate-500">Remaining XL Candy to reach level 50 from your current level &amp; XL on hand.</p>
         </div>
       ) : null}
-
-      <div className="mt-2">
-        <PresetPicker boss={boss} activePresetId={input.presetId} onApply={(id) => applyPreset(boss.id, id)} />
-      </div>
 
       {/* Catch toggles */}
       <div className="mt-2 flex flex-col gap-1.5 text-xs text-slate-300">
