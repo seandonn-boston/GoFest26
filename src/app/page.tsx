@@ -160,8 +160,10 @@ function Disclaimer() {
       </p>
       <p>
         Game values (Mega Energy rewards, Mewtwo mega-level costs, the boss roster) are based on
-        public GO Fest 2026 info and may change — they live in one editable config file. This is a
-        fan-made planning tool and is not affiliated with Niantic or The Pokémon Company.
+        public GO Fest 2026 info and may change — they live in one editable config file. This is an
+        unofficial, fan-made planning tool and is not affiliated with Niantic, Nintendo, or The
+        Pokémon Company. Pokémon and all related names and sprites are property of their respective
+        owners.
       </p>
     </footer>
   );
