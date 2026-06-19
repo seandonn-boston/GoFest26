@@ -86,6 +86,9 @@ const MEGA_TYPES: Record<string, PType[]> = {
   "Mega Medicham": ["Fighting", "Psychic"],
   "Mega Altaria": ["Dragon", "Fairy"],
   "Mega Latias": ["Dragon", "Psychic"],
+  "Mega Dragonite": ["Dragon", "Flying"],
+  "Mega Victreebel": ["Grass", "Poison"],
+  "Mega Malamar": ["Dark", "Psychic"],
 };
 
 // Icon filenames (Leek Duck CDN). Reuses the exact known-good filenames from the
@@ -142,6 +145,9 @@ const MEGA_SPRITE: Record<string, string> = {
   "Mega Medicham": "pm308.fMEGA.icon.png",
   "Mega Altaria": "pm334.fMEGA.icon.png",
   "Mega Latias": "pm380.fMEGA.icon.png",
+  "Mega Dragonite": "pm149.fMEGA.icon.png",
+  "Mega Victreebel": "pm71.fMEGA.icon.png",
+  "Mega Malamar": "pm687.fMEGA.icon.png",
 };
 
 const MEGA_ATTACKERS = ATTACKERS.filter((a) => a.category === "mega");
