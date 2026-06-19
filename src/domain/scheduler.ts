@@ -111,9 +111,9 @@ export function computeSchedule(
   });
 
   // 4. Assign each boss into its tightest open slots (fewest alternatives first).
-  // Out-of-region (remote-only) bosses are also capped by the Remote Raid budget:
-  // up to remotePassesPerDay per day.
-  const maxRemote = Math.max(0, settings.remotePassesPerDay);
+  // Remote passes are unlimited during GO Fest 2026, so out-of-region bosses
+  // aren't capped per day here (the block plan models remote time separately).
+  const maxRemote = Number.MAX_SAFE_INTEGER;
   const dayRemote: Record<EventDay, number> = { sat: 0, sun: 0 };
 
   const unmetGoals: UnmetGoal[] = [];

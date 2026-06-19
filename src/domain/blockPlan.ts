@@ -16,10 +16,10 @@
 
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
-import { collapseForms, planningWindows, remoteCapFor, remoteDaySide, formeInBlock } from "./forms";
+import { collapseForms, planningWindows, formeInBlock } from "./forms";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
-import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "./settings";
+import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, RaidBoss, Range } from "./types";
 
 export type RiskBand = "blue" | "green" | "yellow" | "red";
@@ -436,7 +436,7 @@ export function computeBlockPlan(
   const remoteRank = new Map(globalOrder.map((id, i) => [id, i] as const));
   const remotePriorityOf = (id: string) => remoteRank.get(id) ?? Infinity;
   const remote = settings.useRemoteRaids
-    ? computeRemotePlan(inputs, resultById, rewardCase, remotePriorityOf, remoteAllocations, settings.remoteRaidBudget)
+    ? computeRemotePlan(inputs, resultById, rewardCase, remotePriorityOf, remoteAllocations, midpoint(capacity.remoteCapacity))
     : undefined;
 
   return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };
@@ -520,8 +520,10 @@ export function goalProgress(
 /**
  * Auto-fill remote allocations the moment the user opts in: cover the goals that
  * can't be met in person — region-locked targets (their full goal) and any block
- * shortfalls — filled by priority within the 60-pass budget and per-species caps.
- * `plan` should be the current (remote-off) plan so its shortfalls are accurate.
+ * shortfalls — region-locked first, then by priority. Remote passes are unlimited
+ * (GO Fest 2026), so the only ceiling is `remoteCapacity` (raids that fit in the
+ * user's remote TIME). `plan` should be the current (remote-off) plan so its
+ * shortfalls are accurate.
  */
 export function autoRemoteAllocations(
   plan: WeekendBlockPlan,
@@ -529,6 +531,7 @@ export function autoRemoteAllocations(
   results: BossResult[],
   settings: PlannerSettings,
   priorityOrder: string[],
+  remoteCapacity: number,
 ): Record<string, number> {
   const rewardCase = settings.rewardCase;
   // Multi-form species collapse to one shared-resource target (primary forme).
@@ -552,10 +555,14 @@ export function autoRemoteAllocations(
     .map((b) => ({
       id: b.id,
       need: bossIsLocal(b, settings.region) ? shortfall.get(b.id) ?? 0 : sized(resultById.get(b.id)?.raids, rewardCase),
+      remoteOnly: !bossIsLocal(b, settings.region),
       mewtwo: isMewtwo(b.id),
     }))
     .filter((n) => n.need > 0)
     .sort((a, z) => {
+      // Region-locked (remote-only) targets are favored first so they're never
+      // starved if remote time runs short; then the user's priority order.
+      if (a.remoteOnly !== z.remoteOnly) return a.remoteOnly ? -1 : 1;
       const pa = priorityOf(a.id);
       const pz = priorityOf(z.id);
       if (pa !== pz) return pa - pz;
@@ -563,23 +570,16 @@ export function autoRemoteAllocations(
       return (getBoss(a.id)?.sortPriority ?? 0) - (getBoss(z.id)?.sortPriority ?? 0);
     });
 
+  // Remote passes are unlimited, so the only ceiling is remote TIME. Fill each
+  // target's full need in order until the time-based remote capacity runs out.
   const out: Record<string, number> = {};
-  let budget = settings.remoteRaidBudget;
-  // A weekend day's exclusive targets share that day's window (Fri/Mon 10 + shared
-  // 40 = ≤ MAX_REMOTE_PER_SPECIES), so cap each side's total, not just per-species.
-  const sideCap = Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
-  const sideLeft: Record<"sat" | "sun", number> = { sat: sideCap, sun: sideCap };
+  let budget = Math.max(0, Math.round(remoteCapacity));
   for (const n of needs) {
     if (budget <= 0) break;
-    const boss = getBoss(n.id);
-    const cap = boss ? remoteCapFor(boss, settings.remoteRaidBudget) : Math.min(MAX_REMOTE_PER_SPECIES, settings.remoteRaidBudget);
-    const side = boss ? remoteDaySide(boss) : "both";
-    const sideRoom = side === "both" ? Infinity : sideLeft[side];
-    const give = Math.min(n.need, cap, budget, sideRoom);
+    const give = Math.min(n.need, budget);
     if (give > 0) {
       out[n.id] = give;
       budget -= give;
-      if (side !== "both") sideLeft[side] -= give;
     }
   }
   return out;

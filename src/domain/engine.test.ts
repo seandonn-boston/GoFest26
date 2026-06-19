@@ -197,12 +197,13 @@ describe("scheduler", () => {
     expect(kar?.passType).not.toBe("remote");
   });
 
-  it("caps remote-only bosses at the per-day remote-raid budget", () => {
+  it("places remote-only bosses without the old per-day cap (GO Fest 2026 lifts the remote limit)", () => {
     // Celesteela is Southern-only → remote for Boston; a level 40→50 goal needs
-    // far more than the per-day remote cap, so the schedule fills only the cap.
+    // ~100 raids, and with the remote limit lifted the schedule places them all
+    // (no 20/day cap).
     const cel = input("celesteela", { level: 40, targetLevel: 50 });
     const base = scheduleFor([cel]);
-    expect(base.raids.filter((r) => r.bossId === "celesteela").length).toBe(20);
+    expect(base.raids.filter((r) => r.bossId === "celesteela").length).toBeGreaterThan(20);
   });
 
   it("flags an unmet goal when a windowed boss needs more raids than its windows allow", () => {

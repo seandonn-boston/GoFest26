@@ -70,6 +70,24 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
   const quickMid = battleMid + GAME_CONFIG.capacity.catchSec.quick + downtimeMid;
   const quickCatchSlotFactor = normalMid > 0 ? quickMid / normalMid : 1;
 
+  // Remote raids (GO Fest 2026 lifts the daily limit) are unlimited in count;
+  // the real constraint is TIME. They're done in waking hours OUTSIDE the
+  // in-person event, and skip walking between gyms — so per-raid time is just
+  // battle + catch. Available remote hours = each day's hours that aren't the
+  // event window and aren't sleep.
+  const remoteHoursPerDay = Math.max(0, 24 - (settings.sleepHoursPerNight ?? 8) - hoursPerDay);
+  const remoteHours = remoteHoursPerDay * days;
+  const remotePerRaidFast = battleSecRange.min + catchSec;
+  const remotePerRaidSlow = battleSecRange.max + catchSec;
+  const remoteRaidsPerHour = {
+    min: Math.floor(3600 / remotePerRaidSlow),
+    max: Math.floor(3600 / remotePerRaidFast),
+  };
+  const remoteCapacity = {
+    min: Math.floor(remoteHours * remoteRaidsPerHour.min),
+    max: Math.floor(remoteHours * remoteRaidsPerHour.max),
+  };
+
   return {
     hoursPerDay,
     days,
@@ -80,5 +98,8 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
     raidsPerHour,
     totalRaids,
     quickCatchSlotFactor,
+    remoteHoursPerDay,
+    remoteHours,
+    remoteCapacity,
   };
 }

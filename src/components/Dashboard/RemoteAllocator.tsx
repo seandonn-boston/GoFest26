@@ -3,18 +3,16 @@
 import { useMemo } from "react";
 import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { remoteCapFor, remoteDaySide, groupDisplayName } from "@/domain/forms";
-import { MAX_REMOTE_PER_SPECIES } from "@/domain/settings";
+import { groupDisplayName } from "@/domain/forms";
 import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 
 /**
  * Per-species remote-raid allocation. The user types how many of each target to
- * do remotely; those raids drop out of the in-person time blocks. Single-day
- * targets are reachable only on their day + adjacent timezone day, so ALL of a
- * given day's exclusive targets together cap at 50 (Fri/Mon 10 + shared 40);
- * both-day species (Dialga, Palkia) span both. The running total can't exceed
- * the 60-pass budget.
+ * do remotely; those raids drop out of the in-person time blocks. Remote passes
+ * are unlimited this event, so there's no per-species cap — the time budget (how
+ * many fit your waking hours) is shown above. Auto-balance fills region-locked
+ * targets first, then by priority.
  */
 export function RemoteAllocator() {
   const inputs = usePlannerStore((s) => s.inputs);
@@ -24,35 +22,20 @@ export function RemoteAllocator() {
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
   const region = usePlannerStore((s) => s.settings.region);
-  const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
 
   const order = useMemo(() => selectedInGlobalOrder({ inputs, blockPriority }), [inputs, blockPriority]);
   if (!order.length) return null;
 
   const total = order.reduce((s, id) => s + Math.max(0, allocations[id] ?? 0), 0);
-  // One weekend day's exclusive targets share that day's window (Fri/Mon 10 +
-  // shared 40 = 50). Sum per side so a single day can't be pushed past it.
-  const sideCap = Math.min(MAX_REMOTE_PER_SPECIES, budget);
-  const sideTotal = (want: "sat" | "sun") =>
-    order.reduce((s, id) => {
-      const b = getBoss(id);
-      return s + (b && remoteDaySide(b) === want ? Math.max(0, allocations[id] ?? 0) : 0);
-    }, 0);
-  const satSide = sideTotal("sat");
-  const sunSide = sideTotal("sun");
-  const overSide = (satSide > sideCap ? 1 : 0) + (sunSide > sideCap ? 1 : 0);
 
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11px] text-slate-400">
           {remoteAuto
-            ? "Auto-balanced by priority — drag the priority list and these re-flow. Edit any number to take over."
+            ? "Auto-balanced by priority (region-locked first) — drag the priority list and these re-flow. Edit any number to take over."
             : "Assign remote raids per species — the in-person blocks above drop to match."}{" "}
-          <span className={total > budget ? "text-rose-300" : "text-slate-300"}>
-            {total}/{budget}
-          </span>{" "}
-          used.
+          <span className="text-slate-300">{total}</span> total.
         </p>
         {remoteAuto ? (
           <span className="shrink-0 rounded-sm border border-gofest-accent2/40 bg-gofest-accent2/10 px-1.5 py-[1px] font-mono text-[9px] font-bold uppercase tracking-wider text-gofest-accent2">
@@ -62,32 +45,17 @@ export function RemoteAllocator() {
           <button
             type="button"
             onClick={() => setRemoteAuto(true)}
-            title="Re-balance remote passes by priority"
+            title="Re-fill region-locked first, then by priority"
             className="shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1.5 py-[1px] font-mono text-[9px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-gofest-accent2/50 hover:text-gofest-accent2"
           >
             ↻ Auto-balance
           </button>
         )}
       </div>
-      {overSide ? (
-        <p className="rounded-sm border border-rose-400/40 bg-rose-500/10 px-2 py-1 text-[10px] leading-relaxed text-rose-200">
-          ⚠ {satSide > sideCap ? "Saturday" : ""}{satSide > sideCap && sunSide > sideCap ? " and " : ""}
-          {sunSide > sideCap ? "Sunday" : ""}-only targets exceed {sideCap} passes. Those bosses can only be
-          remote-raided on their day plus one adjacent-timezone day (Sat: Fri–Sun, Sun: Sat–Mon), so each day&apos;s
-          exclusive targets share just {sideCap} passes — trim them back.
-        </p>
-      ) : null}
       {order.map((id) => {
         const boss = getBoss(id);
         if (!boss) return null;
         const val = Math.max(0, allocations[id] ?? 0);
-        const speciesCap = remoteCapFor(boss, budget);
-        const side = remoteDaySide(boss);
-        // Can't push this species past its cap, the running total past the budget,
-        // nor its weekend day's exclusive targets past that day's 50-pass window.
-        const sideRoom =
-          side === "both" ? Infinity : val + Math.max(0, sideCap - (side === "sat" ? satSide : sunSide));
-        const max = Math.max(0, Math.min(speciesCap, val + (budget - total), sideRoom));
         const remoteOnly = !bossIsLocal(boss, region);
         const label = groupDisplayName(boss);
         return (
@@ -107,7 +75,7 @@ export function RemoteAllocator() {
               onFocus={(e) => e.target.select()}
               onChange={(e) => {
                 const n = Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0);
-                setRemoteAllocation(id, Math.max(0, Math.min(max, n)));
+                setRemoteAllocation(id, Math.max(0, n));
               }}
               aria-label={`Remote raids for ${boss.name}`}
               className="w-12 shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent"

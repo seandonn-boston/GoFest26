@@ -4,9 +4,10 @@ import { computeCapacity } from "./capacity";
 import { makeDefaultInput } from "./defaults";
 import { computeBossResult } from "./raidsNeeded";
 import { computeGrossRequirement } from "./requirements";
-import { DEFAULT_SETTINGS, MAX_REMOTE_RAIDS } from "./settings";
+import { DEFAULT_SETTINGS } from "./settings";
 import { bossIsLocal } from "./region";
-import { collapseForms, remoteCapFor, remoteDaySide, groupSpansBothDays } from "./forms";
+import { collapseForms } from "./forms";
+import { midpoint } from "@/lib/math";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID, SORTED_BOSSES } from "@/data";
 import { HABITATS, blockKey } from "@/data/habitats";
 import type { BossInput, BossResult, Range } from "./types";
@@ -15,6 +16,8 @@ const sum = (b: Record<string, number>) => RISK_BANDS.reduce((s, k) => s + b[k],
 
 // A roomy capacity so nothing falls into grey unless we mean it to.
 const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, downtimeSecRange: { min: 0, max: 0 } });
+// Time-based remote ceiling for that capacity (auto-balance is bounded by it).
+const ROOMY_REMOTE = Math.round(midpoint(ROOMY.remoteCapacity));
 
 describe("quantity scaling (requirements ×N)", () => {
   const boss = getBoss(MEWTWO_X_ID)!;
@@ -128,43 +131,12 @@ describe("multi-form species (shared resources)", () => {
     expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
   });
 
-  it("remote cap: dual-day groups get the full budget; single-day targets 50", () => {
-    expect(remoteCapFor(getBoss("dialga")!, 60)).toBe(60);
-    expect(remoteCapFor(getBoss("palkia")!, 60)).toBe(60);
-    expect(remoteCapFor(getBoss("giratina-altered")!, 60)).toBe(50);
-    expect(remoteCapFor(getBoss("tornadus-incarnate")!, 60)).toBe(50);
-    // Each Mewtwo form is single-day (X Sat / Y Sun), so it's one day's worth, not
-    // the full budget.
-    expect(remoteCapFor(getBoss(MEWTWO_X_ID)!, 60)).toBe(50);
-    expect(remoteCapFor(getBoss(MEWTWO_Y_ID)!, 60)).toBe(50);
-    expect(groupSpansBothDays("dialga")).toBe(true);
-    expect(groupSpansBothDays("giratina")).toBe(false);
-  });
-
-  it("sides each remote target by the days it can be raided", () => {
-    expect(remoteDaySide(getBoss(MEWTWO_X_ID)!)).toBe("sat");
-    expect(remoteDaySide(getBoss(MEWTWO_Y_ID)!)).toBe("sun");
-    expect(remoteDaySide(getBoss("dialga")!)).toBe("both"); // forme each day
-    expect(remoteDaySide(getBoss("celesteela")!)).toBe("sun"); // Sunday-only
-    expect(remoteDaySide(getBoss("xurkitree")!)).toBe("sun");
-  });
-
-  it("auto-balance can't push one day's exclusive targets past 50 combined", () => {
-    // Two Sunday-only (region-locked) targets with big goals: Sunday bosses share
-    // a single 50-pass window (Sat+Sun+Mon, never Friday), so their auto-assigned
-    // total must not exceed 50 even though the budget is 60.
-    const { inputs, results } = buildFor(["xurkitree", "celesteela"]);
-    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: MAX_REMOTE_RAIDS };
-    const alloc = autoRemoteAllocations(
-      computeBlockPlan(inputs, results, ROOMY, settings),
-      inputs,
-      results,
-      settings,
-      ["xurkitree", "celesteela"],
-    );
-    const sunTotal = (alloc["xurkitree"] ?? 0) + (alloc["celesteela"] ?? 0);
-    expect(sunTotal).toBeGreaterThan(0);
-    expect(sunTotal).toBeLessThanOrEqual(50);
+  it("remote capacity is time-based: less sleep → more remote raids fit (passes are unlimited)", () => {
+    const rested = computeCapacity({ ...DEFAULT_SETTINGS, sleepHoursPerNight: 8 });
+    const tired = computeCapacity({ ...DEFAULT_SETTINGS, sleepHoursPerNight: 4 });
+    expect(rested.remoteCapacity.max).toBeGreaterThan(0);
+    expect(tired.remoteHoursPerDay).toBeGreaterThan(rested.remoteHoursPerDay);
+    expect(tired.remoteCapacity.max).toBeGreaterThan(rested.remoteCapacity.max);
   });
 });
 
@@ -292,7 +264,7 @@ describe("computeBlockPlan — allocation", () => {
 });
 
 describe("remote raids (manual per-species allocation)", () => {
-  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: MAX_REMOTE_RAIDS };
+  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
   const remoteOnly = SORTED_BOSSES.find((b) => !isMewtwo(b.id) && !bossIsLocal(b, DEFAULT_SETTINGS.region));
   // A 5★ (big XL climb) keeps the in-person demand comfortably above the 5 we shift remote.
   const localSat = SINGLE_BLOCK.find(
@@ -322,10 +294,10 @@ describe("remote raids (manual per-species allocation)", () => {
     expect(after).toBe(before - 5);
   });
 
-  it("the remote bar's capacity is the 60-pass budget and reflects the allocations", () => {
+  it("the remote pool's capacity is the time-based remote ceiling and reflects the allocations", () => {
     const { inputs, results } = buildFor([MEWTWO_X_ID]);
     const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [MEWTWO_X_ID]: 10 });
-    expect(plan.remote!.capacity).toBe(MAX_REMOTE_RAIDS);
+    expect(plan.remote!.capacity).toBe(ROOMY_REMOTE);
     expect(plan.remote!.fitted).toBe(10);
   });
 });
@@ -373,44 +345,42 @@ describe("goalProgress (achievable / required fraction)", () => {
 });
 
 describe("autoRemoteAllocations", () => {
-  it("fills block shortfalls by priority, capped at the 60-pass budget", () => {
+  it("fills block shortfalls by priority, bounded by the remote time capacity", () => {
     // One fixed boss far over its window → a big shortfall the pool should cover.
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
+    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, [], ROOMY_REMOTE);
     const total = Object.values(auto).reduce((s, n) => s + n, 0);
     expect(total).toBeGreaterThan(0);
-    expect(total).toBeLessThanOrEqual(MAX_REMOTE_RAIDS);
+    expect(total).toBeLessThanOrEqual(ROOMY_REMOTE);
   });
 
   it("assigns nothing when every goal already fits in person", () => {
     const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const { inputs, results } = buildFor([sat0.id]);
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, []);
+    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, [], ROOMY_REMOTE);
     expect(Object.keys(auto)).toHaveLength(0);
   });
 
-  it("honors a custom remote-raid budget", () => {
+  it("never assigns more than the remote time capacity", () => {
     const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }]; // far over its window
     const results = inputs.map((i) => computeBossResult(boss, i));
-    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true, remoteRaidBudget: 20 };
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
     const plan = computeBlockPlan(inputs, results, ROOMY, settings, {});
-    const auto = autoRemoteAllocations(plan, inputs, results, settings, []);
+    const auto = autoRemoteAllocations(plan, inputs, results, settings, [], 20); // tiny remote window
     const total = Object.values(auto).reduce((s, n) => s + n, 0);
     expect(total).toBeGreaterThan(0);
-    expect(total).toBeLessThanOrEqual(20); // never exceeds the custom budget
-    const withRemote = computeBlockPlan(inputs, results, ROOMY, settings, {}, auto);
-    expect(withRemote.remote?.capacity).toBe(20); // pool bar measures against the budget
+    expect(total).toBeLessThanOrEqual(20);
   });
 
-  it("re-flows the capped budget to whichever target is higher priority", () => {
+  it("favors region-locked targets, then re-flows by priority", () => {
     // Two local bosses sharing one habitat block, each pushed far over its window
-    // so the 60-pass pool (not their windows) is the binding constraint. Whoever
-    // is ranked first should take the larger share — so reordering priority
+    // so the remote time capacity (not their windows) is the binding constraint.
+    // Whoever is ranked first takes the larger share — reordering priority
     // visibly re-balances the allocation (the bug this guards against).
     const byBlock = new Map<string, typeof SINGLE_BLOCK>();
     for (const b of SINGLE_BLOCK) {
@@ -425,8 +395,8 @@ describe("autoRemoteAllocations", () => {
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
     const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
 
-    const aFirst = autoRemoteAllocations(plan, inputs, results, settings, [a.id, b.id]);
-    const bFirst = autoRemoteAllocations(plan, inputs, results, settings, [b.id, a.id]);
+    const aFirst = autoRemoteAllocations(plan, inputs, results, settings, [a.id, b.id], ROOMY_REMOTE);
+    const bFirst = autoRemoteAllocations(plan, inputs, results, settings, [b.id, a.id], ROOMY_REMOTE);
 
     expect(aFirst[a.id] ?? 0).toBeGreaterThan(aFirst[b.id] ?? 0);
     expect(bFirst[b.id] ?? 0).toBeGreaterThan(bFirst[a.id] ?? 0);
