@@ -6,8 +6,7 @@ import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
-import { DEFAULT_SETTINGS, MAX_REMOTE_PER_SPECIES, type PlannerSettings } from "@/domain/settings";
-import { remoteCapFor } from "@/domain/forms";
+import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 
@@ -195,14 +194,11 @@ interface PlannerState {
   resetAll: () => void;
 }
 
-// Per-species remote cap: Mewtwo is up both days (can absorb the whole budget),
-// every other species is one day's worth (≤50, and never more than the budget).
-// Clamp here so no write path — manual, auto-balance, or a corrupted persisted
-// map — can exceed it.
-function clampRemote(bossId: string, value: number, budget: number): number {
-  const boss = getBoss(bossId);
-  const cap = boss ? remoteCapFor(boss, budget) : Math.min(MAX_REMOTE_PER_SPECIES, budget);
-  return Math.max(0, Math.min(cap, Number.isFinite(value) ? Math.round(value) : 0));
+// Remote passes are unlimited in count (GO Fest 2026), so there's no per-species
+// cap — just clamp to a non-negative integer. The time-based feasibility (how
+// many remote raids fit in the user's waking hours) is surfaced in the UI.
+function clampRemote(value: number): number {
+  return Math.max(0, Number.isFinite(value) ? Math.round(value) : 0);
 }
 
 function ensureInput(state: PlannerState, bossId: string): BossInput | null {
@@ -284,15 +280,13 @@ export const usePlannerStore = create<PlannerState>()(
       setRemoteAllocation: (bossId, value) =>
         set((state) => {
           // A manual edit takes over from auto-balance so the user's tweaks stick.
-          const v = clampRemote(bossId, value, state.settings.remoteRaidBudget);
-          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: v }, remoteAuto: false };
+          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: clampRemote(value) }, remoteAuto: false };
         }),
 
       setRemoteAllocations: (map) =>
-        set((state) => {
-          const budget = state.settings.remoteRaidBudget;
+        set(() => {
           const clamped: Record<string, number> = {};
-          for (const id in map) clamped[id] = clampRemote(id, map[id], budget);
+          for (const id in map) clamped[id] = clampRemote(map[id]);
           return { remoteAllocations: clamped };
         }),
 

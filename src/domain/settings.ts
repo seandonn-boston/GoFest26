@@ -5,8 +5,8 @@ import type { Range, UserRegion } from "./types";
 /**
  * User-adjustable planning assumptions. These layer over GAME_CONFIG so a user
  * can tune the uncertain/personal numbers (how fast they raid, whether to plan
- * for best- or worst-case drops, how many free passes they'll get) without
- * touching code. Exact per-raid reward *amounts* still live in the data layer.
+ * for best- or worst-case drops, how much they sleep) without touching code.
+ * Exact per-raid reward *amounts* still live in the data layer.
  */
 export interface PlannerSettings {
   /** Trainers in the raid lobby (red lobbies are full = 20). Drives battle time. */
@@ -24,29 +24,25 @@ export interface PlannerSettings {
   rewardCase: "optimistic" | "expected" | "safe";
   /** Free Raid Passes the user expects to get per day. */
   freeDailyPerDay: number;
-  /** Max Remote Raids per day (for out-of-region, remote-only bosses). */
-  remotePassesPerDay: number;
-  /** The user plans to use Remote Raid Passes (a pool of extra, non-time-blocked raids). */
+  /** The user plans to use Remote Raid Passes. GO Fest 2026 lifts the daily remote
+   *  limit, so these are unlimited in count — the only constraint is the time the
+   *  user has for them (see `sleepHoursPerNight`). */
   useRemoteRaids: boolean;
-  /** How many Remote Raid Passes the user plans to spend in total (the pool size). */
-  remoteRaidBudget: number;
+  /**
+   * Hours of sleep per night during the event. Remote raids happen in the user's
+   * waking hours outside the in-person event window, so more sleep = less remote
+   * raiding time. Default 8 (≈ midnight–8am).
+   */
+  sleepHoursPerNight: number;
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
 }
 
-/** Hard cap on planned remote raids: Sat & Sun 40 + Fri 10 + Mon 10 (timezone). */
-export const MAX_REMOTE_RAIDS = 60;
-
-/** Remote raids reliably available Saturday + Sunday. Beyond this the user is
- *  relying on Friday/Monday timezone raids (capped 10 each, adjacent day only) —
- *  high-risk, shown red. */
-export const SAFE_REMOTE_RAIDS = 40;
-
-/** Upper bound the user can set their remote-raid budget to (the 60-raid cap). */
-export const MAX_REMOTE_BUDGET = MAX_REMOTE_RAIDS;
-
-/** Per-species remote cap — one day's bosses fit ~50 remotes; Mewtwo (both days) the full 60. */
-export const MAX_REMOTE_PER_SPECIES = 50;
+/** Below this nightly sleep, the planner warns it's ill-advised (the event is a
+ *  full day of walking and sun). */
+export const MIN_HEALTHY_SLEEP_HOURS = 7;
+/** Default nightly sleep (≈ midnight–8am). */
+export const DEFAULT_SLEEP_HOURS = 8;
 
 export const DEFAULT_SETTINGS: PlannerSettings = {
   lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
@@ -55,9 +51,8 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
-  remotePassesPerDay: GAME_CONFIG.passes.remotePerDay,
   useRemoteRaids: false,
-  remoteRaidBudget: SAFE_REMOTE_RAIDS,
+  sleepHoursPerNight: DEFAULT_SLEEP_HOURS,
   region: DEFAULT_REGION,
 };
 
@@ -71,8 +66,6 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
-    s.remotePassesPerDay === DEFAULT_SETTINGS.remotePassesPerDay &&
-    s.remoteRaidBudget === DEFAULT_SETTINGS.remoteRaidBudget
+    s.sleepHoursPerNight === DEFAULT_SETTINGS.sleepHoursPerNight
   );
 }
-

@@ -7,7 +7,6 @@
 import { getBoss } from "@/data";
 import { FORM_GROUPS, PRIMARY_FORM_ID } from "@/data/formGroups";
 import { pokemonSearchName, speciesKey } from "@/lib/pokemonSearch";
-import { MAX_REMOTE_PER_SPECIES } from "./settings";
 import type { BossInput, HabitatWindow, RaidBoss } from "./types";
 
 /** All forme bosses of a group (primary first), resolved from the roster. */
@@ -67,33 +66,6 @@ export function formeInBlock(boss: RaidBoss, block: HabitatWindow): RaidBoss {
 export function groupSpansBothDays(group: string): boolean {
   const days = new Set(formMembers(group).flatMap((b) => b.windows.map((w) => w.day)));
   return days.has("sat") && days.has("sun");
-}
-
-/**
- * Which weekend day(s) a target can be remote-raided on. A single-day boss is
- * reachable on its day plus the ADJACENT-timezone day only — Saturday bosses
- * Fri–Sun, Sunday bosses Sat–Mon — so it can never use both the Friday AND Monday
- * windows, capping its whole side at one day's worth (Fri/Mon 10 + shared 40 =
- * 50). A both-day shared-resource group (Dialga, Palkia) has a forme each day, so
- * it spans both and can use the full budget. Mewtwo X (Sat) / Y (Sun) are each
- * single-day — you allocate them separately, one per side.
- */
-export function remoteDaySide(boss: RaidBoss): "sat" | "sun" | "both" {
-  if (boss.formGroup && groupSpansBothDays(boss.formGroup)) return "both";
-  const days = new Set(planningWindows(boss).map((w) => w.day));
-  if (days.has("sat") && days.has("sun")) return "both";
-  return days.has("sun") ? "sun" : "sat";
-}
-
-/**
- * Per-species remote-raid cap. A both-day species (Dialga, Palkia) can be remoted
- * across both days, up to the full budget; a single-day target (Celesteela, and
- * each Mewtwo form on its own day) is one day's worth — Fri/Mon 10 + shared 40,
- * i.e. ≤ MAX_REMOTE_PER_SPECIES (50).
- */
-export function remoteCapFor(boss: RaidBoss, budget: number): number {
-  if (remoteDaySide(boss) === "both") return budget;
-  return Math.min(MAX_REMOTE_PER_SPECIES, budget);
 }
 
 /**

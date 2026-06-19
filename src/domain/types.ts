@@ -167,6 +167,13 @@ export interface CapacityModel {
   /** A quick-catch raid's time as a fraction of a normal raid's (≈0.5): used to
    *  fit more raids in a block when a species' block is set to quick-catch. */
   quickCatchSlotFactor: number;
+  /** Waking hours per day available for remote raids (24 − sleep − event window). */
+  remoteHoursPerDay: number;
+  /** Total remote-raid hours across the event days. */
+  remoteHours: number;
+  /** Raids that fit in the remote-raid hours (count). GO Fest 2026 lifts the
+   *  remote pass limit, so this is a TIME ceiling, not a hard pass cap. */
+  remoteCapacity: Range;
 }
 
 // orange = free Premium/Orange pass (limited), green = free Green pass / Link

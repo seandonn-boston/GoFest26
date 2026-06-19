@@ -2,27 +2,28 @@
 
 import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { MAX_REMOTE_BUDGET, MAX_REMOTE_RAIDS, SAFE_REMOTE_RAIDS } from "@/domain/settings";
+import { MIN_HEALTHY_SLEEP_HOURS } from "@/domain/settings";
+import { midpoint } from "@/lib/math";
+import type { CapacityModel } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
 /**
- * Opt-in for Remote Raid Passes: a budget of up to 60 raids (≈Fri 10 + Sat&Sun 40
- * + Mon 10 by time zone) separate from the habitat time blocks. Ticking it on
- * starts every allocation at 0 — the user assigns passes themselves in the
- * per-species list beneath the remote bar (with an Auto-balance button there to
- * fill by priority if they want it).
+ * Opt-in for Remote Raids. GO Fest 2026 lifts the daily remote-pass limit, so
+ * remote raids are UNLIMITED in count — the only constraint is the time the user
+ * has outside the in-person event and sleep. So instead of a pass budget, the
+ * user sets how much they sleep, which sizes the remote-raid time window.
  */
-export function RemoteRaidToggle() {
+export function RemoteRaidToggle({ capacity }: { capacity: CapacityModel }) {
   const on = usePlannerStore((s) => s.settings.useRemoteRaids);
-  const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
+  const sleep = usePlannerStore((s) => s.settings.sleepHoursPerNight);
   const setSettings = usePlannerStore((s) => s.setSettings);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
-  const allocated = usePlannerStore((s) => {
+  const assigned = usePlannerStore((s) => {
     let n = 0;
     for (const id in s.remoteAllocations) {
       if (s.inputs[id]?.selected) n += Math.max(0, s.remoteAllocations[id] || 0);
     }
-    return Math.min(s.settings.remoteRaidBudget, n);
+    return n;
   });
   const hasRemoteOnly = usePlannerStore((s) => {
     for (const id in s.inputs) {
@@ -33,11 +34,13 @@ export function RemoteRaidToggle() {
     return false;
   });
 
+  const capRaids = Math.round(midpoint(capacity.remoteCapacity));
+  const lowSleep = sleep < MIN_HEALTHY_SLEEP_HOURS;
+
   function toggle(checked: boolean) {
     setSettings({ useRemoteRaids: checked });
-    // Opting in starts in MANUAL mode: leave every allocation at 0 so the user
-    // assigns passes themselves rather than the planner pre-filling them. The
-    // per-species "Auto-balance" button opts into priority-driven filling.
+    // Opting in starts in MANUAL mode: leave allocations at 0 so the user assigns
+    // them; the per-species "Auto-balance" button fills by priority.
     if (checked) setRemoteAuto(false);
   }
 
@@ -55,89 +58,55 @@ export function RemoteRaidToggle() {
         </label>
         {on ? (
           <label className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span>Passes to plan</span>
+            <span>Sleep / night</span>
             <input
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              value={String(budget)}
+              value={String(sleep)}
               onFocus={(e) => e.target.select()}
               onChange={(e) => {
                 const n = Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0);
-                setSettings({ remoteRaidBudget: Math.max(0, Math.min(MAX_REMOTE_BUDGET, n)) });
+                setSettings({ sleepHoursPerNight: Math.max(0, Math.min(16, n)) });
               }}
-              aria-label="Total remote raid passes to plan"
+              aria-label="Hours of sleep per night"
               className="w-12 rounded-sm border border-gofest-accent/40 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent"
             />
+            <span>hrs</span>
           </label>
         ) : null}
       </div>
-      {on ? (
-        <p className="mt-1 text-[11px] text-slate-500">
-          <span className="font-mono text-slate-300">{allocated}</span> / {budget} passes assigned below.
-        </p>
-      ) : null}
 
       {on ? (
-        <div className="mt-1.5">
-          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gofest-bg/60 ring-1 ring-white/10">
-            {/* Reliable Saturday & Sunday remote raids (≤ 40) — normal color. */}
-            <div
-              className="absolute inset-y-0 left-0 bg-emerald-500/70"
-              style={{ width: `${(Math.min(allocated, SAFE_REMOTE_RAIDS) / MAX_REMOTE_RAIDS) * 100}%` }}
-            />
-            {/* High-risk Friday/Monday timezone raids (> 40) — red. */}
-            {allocated > SAFE_REMOTE_RAIDS ? (
-              <div
-                className="absolute inset-y-0 bg-rose-500/80"
-                style={{
-                  left: `${(SAFE_REMOTE_RAIDS / MAX_REMOTE_RAIDS) * 100}%`,
-                  width: `${((Math.min(allocated, MAX_REMOTE_RAIDS) - SAFE_REMOTE_RAIDS) / MAX_REMOTE_RAIDS) * 100}%`,
-                }}
-              />
+        <>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+            Remote passes are <b className="text-slate-200">unlimited</b> this event — the limit is your time.
+            With {sleep}h sleep you have ~<span className="font-mono text-slate-200">{capacity.remoteHoursPerDay}h</span>/day
+            outside the event, ≈ <span className="font-mono text-slate-200">{capRaids}</span> remote raids over the weekend.
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            <span className="font-mono text-slate-300">{assigned}</span> remote raids assigned below
+            {assigned > capRaids ? (
+              <span className="text-rose-300"> — {assigned - capRaids} more than fit your remote time</span>
             ) : null}
-            {/* The 40-raid Sat&Sun threshold. */}
-            <div
-              className="absolute inset-y-0 w-px bg-white/50"
-              style={{ left: `${(SAFE_REMOTE_RAIDS / MAX_REMOTE_RAIDS) * 100}%` }}
-            />
-          </div>
-          <div className="mt-0.5 flex justify-between text-[9px] text-slate-500">
-            <span>0</span>
-            <span className="text-emerald-400/80">{SAFE_REMOTE_RAIDS} · Sat &amp; Sun</span>
-            <span className="text-rose-400/80">{MAX_REMOTE_RAIDS} · +Fri/Mon</span>
-          </div>
-        </div>
-      ) : null}
-
-      {on && budget > SAFE_REMOTE_RAIDS ? (
-        <p className="mt-1.5 rounded-sm border border-rose-400/40 bg-rose-500/10 p-2 text-[10px] leading-relaxed text-rose-200">
-          ⚠ You&apos;ve exceeded the {SAFE_REMOTE_RAIDS} remote raids reliably available Saturday &amp; Sunday, so
-          you&apos;re choosing to remote raid Friday or Monday by taking advantage of time zones. This is viable, but:
-          the Friday cap is 10 and the Monday cap is 10; Friday remote raids can only target Saturday&apos;s bosses and
-          Monday only Sunday&apos;s; there&apos;s no guarantee you&apos;ll find the bosses you want, nor that you can
-          complete them all in time. All Friday/Monday remote raids (above {SAFE_REMOTE_RAIDS}) are shown in red on the
-          bar to flag this high risk.
-        </p>
-      ) : null}
-
-      {on ? (
-        <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-          Assign passes to each target below (all start at 0) — or tap Auto-balance there to fill by priority.{" "}
-          <span className="font-mono text-slate-400">Fri* 10 · Sat &amp; Sun** 40 · Mon* 10</span>; *time-zone dependent,
-          adjacent day only (Fri → Sat, Mon → Sun). **Sat &amp; Sun see either day.
-        </p>
-      ) : null}
-      {hasRemoteOnly && !on ? (
+            . Region-locked targets are filled first, then your priority order.
+          </p>
+          {lowSleep ? (
+            <p className="mt-1.5 rounded-sm border border-rose-400/40 bg-rose-500/10 p-2 text-[10px] leading-relaxed text-rose-200">
+              ⚠ {sleep}h of sleep is ill-advised for a GO Fest weekend — it&apos;s two full days of walking and time in
+              the sun. Consider at least {MIN_HEALTHY_SLEEP_HOURS} hours.
+            </p>
+          ) : null}
+        </>
+      ) : hasRemoteOnly ? (
         <p className="mt-1.5 text-[11px] text-gofest-accent">
           ⚠ You&apos;ve picked region-locked targets — they can only be done remotely. Turn this on to plan them.
         </p>
-      ) : !on ? (
+      ) : (
         <p className="mt-1.5 text-[11px] text-slate-500">
-          A separate pool that can raid any boss. Each species drops out of its in-person time block by however
-          many you assign to it remotely.
+          Unlimited this event. Each species you assign remotely drops out of its in-person time block.
         </p>
-      ) : null}
+      )}
     </div>
   );
 }

@@ -321,19 +321,17 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
 /** Remote-raid section: the assigned passes as a bar (top), then the per-species
  *  allocation inputs (the user types how many of each to do remotely). */
 function RemoteSection({ remote }: { remote?: RemotePlan }) {
-  const budget = usePlannerStore((s) => s.settings.remoteRaidBudget);
-  const free = remote ? Math.max(0, remote.capacity - remote.fitted) : budget;
+  const fitted = remote?.fitted ?? 0;
   const over = !!remote && remote.remaining > 0;
   return (
     <div className="rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.04] px-2.5 py-2">
       <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
         <span className="font-medium text-gofest-accent">Remote raids</span>
         <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {remote?.fitted ?? 0}/{budget} passes
-          {over ? ` · ${remote!.remaining} over` : free > 0 ? ` · ${free} spare` : " · full"}
+          {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
         </span>
       </div>
-      {remote ? <CapacityBar bands={remote.bands} fitted={remote.fitted} capacityMax={remote.capacity} /> : null}
+      {remote ? <CapacityBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
       <RemoteAllocator />
     </div>
   );

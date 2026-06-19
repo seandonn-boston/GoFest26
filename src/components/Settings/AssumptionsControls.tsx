@@ -86,13 +86,6 @@ export function AssumptionsControls() {
           max={30}
           onChange={(v) => setSettings({ freeDailyPerDay: v })}
         />
-        <NumberInput
-          label="Remote raids / day"
-          value={settings.remotePassesPerDay}
-          min={0}
-          max={20}
-          onChange={(v) => setSettings({ remotePassesPerDay: v })}
-        />
       </div>
       <p className="-mt-2 text-xs text-slate-500">
         Battle time scales with lobby size: a full 20-trainer “red” lobby melts Megas/5★ in ~20–30s

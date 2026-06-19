@@ -30,7 +30,6 @@ export {
   primaryFormId,
   planningWindows,
   groupSpansBothDays,
-  remoteCapFor,
 } from "./forms";
 
 /**
@@ -65,12 +64,13 @@ export function computePlanSummary(
   let totalRaids: Range = { ...ZERO_RANGE };
   for (const r of results) totalRaids = addRange(totalRaids, r.raids);
 
-  // Remote Raid Passes add capacity on top of the in-person weekend raids, so the
-  // "capacity used" gauge measures demand against both. The pool is the sum of the
-  // user's per-species remote allocations, capped at the 60-pass budget.
+  // Remote raids add capacity on top of the in-person weekend raids, so the
+  // "capacity used" gauge measures demand against both. Remote passes are
+  // unlimited in count (GO Fest 2026), so the pool is bounded by remote TIME —
+  // capped at the time-based remote capacity rather than a pass budget.
   const remotePool = settings.useRemoteRaids
     ? Math.min(
-        settings.remoteRaidBudget,
+        midpoint(capacity.remoteCapacity),
         Object.values(remoteAllocations).reduce((s, n) => s + Math.max(0, Math.round(n || 0)), 0),
       )
     : 0;

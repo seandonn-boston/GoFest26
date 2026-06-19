@@ -7,6 +7,7 @@ import {
   type WeekendBlockPlan,
 } from "@/domain";
 import { applyResearchCredits, type ResearchCredit } from "@/domain/research";
+import { midpoint } from "@/lib/math";
 import { RESEARCH_LINES } from "@/data/research";
 import type { PlanSummary } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -106,7 +107,14 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       blockPriority,
       {},
     );
-    const desired = autoRemoteAllocations(offPlan, inputList, summary.results, settings, globalOrder);
+    const desired = autoRemoteAllocations(
+      offPlan,
+      inputList,
+      summary.results,
+      settings,
+      globalOrder,
+      midpoint(summary.capacity.remoteCapacity),
+    );
     if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
   }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
 }
