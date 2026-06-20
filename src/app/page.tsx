@@ -19,6 +19,7 @@ import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
+import { BackupControls } from "@/components/Settings/BackupControls";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -141,6 +142,11 @@ export default function Home() {
               <ExportButton summary={summary} />
             </section>
           ) : null}
+
+          <section className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold">Backup &amp; restore</h2>
+            <BackupControls />
+          </section>
 
           <Disclaimer />
           {/* Plain text, deliberately not a mailto link (harder to scrape). */}
