@@ -1,0 +1,267 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-display: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --neon-magenta: #ff2bd6;
+  --neon-cyan: #00f0ff;
+  --acid: #c6ff00;
+}
+
+body {
+  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background:
+    radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.16), transparent 60%),
+    radial-gradient(60% 50% at 100% 0%, rgba(0, 240, 255, 0.12), transparent 55%),
+    radial-gradient(55% 45% at 50% 115%, rgba(176, 38, 255, 0.14), transparent 60%),
+    #050507;
+  background-attachment: fixed;
+}
+
+/* Fixed texture overlays: an engineering grid + CRT scanlines over the void. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 30px 30px;
+  -webkit-mask-image: radial-gradient(circle at 50% 28%, black, transparent 92%);
+  mask-image: radial-gradient(circle at 50% 28%, black, transparent 92%);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+/* Editorial / brutalist headings — oversized, uppercase, tight tracking. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+/* Mono for data, labels, tags. */
+.font-mono, code, kbd, samp {
+  font-family: var(--font-mono);
+}
+
+/* Hairline rule with a neon falloff. */
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan) 55%, transparent);
+}
+
+/* Neo-brutalist surface helper (hard border + offset shadow). */
+.brutal {
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.85);
+}
+
+/* Marquee ticker for the masthead strip. */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 26s linear infinite;
+}
+
+/* Remove number-input spinners for a cleaner mobile look. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Content "switch-in" once the Substitute faints (Pokémon mainline style). */
+@keyframes switchIn {
+  0% { opacity: 0; transform: translateY(48px) scale(0.55); }
+  55% { opacity: 1; transform: translateY(-8px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.switch-in {
+  animation: switchIn 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* The big chromatic-split glitch masthead. */
+@keyframes glitchTitle {
+  0%, 90%, 100% { transform: translate(0, 0); text-shadow: 3px 0 var(--neon-cyan), -3px 0 var(--neon-magenta); }
+  91% { transform: translate(-2px, 1px); text-shadow: 6px 0 var(--neon-cyan), -6px 0 var(--neon-magenta); }
+  94% { transform: translate(2px, -1px); text-shadow: -5px 0 var(--neon-cyan), 5px 0 var(--neon-magenta); }
+  97% { transform: translate(-1px, 0); text-shadow: 4px 0 var(--neon-cyan), -4px 0 var(--neon-magenta); }
+}
+.glitch-title {
+  animation: glitchTitle 6s infinite steps(1, end);
+}
+
+/* Per-card chromatic-split title in the species' TYPE colors (--c1 / --c2 set
+   inline). em-based offsets so it scales with the title size. The resting state
+   keeps the split so reduced-motion users still get the cyberpunk look. */
+@keyframes glitchType {
+  0%, 88%, 100% { transform: translate(0, 0); text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1); }
+  90% { transform: translate(-0.04em, 0.02em); text-shadow: 0.11em 0 var(--c2), -0.11em 0 var(--c1); }
+  93% { transform: translate(0.04em, -0.02em); text-shadow: -0.09em 0 var(--c2), 0.09em 0 var(--c1); }
+  96% { transform: translate(-0.02em, 0); text-shadow: 0.07em 0 var(--c2), -0.07em 0 var(--c1); }
+}
+.cyber-title {
+  --c1: var(--neon-magenta);
+  --c2: var(--neon-cyan);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  color: #f4f6fb;
+  text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1);
+  animation: glitchType 7s infinite steps(1, end);
+}
+
+/* Mewtwo title glitch (shared by the X/Y backdrop and the MEWTWO word): the two
+   resting chromatic colors (--rest1/--rest2, one per side) flash to two shades of
+   shiny-Mewtwo green (--flash1/--flash2) only on the jitter frames. The fill and
+   the rest colors are intentionally inverse: MEWTWO is vivid purple filled with an
+   X-purple/Y-lavender echo, while X/Y are purple/lavender filled with a vivid echo. */
+@keyframes glitchMewtwoXY {
+  0%, 88%, 100% { transform: translate(0, 0); text-shadow: 0.05em 0 var(--rest2), -0.05em 0 var(--rest1); }
+  90% { transform: translate(-0.04em, 0.02em); text-shadow: 0.12em 0 var(--flash2), -0.12em 0 var(--flash1); }
+  93% { transform: translate(0.04em, -0.02em); text-shadow: -0.1em 0 var(--flash2), 0.1em 0 var(--flash1); }
+  96% { transform: translate(-0.02em, 0); text-shadow: 0.08em 0 var(--flash2), -0.08em 0 var(--flash1); }
+}
+.mewtwo-xy,
+.mewtwo-word {
+  --flash1: #6be7b2; /* shiny green — light */
+  --flash2: #2fb98a; /* shiny green — deep */
+  font-family: var(--font-display);
+  text-shadow: 0.05em 0 var(--rest2), -0.05em 0 var(--rest1);
+  animation: glitchMewtwoXY 7s infinite steps(1, end);
+}
+.mewtwo-xy {
+  --rest1: #b026ff; /* vivid purple echo (inverse of the fill) */
+  --rest2: #b026ff;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.8;
+}
+.mewtwo-word {
+  --rest1: #b026ff; /* vivid purple echo (swapped from the Y letter) */
+  --rest2: #b026ff;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  color: #cfc3e8; /* lavender fill (swapped from the Y letter) */
+}
+
+/* Enamel-pin label: engraved into the badge — warm off-white with a dark halo
+   (legible on any type color) and a faint top sheen, no stuck-on box. */
+.enamel-label {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fbfaf6;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.85), 0 -1px 0 rgba(255, 255, 255, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-in, .glitch-title, .ticker, .cyber-title, .mewtwo-xy, .mewtwo-word { animation: none; }
+}
+
+/* Avant-garde card treatment: a hard neo-brutalist offset shadow + crisp border
+   over the type-colored fill (applied inline by the component). */
+.enamel {
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    7px 7px 0 0 rgba(0, 0, 0, 0.8),
+    inset 0 2px 2px rgba(255, 255, 255, 0.16),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.32);
+}
+
+/* ---- 3D enamel badge (Apple-Fitness-style), reverse-engineered into CSS ----
+   Stage gives perspective; the badge is a metallic bezel that tilts to the
+   gyroscope (--tilt-x/y); the face is the enamel with a tilt-tracking specular. */
+.badge-stage {
+  display: inline-block;
+}
+/* Perspective (and the whole 3D subtree below) only while the gyro is driving
+   the tilt — see .tilt-active .badge. */
+.tilt-active .badge-stage {
+  perspective: 460px; /* shorter => stronger, more obvious 3D tilt */
+}
+.badge {
+  position: relative;
+  height: 100%;
+  border-radius: 16px;
+  padding: 3px; /* metal rim width */
+  background: conic-gradient(
+    from 210deg,
+    #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5
+  );
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.55);
+}
+/* The gyro tilt — and its preserve-3d/perspective subtree — exists ONLY while
+   active. An idle page (and all of desktop) stays flat 2D, which is visually
+   identical at rest but avoids an iOS Safari bug where taps into a
+   perspective/preserve-3d subtree intermittently fail until a scroll forces a
+   recomposite. While active, each badge gets its own GPU layer (will-change) and
+   the JS spring is the sole smoother (no CSS transition). */
+.tilt-active .badge {
+  transform: rotateX(calc(var(--tilt-y, 0) * -22deg)) rotateY(calc(var(--tilt-x, 0) * 22deg));
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.badge-face {
+  position: relative;
+  height: 100%;
+  border-radius: 13px;
+  overflow: hidden;
+  /* Isolate the blend group so the glint's screen blend composites with the
+     fill consistently. Without this, animating the fill's opacity promotes it
+     to its own layer mid-transition (the glint momentarily un-blends and brighter),
+     then snaps back when the layer merges at the end. Isolation keeps the blend
+     applied throughout — only the fill's opacity animates. */
+  isolation: isolate;
+  background: #06060a; /* void base shows through the translucent type fill */
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.28),
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -9px 15px rgba(0, 0, 0, 0.34);
+}
+/* The type-color fill is always fully opaque; selection is handled by fading a
+   dark scrim (.badge-dim) so no blend-backdrop layer ever animates its opacity
+   (which is what used to make the mega relief's blend pop at transition end). */
+.badge-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+/* Dark scrim above the fill, mega relief and sprite (z 0–2): dims the whole
+   face when unselected and fades out on selection. The title and corner type
+   icons sit above it (z-10+), so they stay crisp. Plain opacity — no blend. */
+.badge-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: #050507;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}

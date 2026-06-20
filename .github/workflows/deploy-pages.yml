@@ -1,0 +1,82 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow the workflow to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one concurrent Pages deployment; let in-progress runs finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Owner's repo only — forks can't run this deploy pipeline.
+    if: github.repository == 'seandonn-boston/GoFest26'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Enables Pages on first run and exposes the repo base path (e.g. /GoFest26).
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # The site may exist in legacy deploy-from-branch mode (it was bootstrapped
+      # by pushing a gh-pages branch, since GITHUB_TOKEN cannot CREATE a Pages
+      # site). Updating build_type only needs pages:write, which this job has.
+      - name: Switch Pages to workflow builds
+        run: |
+          curl -sf -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pages" \
+            -d '{"build_type":"workflow"}' \
+            || echo "::warning::Couldn't switch Pages to workflow builds — set Settings → Pages → Source to 'GitHub Actions'."
+
+      - run: npm ci
+
+      # Gate the deploy on green types + tests so a broken plan never ships.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      - name: Build static export
+        env:
+          GITHUB_PAGES: "true"
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: npm run build
+
+      # Prevent GitHub Pages' Jekyll from stripping the _next directory.
+      - run: touch out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

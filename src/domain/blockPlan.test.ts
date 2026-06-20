@@ -1,0 +1,434 @@
+import { describe, it, expect } from "vitest";
+import { computeBlockPlan, bandsForSpecies, rareCandyForecast, goalProgress, autoRemoteAllocations, RISK_BANDS } from "./blockPlan";
+import { computeCapacity } from "./capacity";
+import { makeDefaultInput } from "./defaults";
+import { computeBossResult } from "./raidsNeeded";
+import { computeGrossRequirement } from "./requirements";
+import { DEFAULT_SETTINGS } from "./settings";
+import { bossIsLocal } from "./region";
+import { collapseForms } from "./forms";
+import { midpoint } from "@/lib/math";
+import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID, SORTED_BOSSES } from "@/data";
+import { HABITATS, blockKey } from "@/data/habitats";
+import type { BossInput, BossResult, Range } from "./types";
+
+const sum = (b: Record<string, number>) => RISK_BANDS.reduce((s, k) => s + b[k], 0);
+
+// A roomy capacity so nothing falls into grey unless we mean it to.
+const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, downtimeSecRange: { min: 0, max: 0 } });
+// Time-based remote ceiling for that capacity (auto-balance is bounded by it).
+const ROOMY_REMOTE = Math.round(midpoint(ROOMY.remoteCapacity));
+
+describe("quantity scaling (requirements ×N)", () => {
+  const boss = getBoss(MEWTWO_X_ID)!;
+
+  it("scales every gross currency by the quantity", () => {
+    const base: BossInput = {
+      ...makeDefaultInput(boss),
+      current: { candy: 0, xlCandy: 0, megaEnergy: 0, level: 40, megaLevel: 0 },
+      target: { level: 50, megaLevel: 4 },
+      quantity: 1,
+    };
+    const one = computeGrossRequirement(boss, base);
+    const two = computeGrossRequirement(boss, { ...base, quantity: 2 });
+    for (const k of Object.keys(one) as (keyof typeof one)[]) {
+      expect(two[k]).toBe((one[k] ?? 0) * 2);
+    }
+    // And it must actually touch mega energy, XL, and candy here.
+    expect(one.megaEnergy).toBeGreaterThan(0);
+    expect(one.xlCandy).toBeGreaterThan(0);
+  });
+
+  it("defaults to ×1 when quantity is absent", () => {
+    const input = { ...makeDefaultInput(boss), quantity: undefined } as BossInput;
+    const withExplicit = computeGrossRequirement(boss, { ...input, quantity: 1 });
+    expect(computeGrossRequirement(boss, input)).toEqual(withExplicit);
+  });
+});
+
+describe("bandsForSpecies — dynamic ranges + 5:3:2 spread", () => {
+  const huge: Range = { min: 9999, max: 9999 }; // all positions within guaranteed time
+
+  it("puts the candy-lucky floor in blue and spreads the uncertain 5:3:2", () => {
+    // 10 sure + 10 uncertain → 10 blue, then 5 green / 3 yellow / 2 red (all fit).
+    const b = bandsForSpecies(20, 20, { min: 10, max: 30 }, 0, huge);
+    expect(b.blue).toBe(10);
+    expect(b.green).toBe(5);
+    expect(b.yellow).toBe(3);
+    expect(b.red).toBe(2);
+    expect(sum(b)).toBe(20);
+  });
+
+  it("colors only the fitted raids, cutting the least-certain (red) tail first", () => {
+    // demand 10 (2 blue + 8 uncertain → 4 green/2 yellow/2 red) but only 5 fit.
+    const b = bandsForSpecies(5, 10, { min: 2, max: 18 }, 0, huge);
+    expect(b.blue).toBe(2);
+    expect(b.green).toBe(3);
+    expect(b.yellow).toBe(0);
+    expect(b.red).toBe(0);
+    expect(sum(b)).toBe(5); // never exceeds what fit
+  });
+
+  it("downgrades guaranteed-need raids out of blue once past guaranteed time", () => {
+    // All 10 are sure-need and fit, but only the first 4 sit within guaranteed time.
+    const b = bandsForSpecies(10, 10, { min: 10, max: 10 }, 0, { min: 4, max: 20 });
+    expect(b.blue).toBe(4);
+    expect(b.green).toBe(6);
+  });
+});
+
+/** Selected inputs + their results for a set of boss ids, all at default goals. */
+function buildFor(ids: string[]): { inputs: BossInput[]; results: BossResult[] } {
+  const inputs = ids.map((id) => makeDefaultInput(getBoss(id)!));
+  const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
+  return { inputs, results };
+}
+
+const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
+const SINGLE_BLOCK = SORTED_BOSSES.filter(
+  (b) => !isMewtwo(b.id) && b.windows.length === 1 && b.windows[0].endHour - b.windows[0].startHour === 3,
+);
+
+describe("multi-form species (shared resources)", () => {
+  const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
+    plan.blocks.reduce((s, b) => s + b.demand, 0);
+
+  it("collapses a form group to one primary target, selected if any forme is", () => {
+    const altered = { ...makeDefaultInput(getBoss("giratina-altered")!), selected: false };
+    const origin = makeDefaultInput(getBoss("giratina-origin")!); // selected
+    const collapsed = collapseForms([altered, origin]);
+    const giratina = collapsed.filter((i) => getBoss(i.bossId)?.formGroup === "giratina");
+    expect(giratina).toHaveLength(1);
+    expect(giratina[0].bossId).toBe("giratina-altered"); // primary carries the pool
+    expect(giratina[0].selected).toBe(true); // any forme selected ⇒ group selected
+  });
+
+  it("does not double-count a shared-resource species across its formes", () => {
+    const both = buildFor(["giratina-altered", "giratina-origin"]);
+    const one = buildFor(["giratina-altered"]);
+    const planBoth = computeBlockPlan(both.inputs, both.results, ROOMY);
+    const planOne = computeBlockPlan(one.inputs, one.results, ROOMY);
+    expect(blockDemand(planBoth)).toBeGreaterThan(0);
+    expect(blockDemand(planBoth)).toBe(blockDemand(planOne)); // one shared pool either way
+  });
+
+  it("splits a dual-day shared species (Dialga) across Saturday and Sunday", () => {
+    const { inputs, results } = buildFor(["dialga"]); // only the base forme picked
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const days = new Set(plan.blocks.filter((b) => b.species.some((s) => s.bossId === "dialga")).map((b) => b.day));
+    expect(days.has("sat")).toBe(true);
+    expect(days.has("sun")).toBe(true); // union windows ⇒ both days even from one forme
+  });
+
+  it("labels each block with the forme available there (Dialga base Sat, Origin Sun)", () => {
+    const { inputs, results } = buildFor(["dialga"]);
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const shareOn = (day: string) =>
+      plan.blocks.find((b) => b.day === day && b.species.some((s) => s.bossId === "dialga"))?.species.find(
+        (s) => s.bossId === "dialga",
+      );
+    expect(shareOn("sat")?.formeBossId).toBe("dialga");
+    expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
+  });
+
+  it("remote capacity is time-based: less sleep → more remote raids fit (passes are unlimited)", () => {
+    const rested = computeCapacity({ ...DEFAULT_SETTINGS, sleepHoursPerNight: 8 });
+    const tired = computeCapacity({ ...DEFAULT_SETTINGS, sleepHoursPerNight: 4 });
+    expect(rested.remoteCapacity.max).toBeGreaterThan(0);
+    expect(tired.remoteHoursPerDay).toBeGreaterThan(rested.remoteHoursPerDay);
+    expect(tired.remoteCapacity.max).toBeGreaterThan(rested.remoteCapacity.max);
+  });
+});
+
+describe("per-block quick-catch", () => {
+  it("a quick-catch block earns no catch Candy/XL toward a catch-bound goal", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([boss.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY);
+    const blk = plan.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
+    const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
+    const normal = goalProgress(plan, results, DEFAULT_SETTINGS);
+    const quick = goalProgress(plan, results, DEFAULT_SETTINGS, { [qkey]: true });
+    expect(normal.bySpecies[boss.id].achievable).toBeGreaterThan(0);
+    // Its only block is quick-catch → no XL earned → zero progress toward the goal.
+    expect(quick.bySpecies[boss.id].achievable).toBe(0);
+  });
+
+  it("quick-catch fits MORE raids in a capacity-limited block (saves time)", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const input = { ...makeDefaultInput(boss), quantity: 4 }; // heavy enough to overflow one block
+    const results = [computeBossResult(boss, input)];
+    const tight = computeCapacity(DEFAULT_SETTINGS); // normal-catch (no extra roominess)
+    const normal = computeBlockPlan([input], results, tight);
+    const blk = normal.blocks.find((b) => b.species.some((s) => s.bossId === boss.id))!;
+    const qkey = `${boss.id}@${blockKey(blk.day, blk.startHour)}`;
+    const quick = computeBlockPlan([input], results, tight, DEFAULT_SETTINGS, {}, {}, { [qkey]: true });
+    const fittedOf = (p: ReturnType<typeof computeBlockPlan>) => p.blocks.reduce((s, b) => s + b.fitted, 0);
+    expect(fittedOf(normal)).toBeGreaterThan(0);
+    expect(fittedOf(quick)).toBeGreaterThan(fittedOf(normal)); // same time, more quick raids
+  });
+});
+
+describe("computeBlockPlan — allocation", () => {
+  it("pins a fixed-window boss to the habitat block it spawns in", () => {
+    const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 0)!;
+    const { inputs, results } = buildFor([sat0.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const carrying = plan.blocks.filter((b) => b.species.some((s) => s.bossId === sat0.id));
+    expect(carrying).toHaveLength(1);
+    expect(carrying[0].day).toBe("sat");
+    expect(carrying[0].startHour).toBe(0);
+  });
+
+  it("keeps Mewtwo X energy raids on Saturday and Y on Sunday", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    for (const block of plan.blocks) {
+      for (const s of block.species) {
+        if (s.bossId === MEWTWO_X_ID) expect(block.day).toBe("sat");
+        if (s.bossId === MEWTWO_Y_ID) expect(block.day).toBe("sun");
+      }
+    }
+    // And both forms actually got placed.
+    expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === MEWTWO_X_ID))).toBe(true);
+    expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === MEWTWO_Y_ID))).toBe(true);
+  });
+
+  it("water-fills Mewtwo into the lighter blocks, never widening the spread", () => {
+    const blockA = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 0)!;
+    const blockB = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 3)!;
+    const spread = (ids: string[]) => {
+      const { inputs, results } = buildFor(ids);
+      const sat = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}).blocks.filter((b) => b.day === "sat");
+      return { sat, range: Math.max(...sat.map((b) => b.demand)) - Math.min(...sat.map((b) => b.demand)) };
+    };
+    const before = spread([blockA.id, blockB.id]).range;
+    const after = spread([blockA.id, blockB.id, MEWTWO_X_ID]);
+    // Mewtwo only ever raises the current-lowest block, so the spread can't grow.
+    expect(after.range).toBeLessThanOrEqual(Math.max(before, 1));
+    // The previously-empty Saturday block (hours 6–9) gets back-filled by Mewtwo.
+    const empty = after.sat.find((b) => b.startHour === 6)!;
+    expect(empty.species.some((s) => s.mewtwo && s.bossId === MEWTWO_X_ID)).toBe(true);
+  });
+
+  it("reports a shortfall (never grey, bar capped at 100%) when over capacity", () => {
+    // A single fixed boss asked to max 200 copies overruns its one 3-hour block.
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat")!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const over = plan.blocks.find((b) => b.remaining > 0)!;
+    expect(over).toBeTruthy();
+    expect(plan.feasible).toBe(false);
+    // The bar fill never exceeds capacity, and fitted + remaining accounts for all demand.
+    expect(over.fitted).toBeLessThanOrEqual(over.capacity.max);
+    expect(over.fitted + over.remaining).toBe(over.demand);
+  });
+
+  it("per-block band counts sum to what fit (not the full demand)", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    for (const b of plan.blocks) {
+      expect(sum(b.bands)).toBe(b.fitted);
+      expect(b.fitted + b.remaining).toBe(b.demand);
+    }
+  });
+
+  it("spreads Mewtwo across every day-matching block its form is selected for", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID]);
+    const xIn = (plan: ReturnType<typeof computeBlockPlan>, key: string) =>
+      plan.blocks
+        .filter((b) => blockKey(b.day, b.startHour) === key)
+        .reduce((s, b) => s + b.species.filter((sp) => sp.bossId === MEWTWO_X_ID).reduce((t, sp) => t + sp.raids, 0), 0);
+
+    const all = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    // Every Saturday block carries some Mega Mewtwo X — emphasis is steered by
+    // each block's priority order, not a per-block hunt toggle.
+    for (const key of ["sat0", "sat3", "sat6"]) expect(xIn(all, key)).toBeGreaterThan(0);
+  });
+
+  it("respects explicit priority order (lowest priority takes the risky tail)", () => {
+    // Two bosses sharing one Saturday block; whichever is ranked last eats red/grey.
+    const sat0 = SORTED_BOSSES.filter(
+      (b) => b.windows.length === 1 && b.windows[0].day === "sat" && b.windows[0].startHour === 0,
+    ).slice(0, 2);
+    if (sat0.length < 2) return;
+    const [a, b] = sat0;
+    const { inputs, results } = buildFor([a.id, b.id]);
+    // Per-block priority, keyed by the block ("sat0"): rank b above a.
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, { sat0: [b.id, a.id] });
+    const block = plan.blocks.find((x) => x.species.length >= 2)!;
+    // b is highest priority → appears first in the block's ordered species.
+    expect(block.species[0].bossId).toBe(b.id);
+  });
+});
+
+describe("remote raids (manual per-species allocation)", () => {
+  const REMOTE_ON = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+  const remoteOnly = SORTED_BOSSES.find((b) => !isMewtwo(b.id) && !bossIsLocal(b, DEFAULT_SETTINGS.region));
+  // A 5★ (big XL climb) keeps the in-person demand comfortably above the 5 we shift remote.
+  const localSat = SINGLE_BLOCK.find(
+    (b) => b.windows[0].day === "sat" && b.tier === "five-star" && bossIsLocal(b, DEFAULT_SETTINGS.region),
+  )!;
+
+  it("keeps region-locked targets out of the blocks; allocated ones land in the remote pool", () => {
+    if (!remoteOnly) return;
+    const { inputs, results } = buildFor([remoteOnly.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [remoteOnly.id]: 5 });
+    expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === remoteOnly.id))).toBe(false);
+    expect(plan.remote?.species.find((s) => s.bossId === remoteOnly.id)?.raids).toBe(5);
+  });
+
+  it("omits the remote pool until the user opts in", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID]);
+    expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
+  });
+
+  it("a remote allocation reduces that species' in-person block demand", () => {
+    const { inputs, results } = buildFor([localSat.id]);
+    const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
+      plan.blocks.reduce((s, b) => s + b.species.filter((x) => x.bossId === localSat.id).reduce((a, x) => a + x.raids, 0), 0);
+    const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}));
+    const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [localSat.id]: 5 }));
+    expect(before).toBeGreaterThan(5);
+    expect(after).toBe(before - 5);
+  });
+
+  it("the remote pool's capacity is the time-based remote ceiling and reflects the allocations", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [MEWTWO_X_ID]: 10 });
+    expect(plan.remote!.capacity).toBe(ROOMY_REMOTE);
+    expect(plan.remote!.fitted).toBe(10);
+  });
+});
+
+describe("rareCandyForecast", () => {
+  it("gives 1 Rare Candy per raid and 1 Rare Candy XL per non-Mega raid", () => {
+    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const totalRaids = plan.blocks.reduce((s, b) => s + b.fitted, 0);
+    const f = rareCandyForecast(plan);
+    expect(f.rareCandy).toBe(totalRaids);
+    // Mewtwo is super-mega (not "mega"), so every raid also yields Rare Candy XL.
+    expect(f.rareCandyXl).toBe(totalRaids);
+  });
+
+  it("excludes regular Mega raids from Rare Candy XL", () => {
+    const mega = SORTED_BOSSES.find((b) => b.tier === "mega" && !isMewtwo(b.id) && bossIsLocal(b, DEFAULT_SETTINGS.region));
+    if (!mega) return;
+    const { inputs, results } = buildFor([mega.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const f = rareCandyForecast(plan);
+    expect(f.rareCandy).toBeGreaterThan(0);
+    expect(f.rareCandyXl).toBe(0); // a Mega raid gives Rare Candy but no Rare Candy XL
+  });
+});
+
+describe("goalProgress (achievable / required fraction)", () => {
+  it("is full when goals fit with capacity to spare", () => {
+    const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([sat0.id]);
+    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}), results, DEFAULT_SETTINGS);
+    expect(p.achievable).toBe(p.required);
+    expect(p.bySpecies[sat0.id].achievable).toBe(p.bySpecies[sat0.id].required);
+  });
+
+  it("achievable < required (but > 0) when a block is over capacity, and totals are the sums", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const p = goalProgress(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}), results, DEFAULT_SETTINGS);
+    expect(p.achievable).toBeGreaterThan(0);
+    expect(p.achievable).toBeLessThan(p.required);
+    expect(p.achievable).toBe(p.bySpecies[boss.id].achievable);
+  });
+});
+
+describe("autoRemoteAllocations", () => {
+  it("fills block shortfalls by priority, bounded by the remote time capacity", () => {
+    // One fixed boss far over its window → a big shortfall the pool should cover.
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, [], ROOMY_REMOTE);
+    const total = Object.values(auto).reduce((s, n) => s + n, 0);
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBeLessThanOrEqual(ROOMY_REMOTE);
+  });
+
+  it("assigns nothing when every goal already fits in person", () => {
+    const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const { inputs, results } = buildFor([sat0.id]);
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, [], ROOMY_REMOTE);
+    expect(Object.keys(auto)).toHaveLength(0);
+  });
+
+  it("never assigns more than the remote time capacity", () => {
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }]; // far over its window
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+    const plan = computeBlockPlan(inputs, results, ROOMY, settings, {});
+    const auto = autoRemoteAllocations(plan, inputs, results, settings, [], 20); // tiny remote window
+    const total = Object.values(auto).reduce((s, n) => s + n, 0);
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBeLessThanOrEqual(20);
+  });
+
+  it("favors region-locked targets, then re-flows by priority", () => {
+    // Two local bosses sharing one habitat block, each pushed far over its window
+    // so the remote time capacity (not their windows) is the binding constraint.
+    // Whoever is ranked first takes the larger share — reordering priority
+    // visibly re-balances the allocation (the bug this guards against).
+    const byBlock = new Map<string, typeof SINGLE_BLOCK>();
+    for (const b of SINGLE_BLOCK) {
+      if (!bossIsLocal(b, DEFAULT_SETTINGS.region)) continue;
+      const key = `${b.windows[0].day}${b.windows[0].startHour}`;
+      byBlock.set(key, [...(byBlock.get(key) ?? []), b]);
+    }
+    const pair = [...byBlock.values()].find((g) => g.length >= 2)!;
+    const [a, b] = pair;
+    const inputs = [a, b].map((boss) => ({ ...makeDefaultInput(boss), quantity: 200 }));
+    const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
+    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+
+    const aFirst = autoRemoteAllocations(plan, inputs, results, settings, [a.id, b.id], ROOMY_REMOTE);
+    const bFirst = autoRemoteAllocations(plan, inputs, results, settings, [b.id, a.id], ROOMY_REMOTE);
+
+    expect(aFirst[a.id] ?? 0).toBeGreaterThan(aFirst[b.id] ?? 0);
+    expect(bFirst[b.id] ?? 0).toBeGreaterThan(bFirst[a.id] ?? 0);
+  });
+});
+
+describe("Mewtwo Y-only leveling", () => {
+  it("places Sunday-only Mewtwo Y's shared XL/Candy leveling raids, not just its energy", () => {
+    const y = getBoss(MEWTWO_Y_ID)!;
+    const base: BossInput = {
+      ...makeDefaultInput(y),
+      selected: true,
+      current: { candy: 0, xlCandy: 0, megaEnergy: 0, level: 40, megaLevel: 0 },
+      target: { level: 40, megaLevel: 1 }, // energy only, no leveling
+    };
+    const leveling: BossInput = { ...base, target: { level: 50, megaLevel: 1 } }; // + big XL goal
+    const mewtwoRaids = (inp: BossInput) => {
+      const res = computeBossResult(y, inp);
+      const plan = computeBlockPlan([inp], [res], ROOMY, DEFAULT_SETTINGS, {});
+      return plan.blocks.reduce(
+        (sum, b) => sum + b.species.filter((s) => s.mewtwo).reduce((t, s) => t + s.raids, 0),
+        0,
+      );
+    };
+    // The leveling goal must add raids beyond the energy-only baseline (it didn't
+    // before the fix — Y-only leveling demand was dropped entirely).
+    expect(mewtwoRaids(leveling)).toBeGreaterThan(mewtwoRaids(base));
+  });
+});
+
+it("HABITATS has the six blocks the plan iterates", () => {
+  expect(HABITATS).toHaveLength(6);
+  expect(HABITATS.filter((h) => h.day === "sat")).toHaveLength(3);
+  expect(HABITATS.filter((h) => h.day === "sun")).toHaveLength(3);
+});
