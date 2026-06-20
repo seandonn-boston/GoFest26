@@ -84,7 +84,7 @@ function applyScan(
 /**
  * Assisted bulk import: OCR the Candy/XL/Energy from each screenshot (reliable),
  * then the user taps which Pokémon each belongs to. Uploaded screenshots persist
- * (session storage) as a managed grid; each resource pull can be deleted (red ✕)
+ * (local storage) as a managed grid; each resource pull can be deleted (red ✕)
  * or applied on its own (green ›), or all at once. Same species → only the most-
  * recent screenshot is applied (values share one pool).
  */
