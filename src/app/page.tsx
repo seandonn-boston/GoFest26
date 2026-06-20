@@ -18,6 +18,7 @@ import { ExportButton } from "@/components/ExportButton";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
+import { InstallBanner } from "@/components/ui/InstallBanner";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -46,6 +47,7 @@ export default function Home() {
 
   return (
     <>
+      <InstallBanner />
       <main className="relative z-10 mx-auto max-w-3xl px-4 py-6 sm:py-10">
       <TiltProvider />
       <SpriteScaleProvider>
