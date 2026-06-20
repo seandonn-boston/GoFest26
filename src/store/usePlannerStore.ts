@@ -9,6 +9,7 @@ import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
+import type { StateBackup } from "./stateBackup";
 
 export { makeDefaultInput };
 
@@ -192,6 +193,8 @@ interface PlannerState {
   setSettings: (patch: Partial<PlannerSettings>) => void;
   resetSettings: () => void;
   resetAll: () => void;
+  /** Replace the planning state from an imported backup (.json or .xlsx). */
+  loadState: (backup: StateBackup) => void;
 }
 
 // Remote passes are unlimited in count (GO Fest 2026), so there's no per-species
@@ -472,6 +475,21 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAuto: false,
           blockPriority: {},
           quickCatchBlocks: {},
+        }),
+
+      loadState: (b) =>
+        set({
+          // Replace the planning state from an imported backup. Settings merge
+          // under DEFAULT_SETTINGS so a backup from an older version still picks
+          // up newly-added knobs. Screenshots/imports are left untouched.
+          inputs: b.inputs ?? {},
+          settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) },
+          research: b.research && Object.keys(b.research).length ? b.research : { ...DEFAULT_RESEARCH },
+          blockPriority: b.blockPriority ?? {},
+          quickCatchBlocks: b.quickCatchBlocks ?? {},
+          remoteAllocations: b.remoteAllocations ?? {},
+          remoteAuto: typeof b.remoteAuto === "boolean" ? b.remoteAuto : false,
+          raidsDone: b.raidsDone ?? {},
         }),
     }),
     {

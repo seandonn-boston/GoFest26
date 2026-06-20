@@ -1,5 +1,6 @@
 import type { BossInput, PlanSummary } from "@/domain/types";
 import { buildWorkbook } from "./buildWorkbook";
+import { addBackupSheet } from "./backupFile";
 
 /**
  * Generates the raid-plan .xlsx in the browser and triggers a download.
@@ -12,6 +13,7 @@ export async function exportPlanToXlsx(
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
   buildWorkbook(workbook, summary, inputs);
+  addBackupSheet(workbook); // hidden restore payload so the export round-trips
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
