@@ -58,7 +58,9 @@ leaves your device.
   research credits folded into your on‑hand totals.
 - **Excel export** — download the full plan as an `.xlsx` workbook.
 - **Persistence** — selections, inputs, settings, and imported screenshots are
-  saved in browser session storage.
+  saved per‑device in browser local storage, so a plan survives closing the tab
+  or app and persists across days. Use Backup &amp; restore (JSON / `.xlsx`) to
+  move a plan between devices.
 
 ## How it works
 
@@ -89,7 +91,7 @@ research credits), `region.ts` (hemisphere/continent availability), and
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict)
 - **Tailwind CSS 3**
-- **Zustand** (`persist`, quota‑tolerant session storage) for state
+- **Zustand** (`persist`, quota‑tolerant local storage) for state
 - **Tesseract.js** (loaded from CDN at runtime) for screenshot OCR
 - **ExcelJS** for the workbook export
 - **three.js** for the loader visuals

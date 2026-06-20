@@ -45,11 +45,12 @@ function selectFamily(
 const MAX_SCREENSHOTS = 12;
 
 /**
- * Debounced, quota-tolerant sessionStorage. Store updates fire on every
+ * Debounced, quota-tolerant localStorage. Store updates fire on every
  * keystroke; this batches rapid writes into one (300ms trailing, flushed on tab
  * hide) and swallows QuotaExceededError so a full disk / private mode can never
- * crash a state update. Session storage keeps the plan intact across refreshes
- * within the tab (cleared when the tab/browser closes). A no-op on the server.
+ * crash a state update. localStorage persists the plan per-device across
+ * sessions — closing Safari / the tab and reopening days later keeps every
+ * input (cleared only when the user clears site data). A no-op on the server.
  */
 function makeSafeStorage() {
   const noop = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
@@ -59,7 +60,7 @@ function makeSafeStorage() {
   const flush = () => {
     if (!queued) return;
     try {
-      window.sessionStorage.setItem(queued.key, queued.value);
+      window.localStorage.setItem(queued.key, queued.value);
     } catch {
       /* quota exceeded / private mode — drop the write rather than throw */
     }
@@ -74,7 +75,7 @@ function makeSafeStorage() {
     getItem: (name: string) => {
       if (queued && queued.key === name) return queued.value; // freshest pending value
       try {
-        return window.sessionStorage.getItem(name);
+        return window.localStorage.getItem(name);
       } catch {
         return null;
       }
@@ -88,7 +89,7 @@ function makeSafeStorage() {
       queued = null;
       if (timer) clearTimeout(timer);
       try {
-        window.sessionStorage.removeItem(name);
+        window.localStorage.removeItem(name);
       } catch {
         /* ignore */
       }
@@ -107,7 +108,7 @@ export interface ScreenshotPreview {
 const MAX_IMPORTS = 100;
 /** How many of the most-recent imports keep their (heavy data-URL) thumbnail in
  *  the persisted snapshot. Older imports still persist their small scan result —
- *  just without the preview — so a big batch can't exceed the sessionStorage
+ *  just without the preview — so a big batch can't exceed the localStorage
  *  quota and cause the whole-store write to be dropped. */
 const MAX_PERSISTED_THUMBS = 24;
 
@@ -251,7 +252,7 @@ const DEFAULT_RESEARCH: Record<string, boolean> = Object.fromEntries(RESEARCH_LI
 
 /** Drop all but the most-recent imports' thumbnails from the PERSISTED snapshot.
  *  The live in-memory list keeps every preview; this only bounds what's written
- *  to sessionStorage so a large import batch can't blow the quota (which would
+ *  to localStorage so a large import batch can't blow the quota (which would
  *  silently drop the entire store write). Older imports keep their scan result —
  *  the grid just shows a placeholder until re-uploaded. */
 function trimPersistedImports(imports: ImportedShot[]): ImportedShot[] {
