@@ -28,21 +28,16 @@ function isStandalone(): boolean {
   );
 }
 
-const DISMISS_KEY = "gofest-a2hs-dismissed";
-const wasDismissed = () => {
-  try {
-    return localStorage.getItem(DISMISS_KEY) === "1";
-  } catch {
-    return false;
-  }
-};
-
 /**
  * Slim top banner nudging users to add the app to their Home Screen — it
  * launches full-screen and keeps their plan around between sessions. On Android
  * Chrome (when the browser offers it) the button fires the native install
  * prompt; everywhere else (all iOS browsers, which can't be triggered
  * programmatically) it opens a modal with the manual steps for that browser.
+ *
+ * Dismissal is in-memory only — closing it hides it for this view but it
+ * returns on the next page load. We never show it once the user is in the
+ * installed app (launched from the Home Screen), which is the whole point.
  */
 export function InstallBanner() {
   const [show, setShow] = useState(false);
@@ -51,7 +46,7 @@ export function InstallBanner() {
   const [modal, setModal] = useState(false);
 
   useEffect(() => {
-    if (isStandalone() || wasDismissed()) return;
+    if (isStandalone()) return;
     const p = detectPlatform();
     setPlatform(p);
     // Only nudge on phones/tablets (the whole point is the Home Screen).
@@ -74,11 +69,6 @@ export function InstallBanner() {
   function dismiss() {
     setShow(false);
     setModal(false);
-    try {
-      localStorage.setItem(DISMISS_KEY, "1");
-    } catch {
-      /* private mode — fine, it just shows again next time */
-    }
   }
 
   async function add() {
