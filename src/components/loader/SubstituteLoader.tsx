@@ -6,6 +6,7 @@ import { warmupOcr } from "@/lib/ocrEngine";
 import { allSpriteUrls } from "@/data/pokemonSprites";
 import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { lockBodyScroll } from "@/lib/scrollLock";
+import { useAppReady } from "@/store/useAppReady";
 
 /** Warm the browser cache with every Pokémon icon so search-string sprites and
  *  cards render instantly (and broken hotlinks surface their fallback) once the
@@ -71,7 +72,10 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
 
   const handleDone = useCallback(() => {
     setPhase("veil");
-    veilTimer.current = setTimeout(() => setPhase("app"), 750);
+    veilTimer.current = setTimeout(() => {
+      setPhase("app");
+      useAppReady.getState().setReady(); // let the install banner appear now
+    }, 750);
   }, []);
 
   return (
