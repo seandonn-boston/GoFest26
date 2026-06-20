@@ -95,29 +95,29 @@ export default function Home() {
               </div>
               <SearchStringBar />
               <BulkImportSection />
-              {/* content-visibility lets the browser skip layout/paint/image-decode
-                  for off-screen cards, so selecting the 60th–70th target stays
-                  cheap instead of re-rendering every detailed card at once. */}
+              {/* Cards render normally (no content-visibility): the heavy card
+                  body is gated behind its collapsed/expanded state, so an
+                  unopened card is already lightweight. Skipping off-screen
+                  paint caused iOS Safari to pop cards in late and — because the
+                  reserved intrinsic height didn't match the collapsed card —
+                  shift everything as you scrolled. Native paint scrolls smooth. */}
               {mewtwoSelected ? (
-                <div className="[content-visibility:auto] [contain-intrinsic-size:auto_560px]">
-                  <MewtwoCard
-                    bossX={getBoss(MEWTWO_X_ID)!}
-                    bossY={getBoss(MEWTWO_Y_ID)!}
-                    resultX={resultById.get(MEWTWO_X_ID)}
-                    resultY={resultById.get(MEWTWO_Y_ID)}
-                  />
-                </div>
+                <MewtwoCard
+                  bossX={getBoss(MEWTWO_X_ID)!}
+                  bossY={getBoss(MEWTWO_Y_ID)!}
+                  resultX={resultById.get(MEWTWO_X_ID)}
+                  resultY={resultById.get(MEWTWO_Y_ID)}
+                />
               ) : null}
               {otherSelectedBosses.map((boss) => {
                 const result = resultById.get(boss.id);
                 return result ? (
-                  <div key={boss.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_520px]">
-                    <BossInputCard
-                      boss={boss}
-                      result={result}
-                      planningRaidsPerHour={summary.schedule.planningRaidsPerHour}
-                    />
-                  </div>
+                  <BossInputCard
+                    key={boss.id}
+                    boss={boss}
+                    result={result}
+                    planningRaidsPerHour={summary.schedule.planningRaidsPerHour}
+                  />
                 ) : null;
               })}
               <CounterSearchBar />
