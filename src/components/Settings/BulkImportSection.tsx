@@ -7,9 +7,9 @@ import { ScreenshotImporter } from "./ScreenshotImporter";
 /**
  * Collapsible shell around the screenshot importer. Once a user has bulk-loaded
  * and reviewed a pile of screenshots, they can fold this away to get the images
- * off the page — without clearing them. The importer stays mounted (hidden via
- * CSS) and the uploads live in the store, so collapsing never drops anything;
- * a count badge shows how many are still loaded.
+ * off the page. Collapsing unmounts the importer UI entirely — the uploads
+ * themselves live in the persisted store, so nothing is deleted; re-expanding
+ * rebuilds the view from that data. A count badge shows how many are held.
  */
 export function BulkImportSection() {
   const [open, setOpen] = useState(true);
@@ -38,10 +38,13 @@ export function BulkImportSection() {
           ▾
         </span>
       </button>
-      {/* Kept mounted (not unmounted) so nothing is lost when folded away. */}
-      <div className={open ? "mt-2" : "hidden"}>
-        <ScreenshotImporter />
-      </div>
+      {/* Unmounted when collapsed; the uploads persist in the store, so the
+          view rebuilds from that data on re-expand — nothing is deleted. */}
+      {open ? (
+        <div className="mt-2">
+          <ScreenshotImporter />
+        </div>
+      ) : null}
     </div>
   );
 }
