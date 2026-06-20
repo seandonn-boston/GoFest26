@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAppReady } from "@/store/useAppReady";
 
 /** A captured Android `beforeinstallprompt` event (typed loosely — it's non-standard). */
 interface BipEvent extends Event {
@@ -44,6 +45,9 @@ export function InstallBanner() {
   const [platform, setPlatform] = useState<Platform>("other");
   const [deferred, setDeferred] = useState<BipEvent | null>(null);
   const [modal, setModal] = useState(false);
+  // Hold off until the loading screen has fully lifted (set by SubstituteLoader)
+  // so the banner doesn't flash in behind/through the veil.
+  const ready = useAppReady((s) => s.ready);
 
   useEffect(() => {
     if (isStandalone()) return;
@@ -82,7 +86,7 @@ export function InstallBanner() {
     setModal(true); // iOS (and Android without a native prompt) → manual steps
   }
 
-  if (!show) return null;
+  if (!show || !ready) return null;
 
   return (
     <>
