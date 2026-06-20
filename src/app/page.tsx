@@ -11,7 +11,7 @@ import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
 import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
-import { ScreenshotImporter } from "@/components/Settings/ScreenshotImporter";
+import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ExportButton } from "@/components/ExportButton";
@@ -94,12 +94,7 @@ export default function Home() {
                 </button>
               </div>
               <SearchStringBar />
-              <div className="brutal rounded-xl bg-gofest-panel/80 p-3">
-                <div className="mb-2 font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
-                  Bulk import from screenshots
-                </div>
-                <ScreenshotImporter />
-              </div>
+              <BulkImportSection />
               {/* content-visibility lets the browser skip layout/paint/image-decode
                   for off-screen cards, so selecting the 60th–70th target stays
                   cheap instead of re-rendering every detailed card at once. */}
