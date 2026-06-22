@@ -16,6 +16,8 @@ export { computeBlockPlan, rareCandyForecast, goalProgress, autoRemoteAllocation
 export type { BlockPlan, BlockSpeciesShare, GoalProgress, RemotePlan, RiskBand, WeekendBlockPlan } from "./blockPlan";
 export { computeRoadPlan } from "./roadOfLegends";
 export type { RoadPlan, RoadDayPlan } from "./roadOfLegends";
+export { computePassCost, linkChargeCost } from "./passEconomy";
+export type { PassCost, PassCostLine } from "./passEconomy";
 export { megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies, mergeMegaBoosts } from "./megaBoosts";
 export type { MegaBoost, MegaKind } from "./megaBoosts";
 export { computeGrossRequirement, computeNetNeed } from "./requirements";

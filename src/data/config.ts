@@ -90,6 +90,32 @@ export const GAME_CONFIG = {
     remotePerDay: 20,
   },
 
+  // PokéCoin economics for "how much would the passes cost?" — every price here
+  // is a one-line edit. Singles are intentionally excluded (no one buys the
+  // single green/remote pass); only the 3-pack or a bulk box is modeled.
+  // source: in-game shop, June 2026 (screenshot-confirmed).
+  passEconomy: {
+    // Free Orange (daily) passes from spinning Gyms — applied first, for free.
+    freePassesPerWeekendDay: 9,
+    freePassesPerRoadDay: 2,
+    // Premium Battle Pass ("green", in-person). 3-pack = 250 (≈83⅓/pass). A
+    // limited-time box can carry ~99 passes for ~5,000 coins (≈50/pass).
+    green: { bundlePasses: 3, bundleCoins: 250, bestBoxCoinsPerPass: 50 },
+    // Remote Raid Pass ("blue"). 3-pack = 525 (175/pass). Carry limit 3, so no
+    // big packs — boxes rarely beat the 3-pack, so the low rate matches it.
+    remote: { bundlePasses: 3, bundleCoins: 525, bestBoxCoinsPerPass: 175 },
+    // Link Charges — entering a Super Mega Raid (Mewtwo) costs 800. In person
+    // they substitute for a pass (never cheaper); a REMOTE Super Mega Raid needs
+    // a Remote Raid Pass AND 800 Link Charges. Packs (best per-LC first):
+    linkCharge: {
+      perSuperMegaRaid: 800,
+      packs: [
+        { lc: 600, coins: 250 }, // currently 16% off (reg. 300)
+        { lc: 200, coins: 100 },
+      ],
+    },
+  },
+
   scheduler: {
     // How per-boss raid demand is sized from the raids-needed range:
     // "optimistic" = best-case rolls (min), "expected" = midpoint, "safe" = worst-case (max).

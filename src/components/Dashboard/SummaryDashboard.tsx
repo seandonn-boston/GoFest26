@@ -10,6 +10,7 @@ import { CapacityGauge } from "./CapacityGauge";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
 import { RoadOfLegends } from "./RoadOfLegends";
+import { PassEconomy } from "./PassEconomy";
 
 export function SummaryDashboard({
   summary,
@@ -79,6 +80,7 @@ export function SummaryDashboard({
           <RemoteRaidToggle capacity={summary.capacity} />
           <RoadOfLegends road={roadPlan} />
           <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
+          <PassEconomy summary={summary} />
         </>
       ) : (
         <p className="text-sm text-slate-400">
