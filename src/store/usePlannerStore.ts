@@ -9,6 +9,7 @@ import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
+import { idbGet, idbSet } from "@/lib/idbStore";
 import type { StateBackup } from "./stateBackup";
 
 export { makeDefaultInput };
@@ -104,13 +105,15 @@ export interface ScreenshotPreview {
 }
 
 /** Max imported screenshots retained (in-memory list) before evicting oldest —
- *  generous so a full-roster upload session is never truncated. */
+ *  generous so a full-roster upload session is never truncated. The whole list
+ *  (with thumbnails) persists to IndexedDB, which has ample quota. */
 const MAX_IMPORTS = 100;
-/** How many of the most-recent imports keep their (heavy data-URL) thumbnail in
- *  the persisted snapshot. Older imports still persist their small scan result —
- *  just without the preview — so a big batch can't exceed the localStorage
- *  quota and cause the whole-store write to be dropped. */
-const MAX_PERSISTED_THUMBS = 24;
+
+// Heavy, rarely-read blobs (screenshot previews + the OCR import grid) persist
+// to IndexedDB instead of the synchronous localStorage plan-state, so plan
+// writes stay tiny/instant and the screenshots get IDB's larger quota.
+const IDB_SCREENSHOTS = "screenshots";
+const IDB_IMPORTS = "imports";
 
 /**
  * One uploaded-and-scanned screenshot, persisted so the import grid + its
@@ -257,17 +260,6 @@ export function selectedInGlobalOrder(state: {
 
 // Every GO Fest research line counts toward goals by default (both on).
 const DEFAULT_RESEARCH: Record<string, boolean> = Object.fromEntries(RESEARCH_LINES.map((l) => [l.id, true]));
-
-/** Drop all but the most-recent imports' thumbnails from the PERSISTED snapshot.
- *  The live in-memory list keeps every preview; this only bounds what's written
- *  to localStorage so a large import batch can't blow the quota (which would
- *  silently drop the entire store write). Older imports keep their scan result —
- *  the grid just shows a placeholder until re-uploaded. */
-function trimPersistedImports(imports: ImportedShot[]): ImportedShot[] {
-  const keepFrom = imports.length - MAX_PERSISTED_THUMBS;
-  if (keepFrom <= 0) return imports;
-  return imports.map((s, i) => (i < keepFrom && s.thumb ? { ...s, thumb: null } : s));
-}
 
 export const usePlannerStore = create<PlannerState>()(
   persist(
@@ -509,11 +501,13 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 15,
+      version: 16,
       storage: createJSONStorage(makeSafeStorage),
-      // Persist everything, but bound the import thumbnails so a big upload batch
-      // can't exceed the storage quota and drop the whole-store write.
-      partialize: (state) => ({ ...state, imports: trimPersistedImports(state.imports) }),
+      // Keep the heavy screenshot blobs OUT of the synchronous localStorage
+      // plan-state — they persist to IndexedDB (see initScreenshotPersistence),
+      // so plan writes stay tiny and instant.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      partialize: ({ screenshots, imports, ...rest }) => rest,
       migrate: (persisted) => {
         // Backfill defaults and guard against missing/corrupted fields so the
         // store always has a valid shape. Merging DEFAULT_SETTINGS under any
@@ -536,3 +530,40 @@ export const usePlannerStore = create<PlannerState>()(
     },
   ),
 );
+
+/**
+ * Hydrate screenshots + imports from IndexedDB on the client, then write them
+ * back (debounced) whenever they change. Runs once. If IDB already holds them
+ * they're authoritative; otherwise we migrate whatever the (pre-v16 localStorage)
+ * blob loaded into the store. Failures are swallowed — screenshots simply won't
+ * persist, which never blocks the plan.
+ */
+function initScreenshotPersistence() {
+  void (async () => {
+    const [scr, imp] = await Promise.all([
+      idbGet<Record<string, ScreenshotPreview>>(IDB_SCREENSHOTS),
+      idbGet<ImportedShot[]>(IDB_IMPORTS),
+    ]);
+    const st = usePlannerStore.getState();
+    if (scr || imp) {
+      usePlannerStore.setState({ screenshots: scr ?? st.screenshots, imports: imp ?? st.imports });
+    } else if (Object.keys(st.screenshots).length || st.imports.length) {
+      // First run after the IndexedDB switch — migrate the old localStorage blob.
+      void idbSet(IDB_SCREENSHOTS, st.screenshots);
+      void idbSet(IDB_IMPORTS, st.imports);
+    }
+  })();
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  usePlannerStore.subscribe((state, prev) => {
+    if (state.screenshots === prev.screenshots && state.imports === prev.imports) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      const s = usePlannerStore.getState();
+      void idbSet(IDB_SCREENSHOTS, s.screenshots);
+      void idbSet(IDB_IMPORTS, s.imports);
+    }, 400);
+  });
+}
+
+if (typeof window !== "undefined") initScreenshotPersistence();
