@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { ESTIMATE_NOTES, CONFIDENCE_META, type Confidence } from "@/data/estimateConfidence";
+import { Disclosure } from "./Disclosure";
 
 const ORDER: Confidence[] = ["verified", "community", "estimated"];
 
@@ -15,19 +15,10 @@ function Dot({ c }: { c: Confidence }) {
  * it adds transparency without cluttering the plan.
  */
 export function EstimateConfidence() {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-lg border border-white/10 bg-gofest-bg/30 text-xs">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
-      >
-        <span className="text-slate-300">
-          <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
-          How accurate are these numbers?
-        </span>
+    <Disclosure
+      title="How accurate are these numbers?"
+      hint={
         <span className="flex items-center gap-2 text-[9px] text-slate-500">
           {ORDER.map((c) => (
             <span key={c} className="flex items-center gap-1">
@@ -35,32 +26,30 @@ export function EstimateConfidence() {
             </span>
           ))}
         </span>
-      </button>
-
-      {open ? (
-        <ul className="space-y-1.5 border-t border-white/10 px-3 py-2">
-          {ORDER.flatMap((tier) =>
-            ESTIMATE_NOTES.filter((n) => n.confidence === tier).map((n) => (
-              <li key={n.label} className="flex items-start gap-2">
-                <span className="mt-1">
-                  <Dot c={n.confidence} />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="font-medium text-slate-200">{n.label}</span>
-                    <span className="font-mono text-[11px] text-slate-400">{n.value}</span>
-                  </div>
-                  <p className="text-[10px] leading-snug text-slate-500">{n.note}</p>
+      }
+    >
+      <ul className="space-y-1.5">
+        {ORDER.flatMap((tier) =>
+          ESTIMATE_NOTES.filter((n) => n.confidence === tier).map((n) => (
+            <li key={n.label} className="flex items-start gap-2">
+              <span className="mt-1">
+                <Dot c={n.confidence} />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-medium text-slate-200">{n.label}</span>
+                  <span className="font-mono text-[11px] text-slate-400">{n.value}</span>
                 </div>
-              </li>
-            )),
-          )}
-          <li className="pt-1 text-[10px] text-slate-500">
-            Reward amounts are shown as best→worst ranges because in-game drops vary. Values live in one editable config
-            file and can be corrected the moment Niantic publishes finals.
-          </li>
-        </ul>
-      ) : null}
-    </div>
+                <p className="text-[10px] leading-snug text-slate-500">{n.note}</p>
+              </div>
+            </li>
+          )),
+        )}
+        <li className="pt-1 text-[10px] text-slate-500">
+          Reward amounts are shown as best→worst ranges because in-game drops vary. Values live in one editable config
+          file and can be corrected the moment Niantic publishes finals.
+        </li>
+      </ul>
+    </Disclosure>
   );
 }

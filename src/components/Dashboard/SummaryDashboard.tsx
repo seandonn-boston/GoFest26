@@ -6,6 +6,7 @@ import type { RoadPlan, WeekendBlockPlan } from "@/domain";
 import { formatRange } from "@/lib/format";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { Card } from "@/components/ui/Card";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { CapacityGauge } from "./CapacityGauge";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
@@ -88,12 +89,16 @@ export function SummaryDashboard({
         </p>
       )}
 
-      <p className="mt-3 text-xs text-slate-500">
-        Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer
-        lobby (~{capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s
-        catch per raid plus {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
-        {remotePool > 0 ? ` Plus ${remotePool} remote raid passes.` : ""}
-      </p>
+      <div className="mt-3">
+        <Disclosure title="How capacity is calculated">
+          <p className="text-[11px] leading-snug text-slate-500">
+            Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer
+            lobby (~{capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s
+            catch per raid plus {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
+            {remotePool > 0 ? ` Plus ${remotePool} remote raid passes.` : ""}
+          </p>
+        </Disclosure>
+      </div>
     </Card>
   );
 }
