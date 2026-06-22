@@ -15,10 +15,17 @@ const POINTER_DOWN = {
   target: { setPointerCapture() {} },
 } as unknown as ReactPointerEvent;
 
-// `committed` must keep a stable identity across renders (the real caller passes
-// a memoized array) — a fresh literal each render would retrigger the hook's
-// sync effect and loop. So each test hoists its order to a const.
 describe("useDragList", () => {
+  it("tolerates an unstable committed reference without looping", () => {
+    const onReorder = vi.fn();
+    // A fresh array literal every render — would spin the sync effect forever
+    // before the value-compare guard. If it regresses, this test times out.
+    const { result, rerender } = renderHook(() => useDragList(["a", "b", "c"], onReorder));
+    rerender();
+    rerender();
+    expect(result.current.list).toEqual(["a", "b", "c"]);
+  });
+
   it("reorders via Arrow Down / Arrow Up on a focused grip", () => {
     const onReorder = vi.fn();
     const committed = ["a", "b", "c"];

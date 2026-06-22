@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { getBoss, SORTED_BOSSES } from "@/data";
 import { FORM_META } from "@/data/formGroups";
 import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";

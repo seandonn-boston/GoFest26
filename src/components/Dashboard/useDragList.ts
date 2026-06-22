@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
+const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+
 /**
  * Pointer + keyboard drag-to-reorder for a list of ids. `committed` is the
- * source-of-truth order (should be a stable/memoized reference); `onReorder` is
- * called with the new order when a drag ends or an arrow-key move happens.
+ * source-of-truth order; `onReorder` is called with the new order when a drag
+ * ends or an arrow-key move happens.
  *
  * Returns the order to render (`list`), the id being dragged, a row-ref setter
  * for hit-testing, and the handlers to wire onto the container + each grip.
@@ -15,9 +17,12 @@ export function useDragList(committed: string[], onReorder: (ids: string[]) => v
   const [dragId, setDragId] = useState<string | null>(null);
   const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  // While not dragging, track the committed order.
+  // While not dragging, track the committed order. Compared by value (not
+  // reference) so a caller passing a fresh array each render can't ping-pong
+  // this effect into an infinite render loop.
   useEffect(() => {
-    if (!dragId) setDraft(committed);
+    if (dragId) return;
+    setDraft((cur) => (sameOrder(cur, committed) ? cur : committed));
   }, [committed, dragId]);
 
   const list = dragId ? draft : committed;
