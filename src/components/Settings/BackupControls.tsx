@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import type { StateBackup } from "@/store/stateBackup";
 import { downloadJsonBackup, readJsonBackup, readXlsxBackup } from "@/export/backupFile";
+import { buildShareUrl } from "@/lib/sharePlan";
 
 /**
  * Save / restore the whole plan to a file, so a user who's lost their browser
@@ -34,16 +35,30 @@ export function BackupControls() {
     }
   }
 
+  async function copyShareLink() {
+    setMsg(null);
+    try {
+      await navigator.clipboard.writeText(buildShareUrl());
+      setMsg({ ok: true, text: "Share link copied — anyone who opens it gets a copy of this plan." });
+    } catch {
+      setMsg({ ok: false, text: "Couldn't copy automatically — check clipboard permissions." });
+    }
+  }
+
   const btn =
-    "rounded-lg border border-white/15 bg-gofest-bg/60 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-gofest-accent2/50 hover:text-white";
+    "rounded-lg border border-white/15 bg-gofest-bg/60 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-gofest-accent2/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-slate-500">
         Lost your plan (cleared browser / new device)? Save a backup, then restore it here. JSON is the quickest;
-        the exported <span className="font-mono">.xlsx</span> can also be re-imported.
+        the exported <span className="font-mono">.xlsx</span> can also be re-imported. Or copy a share link to send the
+        whole plan to a friend.
       </p>
       <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={copyShareLink} disabled={!hasState} className={btn}>
+          🔗 Copy share link
+        </button>
         <button type="button" onClick={() => downloadJsonBackup()} className={btn}>
           ⬇ Save backup (.json)
         </button>
