@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { RegisterServiceWorker } from "@/components/pwa/RegisterServiceWorker";
 
 const TITLE = "GO Fest 2026 Raid Planner";
 const DESCRIPTION =
@@ -45,7 +46,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="text-slate-100 antialiased">{children}</body>
+      <body className="text-slate-100 antialiased">
+        <RegisterServiceWorker />
+        {children}
+      </body>
     </html>
   );
 }
