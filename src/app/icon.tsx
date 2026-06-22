@@ -1,9 +1,12 @@
 import { ImageResponse } from "next/og";
+import { SubstituteSprite } from "@/lib/substituteSprite";
 
 export const dynamic = "force-static"; // required for the static-export (Pages) build
 export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
+// Favicon: the floating Substitute voxel from the loading screen, on the app's
+// dark plum backdrop — matches the brand far better than a flat "26".
 export default function Icon() {
   return new ImageResponse(
     (
@@ -14,14 +17,10 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 38,
-          fontWeight: 900,
-          color: "#050507",
-          fontFamily: "sans-serif",
-          background: "linear-gradient(135deg, #ff58c4 0%, #b388ff 50%, #56e1ff 100%)",
+          background: "radial-gradient(120% 120% at 30% 0%, #241043 0%, #0b0712 60%, #050507 100%)",
         }}
       >
-        26
+        <SubstituteSprite cell={5} />
       </div>
     ),
     { ...size },
