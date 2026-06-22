@@ -17,7 +17,7 @@
  * attacker too; the rest carry no attacks and surface in the candy-only tier.
  */
 import { ATTACKERS, type PType } from "./attackers";
-import { SPRITE_BASE } from "./bosses";
+import { spriteUrl } from "./bosses";
 
 export interface MegaForm {
   /** Display name, e.g. "Mega Rayquaza", "Primal Kyogre". */
@@ -171,7 +171,7 @@ export const MEGAS: MegaForm[] = Object.entries(MEGA_TYPES).map(([name, types]) 
     name,
     species: atk?.species ?? megaSpecies(name),
     types,
-    sprite: SPRITE_BASE + (file ?? ""),
+    sprite: spriteUrl(file ?? ""),
     attacks: atk?.attacks ?? {},
   };
 });

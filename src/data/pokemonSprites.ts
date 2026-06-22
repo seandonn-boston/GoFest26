@@ -1,14 +1,14 @@
 /**
  * Species → icon URL, for the small sprites shown beside every copyable search
  * string. Search terms are final-evolution species names (see lib/pokemonSearch),
- * so this maps a species to its base-form Pokémon GO icon on the same PokeMiners /
- * Leek Duck asset set the roster sprites use (`pm{dex}.icon.png`).
+ * so this maps a species to its base-form Pokémon GO icon on the same PokeMiners
+ * Addressable Assets set the roster sprites use (`pm{dex}.icon.png`).
  *
  * Roster bosses already carry verified icon URLs, so those are reused directly;
  * everything else resolves by National Dex number. Unknown species return
  * undefined and the <Sprite> component falls back to a lettered chip.
  */
-import { RAID_BOSSES, SPRITE_BASE } from "./bosses";
+import { RAID_BOSSES, spriteUrl } from "./bosses";
 import { MEGAS } from "./megas";
 import { pokemonSearchName } from "@/lib/pokemonSearch";
 
@@ -42,6 +42,24 @@ const SPECIES_DEX: Record<string, number> = {
   mismagius: 429, gigalith: 526, escavalier: 589,
 };
 
+// Form-only species have no plain `pm{dex}.icon.png` on PokeMiners — they need a
+// form suffix. Verified Addressable filenames for the default/representative form.
+const DEX_FORM_FILE: Record<number, string> = {
+  555: "pm555.fGALARIAN_STANDARD.icon.png", // Galarian Darmanitan (the raid attacker)
+  641: "pm641.fINCARNATE.icon.png", // Tornadus
+  642: "pm642.fINCARNATE.icon.png", // Thundurus
+  645: "pm645.fINCARNATE.icon.png", // Landorus
+  646: "pm646.fNORMAL.icon.png", // Kyurem
+  647: "pm647.fORDINARY.icon.png", // Keldeo
+  649: "pm649.fNORMAL.icon.png", // Genesect
+  905: "pm905.fINCARNATE.icon.png", // Enamorus
+};
+
+/** Addressable sprite filename for a species' dex number (form-suffixed when needed). */
+function dexIconFile(dex: number): string {
+  return DEX_FORM_FILE[dex] ?? `pm${dex}.icon.png`;
+}
+
 // Prefer base-species dex icons (a search term IS the base species); fall back
 // to a roster boss's verified sprite for anything not in the dex table above.
 const rosterBySpecies = new Map<string, string>();
@@ -54,7 +72,7 @@ for (const b of RAID_BOSSES) {
 export function speciesIconUrl(species: string): string | undefined {
   const key = species.trim().toLowerCase();
   const dex = SPECIES_DEX[key];
-  if (dex) return `${SPRITE_BASE}pm${dex}.icon.png`;
+  if (dex) return spriteUrl(dexIconFile(dex));
   return rosterBySpecies.get(key);
 }
 
@@ -82,13 +100,13 @@ const megaSpriteByName = new Map(MEGAS.map((m) => [m.name, m.sprite]));
  * sprite chip shows the variant that's actually the relevant raid attacker.
  */
 export function attackerIconUrl(attacker: { name: string; species: string }): string | undefined {
-  return megaSpriteByName.get(attacker.name) ?? (FORM_SPRITE[attacker.name] ? SPRITE_BASE + FORM_SPRITE[attacker.name] : speciesIconUrl(attacker.species));
+  return megaSpriteByName.get(attacker.name) ?? (FORM_SPRITE[attacker.name] ? spriteUrl(FORM_SPRITE[attacker.name]) : speciesIconUrl(attacker.species));
 }
 
 /** Every sprite URL the app references — fed to the loader so they're warm. */
 export function allSpriteUrls(): string[] {
   const urls = new Set<string>();
-  for (const dex of Object.values(SPECIES_DEX)) urls.add(`${SPRITE_BASE}pm${dex}.icon.png`);
+  for (const dex of Object.values(SPECIES_DEX)) urls.add(spriteUrl(dexIconFile(dex)));
   for (const m of MEGAS) urls.add(m.sprite);
   for (const b of RAID_BOSSES) if (b.sprite) urls.add(b.sprite);
   return [...urls];

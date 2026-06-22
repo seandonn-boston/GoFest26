@@ -782,9 +782,20 @@ const ROSTER: RaidBoss[] = [
   }),
 ];
 
-// Pokémon GO sprite icon filenames (Leek Duck CDN). Collapsed multi-form groups
-// use their default/representative form's icon.
-export const SPRITE_BASE = "https://cdn.leekduck.com/assets/img/pokemon_icons/";
+// Official mined Pokémon GO artwork from PokeMiners (github.com/PokeMiners/pogo_assets).
+// The filenames below are the game's own asset names, kept in two folders by
+// scheme: the current "Addressable Assets" (pm{dex}…icon.png) and the legacy
+// dex_form set (pokemon_icon_{dex}_{form}.png). spriteUrl() routes each by prefix.
+// Collapsed multi-form groups use their default/representative form's icon.
+const POKEMINERS_IMAGES = "https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/";
+const ADDRESSABLE_BASE = `${POKEMINERS_IMAGES}Pokemon%20-%20256x256/Addressable%20Assets/`;
+const LEGACY_SPRITE_BASE = `${POKEMINERS_IMAGES}Pokemon/`;
+
+/** Full URL for a PokeMiners sprite filename (routes Addressable vs. legacy). */
+export function spriteUrl(file: string): string {
+  return (file.startsWith("pm") ? ADDRESSABLE_BASE : LEGACY_SPRITE_BASE) + file;
+}
+
 const SPRITES: Record<string, string> = {
   "mega-mewtwo-x": "pm150.fMEGA_X.icon.png",
   "mega-mewtwo-y": "pm150.fMEGA_Y.icon.png",
@@ -880,11 +891,11 @@ export const RAID_BOSSES: RaidBoss[] = ROSTER.map((b, i) => {
   return {
     ...b,
     sortPriority: i,
-    sprite: SPRITES[b.id] ? SPRITE_BASE + SPRITES[b.id] : undefined,
+    sprite: SPRITES[b.id] ? spriteUrl(SPRITES[b.id]) : undefined,
     ...(form ? { formGroup: form.group, formLabel: form.label, formPrimary: form.primary } : {}),
   };
 });
 
 /** Sprite URL for Mega Mewtwo Y (used in the combined Mewtwo card). */
-export const MEWTWO_Y_SPRITE = SPRITE_BASE + SPRITES["mega-mewtwo-y"];
-export const MEWTWO_X_SPRITE = SPRITE_BASE + SPRITES["mega-mewtwo-x"];
+export const MEWTWO_Y_SPRITE = spriteUrl(SPRITES["mega-mewtwo-y"]);
+export const MEWTWO_X_SPRITE = spriteUrl(SPRITES["mega-mewtwo-x"]);
