@@ -21,6 +21,7 @@ import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
 import { BackupControls } from "@/components/Settings/BackupControls";
 import { EstimateConfidence } from "@/components/ui/EstimateConfidence";
+import { CalibrationPanel } from "@/components/ui/CalibrationPanel";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -144,6 +145,7 @@ export default function Home() {
             <BackupControls />
           </section>
 
+          <CalibrationPanel />
           <EstimateConfidence />
 
           <Disclaimer />

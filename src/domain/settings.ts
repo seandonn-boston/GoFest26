@@ -36,7 +36,16 @@ export interface PlannerSettings {
   sleepHoursPerNight: number;
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
+  /**
+   * Observed per-raid yields the player has logged, as point estimates that
+   * OVERRIDE the assumed reward ranges (tightening the plan to their real luck).
+   * Empty = use the assumptions. Keyed by reward metric; absent = not calibrated.
+   */
+  calibration: Partial<Record<CalibrationMetric, number>>;
 }
+
+/** Reward metrics the player can calibrate to their own observed drops. */
+export type CalibrationMetric = "superMegaEnergy" | "megaEnergy" | "legendaryXl" | "megaXl";
 
 /** Below this nightly sleep, the planner warns it's ill-advised (the event is a
  *  full day of walking and sun). */
@@ -54,6 +63,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   useRemoteRaids: false,
   sleepHoursPerNight: DEFAULT_SLEEP_HOURS,
   region: DEFAULT_REGION,
+  calibration: {},
 };
 
 /** True when every planning knob is at its default (region is excluded). */

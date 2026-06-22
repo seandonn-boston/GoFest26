@@ -51,19 +51,20 @@ export function computePlanSummary(
   // target so their Candy/XL pool isn't counted twice.
   inputs = collapseForms(inputs);
 
+  const calibration = settings.calibration ?? {};
   const results: BossResult[] = [];
   for (const input of inputs) {
     if (!input.selected) continue;
     const boss = getBoss(input.bossId);
     if (!boss) continue;
-    results.push(computeBossResult(boss, input));
+    results.push(computeBossResult(boss, input, calibration));
   }
 
   // Mega Mewtwo X & Y draw their 40→50 XL/Candy from ONE shared pool, farmed
   // from BOTH days' raids — so when both forms are raided, split that leveling
   // evenly across them instead of piling the whole climb onto X's (Saturday)
   // card as if a single day had to cover it.
-  splitMewtwoLeveling(results, inputs);
+  splitMewtwoLeveling(results, inputs, calibration);
 
   let totalRaids: Range = { ...ZERO_RANGE };
   for (const r of results) totalRaids = addRange(totalRaids, r.raids);
@@ -95,7 +96,11 @@ export function computePlanSummary(
  * farmed from X (Sat) and Y (Sun) raids alike, half belongs on each form's card.
  * Only runs when BOTH forms are raided; otherwise the sole form keeps it all.
  */
-function splitMewtwoLeveling(results: BossResult[], inputs: BossInput[]): void {
+function splitMewtwoLeveling(
+  results: BossResult[],
+  inputs: BossInput[],
+  calibration: PlannerSettings["calibration"] = {},
+): void {
   const xi = inputs.find((i) => i.bossId === MEWTWO_X_ID && i.selected);
   const yi = inputs.find((i) => i.bossId === MEWTWO_Y_ID && i.selected);
   const bossX = getBoss(MEWTWO_X_ID);
@@ -146,6 +151,6 @@ function splitMewtwoLeveling(results: BossResult[], inputs: BossInput[]): void {
     const i = results.findIndex((x) => x.bossId === r.bossId);
     if (i >= 0) results[i] = r;
   };
-  replace(bossResultFromNeeds(bossX, xi, needsFor(netX.megaEnergy, xlX, candyX)));
-  replace(bossResultFromNeeds(bossY, yi, needsFor(netY.megaEnergy, xlY, candyY)));
+  replace(bossResultFromNeeds(bossX, xi, needsFor(netX.megaEnergy, xlX, candyX), calibration));
+  replace(bossResultFromNeeds(bossY, yi, needsFor(netY.megaEnergy, xlY, candyY), calibration));
 }

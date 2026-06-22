@@ -6,7 +6,7 @@ import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
-import { DEFAULT_SETTINGS, type PlannerSettings } from "@/domain/settings";
+import { DEFAULT_SETTINGS, type PlannerSettings, type CalibrationMetric } from "@/domain/settings";
 import type { BossInput, Variant } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 import { idbGet, idbSet } from "@/lib/idbStore";
@@ -203,6 +203,8 @@ interface PlannerState {
   clearImports: () => void;
   applyPreset: (bossId: string, presetId: string) => void;
   setSettings: (patch: Partial<PlannerSettings>) => void;
+  /** Log (or clear, with 0) an observed per-raid reward to calibrate the plan. */
+  setCalibration: (metric: CalibrationMetric, value: number) => void;
   resetSettings: () => void;
   resetAll: () => void;
   /** Replace the planning state from an imported backup (.json or .xlsx). */
@@ -465,6 +467,14 @@ export const usePlannerStore = create<PlannerState>()(
             downtimeSecRange: { ...state.settings.downtimeSecRange, ...patch.downtimeSecRange },
           },
         })),
+
+      setCalibration: (metric, value) =>
+        set((state) => {
+          const calibration = { ...state.settings.calibration };
+          if (value && value > 0) calibration[metric] = Math.round(value);
+          else delete calibration[metric];
+          return { settings: { ...state.settings, calibration } };
+        }),
 
       resetSettings: () => set({ settings: { ...DEFAULT_SETTINGS } }),
 
