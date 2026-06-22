@@ -22,7 +22,15 @@ const ratioBar = (a: number, r: number) => {
  * the weekend total; expands to the per-species n/k in priority order. Includes
  * remote raids. Sits at the bottom of the bars section.
  */
-export function GoalProgress({ plan, results }: { plan: WeekendBlockPlan; results: BossResult[] }) {
+export function GoalProgress({
+  plan,
+  results,
+  headStart = {},
+}: {
+  plan: WeekendBlockPlan;
+  results: BossResult[];
+  headStart?: Record<string, number>;
+}) {
   const [open, setOpen] = useState(false);
   const inputs = usePlannerStore((s) => s.inputs);
   const blockPriority = usePlannerStore((s) => s.blockPriority);
@@ -30,8 +38,8 @@ export function GoalProgress({ plan, results }: { plan: WeekendBlockPlan; result
   const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
 
   const progress = useMemo(
-    () => goalProgress(plan, results, settings, quickCatchBlocks),
-    [plan, results, settings, quickCatchBlocks],
+    () => goalProgress(plan, results, settings, quickCatchBlocks, headStart),
+    [plan, results, settings, quickCatchBlocks, headStart],
   );
   const order = useMemo(
     () => selectedInGlobalOrder({ inputs, blockPriority }).filter((id) => progress.bySpecies[id] !== undefined),

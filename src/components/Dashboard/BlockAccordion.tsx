@@ -344,7 +344,15 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
  * Bars fill to 100% in priority order, reporting any shortfall rather than
  * overflowing. Region-locked targets live only in the remote pool.
  */
-export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; results: BossResult[] }) {
+export function BlockAccordion({
+  plan,
+  results,
+  headStart = {},
+}: {
+  plan: WeekendBlockPlan;
+  results: BossResult[];
+  headStart?: Record<string, number>;
+}) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
   const toggle = (k: string) =>
@@ -388,7 +396,7 @@ export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; resu
         ) : null}
       </div>
 
-      <GoalProgress plan={plan} results={results} />
+      <GoalProgress plan={plan} results={results} headStart={headStart} />
 
       <div className="mt-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.05] p-2.5">
         <div className="text-[11px] uppercase tracking-wide text-amber-200/80">Rare Candy from these raids</div>

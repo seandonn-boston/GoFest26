@@ -3,7 +3,9 @@ import {
   autoRemoteAllocations,
   computeBlockPlan,
   computePlanSummary,
+  computeRoadPlan,
   globalPriorityFromBlocks,
+  type RoadPlan,
   type WeekendBlockPlan,
 } from "@/domain";
 import { applyResearchCredits, type ResearchCredit } from "@/domain/research";
@@ -42,28 +44,32 @@ export function usePlannerResults(): PlanSummary {
 
 /**
  * The per-habitat-block plan (capacity, Mewtwo balancing, risk bands) layered on
- * top of the summary. Separate hook so it can read the priority order, which
- * lives in the store rather than in the planner settings.
+ * top of the summary, plus the Road of Legends weekday plan. Separate hook so it
+ * can read the priority order + play-days, which live in the store rather than in
+ * the planner settings. The weekday plan's head start reduces the weekend demand.
  */
-export function useBlockPlan(summary: PlanSummary): WeekendBlockPlan {
+export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan; road: RoadPlan } {
   const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
   const settings = useDeferredValue(usePlannerStore((s) => s.settings));
   const blockPriority = useDeferredValue(usePlannerStore((s) => s.blockPriority));
   const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
   const quickCatchBlocks = useDeferredValue(usePlannerStore((s) => s.quickCatchBlocks));
-  return useMemo(
-    () =>
-      computeBlockPlan(
-        Object.values(inputs),
-        summary.results,
-        summary.capacity,
-        settings,
-        blockPriority,
-        remoteAllocations,
-        quickCatchBlocks,
-      ),
-    [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks],
-  );
+  const playDays = useDeferredValue(usePlannerStore((s) => s.playDays));
+  return useMemo(() => {
+    const list = Object.values(inputs);
+    const road = computeRoadPlan(list, summary.results, summary.capacity, settings, playDays, blockPriority);
+    const weekend = computeBlockPlan(
+      list,
+      summary.results,
+      summary.capacity,
+      settings,
+      blockPriority,
+      remoteAllocations,
+      quickCatchBlocks,
+      road.headStart,
+    );
+    return { weekend, road };
+  }, [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks, playDays]);
 }
 
 /** The id→count entries that actually matter (positive), for stable comparison. */
@@ -89,6 +95,7 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
   const blockPriority = usePlannerStore((s) => s.blockPriority);
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
+  const playDays = usePlannerStore((s) => s.playDays);
   const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
 
   useEffect(() => {
@@ -97,6 +104,9 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
     // Remote raids are an event-wide pool, so they rank by a single priority
     // derived from the per-block orders.
     const globalOrder = globalPriorityFromBlocks(blockPriority);
+    // The Road of Legends head start already covers some demand — net it out so
+    // remote isn't assigned to raids the player will do on a weekday.
+    const road = computeRoadPlan(inputList, summary.results, summary.capacity, settings, playDays, blockPriority);
     // Shortfalls must be measured with remote OFF, otherwise goals already
     // covered by the current allocation read as "met" and the budget unwinds.
     const offPlan = computeBlockPlan(
@@ -106,6 +116,8 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       { ...settings, useRemoteRaids: false },
       blockPriority,
       {},
+      {},
+      road.headStart,
     );
     const desired = autoRemoteAllocations(
       offPlan,
@@ -116,5 +128,5 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       midpoint(summary.capacity.remoteCapacity),
     );
     if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
-  }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, summary, setRemoteAllocations]);
+  }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, playDays, summary, setRemoteAllocations]);
 }

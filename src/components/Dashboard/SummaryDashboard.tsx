@@ -2,15 +2,24 @@
 
 import { useMemo } from "react";
 import type { PlanSummary } from "@/domain/types";
-import type { WeekendBlockPlan } from "@/domain";
+import type { RoadPlan, WeekendBlockPlan } from "@/domain";
 import { formatRange } from "@/lib/format";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { Card } from "@/components/ui/Card";
 import { CapacityGauge } from "./CapacityGauge";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
+import { RoadOfLegends } from "./RoadOfLegends";
 
-export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
+export function SummaryDashboard({
+  summary,
+  blockPlan,
+  roadPlan,
+}: {
+  summary: PlanSummary;
+  blockPlan: WeekendBlockPlan;
+  roadPlan: RoadPlan;
+}) {
   // Re-balance remote passes by priority while in auto mode (no-op once manual).
   useRemoteAutoBalance(summary);
   const { capacity, remotePool } = summary;
@@ -68,7 +77,8 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
           })()}
 
           <RemoteRaidToggle capacity={summary.capacity} />
-          <BlockAccordion plan={blockPlan} results={summary.results} />
+          <RoadOfLegends road={roadPlan} />
+          <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
         </>
       ) : (
         <p className="text-sm text-slate-400">

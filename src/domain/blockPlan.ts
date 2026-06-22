@@ -92,7 +92,7 @@ export interface WeekendBlockPlan {
 }
 
 /** Sizes a raids range to a single count per the configured reward case. */
-function sized(range: Range | undefined, rewardCase: PlannerSettings["rewardCase"]): number {
+export function sized(range: Range | undefined, rewardCase: PlannerSettings["rewardCase"]): number {
   if (!range) return 0;
   if (rewardCase === "optimistic") return range.min;
   if (rewardCase === "safe") return range.max;
@@ -174,7 +174,7 @@ export function bandsForSpecies(
   return bands;
 }
 
-interface RawShare {
+export interface RawShare {
   bossId: string;
   bossName: string;
   formeBossId?: string;
@@ -231,8 +231,9 @@ export function globalPriorityFromBlocks(blockPriority: Record<string, string[]>
 }
 
 /** Fill an ordered share list into a capacity, banding the part that fits and
- *  reporting the rest as shortfall. Shared by the habitat blocks and the remote pool. */
-function fillShares(
+ *  reporting the rest as shortfall. Shared by the habitat blocks, the remote pool
+ *  and the Road of Legends weekday raid-hour blocks. */
+export function fillShares(
   ordered: RawShare[],
   cap: Range,
   quickFactor = 1,
@@ -283,6 +284,7 @@ export function computeBlockPlan(
   blockPriority: Record<string, string[]> = {},
   remoteAllocations: Record<string, number> = {},
   quickCatchBlocks: Record<string, boolean> = {},
+  headStart: Record<string, number> = {},
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
   const quickFactor = capacity.quickCatchSlotFactor ?? 1;
@@ -294,6 +296,9 @@ export function computeBlockPlan(
   // Remote raids the user assigned to each species reduce that species' in-person
   // (time-block) demand — only the non-remote remainder needs to fit a block.
   const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
+  // Raids the player will knock out during the Road of Legends weekdays reduce
+  // this species' remaining weekend (in-person) demand — a head start.
+  const headFor = (id: string) => Math.max(0, Math.round(headStart[id] ?? 0));
   const rpH = capacity.raidsPerHour;
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   const inputById = new Map(inputs.map((i) => [i.bossId, i]));
@@ -319,8 +324,9 @@ export function computeBlockPlan(
     if (!boss || !res || !localOf(boss)) continue;
     const total = sized(res.raids, rewardCase);
     if (total <= 0) continue;
-    // What's left after the user does some of this species remotely.
-    const blockTotal = Math.max(0, total - remoteFor(boss.id));
+    // What's left after the user does some of this species remotely and/or
+    // during the Road of Legends weekday raid hours.
+    const blockTotal = Math.max(0, total - remoteFor(boss.id) - headFor(boss.id));
     if (blockTotal <= 0) continue;
     const scale = blockTotal / total; // shrink the candy-luck range to the in-person portion
     // A shared-resource multi-form species (Dialga, Palkia, …) spreads its one
@@ -483,6 +489,7 @@ export function goalProgress(
   results: BossResult[],
   settings: PlannerSettings = DEFAULT_SETTINGS,
   quickCatchBlocks: Record<string, boolean> = {},
+  headStart: Record<string, number> = {},
 ): GoalProgress {
   const resById = new Map(results.map((r) => [r.bossId, r]));
   // Catch-bound species (Candy / XL goal) gain nothing from quick-catch blocks;
@@ -509,7 +516,9 @@ export function goalProgress(
     const need = sized(res.raids, settings.rewardCase);
     if (need <= 0) continue;
     const fitted = (isCatchBound(res.bossId) ? fittedNormal : fittedAll).get(res.bossId) ?? 0;
-    const got = Math.min(need, fitted);
+    // Weekday Road of Legends raids already done count toward the goal too.
+    const head = Math.max(0, Math.round(headStart[res.bossId] ?? 0));
+    const got = Math.min(need, fitted + head);
     bySpecies[res.bossId] = { achievable: got, required: need };
     achievable += got;
     required += need;
