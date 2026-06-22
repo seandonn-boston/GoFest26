@@ -1,6 +1,7 @@
 import { GAME_CONFIG } from "@/data/config";
 import { ceilDiv, ZERO_RANGE } from "@/lib/math";
 import { computeNetNeed } from "./requirements";
+import type { CalibrationMetric } from "./settings";
 import type {
   BossInput,
   BossResult,
@@ -12,31 +13,46 @@ import type {
 
 const CURRENCY_ORDER: Currency[] = ["megaEnergy", "xlCandy", "candy"];
 
+type Calibration = Partial<Record<CalibrationMetric, number>>;
+
+/** Which calibratable metric (if any) a currency maps to for this boss's tier. */
+function calibrationMetric(boss: RaidBoss, currency: Currency): CalibrationMetric | null {
+  if (currency === "megaEnergy") return boss.tier === "super-mega" ? "superMegaEnergy" : "megaEnergy";
+  if (currency === "xlCandy") return boss.tier === "mega" ? "megaXl" : "legendaryXl";
+  return null; // catch Candy isn't calibrated (its +transfer/+buddy bonus is ambiguous)
+}
+
 /**
  * Per-raid reward for a currency, accounting for the catch toggles:
  * - Mega Energy comes from defeating the raid (always, even if you run).
  * - Candy = catch candy + transfer candy (+1 if a matching Mega buddy is active),
  *   and is 0 if you skip the catch.
  * - XL Candy = catch XL, 0 if you skip the catch.
+ * A logged calibration value overrides the assumed range with a point estimate.
  * Returns undefined when this boss can't yield that currency under the toggles.
  */
 function perRaidReward(
   boss: RaidBoss,
   currency: Currency,
   input: BossInput,
+  calibration: Calibration = {},
 ): Range | undefined {
   const c = GAME_CONFIG.catch;
   const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
 
-  if (currency === "megaEnergy") return boss.rewards.megaEnergy;
+  const metric = calibrationMetric(boss, currency);
+  const cal = metric ? calibration[metric] : undefined;
+  const calRange = cal && cal > 0 ? { min: cal, max: cal } : undefined;
+
+  if (currency === "megaEnergy") return calRange ?? boss.rewards.megaEnergy;
   if (skipCatch) return undefined; // ran from the encounter → no catch rewards
 
   if (currency === "candy") {
     const bonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);
     return { min: boss.rewards.candy.min + bonus, max: boss.rewards.candy.max + bonus };
   }
-  return boss.rewards.xlCandy; // xlCandy
+  return calRange ?? boss.rewards.xlCandy; // xlCandy
 }
 
 function raidsForCurrency(needed: number, reward: Range): Range {
@@ -60,8 +76,8 @@ function bindingOf(perCurrency: Partial<Record<Currency, Range>>): Currency | nu
   return binding;
 }
 
-export function computeBossResult(boss: RaidBoss, input: BossInput): BossResult {
-  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input));
+export function computeBossResult(boss: RaidBoss, input: BossInput, calibration: Calibration = {}): BossResult {
+  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input), calibration);
 }
 
 /**
@@ -74,13 +90,14 @@ export function bossResultFromNeeds(
   boss: RaidBoss,
   input: BossInput,
   net: Partial<Record<Currency, number>>,
+  calibration: Calibration = {},
 ): BossResult {
   const needs: Partial<Record<Currency, CurrencyNeed>> = {};
   const ranges: Partial<Record<Currency, Range>> = {};
 
   for (const c of CURRENCY_ORDER) {
     const needed = net[c];
-    const reward = perRaidReward(boss, c, input);
+    const reward = perRaidReward(boss, c, input, calibration);
     if (needed === undefined || needed <= 0 || !reward || reward.max <= 0) continue;
 
     const range = raidsForCurrency(needed, reward);
