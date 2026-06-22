@@ -14,6 +14,8 @@ export { computeCapacity } from "./capacity";
 export { computeSchedule } from "./scheduler";
 export { computeBlockPlan, rareCandyForecast, goalProgress, autoRemoteAllocations, globalPriorityFromBlocks, RISK_BANDS } from "./blockPlan";
 export type { BlockPlan, BlockSpeciesShare, GoalProgress, RemotePlan, RiskBand, WeekendBlockPlan } from "./blockPlan";
+export { computeRoadPlan } from "./roadOfLegends";
+export type { RoadPlan, RoadDayPlan } from "./roadOfLegends";
 export { megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies, mergeMegaBoosts } from "./megaBoosts";
 export type { MegaBoost, MegaKind } from "./megaBoosts";
 export { computeGrossRequirement, computeNetNeed } from "./requirements";

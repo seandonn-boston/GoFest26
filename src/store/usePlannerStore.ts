@@ -158,6 +158,12 @@ interface PlannerState {
    * like Mega Energy / Rare Candy). Absent = off (normal catch). Off by default.
    */
   quickCatchBlocks: Record<string, boolean>;
+  /**
+   * Which Road of Legends weekdays (Mon Jul 6 → Fri Jul 10) the player intends
+   * to raid, keyed by day id ("mon".."fri"). Those days' raid-hour throughput is
+   * a head start that reduces the weekend demand. Absent/false = not playing.
+   */
+  playDays: Record<string, boolean>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
@@ -166,6 +172,8 @@ interface PlannerState {
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
   toggleQuickCatch: (bossId: string, blockKey: string) => void;
+  /** Toggle whether the player will raid a given Road of Legends weekday. */
+  togglePlayDay: (dayId: string) => void;
   /** Record how many raids the user has completed toward a per-block target. */
   setRaidsDone: (key: string, value: number) => void;
   /** Assign remote raids to a species (caps applied by the caller). Switches off auto-balance. */
@@ -274,6 +282,10 @@ export const usePlannerStore = create<PlannerState>()(
       remoteAuto: false,
       blockPriority: {},
       quickCatchBlocks: {},
+      playDays: {},
+
+      togglePlayDay: (dayId) =>
+        set((state) => ({ playDays: { ...state.playDays, [dayId]: !state.playDays[dayId] } })),
 
       setRaidsDone: (key, value) =>
         set((state) => {
@@ -476,6 +488,7 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAuto: false,
           blockPriority: {},
           quickCatchBlocks: {},
+          playDays: {},
         }),
 
       loadState: (b) =>
@@ -491,11 +504,12 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAllocations: b.remoteAllocations ?? {},
           remoteAuto: typeof b.remoteAuto === "boolean" ? b.remoteAuto : false,
           raidsDone: b.raidsDone ?? {},
+          playDays: b.playDays ?? {},
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 14,
+      version: 15,
       storage: createJSONStorage(makeSafeStorage),
       // Persist everything, but bound the import thumbnails so a big upload batch
       // can't exceed the storage quota and drop the whole-store write.
@@ -515,6 +529,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
         if (typeof state.remoteAuto !== "boolean") state.remoteAuto = false;
+        if (!state.playDays || typeof state.playDays !== "object") state.playDays = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },

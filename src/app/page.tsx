@@ -26,7 +26,7 @@ export default function Home() {
   const inputs = usePlannerStore((s) => s.inputs);
   const resetAll = usePlannerStore((s) => s.resetAll);
   const summary = usePlannerResults();
-  const blockPlan = useBlockPlan(summary);
+  const { weekend: blockPlan, road: roadPlan } = useBlockPlan(summary);
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
@@ -125,7 +125,7 @@ export default function Home() {
             </section>
           ) : null}
 
-          <SummaryDashboard summary={summary} blockPlan={blockPlan} />
+          <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
 
           {summary.schedule.raids.length > 0 ? (
             <section className="flex flex-col gap-2">

@@ -1,0 +1,157 @@
+"use client";
+
+import { getBoss } from "@/data";
+import { ROAD_DAYS } from "@/data/roadOfLegends";
+import { RISK_BANDS, type RoadDayPlan, type RoadPlan, type RiskBand } from "@/domain";
+import { usePlannerStore } from "@/store/usePlannerStore";
+import { Sprite } from "@/components/ui/Sprite";
+
+const BAND_COLOR: Record<RiskBand, string> = {
+  blue: "bg-sky-500",
+  green: "bg-emerald-400",
+  yellow: "bg-amber-400",
+  red: "bg-rose-500",
+};
+
+/** Confidence-banded raid-hour capacity bar (mirrors the weekend blocks). */
+function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, number>; fitted: number; capacityMax: number }) {
+  const scale = Math.max(capacityMax, 1);
+  const free = Math.max(0, capacityMax - fitted);
+  const pct = (n: number) => `${(n / scale) * 100}%`;
+  return (
+    <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
+      {RISK_BANDS.map((b) => (bands[b] > 0 ? <div key={b} className={BAND_COLOR[b]} style={{ width: pct(bands[b]) }} /> : null))}
+      {free > 0 ? <div style={{ width: pct(free) }} /> : null}
+    </div>
+  );
+}
+
+const CURRENCY_CHIP: Record<string, string> = {
+  candy: "Candy",
+  xlCandy: "XL",
+  megaEnergy: "Energy",
+};
+
+/** A featured target this day: sprite, name, raids fitted, and which rewards it gives. */
+function RoadSpecies({ bossId, formeBossId, bossName, fitted }: { bossId: string; formeBossId?: string; bossName: string; fitted: number }) {
+  const boss = getBoss(formeBossId ?? bossId);
+  const rewards = boss?.rewardsCurrencies ?? ["candy", "xlCandy"];
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <Sprite src={boss?.sprite} alt={bossName} size={22} />
+      <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{bossName.replace(/^Mega /, "")}</span>
+      <div className="flex shrink-0 items-center gap-1">
+        {rewards.map((c) => (
+          <span key={c} className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[9px] uppercase tracking-wide text-slate-400">
+            {CURRENCY_CHIP[c]}
+          </span>
+        ))}
+      </div>
+      <span className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2" title="Raids you'd do this day">
+        {fitted}
+      </span>
+    </div>
+  );
+}
+
+function RoadDayCard({ day }: { day: RoadDayPlan }) {
+  const over = day.remaining > 0;
+  const used = day.species.filter((s) => s.fitted > 0);
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2">
+      <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+        <span className="truncate">
+          <span className="font-medium text-slate-200">{day.label}</span>
+          <span className="ml-1.5 text-slate-500">
+            {day.dateLabel} · Raid Hour {day.raidHourLabel}
+          </span>
+        </span>
+        <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
+          {day.fitted} raid{day.fitted === 1 ? "" : "s"}
+          {over ? ` · ${day.remaining} over` : ""}
+        </span>
+      </div>
+      <CapacityBar bands={day.bands} fitted={day.fitted} capacityMax={day.capacity.max} />
+      {used.length > 0 ? (
+        <div className="mt-1.5 divide-y divide-white/[0.04]">
+          {used.map((s) => (
+            <RoadSpecies key={s.bossId} bossId={s.bossId} formeBossId={s.formeBossId} bossName={s.bossName} fitted={s.fitted} />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-1.5 text-[11px] text-slate-500">None of your selected targets are featured this day.</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Road of Legends — a weekday day-picker that sits ABOVE the weekend habitat
+ * blocks. Tick the days you'll raid (Mon Jul 6 → Fri Jul 10); each day's Raid
+ * Hour budget is filled with your existing target selections, and whatever fits
+ * is a head start that shrinks the weekend plan below.
+ */
+export function RoadOfLegends({ road }: { road: RoadPlan }) {
+  const playDays = usePlannerStore((s) => s.playDays);
+  const togglePlayDay = usePlannerStore((s) => s.togglePlayDay);
+
+  return (
+    <div className="mt-4 rounded-lg border border-gofest-acid/25 bg-gofest-acid/[0.04] p-3">
+      <div className="mb-1 flex items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gofest-acid">Road of Legends · raid week</h3>
+        {road.totalFitted > 0 ? (
+          <span className="shrink-0 text-[11px] text-emerald-300">★ {road.totalFitted}-raid head start</span>
+        ) : null}
+      </div>
+      <p className="mb-2 text-[11px] text-slate-400">
+        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–7 PM local; Monday 6–8 PM). Your selected targets are poured
+        into each day&apos;s budget — what fits is a head start that reduces your weekend below.
+      </p>
+
+      {/* Day-picker checkbox group. */}
+      <div className="flex flex-wrap gap-1.5">
+        {ROAD_DAYS.map((d) => {
+          const on = !!playDays[d.id];
+          return (
+            <button
+              key={d.id}
+              type="button"
+              role="checkbox"
+              aria-checked={on}
+              onClick={() => togglePlayDay(d.id)}
+              className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left text-[11px] transition ${
+                on
+                  ? "border-gofest-acid/60 bg-gofest-acid/15 text-white"
+                  : "border-white/15 bg-gofest-bg/40 text-slate-300 hover:border-white/30"
+              }`}
+            >
+              <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[9px] ${on ? "border-gofest-acid bg-gofest-acid text-black" : "border-white/30"}`}>
+                {on ? "✓" : ""}
+              </span>
+              <span className="font-semibold">{d.label.slice(0, 3)}</span>
+              <span className="text-slate-400">
+                {d.dateLabel} · {d.raidHourHours}h
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Per-day raid-hour plans (only for the days that are toggled on). */}
+      {road.days.length > 0 ? (
+        <div className="mt-3 space-y-2">
+          {road.days.map((day) => (
+            <RoadDayCard key={day.id} day={day} />
+          ))}
+          <p className="text-[10px] text-slate-500">
+            During Road of Legends you get up to <b>2 free Raid Passes</b>/day, and Remote Raid Passes are <b>unlimited</b>{" "}
+            (Jul 6–12) — so a raid hour is capped by time (≈{road.days[0]?.capacity.min}–{road.days[0]?.capacity.max} raids/hour),
+            not passes.
+          </p>
+        </div>
+      ) : (
+        <p className="mt-2 text-[11px] text-slate-500">No weekdays selected — your whole plan stays on the weekend.</p>
+      )}
+    </div>
+  );
+}
