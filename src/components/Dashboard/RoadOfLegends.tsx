@@ -2,29 +2,10 @@
 
 import { getBoss } from "@/data";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
-import { RISK_BANDS, type RoadDayPlan, type RoadPlan, type RiskBand } from "@/domain";
+import { type RoadDayPlan, type RoadPlan } from "@/domain";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
-
-const BAND_COLOR: Record<RiskBand, string> = {
-  blue: "bg-sky-500",
-  green: "bg-emerald-400",
-  yellow: "bg-amber-400",
-  red: "bg-rose-500",
-};
-
-/** Confidence-banded raid-hour capacity bar (mirrors the weekend blocks). */
-function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, number>; fitted: number; capacityMax: number }) {
-  const scale = Math.max(capacityMax, 1);
-  const free = Math.max(0, capacityMax - fitted);
-  const pct = (n: number) => `${(n / scale) * 100}%`;
-  return (
-    <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
-      {RISK_BANDS.map((b) => (bands[b] > 0 ? <div key={b} className={BAND_COLOR[b]} style={{ width: pct(bands[b]) }} /> : null))}
-      {free > 0 ? <div style={{ width: pct(free) }} /> : null}
-    </div>
-  );
-}
+import { BandBar } from "@/components/ui/BandBar";
 
 const CURRENCY_CHIP: Record<string, string> = {
   candy: "Candy",
@@ -71,7 +52,7 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
           {over ? ` · ${day.remaining} over` : ""}
         </span>
       </div>
-      <CapacityBar bands={day.bands} fitted={day.fitted} capacityMax={day.capacity.max} />
+      <BandBar height="h-2.5" bands={day.bands} fitted={day.fitted} capacityMax={day.capacity.max} />
       {used.length > 0 ? (
         <div className="mt-1.5 divide-y divide-white/[0.04]">
           {used.map((s) => (
