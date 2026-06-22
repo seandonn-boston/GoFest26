@@ -20,6 +20,7 @@ import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
 import { BackupControls } from "@/components/Settings/BackupControls";
+import { EstimateConfidence } from "@/components/ui/EstimateConfidence";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -142,6 +143,8 @@ export default function Home() {
             <h2 className="text-lg font-semibold">Backup &amp; restore</h2>
             <BackupControls />
           </section>
+
+          <EstimateConfidence />
 
           <Disclaimer />
           {/* Plain text, deliberately not a mailto link (harder to scrape). */}
