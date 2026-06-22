@@ -19,42 +19,13 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
 import { MegaBoostRow, MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
 import { CopyableInline, Copyable } from "@/components/ui/Copyable";
+import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
 
-const BAND_COLOR: Record<RiskBand, string> = {
-  blue: "bg-sky-500",
-  green: "bg-emerald-400",
-  yellow: "bg-amber-400",
-  red: "bg-rose-500",
-};
-const BAND_LABEL: Record<RiskBand, string> = {
-  blue: "Guaranteed",
-  green: "Best case",
-  yellow: "Average",
-  red: "Worst case",
-};
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
 
 const blockKey = (b: BlockPlan) => `${b.day}${b.startHour}`;
-
-/** Confidence-banded capacity bar. The bar IS 100%; raids that don't fit are
- *  never drawn — they're reported as the shortfall beneath it. */
-function CapacityBar({ bands, fitted, capacityMax }: { bands: Record<RiskBand, number>; fitted: number; capacityMax: number }) {
-  const scale = Math.max(capacityMax, 1);
-  const free = Math.max(0, capacityMax - fitted);
-  const pct = (n: number) => `${(n / scale) * 100}%`;
-  return (
-    <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
-      {RISK_BANDS.map((b) =>
-        bands[b] > 0 ? (
-          <div key={b} className={BAND_COLOR[b]} style={{ width: pct(bands[b]) }} title={`${BAND_LABEL[b]}: ${bands[b]}`} />
-        ) : null,
-      )}
-      {free > 0 ? <div style={{ width: pct(free) }} /> : null}
-    </div>
-  );
-}
 
 /** One species' target in a block: a drag grip, completed (editable) / best ·
  *  avg · worst raid counts, the boss's types + candy-boost megas, and its best
@@ -270,7 +241,7 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
             {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
           </span>
         </div>
-        <CapacityBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
+        <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
         {over ? (
           <p className="mt-1 text-[11px] font-medium text-rose-300">
             ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"}{" "}can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
@@ -331,7 +302,7 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
           {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
         </span>
       </div>
-      {remote ? <CapacityBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
+      {remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
       <RemoteAllocator />
     </div>
   );
