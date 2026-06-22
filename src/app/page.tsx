@@ -20,6 +20,7 @@ import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
 import { BackupControls } from "@/components/Settings/BackupControls";
+import { SharedPlanBanner } from "@/components/Settings/SharedPlanBanner";
 import { EstimateConfidence } from "@/components/ui/EstimateConfidence";
 import { CalibrationPanel } from "@/components/ui/CalibrationPanel";
 
@@ -81,6 +82,7 @@ export default function Home() {
         </header>
 
         <div className="space-y-6">
+          <SharedPlanBanner />
           <BossList />
 
           {anySelected ? (
