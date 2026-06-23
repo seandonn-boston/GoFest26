@@ -190,6 +190,7 @@ interface PlannerState {
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
   setSkipCatch: (bossId: string, skip: boolean) => void;
   setMegaBuddy: (bossId: string, on: boolean) => void;
+  setL4Buddy: (bossId: string, on: boolean) => void;
   setResearchEnabled: (id: string, enabled: boolean, exclusiveWith?: readonly string[]) => void;
   /** Store a screenshot preview for a species — keeps only the most-recent. */
   setScreenshot: (speciesKey: string, src: string, capturedAt: number) => void;
@@ -439,6 +440,13 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs: { ...state.inputs, [bossId]: { ...input, megaBuddy: on } } };
         }),
 
+      setL4Buddy: (bossId, on) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, l4Buddy: on } } };
+        }),
+
       applyPreset: (bossId, presetId) =>
         set((state) => {
           const input = ensureInput(state, bossId);
@@ -511,7 +519,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 16,
+      version: 17, // +megaBuddyLevel setting (backfilled via DEFAULT_SETTINGS merge)
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),

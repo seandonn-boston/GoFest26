@@ -134,6 +134,10 @@ export interface BossInput {
   skipCatch?: boolean;
   /** Assume a matching Mega-Evolved buddy is active for the same-type candy bonus. */
   megaBuddy?: boolean;
+  /** Catch this boss with a Level-4 (Super Max) same-type Mega active for the
+   *  top XL-Candy boost. Only meaningful for bosses whose typing matches a
+   *  Level-4 Mega (see GAME_CONFIG.megaCatchBoost.l4Types). */
+  l4Buddy?: boolean;
 }
 
 export interface CurrencyNeed {

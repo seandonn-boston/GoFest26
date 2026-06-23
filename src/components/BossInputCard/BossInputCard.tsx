@@ -6,7 +6,8 @@ import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability } from "@/data";
 import { wildTypesForBoss } from "@/data/habitats";
-import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows, groupDisplayName } from "@/domain";
+import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows, groupDisplayName, isL4Eligible } from "@/domain";
+import { GAME_CONFIG } from "@/data/config";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -53,6 +54,8 @@ export function BossInputCard({
   const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
+  const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
+  const megaBuddyLevel = usePlannerStore((s) => s.settings.megaBuddyLevel);
   const applyPreset = usePlannerStore((s) => s.applyPreset);
   const region = usePlannerStore((s) => s.settings.region);
   const [open, setOpen] = useState(false); // cards start collapsed (inputs hidden)
@@ -63,6 +66,10 @@ export function BossInputCard({
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
   const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
+  const l4Buddy = input.l4Buddy ?? false;
+  const l4Eligible = isL4Eligible(boss);
+  // XL boost the global "assumed buddy level" implies (L1 default = +0%).
+  const globalXlPct = Math.round((GAME_CONFIG.megaCatchBoost.xlByLevel[Math.min(3, Math.max(0, megaBuddyLevel))] ?? 0) * 100);
   const toMax = xlToMaxRemaining(input.current.level, input.current.xlCandy);
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
@@ -218,8 +225,20 @@ export function BossInputCard({
         </label>
         <label className={`flex items-center gap-2 ${skipCatch ? "opacity-40" : ""}`}>
           <input type="checkbox" className="h-3.5 w-3.5 accent-gofest-accent2" checked={megaBuddy} disabled={skipCatch} onChange={(e) => setMegaBuddy(boss.id, e.target.checked)} />
-          Mega buddy same-type bonus (+1 candy/catch)
+          Mega buddy same-type bonus (+1 candy{globalXlPct > 0 ? `, +${globalXlPct}% XL` : ""}/catch)
         </label>
+        {l4Eligible ? (
+          <label className={`flex items-center gap-2 ${skipCatch || !megaBuddy ? "opacity-40" : ""}`}>
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 accent-gofest-accent2"
+              checked={l4Buddy}
+              disabled={skipCatch || !megaBuddy}
+              onChange={(e) => setL4Buddy(boss.id, e.target.checked)}
+            />
+            Catch with a Level-4 (Super Max) Mega active (+30% XL)
+          </label>
+        ) : null}
       </div>
 
       {/* Result */}

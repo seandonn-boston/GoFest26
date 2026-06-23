@@ -36,6 +36,19 @@ describe("planner store interactive actions", () => {
     expect(store().remoteAllocations.zekrom).toBe(4);
   });
 
+  it("setL4Buddy toggles the per-boss Level-4 catch flag", () => {
+    store().toggleSelected(MEWTWO_X_ID);
+    expect(store().inputs[MEWTWO_X_ID].l4Buddy ?? false).toBe(false);
+    store().setL4Buddy(MEWTWO_X_ID, true);
+    expect(store().inputs[MEWTWO_X_ID].l4Buddy).toBe(true);
+  });
+
+  it("setSettings updates the global mega-buddy level", () => {
+    expect(store().settings.megaBuddyLevel).toBe(1); // conservative default
+    store().setSettings({ megaBuddyLevel: 3 });
+    expect(store().settings.megaBuddyLevel).toBe(3);
+  });
+
   it("setCalibration stores a rounded value and clears on 0", () => {
     store().setCalibration("superMegaEnergy", 432.6);
     expect(store().settings.calibration.superMegaEnergy).toBe(433);

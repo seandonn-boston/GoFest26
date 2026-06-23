@@ -9,7 +9,7 @@ import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, Currency, PlanSummary, Range } from "./types";
 
 export * from "./types";
-export { computeBossResult } from "./raidsNeeded";
+export { computeBossResult, isL4Eligible, xlBoostFactor } from "./raidsNeeded";
 export { computeCapacity } from "./capacity";
 export { computeSchedule } from "./scheduler";
 export { computeBlockPlan, rareCandyForecast, goalProgress, autoRemoteAllocations, globalPriorityFromBlocks, RISK_BANDS } from "./blockPlan";
@@ -52,19 +52,20 @@ export function computePlanSummary(
   inputs = collapseForms(inputs);
 
   const calibration = settings.calibration ?? {};
+  const megaBuddyLevel = settings.megaBuddyLevel ?? 1;
   const results: BossResult[] = [];
   for (const input of inputs) {
     if (!input.selected) continue;
     const boss = getBoss(input.bossId);
     if (!boss) continue;
-    results.push(computeBossResult(boss, input, calibration));
+    results.push(computeBossResult(boss, input, calibration, megaBuddyLevel));
   }
 
   // Mega Mewtwo X & Y draw their 40→50 XL/Candy from ONE shared pool, farmed
   // from BOTH days' raids — so when both forms are raided, split that leveling
   // evenly across them instead of piling the whole climb onto X's (Saturday)
   // card as if a single day had to cover it.
-  splitMewtwoLeveling(results, inputs, calibration);
+  splitMewtwoLeveling(results, inputs, calibration, megaBuddyLevel);
 
   let totalRaids: Range = { ...ZERO_RANGE };
   for (const r of results) totalRaids = addRange(totalRaids, r.raids);
@@ -100,6 +101,7 @@ function splitMewtwoLeveling(
   results: BossResult[],
   inputs: BossInput[],
   calibration: PlannerSettings["calibration"] = {},
+  megaBuddyLevel = 1,
 ): void {
   const xi = inputs.find((i) => i.bossId === MEWTWO_X_ID && i.selected);
   const yi = inputs.find((i) => i.bossId === MEWTWO_Y_ID && i.selected);
@@ -151,6 +153,6 @@ function splitMewtwoLeveling(
     const i = results.findIndex((x) => x.bossId === r.bossId);
     if (i >= 0) results[i] = r;
   };
-  replace(bossResultFromNeeds(bossX, xi, needsFor(netX.megaEnergy, xlX, candyX), calibration));
-  replace(bossResultFromNeeds(bossY, yi, needsFor(netY.megaEnergy, xlY, candyY), calibration));
+  replace(bossResultFromNeeds(bossX, xi, needsFor(netX.megaEnergy, xlX, candyX), calibration, megaBuddyLevel));
+  replace(bossResultFromNeeds(bossY, yi, needsFor(netY.megaEnergy, xlY, candyY), calibration, megaBuddyLevel));
 }
