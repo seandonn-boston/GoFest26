@@ -4,6 +4,8 @@ import { computeCapacity } from "./capacity";
 import { collapseForms } from "./forms";
 import { computeBossResult } from "./raidsNeeded";
 import { computeMewtwoResults } from "./mewtwo";
+export { computeMewtwoResults, perMewtwoCopyNeeds } from "./mewtwo";
+export type { MewtwoCopyNeed } from "./mewtwo";
 import { computeSchedule } from "./scheduler";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, PlanSummary, Range } from "./types";
