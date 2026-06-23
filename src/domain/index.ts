@@ -42,6 +42,8 @@ export {
   groupSpansBothDays,
 } from "./forms";
 
+export { energyRaidsNeeded, energyRemaining, defaultEnergyGoal } from "./fusionEnergy";
+
 /**
  * Top-level engine entry point: given the user's per-boss inputs, computes
  * results for every selected boss plus an aggregate capacity/feasibility view.

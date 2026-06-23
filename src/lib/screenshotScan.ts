@@ -993,6 +993,32 @@ export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[
     .filter((v): v is number => v !== undefined);
 }
 
+/**
+ * Pull fusion / crowned / primal energy values out of a scan for one boss's
+ * energy goals, keyed by goal key. Fusion/crowned flavors (volt/blaze/solar/…)
+ * each name exactly one species, so the flavor alone identifies them; "primal"
+ * is shared by Groudon and Kyogre, so it additionally matches the boss species.
+ */
+export function fusionEnergyFromScan(
+  energies: EnergyHit[],
+  bossName: string,
+  goals: { key: string; flavor: string }[],
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  const bkey = speciesKey(bossName);
+  for (const g of goals) {
+    const match = energies.find((e) => {
+      if ((e.flavor ?? null) !== g.flavor) return false;
+      if (g.flavor !== "primal") return true;
+      if (!e.species) return false;
+      const score = editDistance(e.species, bkey) / Math.max(e.species.length, bkey.length, 1);
+      return score <= 0.34;
+    });
+    if (match && match.value > 0) out[g.key] = match.value;
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------

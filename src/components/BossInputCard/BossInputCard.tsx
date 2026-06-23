@@ -24,11 +24,13 @@ import { Copyable } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { speciesKey } from "@/lib/pokemonSearch";
-import { energyForBosses } from "@/lib/screenshotScan";
+import { energyForBosses, fusionEnergyFromScan } from "@/lib/screenshotScan";
+import { energyGoalsFor } from "@/data/energyGoals";
 import { PresetPicker } from "./PresetPicker";
 import { CardScan } from "./CardScan";
 import { CounterTable } from "./CounterTable";
 import { CopiesEditor } from "./CopiesEditor";
+import { FusionEnergyPanel } from "./FusionEnergyPanel";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -60,6 +62,7 @@ export function BossInputCard({
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
+  const setEnergy = usePlannerStore((s) => s.setEnergy);
   const megaBuddyLevel = usePlannerStore((s) => s.settings.megaBuddyLevel);
   const calibration = usePlannerStore((s) => s.settings.calibration);
   const applyPreset = usePlannerStore((s) => s.applyPreset);
@@ -180,6 +183,12 @@ export function BossInputCard({
               if (boss.rewardsCurrencies.includes("megaEnergy")) {
                 const [v] = energyForBosses(s.megaEnergies, [boss]);
                 if (v !== undefined) setCurrent(boss.id, "megaEnergy", v);
+              }
+              // Tether scanned Fusion / Crowned / Primal energy to this boss's goals.
+              const goals = energyGoalsFor(boss.id);
+              if (goals.length > 0) {
+                const have = fusionEnergyFromScan(s.megaEnergies, boss.name, goals);
+                for (const [key, value] of Object.entries(have)) setEnergy(boss.id, key, { have: value });
               }
             }}
           />
@@ -341,6 +350,10 @@ export function BossInputCard({
           </>
         )}
       </div>
+
+      {/* Fusion / Crowned / Primal energy goals (Kyurem, Necrozma, Zacian,
+          Zamazenta, Groudon, Kyogre) — earned in Road of Legends week. */}
+      <FusionEnergyPanel bossId={boss.id} bossName={boss.name} />
 
       {/* Counters + mega suggestions, kept separate PER FORME (formes can differ).
           For a single-form boss this is just one section with no forme label. */}

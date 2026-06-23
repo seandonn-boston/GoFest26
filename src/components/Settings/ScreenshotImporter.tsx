@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 import { RAID_BOSSES, getBoss } from "@/data";
+import { energyGoalsFor } from "@/data/energyGoals";
 import type { RaidBoss } from "@/domain/types";
 import { primaryFormId, groupDisplayName } from "@/domain";
 import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
-import { scanScreenshot, energyForBosses, type ScanResult } from "@/lib/screenshotScan";
+import { scanScreenshot, energyForBosses, fusionEnergyFromScan, type ScanResult } from "@/lib/screenshotScan";
 import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
@@ -67,6 +68,7 @@ function applyScan(
   bosses: RaidBoss[],
   setSelected: (id: string, v: boolean) => void,
   setCurrent: (id: string, field: CurrentField, v: number) => void,
+  setEnergy: (id: string, key: string, patch: { have: number }) => void,
 ) {
   const sorted = [...bosses].sort((a, b) => a.sortPriority - b.sortPriority);
   for (const b of sorted) setSelected(b.id, true);
@@ -79,6 +81,13 @@ function applyScan(
   energyBosses.forEach((b, i) => {
     if (vals[i] !== undefined) setCurrent(b.id, "megaEnergy", vals[i]);
   });
+  // Fusion / Crowned / Primal energy → each base boss's energy goals.
+  for (const b of sorted) {
+    const goals = energyGoalsFor(b.id);
+    if (goals.length === 0) continue;
+    const have = fusionEnergyFromScan(scan.megaEnergies, b.name, goals);
+    for (const [key, value] of Object.entries(have)) setEnergy(b.id, key, { have: value });
+  }
 }
 
 /**
@@ -91,6 +100,7 @@ function applyScan(
 export function ScreenshotImporter() {
   const setSelected = usePlannerStore((s) => s.setSelected);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
+  const setEnergy = usePlannerStore((s) => s.setEnergy);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const imports = usePlannerStore((s) => s.imports);
   const addImports = usePlannerStore((s) => s.addImports);
@@ -173,7 +183,7 @@ export function ScreenshotImporter() {
   function applyOne(s: ImportedShot) {
     const opt = OPTION_BY_KEY.get(s.key);
     if (!opt) return;
-    applyScan(s.scan, opt.bosses, setSelected, setCurrent);
+    applyScan(s.scan, opt.bosses, setSelected, setCurrent, setEnergy);
     if (s.thumb) setScreenshot(s.key, s.thumb, s.scan.capturedAt);
     setSummary(`Filled ${opt.label}.`);
   }
@@ -190,7 +200,7 @@ export function ScreenshotImporter() {
     const labels = new Set<string>();
     for (const s of byKey.values()) {
       const opt = OPTION_BY_KEY.get(s.key)!;
-      applyScan(s.scan, opt.bosses, setSelected, setCurrent);
+      applyScan(s.scan, opt.bosses, setSelected, setCurrent, setEnergy);
       if (s.thumb) setScreenshot(s.key, s.thumb, s.scan.capturedAt);
       labels.add(opt.label);
     }

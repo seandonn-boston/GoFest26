@@ -93,6 +93,18 @@ export const ESTIMATE_NOTES: EstimateNote[] = [
     confidence: "community",
     note: "Coarse community approximation; rarely the binding currency for a L50 goal.",
   },
+  {
+    label: "Fusion / Crowned costs",
+    value: "1,000 to fuse/crown · 400 first Primal revert (80 after)",
+    confidence: "community",
+    note: "Kyurem/Necrozma fusion, Zacian/Zamazenta crowning, and Primal reversion costs from in-game/community data.",
+  },
+  {
+    label: "Fusion / Primal energy per raid",
+    value: "~80–140 fusion·crowned · ~80–100 primal",
+    confidence: "estimated",
+    note: "Scales with raid speed + damage; per the Jan 2026 Kyurem & Necrozma Fusion Raid Days. Shown as a range.",
+  },
   // ---- Estimated ----
   {
     label: "Mega Energy per raid",
