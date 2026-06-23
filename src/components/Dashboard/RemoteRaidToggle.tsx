@@ -85,11 +85,12 @@ export function RemoteRaidToggle({ capacity }: { capacity: CapacityModel }) {
             outside the event, ≈ <span className="font-mono text-slate-200">{capRaids}</span> remote raids over the weekend.
           </p>
           <p className="mt-1 text-[11px] text-slate-500">
-            <span className="font-mono text-slate-300">{assigned}</span> remote raids assigned below
+            <span className="font-mono text-slate-300">{assigned}</span> remote raids assigned so far
             {assigned > capRaids ? (
               <span className="text-rose-300"> — {assigned - capRaids} more than fit your remote time</span>
             ) : null}
-            . Region-locked targets are filled first, then your priority order.
+            . Region-locked targets are filled first, then your priority order — fine-tune how many of
+            each on the results step.
           </p>
           {lowSleep ? (
             <p className="mt-1.5 rounded-sm border border-rose-400/40 bg-rose-500/10 p-2 text-[10px] leading-relaxed text-rose-200">

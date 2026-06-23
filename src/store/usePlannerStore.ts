@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, HABITATS } from "@/data";
+import { blockKey } from "@/data/habitats";
 import { FORM_META } from "@/data/formGroups";
 import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
@@ -222,6 +223,13 @@ interface PlannerState {
    */
   blockPriority: Record<string, string[]>;
   /**
+   * A single, canonical priority order over ALL selected targets (highest
+   * first), set on the "Prioritize" step. Reordering it seeds every habitat
+   * block's `blockPriority`, so one ranking drives the whole plan; the results
+   * view can still override an individual block's order on top of this.
+   */
+  globalPriority: string[];
+  /**
    * Per species, per time block: `${bossId}@${blockKey}` → true means quick-catch
    * those raids (saves time but forfeits catch Candy/XL — only completion rewards
    * like Mega Energy / Rare Candy). Absent = off (normal catch). Off by default.
@@ -250,6 +258,8 @@ interface PlannerState {
   moveMewtwoCopy: (copyId: string, dir: -1 | 1) => void;
   /** Set one block's priority order (highest first). */
   setBlockPriority: (blockKey: string, ids: string[]) => void;
+  /** Set the single global priority order; seeds every block's order. */
+  setGlobalPriority: (ids: string[]) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
   toggleQuickCatch: (bossId: string, blockKey: string) => void;
   /** Toggle whether the player will raid a given Road of Legends weekday. */
@@ -338,6 +348,29 @@ export function selectedInGlobalOrder(state: {
     .sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
 }
 
+/**
+ * Selected targets (one row per shared-resource species) ordered by the
+ * canonical `globalPriority`, with any not-yet-ranked selections appended in
+ * roster order. Drives the global priority list on the Prioritize step.
+ */
+export function selectedInPriorityOrder(state: {
+  inputs: Record<string, BossInput>;
+  globalPriority: string[];
+}): string[] {
+  const rank = new Map(state.globalPriority.map((id, i) => [id, i] as const));
+  return SORTED_BOSSES.filter((b) => {
+    if (!state.inputs[b.id]?.selected) return false;
+    const m = FORM_META.get(b.id);
+    return !m || m.primary; // collapse a multi-form species to its primary forme
+  })
+    .map((b) => b.id)
+    .sort(
+      (a, b) =>
+        (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity) ||
+        (getBoss(a)?.sortPriority ?? 0) - (getBoss(b)?.sortPriority ?? 0),
+    );
+}
+
 // Every GO Fest research line counts toward goals by default (both on).
 const DEFAULT_RESEARCH: Record<string, boolean> = Object.fromEntries(RESEARCH_LINES.map((l) => [l.id, true]));
 
@@ -353,6 +386,7 @@ export const usePlannerStore = create<PlannerState>()(
       remoteAllocations: {},
       remoteAuto: false,
       blockPriority: {},
+      globalPriority: [],
       quickCatchBlocks: {},
       playDays: {},
 
@@ -593,6 +627,17 @@ export const usePlannerStore = create<PlannerState>()(
       setBlockPriority: (blockKey, ids) =>
         set((state) => ({ blockPriority: { ...state.blockPriority, [blockKey]: ids } })),
 
+      setGlobalPriority: (ids) =>
+        set((state) => {
+          // One ranking drives every block: write the full ordered id list into
+          // each habitat block's priority. A block only ranks the ids it
+          // actually contains (the rest are ignored), so the same list works
+          // for all six blocks; a later per-block drag overrides just that block.
+          const blockPriority = { ...state.blockPriority };
+          for (const h of HABITATS) blockPriority[blockKey(h.day, h.startHour)] = ids;
+          return { globalPriority: ids, blockPriority };
+        }),
+
       toggleQuickCatch: (bossId, blockKey) =>
         set((state) => {
           const key = `${bossId}@${blockKey}`;
@@ -707,6 +752,7 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAllocations: {},
           remoteAuto: false,
           blockPriority: {},
+          globalPriority: [],
           quickCatchBlocks: {},
           playDays: {},
         }),
@@ -720,6 +766,7 @@ export const usePlannerStore = create<PlannerState>()(
           settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) },
           research: b.research && Object.keys(b.research).length ? b.research : { ...DEFAULT_RESEARCH },
           blockPriority: b.blockPriority ?? {},
+          globalPriority: b.globalPriority ?? [],
           quickCatchBlocks: b.quickCatchBlocks ?? {},
           remoteAllocations: b.remoteAllocations ?? {},
           remoteAuto: typeof b.remoteAuto === "boolean" ? b.remoteAuto : false,
@@ -729,7 +776,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 17, // +megaBuddyLevel setting (backfilled via DEFAULT_SETTINGS merge)
+      version: 18, // +globalPriority (canonical priority list; backfilled to [])
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),
@@ -747,6 +794,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.screenshots) state.screenshots = {};
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!state.blockPriority || typeof state.blockPriority !== "object") state.blockPriority = {};
+        if (!Array.isArray(state.globalPriority)) state.globalPriority = [];
         if (!state.quickCatchBlocks || typeof state.quickCatchBlocks !== "object") state.quickCatchBlocks = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};

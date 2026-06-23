@@ -8,9 +8,7 @@ import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { CapacityGauge } from "./CapacityGauge";
-import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
-import { RoadOfLegends } from "./RoadOfLegends";
 import { PassEconomy } from "./PassEconomy";
 
 export function SummaryDashboard({
@@ -48,7 +46,7 @@ export function SummaryDashboard({
 
   return (
     <Card className="p-4">
-      <h2 className="mb-3 text-lg font-semibold">3. Plan your weekend</h2>
+      <h2 className="mb-3 text-lg font-semibold">Your weekend plan</h2>
 
       <div className="mb-4 grid grid-cols-3 gap-4">
         <Stat label="Total raids needed" value={formatRange(summary.totalRaids)} accent="text-gofest-accent2" />
@@ -78,8 +76,6 @@ export function SummaryDashboard({
             );
           })()}
 
-          <RemoteRaidToggle capacity={summary.capacity} />
-          <RoadOfLegends road={roadPlan} />
           <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
           <PassEconomy summary={summary} />
         </>
