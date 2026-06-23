@@ -167,6 +167,62 @@ export function explainHeadStart(days: { label: string; fitted: number }[], tota
   return { title: "Road of Legends head start", lines };
 }
 
+/** A habitat block: how its time capacity meets the raids demanded there. */
+export function explainBlockFit(capacity: Range, demand: number, fitted: number, remaining: number): Explanation {
+  const free = Math.max(0, capacity.max - fitted);
+  const lines: ExplainLine[] = [
+    { tokens: [txt("This 3-hour block fits ≈"), out(`${rng(capacity)}`), txt("raids (time)")] },
+    { tokens: [txt("Demand"), out(`${fmtN(demand)}`), txt("→ fits"), out(`${fmtN(fitted)}`)] },
+  ];
+  if (remaining > 0) {
+    lines.push({ tokens: [out(`${fmtN(remaining)}`), txt("won't fit — lowest priority is cut first")] });
+  } else if (free > 0) {
+    lines.push({ tokens: [out(`${fmtN(free)}`), txt("raids to spare")] });
+  }
+  return { title: "Raids this block", lines };
+}
+
+/** The remote-raid pool: time budget vs. the raids you assigned to it. */
+export function explainRemoteFit(capacity: number, demand: number, fitted: number, remaining: number): Explanation {
+  const lines: ExplainLine[] = [
+    { tokens: [txt("Remote time budget ≈"), out(`${fmtN(capacity)}`), txt("raids (waking hours outside the event)")] },
+    { tokens: [txt("Assigned"), out(`${fmtN(demand)}`), txt("→ fits"), out(`${fmtN(fitted)}`)] },
+  ];
+  if (remaining > 0) {
+    lines.push({ tokens: [out(`${fmtN(remaining)}`), txt("beyond your remote time")] });
+  }
+  return { title: "Remote raids", lines };
+}
+
+/** One species' share of a block: its candy-luck range and how much fits here. */
+export function explainBlockShare(
+  bossName: string,
+  raids: number,
+  range: Range,
+  fitted: number,
+  remaining: number,
+): Explanation {
+  const avg = Math.min(range.max, Math.max(range.min, Math.round((range.min + range.max) / 2)));
+  const lines: ExplainLine[] = [
+    {
+      tokens: [
+        txt("Candy-luck:"),
+        out(`${fmtN(range.min)}`),
+        txt("best ·"),
+        out(`${fmtN(avg)}`),
+        txt("avg ·"),
+        out(`${fmtN(range.max)}`),
+        txt("worst"),
+      ],
+    },
+    { tokens: [txt("Fits"), out(`${fmtN(fitted)}`), txt("of"), out(`${fmtN(raids)}`), txt("planned here")] },
+  ];
+  if (remaining > 0) {
+    lines.push({ tokens: [out(`${fmtN(remaining)}`), txt("cut by capacity / priority")] });
+  }
+  return { title: `${bossName} · this block`, lines };
+}
+
 /** PokéCoin pass cost: free passes first, then paid Premium / Remote / Link Charges. */
 export function explainPassCost(cost: PassCost): Explanation {
   const lines: ExplainLine[] = [

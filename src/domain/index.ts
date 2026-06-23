@@ -25,6 +25,9 @@ export {
   explainRareCandy,
   explainRoadDay,
   explainHeadStart,
+  explainBlockFit,
+  explainRemoteFit,
+  explainBlockShare,
 } from "./explainPlan";
 export type { Explanation } from "./explainPlan";
 export { computeCapacity } from "./capacity";

@@ -9,6 +9,9 @@ import {
   explainRareCandy,
   explainRoadDay,
   explainHeadStart,
+  explainBlockFit,
+  explainRemoteFit,
+  explainBlockShare,
 } from "./explainPlan";
 import { computeCapacity } from "./capacity";
 import type { Explanation } from "./explainPlan";
@@ -151,5 +154,37 @@ describe("explainHeadStart", () => {
     expect(t).toContain("Friday");
     expect(t).not.toContain("Tuesday");
     expect(t).toContain("7 raids");
+  });
+});
+
+describe("explainBlockFit", () => {
+  it("reports a shortfall when demand exceeds what fits", () => {
+    const t = text(explainBlockFit({ min: 10, max: 14 }, 18, 14, 4));
+    expect(t).toContain("10–14");
+    expect(t).toContain("won't fit");
+  });
+
+  it("reports spare capacity when everything fits", () => {
+    const t = text(explainBlockFit({ min: 10, max: 14 }, 6, 6, 0));
+    expect(t).toContain("to spare");
+  });
+});
+
+describe("explainRemoteFit", () => {
+  it("shows the time budget and beyond-time overflow", () => {
+    const t = text(explainRemoteFit(30, 35, 30, 5));
+    expect(t).toContain("30");
+    expect(t).toContain("beyond your remote time");
+  });
+});
+
+describe("explainBlockShare", () => {
+  it("shows the candy-luck range (with a clamped average) and what fits", () => {
+    const exp = explainBlockShare("Zekrom", 5, { min: 4, max: 6 }, 5, 0);
+    expect(exp.title).toContain("Zekrom");
+    const t = text(exp);
+    expect(t).toContain("4"); // best
+    expect(t).toContain("5"); // avg / fits
+    expect(t).toContain("6"); // worst
   });
 });

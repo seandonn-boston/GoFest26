@@ -6,7 +6,17 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
-import { RISK_BANDS, rareCandyForecast, explainRareCandy, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
+import {
+  RISK_BANDS,
+  rareCandyForecast,
+  explainRareCandy,
+  explainBlockFit,
+  explainRemoteFit,
+  explainBlockShare,
+  megaBoostsForBoss,
+  blockMegaBoosts,
+  megaBoostSpecies,
+} from "@/domain";
 import { ExplainValue } from "@/components/ui/ExplainValue";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters } from "@/domain/counters";
@@ -93,9 +103,23 @@ function TargetCard({
             className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
           />
           <span className="text-slate-500">/</span>
-          <span className="text-emerald-400" title="Best case (fewest raids)">{g}</span>
-          <span className="text-amber-400" title="Average">{y}</span>
-          <span className="text-rose-400" title="Worst case (most raids)">{r}</span>
+          <ExplainValue
+            label={`How ${share.bossName.replace(/^Mega /, "")}'s raid counts are calculated`}
+            trigger={
+              <span className="flex items-center gap-1">
+                <span className="text-emerald-400" title="Best case (fewest raids)">{g}</span>
+                <span className="text-amber-400" title="Average">{y}</span>
+                <span className="text-rose-400" title="Worst case (most raids)">{r}</span>
+              </span>
+            }
+            explanation={explainBlockShare(
+              share.bossName.replace(/^Mega /, ""),
+              share.raids,
+              share.range,
+              share.fitted,
+              share.remaining,
+            )}
+          />
         </div>
 
         {share.remaining > 0 ? (
@@ -228,27 +252,42 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02]">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
+      <div className="px-2.5 py-2">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-          <span className="truncate">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            className="flex min-w-0 flex-1 items-baseline truncate text-left"
+          >
             <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
             <span className="font-medium text-slate-200">{block.name}</span>
             <span className="ml-1.5 text-slate-500">
               {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}
             </span>
-          </span>
+          </button>
           <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-            {block.fitted} raid{block.fitted === 1 ? "" : "s"}
-            {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
+            <ExplainValue
+              label="How this block's raid count is calculated"
+              trigger={
+                <span>
+                  {block.fitted} raid{block.fitted === 1 ? "" : "s"}
+                  {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
+                </span>
+              }
+              explanation={explainBlockFit(block.capacity, block.demand, block.fitted, block.remaining)}
+            />
           </span>
         </div>
-        <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
-        {over ? (
-          <p className="mt-1 text-[11px] font-medium text-rose-300">
-            ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"}{" "}can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
-          </p>
-        ) : null}
-      </button>
+        <button type="button" onClick={onToggle} aria-label={`Toggle ${block.name}`} className="block w-full text-left">
+          <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
+          {over ? (
+            <p className="mt-1 text-[11px] font-medium text-rose-300">
+              ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"}{" "}can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
+            </p>
+          ) : null}
+        </button>
+      </div>
 
       {open ? (
         <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2" {...drag.containerProps}>
@@ -300,7 +339,15 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
       <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
         <span className="font-medium text-gofest-accent">Remote raids</span>
         <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
+          {remote ? (
+            <ExplainValue
+              label="How the remote raid count is calculated"
+              trigger={<span>{fitted} to do{over ? ` · ${remote.remaining} beyond your remote time` : ""}</span>}
+              explanation={explainRemoteFit(remote.capacity, remote.demand, remote.fitted, remote.remaining)}
+            />
+          ) : (
+            `${fitted} to do`
+          )}
         </span>
       </div>
       {remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
