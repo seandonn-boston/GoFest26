@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { computePassCost } from "@/domain";
 import type { PlanSummary } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { PassCoverageSummary } from "./PassCoverage";
 
 const coins = (n: number) => `${Math.round(n).toLocaleString()}`;
 
@@ -42,7 +43,16 @@ export function PassEconomy({ summary }: { summary: PlanSummary }) {
 
   return (
     <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-300/[0.04] p-3">
-      <h3 className="text-sm font-semibold text-amber-200">Pass cost · PokéCoins</h3>
+      <h3 className="text-sm font-semibold text-amber-200">Passes &amp; cost</h3>
+
+      {/* Have / need / buy, allocated by priority — then the PokéCoin cost. */}
+      <div className="mt-2">
+        <PassCoverageSummary summary={summary} />
+      </div>
+
+      <h4 className="mt-3 text-xs font-semibold uppercase tracking-wide text-amber-200/80">
+        PokéCoin cost · all passes after free dailies
+      </h4>
 
       {!cost.hasCost ? (
         <p className="mt-1 text-xs text-emerald-300">

@@ -43,6 +43,8 @@ export {
 } from "./forms";
 
 export { energyRaidsNeeded, energyRemaining, defaultEnergyGoal } from "./fusionEnergy";
+export { computePassCoverage } from "./passCoverage";
+export type { PassCoverage, SpeciesPassNeed, SpeciesPassCoverage } from "./passCoverage";
 
 /**
  * Top-level engine entry point: given the user's per-boss inputs, computes

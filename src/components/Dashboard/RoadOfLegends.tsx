@@ -2,10 +2,14 @@
 
 import { getBoss } from "@/data";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
-import { type RoadDayPlan, type RoadPlan } from "@/domain";
+import { energyGoalsForDay, ENERGY_ROAD_DAYS } from "@/data/energyGoals";
+import { type RoadDayPlan, type RoadPlan, energyRaidsNeeded, energyRemaining } from "@/domain";
+import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
+
+const stripForme = (name: string) => name.replace(/^Mega /, "").replace(/\s*\(.*\)/, "");
 
 const CURRENCY_CHIP: Record<string, string> = {
   candy: "Candy",
@@ -31,6 +35,52 @@ function RoadSpecies({ bossId, formeBossId, bossName, fitted }: { bossId: string
       <span className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2" title="Raids you'd do this day">
         {fitted}
       </span>
+    </div>
+  );
+}
+
+/** Fusion / Crowned / Primal raids featured this day, tied to the user's energy
+ *  goals — shows the raids still needed when a goal is active, else a hint to
+ *  enable it on the base Pokémon's card. */
+function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
+  const inputs = usePlannerStore((s) => s.inputs);
+  const goals = energyGoalsForDay(roadDayId);
+  if (goals.length === 0) return null;
+  return (
+    <div className="mt-2 border-t border-white/10 pt-2">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-300">
+        ⚡ Fusion / Primal raids today
+      </div>
+      <div className="space-y-1">
+        {goals.map(({ bossId, def }) => {
+          const progress = inputs[bossId]?.energy?.[def.key];
+          const on = progress?.on ?? false;
+          const have = progress?.have ?? 0;
+          const goal = progress && progress.goal > 0 ? progress.goal : def.cost;
+          const remaining = energyRemaining(have, goal);
+          const raids = energyRaidsNeeded(have, goal, def.perRaid);
+          const boss = getBoss(bossId);
+          return (
+            <div key={`${bossId}-${def.key}`} className="flex items-center gap-2 text-[11px]">
+              <Sprite src={boss?.sprite} alt={def.source} size={18} />
+              <span className="min-w-0 flex-1 truncate text-slate-200">{def.source}</span>
+              {on ? (
+                remaining > 0 ? (
+                  <span className="shrink-0 text-cyan-200">
+                    ≈<b>{formatRange(raids)}</b> raids · {formatNumber(remaining)} to go
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-emerald-300">✓ enough banked</span>
+                )
+              ) : (
+                <span className="shrink-0 text-slate-500">
+                  {def.label} — enable on {stripForme(boss?.name ?? bossId)}&apos;s card
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -68,6 +118,7 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       ) : (
         <p className="mt-1.5 text-[11px] text-slate-500">None of your selected targets are featured this day.</p>
       )}
+      <RoadDayEnergy roadDayId={day.id} />
     </div>
   );
 }
@@ -136,6 +187,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
               <span className="text-slate-400">
                 {d.dateLabel} · {d.raidHourHours}h
               </span>
+              {ENERGY_ROAD_DAYS.has(d.id) ? (
+                <span className="text-cyan-300" title="Fusion / Primal energy raids this day">⚡</span>
+              ) : null}
             </button>
           );
         })}

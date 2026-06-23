@@ -19,7 +19,7 @@ import { FORM_META } from "./formGroups";
  * the player can raid them locally or must remote raid.
  */
 
-const { megaRewards, catch: catchRewards, genericMegaLevelTotals } = GAME_CONFIG;
+const { megaRewards, catch: catchRewards } = GAME_CONFIG;
 
 const w = (day: EventDay, startHour: number, endHour: number): HabitatWindow => ({
   day,
@@ -31,12 +31,23 @@ const w = (day: EventDay, startHour: number, endHour: number): HabitatWindow => 
 // the first evolution (7,500); the level-4 total (~18,580) is the reported value.
 const MEWTWO_ENERGY_TOTALS = [0, 7500, 10080, 13580, 18580];
 
+// Cumulative Mega Energy to reach Mega Level 0..3 from a species' first-evolution
+// cost F: F first-evolves to Mega Level 1, then the level-ups follow the generic
+// curve shape (each re-evolution costs 20% of F). F=200 reproduces
+// GAME_CONFIG.genericMegaLevelTotals ([0, 200, 360, 560]); pseudo-legendaries
+// (Tyranitar, Salamence, Metagross, Garchomp) cost F=300, Pidgeot/Beedrill F=100.
+function megaLevelTotalsFromFirst(first: number): number[] {
+  return [0, first, Math.round(first * 1.8), Math.round(first * 2.8)];
+}
+
 interface MegaOpts {
   id: string;
   name: string;
   types: string[];
   windows: HabitatWindow[];
   counters: string[];
+  /** First-evolution Mega Energy cost (default 200). Drives the whole level curve. */
+  megaFirst?: number;
   note?: string;
 }
 
@@ -52,7 +63,7 @@ function mega(o: MegaOpts): RaidBoss {
     rewardsCurrencies: ["candy", "xlCandy", "megaEnergy"],
     bestCounters: o.counters,
     types: o.types,
-    megaLevelEnergyTotals: [...genericMegaLevelTotals],
+    megaLevelEnergyTotals: megaLevelTotalsFromFirst(o.megaFirst ?? 200),
     note: o.note,
   };
 }
@@ -319,6 +330,7 @@ const ROSTER: RaidBoss[] = [
   // ============ Saturday — Dragonflight Summit (4p–7p · Flying/Rock/Dragon) ============
   mega({
     id: "mega-pidgeot",
+    megaFirst: 100,
     name: "Mega Pidgeot",
     types: ["Normal", "Flying"],
     windows: [w("sat", 6, 9)],
@@ -334,6 +346,7 @@ const ROSTER: RaidBoss[] = [
   }),
   mega({
     id: "mega-salamence",
+    megaFirst: 300,
     name: "Mega Salamence",
     types: ["Dragon", "Flying"],
     windows: [w("sat", 6, 9)],
@@ -391,6 +404,7 @@ const ROSTER: RaidBoss[] = [
   // ============ Sunday — Earthforged Domain (10a–1p · Ground/Steel/Normal) ============
   mega({
     id: "mega-metagross",
+    megaFirst: 300,
     name: "Mega Metagross",
     types: ["Steel", "Psychic"],
     windows: [w("sun", 0, 3)],
@@ -398,6 +412,7 @@ const ROSTER: RaidBoss[] = [
   }),
   mega({
     id: "mega-garchomp",
+    megaFirst: 300,
     name: "Mega Garchomp",
     types: ["Dragon", "Ground"],
     windows: [w("sun", 0, 3)],
@@ -541,6 +556,7 @@ const ROSTER: RaidBoss[] = [
   // ============ Sunday — Verdant Anomaly (1p–4p · Poison/Bug/Grass) ============
   mega({
     id: "mega-beedrill",
+    megaFirst: 100,
     name: "Mega Beedrill",
     types: ["Bug", "Poison"],
     windows: [w("sun", 3, 6)],
@@ -692,6 +708,7 @@ const ROSTER: RaidBoss[] = [
   // ============ Sunday — Twilight Battlefield (4p–7p · Dark/Fairy/Fighting) ============
   mega({
     id: "mega-tyranitar",
+    megaFirst: 300,
     name: "Mega Tyranitar",
     types: ["Rock", "Dark"],
     windows: [w("sun", 6, 9)],

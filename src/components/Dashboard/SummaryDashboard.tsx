@@ -8,6 +8,7 @@ import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { CapacityGauge } from "./CapacityGauge";
+import { PassCoverageBar } from "./PassCoverage";
 import { BlockAccordion } from "./BlockAccordion";
 import { PassEconomy } from "./PassEconomy";
 
@@ -61,6 +62,7 @@ export function SummaryDashboard({
       {hasGoals ? (
         <>
           <CapacityGauge utilization={summary.utilization} />
+          <PassCoverageBar summary={summary} />
           {(() => {
             const ok = blockPlan.feasible;
             return (

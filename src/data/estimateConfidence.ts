@@ -113,10 +113,10 @@ export const ESTIMATE_NOTES: EstimateNote[] = [
     note: "Sources conflict; the shakiest number — re-confirm once the event runs.",
   },
   {
-    label: "Generic Mega level costs",
-    value: "[0, 200, 360, 560]",
-    confidence: "estimated",
-    note: "Per-species varies; a specific boss can override it.",
+    label: "Mega first-evolution cost",
+    value: "200 typical · 300 pseudo-legendary · 100 Pidgeot/Beedrill",
+    confidence: "community",
+    note: "Per-species first-evolve Mega Energy (Tyranitar/Salamence/Metagross/Garchomp = 300); each Mega Level adds the standard 20%-per-evolve curve.",
   },
   {
     label: "Bulk-box pass value",

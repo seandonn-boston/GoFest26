@@ -69,6 +69,11 @@ leaves your device. It installs as a PWA and works offline on event day.
   (you set your sleep hours), not a hard pass cap. Allocate per species by hand or
   one‑tap auto‑balance by priority; single‑day and region‑locked bosses are capped
   to their reachable window.
+- **Passes you already have** — tell the planner how many Raid Passes you hold and
+  it spends them on your **highest priorities first**, then shows a have / need /
+  buy split: a coverage bar (green = covered by owned passes, amber = still to buy)
+  and a per‑target, priority‑ordered breakdown — so a lower‑priority goal never
+  jumps ahead of a more important one.
 - **Pass economy (PokéCoin cost)** — what it would cost to own every pass the plan
   needs, as a lowest–highest range: free daily passes are applied first, then paid
   Premium (in‑person) and Remote passes, plus the 800 Link Charges per remote Super
@@ -181,7 +186,10 @@ as Niantic confirms details:
   totals, raid timing & lobby model, free‑pass / remote caps, and the PokéCoin
   pass economy. Every value carries a confidence/source note.
 - `bosses.ts` — the raid roster (tiers, availability windows, reward ranges,
-  counters, types, region locks, Mewtwo per‑Mega‑Level energy totals).
+  counters, types, region locks, Mewtwo per‑Mega‑Level energy totals). Each Mega's
+  energy curve is derived from its real first‑evolution cost (`megaFirst`): 200
+  typical, **300** for the pseudo‑legendaries (Tyranitar/Salamence/Metagross/
+  Garchomp), 100 for Pidgeot/Beedrill.
 - `habitats.ts` — the six three‑hour habitat windows and their featured wild types.
 - `formGroups.ts` — shared‑Candy multi‑form species (Giratina, Dialga, Palkia, the
   genies, and the Cosmog line).
