@@ -8,160 +8,167 @@
 GO Fest weekend is a race against the clock: six rotating three‑hour habitats
 across two days, day‑locked legendaries, region‑exclusive bosses, and the shared
 Mewtwo XL grind. This planner turns your goals into a concrete raid count, maps
-them onto every time block so you know what to hit and when, gives you a weekday
-**Road of Legends** head start, and tells you what the passes will cost in
-PokéCoins. Snap a screenshot to auto‑fill your candy and energy, rank your
-priorities, share the plan with a link, and walk in with a plan instead of
-guesswork.
+them onto every time block so you know what to hit and when, folds in the
+weekday **Road of Legends** raid hours, remote raids, and timezone tricks, and
+even estimates the **PokéCoin** bill for the passes you'll need. Snap a
+screenshot to auto‑fill your candy and energy, rank your priorities, tap any
+number to see the math behind it, and walk in with a plan instead of guesswork.
 
 Everything runs **client‑side in the browser** — no account, no backend, no data
-leaves your device. It installs as a PWA and works offline on event day.
+leaves your device. It installs to your home screen and works **offline** on
+event day.
 
 ---
 
 ## What it does
 
 - **Pick targets** — browse the GO Fest roster grouped by habitat block, with
-  Mega Mewtwo X (Saturday) and Y (Sunday) as headliner tiles. Bosses outside your
-  region are flagged as remote‑only.
+  Mega Mewtwo X (Saturday) and Y (Sunday) as headliner tiles. Region‑locked
+  bosses are flagged as remote‑only.
 - **Enter what you have** — per boss: current Candy, XL Candy, Mega Energy, your
-  Pokémon's level and Mega Level, and variant (standard / shadow / purified, which
-  changes the XL‑to‑level‑50 cost: 296 / 360 / 272). One‑tap **presets** and a
-  **quantity** stepper to max several copies.
-- **Max several distinct individuals** — instead of N identical copies, list
-  specific Pokémon in **priority order**, each with its own level / Mega Level /
-  variant. Your on‑hand Candy/XL/Energy pool cascades down the list — the
-  top‑priority individual absorbs what you hold first, the next takes what's left.
+  Pokémon's level and Mega Level, and variant (standard / shadow / purified,
+  which changes the XL‑to‑level‑50 cost: 296 / 360 / 272). One‑tap **presets**
+  ("Level 40 → 50", "Reach Mega Level 4") and a **quantity** stepper.
+- **Max several distinct individuals** — list more than one Pokémon of a species,
+  each with its own level / Mega Level / variant, in priority order. Your on‑hand
+  Candy / XL / Energy cascades down the list (the top copy is fed first), so you
+  see exactly which copy still needs what.
 - **Screenshot import (OCR)** — drop in your in‑game Pokémon stat screenshots and
-  Tesseract (loaded at runtime) reads the Candy / XL / Mega Energy and the species,
-  then you confirm which Pokémon each belongs to. Bulk‑import a whole roster at
-  once; scans are kept in IndexedDB so they survive a refresh.
+  Tesseract reads the Candy / XL / Mega Energy and the species, then you tap which
+  Pokémon each belongs to. Bulk‑import a whole roster at once.
 - **Raids needed** — per boss and in total, as a range (rewards roll), showing
   which currency is the binding constraint and the effect of a same‑type **Mega
-  buddy** Candy/XL boost (scaling to +30% at Mega Level 4).
-- **Show the math** — every headline number opens an **editable equation
-  tooltip**: see exactly how a raid count was derived, and tweak an input right
-  inside the tooltip to recompute the whole plan.
+  buddy** Candy/XL boost.
+- **Tap any number for the math** — every value derived from your inputs (raids
+  needed, currency needs, capacity %, goal progress, pass cost, Rare Candy, the
+  Road‑of‑Legends head start, per‑block and per‑species counts) opens a
+  "show‑your‑work" popover. On the per‑boss card the equation's inputs are
+  **editable inline**, recalculating the whole plan.
 - **Shared‑resource species** — Giratina, Dialga, Palkia, the genie quartet, and
   the Cosmog line (**Solgaleo + Lunala**) draw from one Candy/XL pool, so they
   collapse into a single combined target (with per‑forme counters and typing)
   instead of being double‑counted.
 - **Mega Mewtwo X & Y** — one combined card: enter your shared Candy/XL/level once,
-  each form keeps its own (day‑locked) Mega Energy and Mega Level, and the 40→50
-  leveling is smart‑balanced across both forms. Multi‑copy aware: each individual
-  Mewtwo tracks independent X and Y branches.
+  each form keeps its own Mega Energy and Mega Level, and the 40→50 leveling is
+  smart‑balanced across both forms (you farm Mewtwo XL from either day's raids).
+  Several Mewtwo can be maxed as independent copies with their own X/Y branches.
 - **Per‑block weekend plan** — fixed‑window bosses pin to their habitat block(s),
-  Mewtwo backfills the rest; each block is risk‑banded by capacity and ordered by a
-  **drag‑to‑prioritize** list (lowest priority is cut first when a block is over
-  capacity). Toggle **quick‑catch** per block to trade catch Candy/XL for speed.
-- **Road of Legends head start** — the weekday Raid Hours (Mon Jul 6 – Fri Jul 10)
-  let you pre‑farm selected targets. Pick which evenings you'll play; whatever fits
-  is netted out of your weekend demand. Monday's longer block can be steered at the
-  weekend's most‑overflowing habitat.
-- **Remote raids** — an opt‑in pool bounded by the time you have outside the event
-  (you set your sleep hours), not a hard pass cap. Allocate per species by hand or
-  one‑tap auto‑balance by priority; single‑day and region‑locked bosses are capped
-  to their reachable window.
-- **Pass economy (PokéCoin cost)** — what it would cost to own every pass the plan
-  needs, as a lowest–highest range: free daily passes are applied first, then paid
-  Premium (in‑person) and Remote passes, plus the 800 Link Charges per remote Super
-  Mega (Mewtwo) raid.
-- **Mega‑evolve suggestions** — for each boss and each habitat block, which Mega to
-  evolve for the biggest same‑type Candy XL boost, ranked by whether it also fights
-  well or matches the featured wild spawns.
-- **Best counters** — top attackers per boss across five buckets (shadow, shadow
-  legendary, mega/primal, legendary, budget), copyable as a Pokémon GO search
+  Mewtwo backfills the rest; each block is risk‑banded by capacity and ordered by
+  a **drag‑to‑prioritize** list (lowest priority is cut first when a block is over
+  capacity). Toggle **quick‑catch** per block to trade catch Candy/XL for speed,
+  and track raids **done** as the weekend unfolds.
+- **Road of Legends** — the weekday Raid Hours (Mon Jul 6 → Fri Jul 10) that lead
+  into the event. Tick the days you'll raid and your targets are poured into each
+  day's time budget; whatever fits becomes a **head start** that shrinks the
+  weekend plan.
+- **Remote raids** — an opt‑in pool. GO Fest 2026 lifts the daily remote cap, so
+  it's modeled as **time‑bound, not pass‑capped**: you set your sleep hours and
+  the planner sizes how many remote raids fit your waking hours outside the event.
+  Allocate per species by hand or one‑tap auto‑balance by priority (region‑locked
+  first).
+- **Pass cost (PokéCoins)** — the lowest–highest coin range to *own* the passes
+  your plan needs: free daily passes applied first (playing more Road‑of‑Legends
+  days lowers the bill), then Premium passes for in‑person, Remote passes, and 800
+  Link Charges per *remote* Super Mega (Mewtwo) raid.
+- **Mega‑evolve suggestions** — for each boss and each habitat block, which mega
+  to evolve for the biggest same‑type Candy XL boost, ranked by whether it also
+  fights well or matches the featured wild spawns.
+- **Best counters** — top attackers per boss, copyable as a Pokémon GO search
   string.
 - **Goal progress & capacity** — what fraction of each goal actually fits in the
-  time you have, plus GO Fest research credits folded into your on‑hand totals.
-- **Calibrate to your luck** — log the per‑raid drop rates you actually see (Mega
-  Energy, catch XL); a logged value overrides the assumed range for the rest of the
-  plan.
-- **Estimate confidence** — a transparency panel lists every load‑bearing number
-  with its tier (verified / community / estimated) and source.
-- **Share, export & back up** — share a plan as a link (the whole plan is encoded
-  in the URL, never on a server), export the full schedule as an `.xlsx` workbook,
-  or back up / restore via JSON or the exported spreadsheet to move between devices.
-- **Persistence & offline** — selections, inputs, settings, and imports are saved
-  per‑device (localStorage + IndexedDB), so a plan survives closing the app. A
-  service worker caches the shell and sprites for offline use in a crowded park.
+  time you have, plus the Rare Candy / Rare Candy XL the plan hands out and GO Fest
+  research credits folded into your on‑hand totals.
+- **Calibrate to your luck** — log the per‑raid drops you actually see (Mega Energy
+  per raid, Candy XL per legendary/mega catch); a logged value overrides the
+  assumed range and tightens the plan.
+- **Estimate confidence** — a panel listing every load‑bearing number with its
+  confidence tier (verified / community / estimated) and source, so you know what
+  to trust and what may still change.
+- **Share, export & back up** — share a whole plan as a URL (encoded in the link,
+  never uploaded), export the full schedule to an `.xlsx` workbook, or back up /
+  restore via JSON or the exported spreadsheet to move a plan between devices.
+- **Install & offline** — add to your home screen for a full‑screen app; a service
+  worker caches the shell and sprites so it keeps working when the park signal
+  drops.
+- **Persistence** — selections, inputs, settings, and imported screenshots are
+  saved per‑device (heavy image blobs in IndexedDB, the small plan in local
+  storage), so a plan survives closing the tab or app and persists across days.
 
 ## How it works
 
 The calculation lives in `src/domain/` as a **pure engine** (no React, no DOM),
-unit‑tested with Vitest. `computePlanSummary()` (`index.ts`) is the entry point;
-the pipeline:
+unit‑tested with Vitest. The pipeline:
 
-1. **Collapse forms** (`forms.ts`) — multi‑form species (Giratina, Dialga, …,
-   Solgaleo + Lunala) fold into one shared‑resource target so their Candy/XL pool
-   isn't counted twice.
-2. **Requirements** (`requirements.ts`) — gross then net currency needs from your
+1. **Requirements** (`requirements.ts`) — gross then net currency needs from your
    level/Mega‑Level goals and what you hold (XL to level 50, Candy below 40, Mega
-   Energy per Mega Level), summed across copies, with the on‑hand pool cascaded by
-   priority.
-3. **Raids needed** (`raidsNeeded.ts`) — net needs ÷ per‑raid reward → a min/max
-   raid range per currency; the currency needing the most raids is the binding
-   constraint. Models catch rewards, the same‑type Mega‑buddy XL boost, and your
-   calibration overrides.
-4. **Mewtwo** (`mewtwo.ts`) — X and Y are separate raids with independent Mega
-   Energy but one shared Mewtwo; leveling is split across the two forms so neither
-   is double‑counted.
-5. **Capacity** (`capacity.ts`) — realistic raids/hour for a power user (lobby
-   size, party play, battle + catch + downtime), plus a quick‑catch speed factor
-   and a time‑bounded remote‑raid budget.
-6. **Block plan** (`blockPlan.ts`) — lays demand across the six habitat blocks,
-   risk‑bands each block, applies per‑block priority cuts, and builds goal progress
-   and the remote pool.
-7. **Road of Legends** (`roadOfLegends.ts`) — fits selected targets into the
-   weekday raid hours and returns a head‑start that reduces weekend demand.
-8. **Schedule** (`scheduler.ts`) — a greedy, scarcity‑first per‑raid timetable
-   (limited‑window bosses placed first, Mewtwo backfilling) used by the export.
-9. **Pass economy** (`passEconomy.ts`) — turns the in‑person / remote / Super‑Mega
-   raid counts into a PokéCoin cost range after free passes.
+   Energy per Mega Level), per individual copy, with the shared on‑hand pool
+   cascaded by priority.
+2. **Raids needed** (`raidsNeeded.ts`) — net needs ÷ per‑raid reward (with the
+   same‑type mega‑buddy boost and any logged calibration) → a min/max raid range
+   per currency; the currency needing the most raids is the binding constraint.
+3. **Plan summary** (`index.ts`) — collapses shared‑resource form groups, runs
+   each selected boss, splits the shared Mewtwo leveling across X/Y, and sizes the
+   aggregate capacity / feasibility view.
+4. **Capacity** (`capacity.ts`) — models the realistic raids/hour for a power user
+   (lobby size, Party Play, battle + catch + downtime), plus a quick‑catch speed
+   factor and the time‑bound remote‑raid capacity.
+5. **Block plan** (`blockPlan.ts`) — lays the demand across the six habitat blocks,
+   risk‑bands each block, applies per‑block priority cuts, and builds the remote
+   pool, goal progress, and Rare Candy forecast.
+6. **Road of Legends** (`roadOfLegends.ts`) — fills each opted‑in weekday Raid
+   Hour with your targets and returns the head start that reduces weekend demand.
+7. **Pass economy** (`passEconomy.ts`) — turns the in‑person / remote / Super‑Mega
+   raid mix into a lowest–highest PokéCoin cost, free passes first.
 
-Supporting modules: `counters.ts` (type effectiveness + best attackers),
-`megaBoosts.ts` + `buddyBoost.ts` (same‑type Candy‑boost Mega engine),
-`region.ts` (hemisphere/continent availability → local vs. remote), `research.ts`
-(GO Fest research credits), `explain.ts` (editable math‑tooltip equations), and
-`settings.ts` / `defaults.ts` (planning knobs and starting inputs).
+Two "show‑your‑work" layers feed the tooltips: `explain.ts` rebuilds a single
+boss's currency steps as **editable** equation tokens, and `explainPlan.ts` does
+the same (read‑only) for the aggregate dashboard numbers — both engine‑true and
+asserted against the engine in tests.
+
+Supporting modules: `forms.ts` (multi‑form species, remote day‑side caps,
+combined‑card naming), `mewtwo.ts` (independent X/Y multi‑copy engine),
+`megaBoosts.ts` (candy‑boost mega engine), `counters.ts` (type effectiveness +
+best attackers), `buddyBoost.ts`, `research.ts` (GO Fest research credits),
+`region.ts` (hemisphere/continent availability), and `scheduler.ts` (the
+chronological per‑raid schedule used by the Excel export).
 
 ## Tech
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict)
 - **Tailwind CSS 3**
-- **Zustand 5** (`persist`, quota‑tolerant localStorage + IndexedDB for blobs)
+- **Zustand** (`persist`, quota‑tolerant local storage; IndexedDB for image blobs)
 - **Tesseract.js** (loaded from CDN at runtime) for screenshot OCR
-- **ExcelJS** (dynamically imported) for the workbook export
-- **three.js** for the loader visuals; icons & social card generated with `next/og`
-- **Vitest** + Testing Library / jsdom for the engine and component tests
+- **ExcelJS** for the workbook export
+- **three.js** for the loader visuals; **next/og** (Satori) for icons + social card
+- **Vitest** + Testing Library / jsdom for engine and component tests
 
 The app is fully static (no server, API routes, or runtime secrets) — every
-computation runs in the browser, and it ships as an installable, offline‑capable
-PWA.
+computation runs in the browser. A service worker provides offline support and a
+web manifest makes it installable.
 
 ## Project structure
 
 ```
 src/
-  app/            App Router shell (layout, page, globals, manifest, OG image, icons, error)
+  app/            Next.js App Router (layout, page, manifest, og/icon routes, error boundary)
   data/           Editable game data (see below)
-  domain/         Pure, unit-tested calculation engine
-  store/          Zustand store (inputs, settings, research, imports, priorities) + backup
-  hooks/          usePlannerResults (summary + block plan + remote balancing), dialog, mobile, …
+  domain/         Pure, unit-tested calculation engine + "explain" layers
+  store/          Zustand stores (plan state, backup, tilt, app-ready)
+  hooks/          usePlannerResults (summary + block plan + remote balancing), dialog, etc.
   components/
     BossList/       Target picker + Mewtwo headliner tiles
-    BossInputCard/  Per-boss inputs, multi-copy editors, screenshot scan, counters, mega search
-    Dashboard/      Summary, per-block accordion, capacity, goal progress, remote, Road of Legends, pass economy
-    Settings/       Screenshot importer, assumptions, location, calibration, backup, feedback
-    loader/         Substitute-voxel loading screen
+    BossInputCard/  Per-boss inputs, multi-copy editors, screenshot scan, counters, megas
+    Dashboard/      Summary, capacity, per-block accordion, goal progress, remote,
+                    Road of Legends, pass economy
+    Settings/       Screenshot importer, assumptions, calibration, location, backup, feedback
+    loader/         Animated loading screen (warms caches + OCR)
     pwa/            Service-worker registration
-    ui/             Shared presentational components (badges, tooltips, sprites, install banner, …)
-  export/         ExcelJS workbook builder, browser download, JSON/XLSX backup-restore
-  lib/            OCR (ocrEngine, screenshotScan), Pokémon search, share-plan URLs, IndexedDB,
+    ui/             Shared presentational components (incl. MathTooltip / ExplainValue)
+  export/         ExcelJS workbook builder, backup/restore, browser download
+  lib/            OCR (screenshotScan, ocrEngine), search, share-URL, IndexedDB,
                   image/thumbnail helpers, formatting, math
 public/
   sw.js           Offline service worker
-  help/           In-app help imagery
 ```
 
 ## Game data
@@ -169,50 +176,45 @@ public/
 All tunable numbers and the roster live in `src/data/` so they're easy to correct
 as Niantic confirms details:
 
-- `config.ts` — `GAME_CONFIG`, the single source of truth: event details, Mega
-  Energy / catch rewards, XL‑to‑50 and Candy‑to‑40 costs, Stardust reference
-  totals, raid timing & lobby model, free‑pass / remote caps, and the PokéCoin
-  pass economy. Every value carries a confidence/source note.
+- `config.ts` — event details, Mega Energy / catch rewards, XL‑to‑50 and Candy /
+  Stardust level‑up costs, raid timing & lobby model, free‑pass / remote / pass‑shop
+  economy.
 - `bosses.ts` — the raid roster (tiers, availability windows, reward ranges,
-  counters, types, region locks, Mewtwo per‑Mega‑Level energy totals).
+  counters, region locks, Mewtwo per‑Mega‑Level energy totals).
 - `habitats.ts` — the six three‑hour habitat windows and their featured wild types.
 - `formGroups.ts` — shared‑Candy multi‑form species (Giratina, Dialga, Palkia, the
   genies, and the Cosmog line).
-- `megas.ts` / `attackers.ts` — every released Mega/Primal (typing + sprite) and
-  the attacker pool (eDPS) behind counters and Candy‑boost suggestions.
-- `roadOfLegends.ts` — the weekday Raid‑Hour schedule and featured bosses.
-- `research.ts`, `presets.ts`, `locations.ts`, `estimateConfidence.ts`,
-  `typeVisuals.ts`, `pokemonSprites.ts` — research rewards, goal presets, region
-  presets, the confidence/source ledger, theming, and sprite resolution.
+- `megas.ts` / `attackers.ts` — every released mega (typing + sprite) and the
+  attacker pool (eDPS) behind counters and candy‑boost suggestions.
+- `roadOfLegends.ts` — the weekday Raid Hour schedule and featured targets.
+- `estimateConfidence.ts` — the per‑number confidence/source list shown in the app.
+- `research.ts`, `presets.ts`, `locations.ts`, `typeVisuals.ts`,
+  `pokemonSprites.ts` — research rewards, goal presets, regions, theming, sprites.
 
 > Several values (Super Mega Raid energy, Mewtwo per‑Mega‑Level costs, the Global
 > research rewards, parts of the boss list) are best‑effort from public GO Fest
-> 2026 info and may change. The estimate‑confidence panel flags which is which.
+> 2026 info and may change. The in‑app confidence panel flags which are confirmed.
 
 ## Develop
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # run the unit + component tests (Vitest)
+npm test         # run the unit/component tests (Vitest)
 npm run build    # production build
 npm run lint     # ESLint
 ```
-
-Local dev serves from the root. To mirror a subpath deploy locally, leave
-`BASE_PATH` at its default; to force root, set `BASE_PATH=""`.
 
 ## Deploy
 
 The app is a static client‑side site and ships two ways:
 
-- **Vercel (recommended)** — import the repo on vercel.com; it auto‑detects Next.js
-  and serves under the `/go-fest-raid-planner` base path. No environment variables
-  or backend required.
-- **GitHub Pages** — `.github/workflows/deploy-pages.yml` typechecks, tests, then
+- **Vercel (recommended)** — import the repo on vercel.com; it auto‑detects Next.js.
+  Served under the `/go-fest-raid-planner` base path (override with `BASE_PATH`).
+  No environment variables or backend required.
+- **GitHub Pages** — `.github/workflows/deploy-pages.yml` type‑checks, tests, then
   builds a fully static export (`output: "export"`) on push to `main`, using the
-  repo subpath as `basePath`. The deploy is gated on green types + tests so a broken
-  plan never ships.
+  repo subpath as the `basePath`.
 
 Any static or Node host works as well:
 
@@ -226,5 +228,3 @@ npm run start    # serves the production build on port 3000
 This is a fan‑made planning tool and is **not affiliated with Niantic, Nintendo,
 or The Pokémon Company**. Pokémon names and sprites are the property of their
 respective owners.
-</content>
-</invoke>
