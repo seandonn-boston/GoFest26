@@ -43,6 +43,33 @@ describe("planner store interactive actions", () => {
     expect(store().inputs[MEWTWO_X_ID].variant).toBe("shadow");
   });
 
+  it("addCopy seeds copy #1 from current then appends; removeCopy collapses back", () => {
+    store().toggleSelected("zekrom");
+    store().setCurrent("zekrom", "level", 45);
+    store().addCopy("zekrom");
+    const copies = store().inputs.zekrom.copies!;
+    expect(copies).toHaveLength(2);
+    expect(copies[0].current.level).toBe(45); // copy #1 seeded from the single fields
+    // Removing back to one collapses to the simple card (copies cleared).
+    store().removeCopy("zekrom", copies[1].id);
+    expect(store().inputs.zekrom.copies).toBeUndefined();
+    expect(store().inputs.zekrom.current.level).toBe(45);
+  });
+
+  it("moveCopy reorders priority and updateCopy patches a field", () => {
+    store().toggleSelected("zekrom");
+    store().addCopy("zekrom");
+    store().addCopy("zekrom"); // now 3 individuals
+    const [a, b] = store().inputs.zekrom.copies!;
+    store().updateCopy("zekrom", b.id, { variant: "shadow", level: 30 });
+    store().moveCopy("zekrom", b.id, -1); // b becomes #1
+    const after = store().inputs.zekrom.copies!;
+    expect(after[0].id).toBe(b.id);
+    expect(after[0].variant).toBe("shadow");
+    expect(after[0].current.level).toBe(30);
+    expect(after[1].id).toBe(a.id);
+  });
+
   it("setL4Buddy toggles the per-boss Level-4 catch flag", () => {
     store().toggleSelected(MEWTWO_X_ID);
     expect(store().inputs[MEWTWO_X_ID].l4Buddy ?? false).toBe(false);

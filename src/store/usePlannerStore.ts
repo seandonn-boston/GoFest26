@@ -7,7 +7,7 @@ import { globalPriorityFromBlocks } from "@/domain/blockPlan";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings, type CalibrationMetric } from "@/domain/settings";
-import type { BossInput, Variant } from "@/domain/types";
+import type { BossInput, Variant, PokemonCopy } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 import { idbGet, idbSet } from "@/lib/idbStore";
 import type { StateBackup } from "./stateBackup";
@@ -15,6 +15,42 @@ import type { StateBackup } from "./stateBackup";
 export { makeDefaultInput };
 
 type CurrentField = keyof BossInput["current"];
+
+/** Flat patch for one individual copy (maps onto its nested current/target). */
+export type CopyPatch = Partial<{
+  variant: Variant;
+  lucky: boolean;
+  level: number;
+  megaLevel: number;
+  targetLevel: number;
+  targetMegaLevel: number;
+}>;
+
+const cid = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+/** Seed copy #1 from the card's single current/target/variant fields. */
+const copyFromInput = (input: BossInput): PokemonCopy => ({
+  id: cid(),
+  variant: input.variant ?? "standard",
+  current: { level: input.current.level, megaLevel: input.current.megaLevel },
+  target: { level: input.target.level, megaLevel: input.target.megaLevel },
+});
+
+/** A fresh individual to add (its goal defaults to the boss's current target). */
+const newCopy = (input: BossInput): PokemonCopy => ({
+  id: cid(),
+  variant: "standard",
+  current: { level: 40, megaLevel: 0 },
+  target: { level: input.target.level, megaLevel: input.target.megaLevel },
+});
+
+const applyCopyPatch = (c: PokemonCopy, p: CopyPatch): PokemonCopy => ({
+  ...c,
+  variant: p.variant ?? c.variant,
+  lucky: p.lucky ?? c.lucky,
+  current: { level: p.level ?? c.current.level, megaLevel: p.megaLevel ?? c.current.megaLevel },
+  target: { level: p.targetLevel ?? c.target.level, megaLevel: p.targetMegaLevel ?? c.target.megaLevel },
+});
 
 /** Boss ids sharing a form group with this one (incl. itself), else just it. */
 function formFamilyIds(bossId: string): string[] {
@@ -172,6 +208,11 @@ interface PlannerState {
   setCount: (bossId: string, variant: Variant, value: number) => void;
   setQuantity: (bossId: string, value: number) => void;
   setVariant: (bossId: string, variant: Variant) => void;
+  /** Multi-copy maxing: distinct individuals of one species, in priority order. */
+  addCopy: (bossId: string) => void;
+  removeCopy: (bossId: string, copyId: string) => void;
+  updateCopy: (bossId: string, copyId: string, patch: CopyPatch) => void;
+  moveCopy: (bossId: string, copyId: string, dir: -1 | 1) => void;
   /** Set one block's priority order (highest first). */
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
@@ -386,6 +427,58 @@ export const usePlannerStore = create<PlannerState>()(
           const input = ensureInput(state, bossId);
           if (!input) return state;
           return { inputs: { ...state.inputs, [bossId]: { ...input, variant } } };
+        }),
+
+      addCopy: (bossId) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          // First add seeds copy #1 from the single fields, then appends a new one.
+          const copies = input.copies && input.copies.length ? input.copies : [copyFromInput(input)];
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies: [...copies, newCopy(input)] } } };
+        }),
+
+      removeCopy: (bossId, copyId) =>
+        set((state) => {
+          const input = state.inputs[bossId];
+          if (!input?.copies) return state;
+          const copies = input.copies.filter((c) => c.id !== copyId);
+          // Dropping to a single individual collapses back to the simple card,
+          // restoring the survivor's level/variant into the single fields.
+          if (copies.length <= 1) {
+            const c = copies[0];
+            const next: BossInput = c
+              ? {
+                  ...input,
+                  copies: undefined,
+                  variant: c.variant,
+                  current: { ...input.current, level: c.current.level, megaLevel: c.current.megaLevel },
+                  target: { level: c.target.level, megaLevel: c.target.megaLevel },
+                }
+              : { ...input, copies: undefined };
+            return { inputs: { ...state.inputs, [bossId]: next } };
+          }
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies } } };
+        }),
+
+      updateCopy: (bossId, copyId, patch) =>
+        set((state) => {
+          const input = state.inputs[bossId];
+          if (!input?.copies) return state;
+          const copies = input.copies.map((c) => (c.id === copyId ? applyCopyPatch(c, patch) : c));
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies } } };
+        }),
+
+      moveCopy: (bossId, copyId, dir) =>
+        set((state) => {
+          const input = state.inputs[bossId];
+          if (!input?.copies) return state;
+          const copies = [...input.copies];
+          const idx = copies.findIndex((c) => c.id === copyId);
+          const to = idx + dir;
+          if (idx < 0 || to < 0 || to >= copies.length) return state;
+          [copies[idx], copies[to]] = [copies[to], copies[idx]];
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies } } };
         }),
 
       setBlockPriority: (blockKey, ids) =>

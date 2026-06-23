@@ -28,6 +28,7 @@ import { energyForBosses } from "@/lib/screenshotScan";
 import { PresetPicker } from "./PresetPicker";
 import { CardScan } from "./CardScan";
 import { CounterTable } from "./CounterTable";
+import { CopiesEditor } from "./CopiesEditor";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -50,6 +51,7 @@ export function BossInputCard({
   const setCurrent = usePlannerStore((s) => s.setCurrent);
   const setQuantity = usePlannerStore((s) => s.setQuantity);
   const setVariant = usePlannerStore((s) => s.setVariant);
+  const addCopy = usePlannerStore((s) => s.addCopy);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const sKey = speciesKey(boss.name);
   const preview = usePlannerStore((s) => s.screenshots[sKey]);
@@ -69,6 +71,7 @@ export function BossInputCard({
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
   const variant = input.variant ?? "standard";
+  const copiesMode = (input.copies?.length ?? 0) > 0;
   const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
   const l4Buddy = input.l4Buddy ?? false;
@@ -199,13 +202,13 @@ export function BossInputCard({
             onChange={(v) => setCurrent(boss.id, c, v)}
           />
         ))}
-        {wantsLeveling ? (
+        {!copiesMode && wantsLeveling ? (
           <>
             <NumberInput label="Level" value={input.current.level} min={1} max={50} step={0.5} onChange={(v) => setCurrent(boss.id, "level", v)} />
             <NumberInput label="→ Target lvl" value={input.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(boss.id, v)} />
           </>
         ) : null}
-        {isMega ? (
+        {!copiesMode && isMega ? (
           <>
             <NumberInput label="Mega lvl" value={input.current.megaLevel} min={0} max={4} onChange={(v) => setCurrent(boss.id, "megaLevel", v)} />
             <NumberInput label="→ Target mega" value={input.target.megaLevel} min={0} max={4} onChange={(v) => setTargetMegaLevel(boss.id, v)} />
@@ -215,7 +218,7 @@ export function BossInputCard({
 
       {/* XL Candy to max (40→50) per variant — tap one to set THIS target's form
           (Regular / Shadow / Purified), which drives its XL total in the plan. */}
-      {wantsLeveling ? (
+      {!copiesMode && wantsLeveling ? (
         <div className="mt-2">
           <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">
             XL Candy to max (→ lvl 50) · tap your form
@@ -247,6 +250,19 @@ export function BossInputCard({
             Remaining XL to reach level 50 from your current level &amp; XL on hand. Shadow costs more, Purified less.
           </p>
         </div>
+      ) : null}
+
+      {/* Multi-copy maxing: distinct individuals sharing the on-hand pool above. */}
+      {copiesMode ? (
+        <CopiesEditor boss={boss} input={input} />
+      ) : wantsLeveling || isMega ? (
+        <button
+          type="button"
+          onClick={() => addCopy(boss.id)}
+          className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
+        >
+          ＋ Max another individual (different level / mega / form)
+        </button>
       ) : null}
 
       {/* Catch toggles */}
