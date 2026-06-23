@@ -49,6 +49,45 @@ export interface RewardProfile {
   megaEnergy?: Range;
 }
 
+/** Family of "build a special forme" energy earned from raids, separate from
+ *  Mega Energy: Fusion (Kyurem/Necrozma), Crowned (Zacian/Zamazenta), and
+ *  Primal (Groudon/Kyogre). */
+export type EnergyKind = "fusion" | "primal" | "crowned";
+
+/**
+ * A fusion / crowned / primal energy a base-form boss can work toward by raiding
+ * its special forme (e.g. raid White Kyurem to bank Blaze Fusion Energy toward
+ * White Kyurem). These raids appear during Road of Legends week, not the GO Fest
+ * weekend, so this is a standalone goal — not folded into the weekend raid count.
+ */
+export interface EnergyGoalDef {
+  /** Stable key within the boss; matches the OCR flavor where one exists. */
+  key: string;
+  kind: EnergyKind;
+  /** Short label, e.g. "Blaze · White Kyurem". */
+  label: string;
+  /** OCR flavor used to tether screenshot scans (volt/blaze/solar/lunar/sword/shield/primal). */
+  flavor: string;
+  /** Energy required to fuse / revert once. */
+  cost: number;
+  /** Energy rewarded per completed source raid (varies by speed + damage dealt). */
+  perRaid: Range;
+  /** The raid that drops it, e.g. "White Kyurem". */
+  source: string;
+  /** Road of Legends day id the source raid is featured (mon..fri). */
+  roadDayId?: string;
+  /** Extra context (e.g. the cheaper repeat-revert cost for Primals). */
+  note?: string;
+}
+
+/** The user's progress toward one energy goal: energy on hand, the target
+ *  (defaults to the fuse/revert cost), and whether they're pursuing it. */
+export interface EnergyProgress {
+  have: number;
+  goal: number;
+  on: boolean;
+}
+
 /**
  * A window during which a windowed boss is available.
  * Hours are event-local hour indexes 0..8 (10am = 0 ... 6pm = 8), per day.
@@ -165,6 +204,9 @@ export interface BossInput {
    *  top XL-Candy boost. Only meaningful for bosses whose typing matches a
    *  Level-4 Mega (see GAME_CONFIG.megaCatchBoost.l4Types). */
   l4Buddy?: boolean;
+  /** Fusion/crowned/primal energy worked toward, keyed by EnergyGoalDef.key.
+   *  Standalone from the maxing plan (earned in Road of Legends week). */
+  energy?: Record<string, EnergyProgress>;
 }
 
 export interface CurrencyNeed {

@@ -8,7 +8,7 @@ import { globalPriorityFromBlocks } from "@/domain/blockPlan";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings, type CalibrationMetric } from "@/domain/settings";
-import type { BossInput, Variant, PokemonCopy } from "@/domain/types";
+import type { BossInput, Variant, PokemonCopy, EnergyProgress } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 import { idbGet, idbSet } from "@/lib/idbStore";
 import type { StateBackup } from "./stateBackup";
@@ -278,6 +278,8 @@ interface PlannerState {
   setSkipCatch: (bossId: string, skip: boolean) => void;
   setMegaBuddy: (bossId: string, on: boolean) => void;
   setL4Buddy: (bossId: string, on: boolean) => void;
+  /** Update one fusion/crowned/primal energy goal's progress (have / goal / on). */
+  setEnergy: (bossId: string, key: string, patch: Partial<EnergyProgress>) => void;
   setResearchEnabled: (id: string, enabled: boolean, exclusiveWith?: readonly string[]) => void;
   /** Store a screenshot preview for a species — keeps only the most-recent. */
   setScreenshot: (speciesKey: string, src: string, capturedAt: number) => void;
@@ -700,6 +702,22 @@ export const usePlannerStore = create<PlannerState>()(
           const input = ensureInput(state, bossId);
           if (!input) return state;
           return { inputs: { ...state.inputs, [bossId]: { ...input, l4Buddy: on } } };
+        }),
+
+      setEnergy: (bossId, key, patch) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          const cur = input.energy?.[key] ?? { have: 0, goal: 0, on: false };
+          const clampN = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0);
+          const next: EnergyProgress = {
+            have: patch.have !== undefined ? clampN(patch.have) : cur.have,
+            goal: patch.goal !== undefined ? clampN(patch.goal) : cur.goal,
+            on: patch.on !== undefined ? patch.on : cur.on,
+          };
+          return {
+            inputs: { ...state.inputs, [bossId]: { ...input, energy: { ...input.energy, [key]: next } } },
+          };
         }),
 
       applyPreset: (bossId, presetId) =>

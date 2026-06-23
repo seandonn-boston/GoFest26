@@ -58,6 +58,13 @@ leaves your device. It installs as a PWA and works offline on event day.
   let you pre‑farm selected targets. Pick which evenings you'll play; whatever fits
   is netted out of your weekend demand. Monday's longer block can be steered at the
   weekend's most‑overflowing habitat.
+- **Fusion / Crowned / Primal energy goals** — Road of Legends week also runs the
+  special raids that drop the "build a new forme" energies. Opt in per energy on
+  Kyurem (Blaze/Volt), Necrozma (Solar/Lunar), Zacian, Zamazenta, Groudon and
+  Kyogre, enter what you hold (auto‑filled from a screenshot scan), and get the
+  raids needed of the source raid to hit 1,000 (fuse/crown) or 400 (first Primal
+  revert). Standalone from the weekend maxing plan; energy per raid scales with
+  speed/damage, so it's shown as a range.
 - **Remote raids** — an opt‑in pool bounded by the time you have outside the event
   (you set your sleep hours), not a hard pass cap. Allocate per species by hand or
   one‑tap auto‑balance by priority; single‑day and region‑locked bosses are capped
