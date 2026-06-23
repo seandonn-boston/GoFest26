@@ -25,30 +25,18 @@ const GUIDE: GuideStep[] = [
   },
   {
     id: 2,
-    title: "Import screenshots",
-    optional: true,
+    title: "Enter what you have",
     body: (
       <>
-        Hate typing? Drop in screenshots of your Pokémon&apos;s stat pages and the app reads your
-        <b> Candy</b>, <b>XL Candy</b> and <b>Mega Energy</b> for you. For Mewtwo, upload your
-        Mewtwo&apos;s stat page and confirm it&apos;s Mewtwo. You can skip this entirely and just type
-        the numbers in the next step.
+        Tell the app what you already hold and where you want to end up. Hate typing? Drop your
+        Pokémon&apos;s stat-page <b>screenshots</b> at the top and it reads your <b>Candy</b>,
+        <b> XL Candy</b> and <b>Mega Energy</b> for you. For Mewtwo, set your level, the <b>X &amp; Y
+        Mega Levels</b>, and a goal (say, Mega Level 4 on both) — the one-tap <b>presets</b> help.
       </>
     ),
   },
   {
     id: 3,
-    title: "Enter your numbers",
-    body: (
-      <>
-        Tell the app what you already have and where you want to end up. For Mewtwo that&apos;s your
-        current Candy / XL / Mega Energy, your Mewtwo&apos;s level and its <b>X &amp; Y Mega Levels</b>,
-        and your goal (say, Mega Level 4 on both). The one-tap <b>presets</b> set common goals for you.
-      </>
-    ),
-  },
-  {
-    id: 4,
     title: "Set your priorities",
     body: (
       <>
@@ -60,7 +48,7 @@ const GUIDE: GuideStep[] = [
     ),
   },
   {
-    id: 5,
+    id: 4,
     title: "See your results",
     body: (
       <>
@@ -104,7 +92,7 @@ export function HowToUse() {
             How to use this app
           </h2>
           <p className="mt-1 text-xs text-slate-300">
-            New here? The whole thing is just five steps. You only need to pick a target and enter your
+            New here? The whole thing is just four steps. You only need to pick a target and enter your
             numbers — everything else is optional. Here&apos;s the flow, using Mega Mewtwo as the example.
           </p>
         </div>

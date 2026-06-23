@@ -5,10 +5,9 @@ import type { StepId } from "@/store/useUiStore";
 
 const STEP_LABELS: Record<StepId, string> = {
   1: "Pick targets",
-  2: "Import screenshots",
-  3: "Your numbers",
-  4: "Prioritize",
-  5: "Results",
+  2: "Enter what you have",
+  3: "Prioritize",
+  4: "Results",
 };
 
 export interface MissingStep {
@@ -38,12 +37,12 @@ export function missingStep(anySelected: boolean, hasGoals: boolean): MissingSte
   }
   if (!hasGoals) {
     return {
-      step: 3,
+      step: 2,
       title: "Set a goal to see your raid counts",
       message: (
         <>
-          Your targets don&apos;t need any raids yet. In <b>Your numbers</b>, set a level or Mega Level
-          higher than what you already have.
+          Your targets don&apos;t need any raids yet. In <b>Enter what you have</b>, set a level or Mega
+          Level higher than what you already have.
         </>
       ),
     };

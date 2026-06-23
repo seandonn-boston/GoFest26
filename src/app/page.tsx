@@ -38,7 +38,6 @@ export default function Home() {
   const { weekend: blockPlan, road: roadPlan } = useBlockPlan(summary);
 
   // Progress signals for the step pills' completion ticks.
-  const importCount = usePlannerStore((s) => s.imports.length);
   const priorityCount = usePlannerStore((s) => s.globalPriority.length);
   const anyPlayDay = usePlannerStore((s) => Object.values(s.playDays).some(Boolean));
   const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
@@ -65,10 +64,9 @@ export default function Home() {
 
   const steps: StepMeta[] = [
     { id: 1, label: "Pick targets", done: anySelected },
-    { id: 2, label: "Import screenshots", done: importCount > 0, optional: true },
-    { id: 3, label: "Your numbers", done: anySelected && hasGoals },
-    { id: 4, label: "Prioritize", done: priorityCount > 0 || anyPlayDay || useRemote },
-    { id: 5, label: "Results", done: hasGoals },
+    { id: 2, label: "Enter what you have", done: anySelected && hasGoals },
+    { id: 3, label: "Prioritize", done: priorityCount > 0 || anyPlayDay || useRemote },
+    { id: 4, label: "Results", done: hasGoals },
   ];
 
   if (!hydrated) {
@@ -129,7 +127,7 @@ export default function Home() {
                 step={step}
                 onPrev={prevStep}
                 onNext={nextStep}
-                nextLabel={step === 4 ? "See results" : undefined}
+                nextLabel={step === 3 ? "See results" : undefined}
               />
             </div>
 
@@ -169,7 +167,7 @@ function StepContent({
 }) {
   const hasGoals = summary.totalRaids.max > 0;
   // The first step blocking a real plan (no targets → step 1; targets but no
-  // goal → step 3), so empty states point at the exact thing that's missing.
+  // goal → step 2), so empty states point at the exact thing that's missing.
   const blocking = missingStep(anySelected, hasGoals);
 
   if (step === 1) {
@@ -179,33 +177,12 @@ function StepContent({
   if (step === 2) {
     return (
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Import from screenshots</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Optional — drop in your Pokémon&apos;s stat pages and we&apos;ll read the Candy / XL / Mega
-            Energy for you. Prefer to type? Skip ahead to your numbers.
-          </p>
-        </div>
-        {anySelected ? (
-          <>
-            <SearchStringBar />
-            <BulkImportSection />
-          </>
-        ) : blocking ? (
-          <StepNudge missing={blocking} onJump={onJump} />
-        ) : null}
-      </section>
-    );
-  }
-
-  if (step === 3) {
-    return (
-      <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Enter what you have</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Required — your current Candy / XL / Mega Energy and a goal above what you already have.
+              Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal
+              above what you already have.
             </p>
           </div>
           {anySelected ? (
@@ -220,6 +197,11 @@ function StepContent({
         </div>
         {anySelected ? (
           <>
+            {/* Screenshot upload sits at the top of the step — auto-fills the
+                cards below, but is entirely optional (type by hand instead). */}
+            <SearchStringBar />
+            <BulkImportSection />
+
             {mewtwoSelected ? (
               <MewtwoCard
                 bossX={getBoss(MEWTWO_X_ID)!}
@@ -249,11 +231,11 @@ function StepContent({
     );
   }
 
-  if (step === 4) {
+  if (step === 3) {
     return <PlanSetup roadPlan={roadPlan} capacity={summary.capacity} />;
   }
 
-  // step === 5
+  // step === 4
   return (
     <>
       {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
