@@ -15,6 +15,15 @@ export { computeBossResult, isL4Eligible, xlBoostFactor, rewardBreakdown, raidsF
 export type { RewardBreakdown } from "./raidsNeeded";
 export { explainCurrency } from "./explain";
 export type { CurrencyExplanation, ExplainLine, Token, EditField } from "./explain";
+export {
+  explainTotalRaids,
+  explainRaidsPerHour,
+  explainMaxRaids,
+  explainUtilization,
+  explainGoalProgress,
+  explainPassCost,
+} from "./explainPlan";
+export type { Explanation } from "./explainPlan";
 export { computeCapacity } from "./capacity";
 export { computeSchedule } from "./scheduler";
 export { computeBlockPlan, rareCandyForecast, goalProgress, autoRemoteAllocations, globalPriorityFromBlocks, RISK_BANDS } from "./blockPlan";

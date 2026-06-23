@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { computePassCost } from "@/domain";
+import { computePassCost, explainPassCost } from "@/domain";
 import type { PlanSummary } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { ExplainValue } from "@/components/ui/ExplainValue";
 
 const coins = (n: number) => `${Math.round(n).toLocaleString()}`;
 
@@ -52,7 +53,15 @@ export function PassEconomy({ summary }: { summary: PlanSummary }) {
         <>
           <div className="mt-1 flex items-baseline gap-2">
             <span className="font-mono text-2xl font-extrabold text-amber-200">
-              {coins(cost.low.total)}–{coins(cost.high.total)}
+              <ExplainValue
+                label="How the pass cost is calculated"
+                trigger={
+                  <span>
+                    {coins(cost.low.total)}–{coins(cost.high.total)}
+                  </span>
+                }
+                explanation={explainPassCost(cost)}
+              />
             </span>
             <span className="text-[11px] text-slate-400">coins to own the passes your goals need</span>
           </div>

@@ -1,12 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { PlanSummary } from "@/domain/types";
-import type { RoadPlan, WeekendBlockPlan } from "@/domain";
+import {
+  explainTotalRaids,
+  explainRaidsPerHour,
+  explainMaxRaids,
+  explainUtilization,
+  type Explanation,
+  type RoadPlan,
+  type WeekendBlockPlan,
+} from "@/domain";
+import { getBoss } from "@/data";
 import { formatRange } from "@/lib/format";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
+import { ExplainValue } from "@/components/ui/ExplainValue";
 import { CapacityGauge } from "./CapacityGauge";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { BlockAccordion } from "./BlockAccordion";
@@ -28,9 +38,28 @@ export function SummaryDashboard({
   const hasGoals = summary.totalRaids.max > 0;
   // Max raids the gauge measures against = in-person weekend capacity + the
   // opted-in remote-pass pool, so the headline number matches the bar.
-  const maxRaids = remotePool > 0
-    ? { min: capacity.totalRaids.min + remotePool, max: capacity.totalRaids.max + remotePool }
-    : capacity.totalRaids;
+  const maxRaids = useMemo(
+    () =>
+      remotePool > 0
+        ? { min: capacity.totalRaids.min + remotePool, max: capacity.totalRaids.max + remotePool }
+        : capacity.totalRaids,
+    [capacity.totalRaids, remotePool],
+  );
+
+  const totalRaidsExp = useMemo(
+    () =>
+      explainTotalRaids(
+        summary.results.map((r) => ({ name: getBoss(r.bossId)?.name ?? r.bossId, raids: r.raids })),
+        summary.totalRaids,
+      ),
+    [summary.results, summary.totalRaids],
+  );
+  const raidsPerHourExp = useMemo(() => explainRaidsPerHour(capacity), [capacity]);
+  const maxRaidsExp = useMemo(() => explainMaxRaids(capacity, remotePool, maxRaids), [capacity, remotePool, maxRaids]);
+  const utilizationExp = useMemo(
+    () => explainUtilization(summary.totalRaids, maxRaids, summary.utilization),
+    [summary.totalRaids, maxRaids, summary.utilization],
+  );
 
   // Which goals still don't fit, derived from the block plan — so the warning
   // tracks the priority order (lowest is cut first) and remote-pass offloading,
@@ -51,18 +80,24 @@ export function SummaryDashboard({
       <h2 className="mb-3 text-lg font-semibold">3. Plan your weekend</h2>
 
       <div className="mb-4 grid grid-cols-3 gap-4">
-        <Stat label="Total raids needed" value={formatRange(summary.totalRaids)} accent="text-gofest-accent2" />
-        <Stat label="Raids / hour" value={formatRange(capacity.raidsPerHour)} />
+        <Stat
+          label="Total raids needed"
+          value={formatRange(summary.totalRaids)}
+          accent="text-gofest-accent2"
+          explanation={hasGoals ? totalRaidsExp : undefined}
+        />
+        <Stat label="Raids / hour" value={formatRange(capacity.raidsPerHour)} explanation={raidsPerHourExp} />
         <Stat
           label="Max raids"
           value={formatRange(maxRaids)}
           sub={remotePool > 0 ? `incl. ${remotePool} remote` : undefined}
+          explanation={maxRaidsExp}
         />
       </div>
 
       {hasGoals ? (
         <>
-          <CapacityGauge utilization={summary.utilization} />
+          <CapacityGauge utilization={summary.utilization} explanation={utilizationExp} />
           {(() => {
             const ok = blockPlan.feasible;
             return (
@@ -103,11 +138,28 @@ export function SummaryDashboard({
   );
 }
 
-function Stat({ label, value, accent = "text-slate-100", sub }: { label: string; value: string; accent?: string; sub?: string }) {
+function Stat({
+  label,
+  value,
+  accent = "text-slate-100",
+  sub,
+  explanation,
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+  sub?: string;
+  explanation?: Explanation;
+}) {
+  const number: ReactNode = explanation ? (
+    <ExplainValue trigger={<span>{value}</span>} explanation={explanation} />
+  ) : (
+    value
+  );
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-      <div className={`text-xl font-bold ${accent}`}>{value}</div>
+      <div className={`text-xl font-bold ${accent}`}>{number}</div>
       {sub ? <div className="text-[10px] text-gofest-accent">{sub}</div> : null}
     </div>
   );

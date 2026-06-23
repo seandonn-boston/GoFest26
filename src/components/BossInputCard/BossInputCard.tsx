@@ -313,24 +313,26 @@ export function BossInputCard({
                   })()}
                 </div>
               </div>
-              <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
-                {needEntries.map(([c, n], i) => {
-                  const exp = explainFor(c, n);
-                  const text = `${CURRENCY_LABELS[c]} ${formatNumber(n.needed)}`;
-                  return (
-                    <span key={c} className="inline-flex items-center">
-                      {i > 0 ? <span className="mr-1.5 text-slate-600">·</span> : null}
+              {needEntries.map(([c, n]) => {
+                const exp = explainFor(c, n);
+                return (
+                  <div key={c}>
+                    <span className="text-[10px] uppercase tracking-wide text-slate-400">{CURRENCY_LABELS[c]}</span>
+                    <div className="text-xl font-bold text-gofest-accent2">
                       {exp ? (
-                        <MathTooltip label={`How ${CURRENCY_LABELS[c]} is calculated`} trigger={<span>{text}</span>}>
+                        <MathTooltip
+                          label={`How ${CURRENCY_LABELS[c]} is calculated`}
+                          trigger={<span>{formatNumber(n.needed)}</span>}
+                        >
                           <ExplainEquation bossId={boss.id} explanation={exp} />
                         </MathTooltip>
                       ) : (
-                        text
+                        formatNumber(n.needed)
                       )}
-                    </span>
-                  );
-                })}
-              </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             {overWindow ? (
               <p className="mt-1.5 text-[11px] text-rose-300">

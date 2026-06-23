@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { getBoss } from "@/data";
-import { goalProgress } from "@/domain";
+import { goalProgress, explainGoalProgress } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
 import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
+import { ExplainValue } from "@/components/ui/ExplainValue";
 
 const ratioTone = (a: number, r: number) => {
   const x = r > 0 ? a / r : 1;
@@ -49,24 +50,45 @@ export function GoalProgress({
 
   const { achievable, required } = progress;
   const pct = Math.min(100, Math.round((achievable / required) * 100));
+  const progressExp = explainGoalProgress(achievable, required);
 
   return (
     <div className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/30">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
+      <div className="px-2.5 py-2">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-xs text-slate-300">
-            <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
-            Raids you can do toward your goals:{" "}
-            <span className={`font-mono font-bold ${ratioTone(achievable, required)}`}>
-              {achievable}/{required}
-            </span>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className="flex min-w-0 flex-1 items-baseline gap-1 text-left text-xs text-slate-300"
+          >
+            <span className={`inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
+            <span className="truncate">Raids you can do toward your goals</span>
+            <span className="shrink-0 text-[10px] text-slate-500">· per-Pokémon ⌄</span>
+          </button>
+          <span className={`shrink-0 font-mono font-bold ${ratioTone(achievable, required)}`}>
+            <ExplainValue
+              label="How goal progress is calculated"
+              trigger={
+                <span>
+                  {achievable}/{required}
+                </span>
+              }
+              explanation={progressExp}
+            />
           </span>
-          <span className="shrink-0 text-[10px] text-slate-500">per-Pokémon ⌄</span>
         </div>
-        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
-          <div className={`h-full rounded-full ${ratioBar(achievable, required)}`} style={{ width: `${pct}%` }} />
-        </div>
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Toggle the per-Pokémon breakdown"
+          className="mt-1.5 block w-full"
+        >
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
+            <div className={`h-full rounded-full ${ratioBar(achievable, required)}`} style={{ width: `${pct}%` }} />
+          </div>
+        </button>
+      </div>
 
       {open ? (
         <ul className="space-y-1 border-t border-white/10 px-2.5 py-2 text-xs">
