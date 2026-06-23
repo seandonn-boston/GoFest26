@@ -70,7 +70,9 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   useRemoteRaids: false,
   sleepHoursPerNight: DEFAULT_SLEEP_HOURS,
   region: DEFAULT_REGION,
-  megaBuddyLevel: 1,
+  // L3 (Max) is the "standard" leveled mega — the realistic same-type buddy a
+  // GO Fest raider runs, so the XL numbers reflect a +25% boost out of the box.
+  megaBuddyLevel: 3,
   calibration: {},
 };
 

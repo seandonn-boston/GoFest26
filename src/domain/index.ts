@@ -9,7 +9,10 @@ import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, Currency, PlanSummary, Range } from "./types";
 
 export * from "./types";
-export { computeBossResult, isL4Eligible, xlBoostFactor } from "./raidsNeeded";
+export { computeBossResult, isL4Eligible, xlBoostFactor, rewardBreakdown, raidsForCurrency } from "./raidsNeeded";
+export type { RewardBreakdown } from "./raidsNeeded";
+export { explainCurrency } from "./explain";
+export type { CurrencyExplanation, ExplainLine, Token, EditField } from "./explain";
 export { computeCapacity } from "./capacity";
 export { computeSchedule } from "./scheduler";
 export { computeBlockPlan, rareCandyForecast, goalProgress, autoRemoteAllocations, globalPriorityFromBlocks, RISK_BANDS } from "./blockPlan";

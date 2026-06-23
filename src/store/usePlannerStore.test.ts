@@ -44,9 +44,9 @@ describe("planner store interactive actions", () => {
   });
 
   it("setSettings updates the global mega-buddy level", () => {
-    expect(store().settings.megaBuddyLevel).toBe(1); // conservative default
-    store().setSettings({ megaBuddyLevel: 3 });
-    expect(store().settings.megaBuddyLevel).toBe(3);
+    expect(store().settings.megaBuddyLevel).toBe(3); // L3 "standard" default
+    store().setSettings({ megaBuddyLevel: 2 });
+    expect(store().settings.megaBuddyLevel).toBe(2);
   });
 
   it("setCalibration stores a rounded value and clears on 0", () => {

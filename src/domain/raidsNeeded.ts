@@ -53,6 +53,56 @@ function calibrationMetric(boss: RaidBoss, currency: Currency): CalibrationMetri
  * A logged calibration value overrides the assumed range with a point estimate.
  * Returns undefined when this boss can't yield that currency under the toggles.
  */
+/** The per-raid reward for a currency, broken into its parts so a tooltip can
+ *  show the exact math the engine used. `range` is what feeds raids-needed. */
+export interface RewardBreakdown {
+  range: Range | undefined;
+  /** A logged calibration value, used as-is (no boost re-applied). */
+  calibrated?: number;
+  /** The pre-boost / pre-bonus reward range from the boss data. */
+  base?: Range;
+  /** xlCandy: same-type Mega buddy boost multiplier applied to `base`. */
+  boostFactor?: number;
+  /** candy: transfer + mega-buddy candy added to `base`. */
+  candyBonus?: number;
+}
+
+export function rewardBreakdown(
+  boss: RaidBoss,
+  currency: Currency,
+  input: BossInput,
+  calibration: Calibration = {},
+  megaBuddyLevel = 1,
+): RewardBreakdown {
+  const c = GAME_CONFIG.catch;
+  const skipCatch = input.skipCatch ?? false;
+  const megaBuddy = input.megaBuddy ?? true;
+
+  const metric = calibrationMetric(boss, currency);
+  const cal = metric ? calibration[metric] : undefined;
+  const calibrated = cal && cal > 0 ? cal : undefined;
+
+  if (currency === "megaEnergy") {
+    if (calibrated) return { range: { min: calibrated, max: calibrated }, calibrated };
+    return { range: boss.rewards.megaEnergy, base: boss.rewards.megaEnergy };
+  }
+  if (skipCatch) return { range: undefined }; // ran from the encounter → no catch rewards
+
+  if (currency === "candy") {
+    const candyBonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);
+    const base = boss.rewards.candy;
+    return { range: { min: base.min + candyBonus, max: base.max + candyBonus }, base, candyBonus };
+  }
+  // xlCandy. A logged calibration value already reflects the player's own mega,
+  // so it's used as-is; otherwise the assumed range scales by the same-type Mega
+  // buddy XL boost (1 = none).
+  if (calibrated) return { range: { min: calibrated, max: calibrated }, calibrated };
+  const boostFactor = xlBoostFactor(boss, input, megaBuddyLevel);
+  const base = boss.rewards.xlCandy;
+  const range = boostFactor === 1 ? base : { min: base.min * boostFactor, max: base.max * boostFactor };
+  return { range, base, boostFactor };
+}
+
 function perRaidReward(
   boss: RaidBoss,
   currency: Currency,
@@ -60,31 +110,10 @@ function perRaidReward(
   calibration: Calibration = {},
   megaBuddyLevel = 1,
 ): Range | undefined {
-  const c = GAME_CONFIG.catch;
-  const skipCatch = input.skipCatch ?? false;
-  const megaBuddy = input.megaBuddy ?? true;
-
-  const metric = calibrationMetric(boss, currency);
-  const cal = metric ? calibration[metric] : undefined;
-  const calRange = cal && cal > 0 ? { min: cal, max: cal } : undefined;
-
-  if (currency === "megaEnergy") return calRange ?? boss.rewards.megaEnergy;
-  if (skipCatch) return undefined; // ran from the encounter → no catch rewards
-
-  if (currency === "candy") {
-    const bonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);
-    return { min: boss.rewards.candy.min + bonus, max: boss.rewards.candy.max + bonus };
-  }
-  // xlCandy. A logged calibration value already reflects the player's own mega,
-  // so it's used as-is; otherwise the assumed range scales by the same-type Mega
-  // buddy XL boost (1 = none).
-  if (calRange) return calRange;
-  const factor = xlBoostFactor(boss, input, megaBuddyLevel);
-  const base = boss.rewards.xlCandy;
-  return factor === 1 ? base : { min: base.min * factor, max: base.max * factor };
+  return rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel).range;
 }
 
-function raidsForCurrency(needed: number, reward: Range): Range {
+export function raidsForCurrency(needed: number, reward: Range): Range {
   if (needed <= 0) return { ...ZERO_RANGE };
   return {
     min: ceilDiv(needed, reward.max), // best-case rolls → fewest raids
