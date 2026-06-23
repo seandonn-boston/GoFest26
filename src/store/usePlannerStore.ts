@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getBoss, SORTED_BOSSES } from "@/data";
+import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { FORM_META } from "@/data/formGroups";
 import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
@@ -16,14 +16,17 @@ export { makeDefaultInput };
 
 type CurrentField = keyof BossInput["current"];
 
-/** Flat patch for one individual copy (maps onto its nested current/target). */
+/** Flat patch for one individual copy (maps onto its nested current/target).
+ *  The `*Y` fields are Mewtwo's independent Y mega branch. */
 export type CopyPatch = Partial<{
   variant: Variant;
   lucky: boolean;
   level: number;
   megaLevel: number;
+  megaLevelY: number;
   targetLevel: number;
   targetMegaLevel: number;
+  targetMegaLevelY: number;
 }>;
 
 const cid = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -48,8 +51,35 @@ const applyCopyPatch = (c: PokemonCopy, p: CopyPatch): PokemonCopy => ({
   ...c,
   variant: p.variant ?? c.variant,
   lucky: p.lucky ?? c.lucky,
-  current: { level: p.level ?? c.current.level, megaLevel: p.megaLevel ?? c.current.megaLevel },
-  target: { level: p.targetLevel ?? c.target.level, megaLevel: p.targetMegaLevel ?? c.target.megaLevel },
+  current: {
+    level: p.level ?? c.current.level,
+    megaLevel: p.megaLevel ?? c.current.megaLevel,
+    megaLevelY: p.megaLevelY ?? c.current.megaLevelY,
+  },
+  target: {
+    level: p.targetLevel ?? c.target.level,
+    megaLevel: p.targetMegaLevel ?? c.target.megaLevel,
+    megaLevelY: p.targetMegaLevelY ?? c.target.megaLevelY,
+  },
+});
+
+// ---- Mewtwo individuals: one Mewtwo with independent X (megaLevel) and Y
+// (megaLevelY) branches. Copies live on the selected "owner" form's input. ----
+const mewtwoOwnerId = (inputs: Record<string, BossInput>): string | null =>
+  inputs[MEWTWO_X_ID]?.selected ? MEWTWO_X_ID : inputs[MEWTWO_Y_ID]?.selected ? MEWTWO_Y_ID : null;
+
+const mewtwoSeedCopy = (xi: BossInput | undefined, yi: BossInput | undefined, owner: BossInput): PokemonCopy => ({
+  id: cid(),
+  variant: owner.variant ?? "standard",
+  current: { level: owner.current.level, megaLevel: xi?.current.megaLevel ?? 0, megaLevelY: yi?.current.megaLevel ?? 0 },
+  target: { level: owner.target.level, megaLevel: xi?.target.megaLevel ?? 4, megaLevelY: yi?.target.megaLevel ?? 4 },
+});
+
+const newMewtwoCopy = (owner: BossInput): PokemonCopy => ({
+  id: cid(),
+  variant: "standard",
+  current: { level: 40, megaLevel: 0, megaLevelY: 0 },
+  target: { level: owner.target.level, megaLevel: 4, megaLevelY: 4 },
 });
 
 /** Boss ids sharing a form group with this one (incl. itself), else just it. */
@@ -213,6 +243,11 @@ interface PlannerState {
   removeCopy: (bossId: string, copyId: string) => void;
   updateCopy: (bossId: string, copyId: string, patch: CopyPatch) => void;
   moveCopy: (bossId: string, copyId: string, dir: -1 | 1) => void;
+  /** Mewtwo individuals (independent X/Y branches), stored on the owner form. */
+  addMewtwoCopy: () => void;
+  removeMewtwoCopy: (copyId: string) => void;
+  updateMewtwoCopy: (copyId: string, patch: CopyPatch) => void;
+  moveMewtwoCopy: (copyId: string, dir: -1 | 1) => void;
   /** Set one block's priority order (highest first). */
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
@@ -479,6 +514,80 @@ export const usePlannerStore = create<PlannerState>()(
           if (idx < 0 || to < 0 || to >= copies.length) return state;
           [copies[idx], copies[to]] = [copies[to], copies[idx]];
           return { inputs: { ...state.inputs, [bossId]: { ...input, copies } } };
+        }),
+
+      addMewtwoCopy: () =>
+        set((state) => {
+          const ownerId = mewtwoOwnerId(state.inputs);
+          if (!ownerId) return state;
+          const owner = state.inputs[ownerId]!;
+          const xi = state.inputs[MEWTWO_X_ID];
+          const yi = state.inputs[MEWTWO_Y_ID];
+          const copies = owner.copies?.length ? owner.copies : [mewtwoSeedCopy(xi, yi, owner)];
+          return { inputs: { ...state.inputs, [ownerId]: { ...owner, copies: [...copies, newMewtwoCopy(owner)] } } };
+        }),
+
+      updateMewtwoCopy: (copyId, patch) =>
+        set((state) => {
+          const ownerId = mewtwoOwnerId(state.inputs);
+          const owner = ownerId ? state.inputs[ownerId] : undefined;
+          if (!ownerId || !owner?.copies) return state;
+          const copies = owner.copies.map((c) => (c.id === copyId ? applyCopyPatch(c, patch) : c));
+          return { inputs: { ...state.inputs, [ownerId]: { ...owner, copies } } };
+        }),
+
+      moveMewtwoCopy: (copyId, dir) =>
+        set((state) => {
+          const ownerId = mewtwoOwnerId(state.inputs);
+          const owner = ownerId ? state.inputs[ownerId] : undefined;
+          if (!ownerId || !owner?.copies) return state;
+          const copies = [...owner.copies];
+          const idx = copies.findIndex((c) => c.id === copyId);
+          const to = idx + dir;
+          if (idx < 0 || to < 0 || to >= copies.length) return state;
+          [copies[idx], copies[to]] = [copies[to], copies[idx]];
+          return { inputs: { ...state.inputs, [ownerId]: { ...owner, copies } } };
+        }),
+
+      removeMewtwoCopy: (copyId) =>
+        set((state) => {
+          const ownerId = mewtwoOwnerId(state.inputs);
+          const owner = ownerId ? state.inputs[ownerId] : undefined;
+          if (!ownerId || !owner?.copies) return state;
+          const copies = owner.copies.filter((c) => c.id !== copyId);
+          if (copies.length > 1) {
+            return { inputs: { ...state.inputs, [ownerId]: { ...owner, copies } } };
+          }
+          // Collapse to the simple Mewtwo card, restoring the survivor's level
+          // into the owner and its X / Y mega levels into the two form inputs.
+          const c = copies[0];
+          const inputs = { ...state.inputs };
+          inputs[ownerId] = c
+            ? {
+                ...owner,
+                copies: undefined,
+                variant: c.variant,
+                current: { ...owner.current, level: c.current.level },
+                target: { ...owner.target, level: c.target.level },
+              }
+            : { ...owner, copies: undefined };
+          if (c) {
+            const xi = inputs[MEWTWO_X_ID];
+            const yi = inputs[MEWTWO_Y_ID];
+            if (xi)
+              inputs[MEWTWO_X_ID] = {
+                ...xi,
+                current: { ...xi.current, megaLevel: c.current.megaLevel },
+                target: { ...xi.target, megaLevel: c.target.megaLevel },
+              };
+            if (yi)
+              inputs[MEWTWO_Y_ID] = {
+                ...yi,
+                current: { ...yi.current, megaLevel: c.current.megaLevelY ?? 0 },
+                target: { ...yi.target, megaLevel: c.target.megaLevelY ?? 4 },
+              };
+          }
+          return { inputs };
         }),
 
       setBlockPriority: (blockKey, ids) =>

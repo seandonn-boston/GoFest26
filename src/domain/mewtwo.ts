@@ -140,3 +140,34 @@ export function computeMewtwoResults(
   }
   return out;
 }
+
+export interface MewtwoCopyNeed {
+  xEnergy: number;
+  yEnergy: number;
+  xl: number;
+  candy: number;
+}
+
+/**
+ * Per-individual remaining need with the four shared pools (XL/Candy on the
+ * owner, X/Y energy on each form) cascaded to the highest-priority Mewtwo first —
+ * for the editor's per-row breakdown.
+ */
+export function perMewtwoCopyNeeds(xi: BossInput | undefined, yi: BossInput | undefined): MewtwoCopyNeed[] {
+  const owner = xi?.selected ? xi : yi;
+  if (!owner) return [];
+  const bossX = getBoss(MEWTWO_X_ID)!;
+  const bossY = getBoss(MEWTWO_Y_ID)!;
+  const rem = { xl: owner.current.xlCandy, candy: owner.current.candy, x: xi?.current.megaEnergy ?? 0, y: yi?.current.megaEnergy ?? 0 };
+  const take = (need: number, key: "xl" | "candy" | "x" | "y") => {
+    const use = Math.min(rem[key], need);
+    rem[key] -= use;
+    return need - use;
+  };
+  return mewtwoIndividuals(xi, yi).map((ind) => ({
+    xEnergy: take(energyNeed(bossX.megaLevelEnergyTotals, ind.xCur, ind.xTgt), "x"),
+    yEnergy: take(energyNeed(bossY.megaLevelEnergyTotals, ind.yCur, ind.yTgt), "y"),
+    xl: take(xlNeed(ind.variant, ind.level, ind.tLevel), "xl"),
+    candy: take(candyNeed(ind.level, ind.tLevel), "candy"),
+  }));
+}

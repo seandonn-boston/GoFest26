@@ -70,6 +70,34 @@ describe("planner store interactive actions", () => {
     expect(after[1].id).toBe(a.id);
   });
 
+  it("addMewtwoCopy seeds from both forms; removeMewtwoCopy collapses to both inputs", () => {
+    store().toggleSelected("mega-mewtwo-x");
+    store().toggleSelected("mega-mewtwo-y");
+    store().setCurrent("mega-mewtwo-x", "megaLevel", 2); // X branch
+    store().setCurrent("mega-mewtwo-y", "megaLevel", 0);
+    store().addMewtwoCopy();
+    const copies = store().inputs["mega-mewtwo-x"].copies!;
+    expect(copies).toHaveLength(2);
+    expect(copies[0].current.megaLevel).toBe(2); // seeded X from the X input
+    expect(copies[0].current.megaLevelY).toBe(0); // seeded Y from the Y input
+    // Collapse: removing back to one restores X/Y mega levels onto each input.
+    store().updateMewtwoCopy(copies[1].id, { megaLevelY: 3, megaLevel: 0 });
+    store().removeMewtwoCopy(copies[0].id);
+    expect(store().inputs["mega-mewtwo-x"].copies).toBeUndefined();
+    expect(store().inputs["mega-mewtwo-y"].current.megaLevel).toBe(3); // Y restored
+  });
+
+  it("updateMewtwoCopy patches the independent X and Y branches", () => {
+    store().toggleSelected("mega-mewtwo-x");
+    store().toggleSelected("mega-mewtwo-y");
+    store().addMewtwoCopy();
+    const id = store().inputs["mega-mewtwo-x"].copies![1].id;
+    store().updateMewtwoCopy(id, { megaLevel: 1, megaLevelY: 3 });
+    const c = store().inputs["mega-mewtwo-x"].copies!.find((x) => x.id === id)!;
+    expect(c.current.megaLevel).toBe(1);
+    expect(c.current.megaLevelY).toBe(3);
+  });
+
   it("setL4Buddy toggles the per-boss Level-4 catch flag", () => {
     store().toggleSelected(MEWTWO_X_ID);
     expect(store().inputs[MEWTWO_X_ID].l4Buddy ?? false).toBe(false);

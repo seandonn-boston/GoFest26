@@ -18,6 +18,7 @@ import { ImageThumb } from "@/components/ui/ImageThumb";
 import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
+import { MewtwoCopiesEditor } from "./MewtwoCopiesEditor";
 import { MewtwoTitle } from "./MewtwoTitle";
 import { CounterTable } from "./CounterTable";
 import { PresetPicker } from "./PresetPicker";
@@ -61,6 +62,7 @@ export function MewtwoCard({
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
+  const addMewtwoCopy = usePlannerStore((s) => s.addMewtwoCopy);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const preview = usePlannerStore((s) => s.screenshots["mewtwo"]);
   const [open, setOpen] = useState(false); // collapsed by default (inputs hidden)
@@ -75,6 +77,7 @@ export function MewtwoCard({
   // leveling is counted exactly once; prefer X when both are selected.
   const ownerId = selectedX ? bossX.id : bossY.id;
   const owner = (selectedX ? inputX : inputY)!;
+  const copiesMode = (owner.copies?.length ?? 0) > 0;
   const wantsLeveling = owner.target.level > owner.current.level;
   const toMax = xlToMaxRemaining(owner.current.level, owner.current.xlCandy);
 
@@ -159,49 +162,58 @@ export function MewtwoCard({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <NumberInput label="Current Candy" value={owner.current.candy} onChange={(v) => setCurrent(ownerId, "candy", v)} />
             <NumberInput label="Current XL Candy" value={owner.current.xlCandy} onChange={(v) => setCurrent(ownerId, "xlCandy", v)} />
-            <NumberInput label="Current level" value={owner.current.level} min={1} max={50} step={0.5} onChange={(v) => setCurrent(ownerId, "level", v)} />
-            <NumberInput label="Target level" value={owner.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(ownerId, v)} />
-          </div>
-          <div className="mt-3">
-            <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">XL Candy to max (→ lvl 50)</div>
-            <div className="grid grid-cols-3 gap-2">
-              {(["standard", "shadow", "purified"] as const).map((v) => (
-                <div key={v} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-1.5 text-center">
-                  <div className="text-base font-bold text-gofest-accent2">{formatNumber(toMax[v])}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
-                </div>
-              ))}
-            </div>
-            <p className="mt-1.5 text-[11px] text-slate-500">
-              Remaining XL Candy to reach level 50 from your current level &amp; XL. Mega Energy below is
-              separate and driven by each form&apos;s Mega Level goal.
-            </p>
-          </div>
-          {wantsLeveling ? (
-            <p className="mt-2 text-xs text-slate-500">
-              {selectedX && selectedY
-                ? `Leveling to ${owner.target.level} (XL Candy) is split across both forms — you farm Mewtwo XL from X (Sat) and Y (Sun) raids alike, so neither day carries the whole climb.`
-                : `Leveling to ${owner.target.level} (XL Candy) is counted under the form you raid, since you farm Mewtwo XL from those raids.`}
-            </p>
-          ) : null}
-          {/* Max out more than one Mewtwo — scales the shared Candy/XL and each
-              form's Mega Energy alike. */}
-          <div className="mt-3">
-            <QuantityStepper
-              value={owner.quantity ?? 1}
-              label="Max out"
-              onChange={(n) => {
-                setQuantity(bossX.id, n);
-                setQuantity(bossY.id, n);
-              }}
-            />
-            {(owner.quantity ?? 1) > 1 ? (
-              <p className="mt-1 text-[11px] text-slate-500">
-                Planning for {owner.quantity} Mewtwo — Candy, XL, and each form&apos;s Mega Energy are scaled ×
-                {owner.quantity}.
-              </p>
+            {!copiesMode ? (
+              <>
+                <NumberInput label="Current level" value={owner.current.level} min={1} max={50} step={0.5} onChange={(v) => setCurrent(ownerId, "level", v)} />
+                <NumberInput label="Target level" value={owner.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(ownerId, v)} />
+              </>
             ) : null}
           </div>
+          {!copiesMode ? (
+            <>
+              <div className="mt-3">
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">XL Candy to max (→ lvl 50)</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["standard", "shadow", "purified"] as const).map((v) => (
+                    <div key={v} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-1.5 text-center">
+                      <div className="text-base font-bold text-gofest-accent2">{formatNumber(toMax[v])}</div>
+                      <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[11px] text-slate-500">
+                  Remaining XL Candy to reach level 50 from your current level &amp; XL. Mega Energy below is
+                  separate and driven by each form&apos;s Mega Level goal.
+                </p>
+              </div>
+              {wantsLeveling ? (
+                <p className="mt-2 text-xs text-slate-500">
+                  {selectedX && selectedY
+                    ? `Leveling to ${owner.target.level} (XL Candy) is split across both forms — you farm Mewtwo XL from X (Sat) and Y (Sun) raids alike, so neither day carries the whole climb.`
+                    : `Leveling to ${owner.target.level} (XL Candy) is counted under the form you raid, since you farm Mewtwo XL from those raids.`}
+                </p>
+              ) : null}
+              <div className="mt-3">
+                <QuantityStepper
+                  value={owner.quantity ?? 1}
+                  label="Max out (identical)"
+                  onChange={(n) => {
+                    setQuantity(bossX.id, n);
+                    setQuantity(bossY.id, n);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={addMewtwoCopy}
+                  className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
+                >
+                  ＋ Max another Mewtwo (different level / X / Y)
+                </button>
+              </div>
+            </>
+          ) : (
+            <MewtwoCopiesEditor />
+          )}
         </div>
 
         {/* Per-form (only the forms you selected) */}
@@ -218,6 +230,7 @@ export function MewtwoCard({
               onEnergy={(v) => setCurrent(bossX.id, "megaEnergy", v)}
               onMegaLevel={(v) => setCurrent(bossX.id, "megaLevel", v)}
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
+              hideMegaLevels={copiesMode}
               skipCatch={inputX!.skipCatch ?? false}
               megaBuddy={inputX!.megaBuddy ?? true}
               l4Buddy={inputX!.l4Buddy ?? false}
@@ -241,6 +254,7 @@ export function MewtwoCard({
               onEnergy={(v) => setCurrent(bossY.id, "megaEnergy", v)}
               onMegaLevel={(v) => setCurrent(bossY.id, "megaLevel", v)}
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
+              hideMegaLevels={copiesMode}
               skipCatch={inputY!.skipCatch ?? false}
               megaBuddy={inputY!.megaBuddy ?? true}
               l4Buddy={inputY!.l4Buddy ?? false}
@@ -271,6 +285,7 @@ function FormColumn({
   onEnergy,
   onMegaLevel,
   onTargetMegaLevel,
+  hideMegaLevels,
   skipCatch,
   megaBuddy,
   l4Buddy,
@@ -291,6 +306,7 @@ function FormColumn({
   onEnergy: (v: number) => void;
   onMegaLevel: (v: number) => void;
   onTargetMegaLevel: (v: number) => void;
+  hideMegaLevels?: boolean;
   skipCatch: boolean;
   megaBuddy: boolean;
   l4Buddy: boolean;
@@ -314,10 +330,14 @@ function FormColumn({
           <div className="text-[11px] text-slate-400">🗓 {subtitle}</div>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid gap-2 ${hideMegaLevels ? "grid-cols-1" : "grid-cols-3"}`}>
         <NumberInput label="Mega Energy" value={energy} onChange={onEnergy} />
-        <NumberInput label="Mega lvl" value={megaLevel} min={0} max={4} onChange={onMegaLevel} />
-        <NumberInput label="Target lvl" value={targetMegaLevel} min={0} max={4} onChange={onTargetMegaLevel} />
+        {!hideMegaLevels ? (
+          <>
+            <NumberInput label="Mega lvl" value={megaLevel} min={0} max={4} onChange={onMegaLevel} />
+            <NumberInput label="Target lvl" value={targetMegaLevel} min={0} max={4} onChange={onTargetMegaLevel} />
+          </>
+        ) : null}
       </div>
 
       <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-300">
