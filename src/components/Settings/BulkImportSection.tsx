@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 import { ScreenshotImporter } from "./ScreenshotImporter";
 
 /**
@@ -31,12 +32,7 @@ export function BulkImportSection() {
             </span>
           ) : null}
         </span>
-        <span
-          aria-hidden
-          className={`shrink-0 text-gofest-acid transition-transform ${open ? "" : "-rotate-90"}`}
-        >
-          ▾
-        </span>
+        <PlusToggle open={open} size={16} className="shrink-0 text-gofest-acid" />
       </button>
       {/* Unmounted when collapsed; the uploads persist in the store, so the
           view rebuilds from that data on re-expand — nothing is deleted. */}

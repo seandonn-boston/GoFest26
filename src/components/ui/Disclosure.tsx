@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { PlusToggle } from "./PlusToggle";
 
 /**
  * A collapsible bordered panel: a header button with a rotating caret, an
@@ -29,8 +30,8 @@ export function Disclosure({
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
       >
-        <span className="text-slate-300">
-          <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
+        <span className="flex items-center gap-1.5 text-slate-300">
+          <PlusToggle open={open} size={14} className="text-slate-400" />
           {title}
         </span>
         {hint ? <span className="shrink-0">{hint}</span> : null}

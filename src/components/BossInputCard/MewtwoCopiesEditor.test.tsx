@@ -8,8 +8,8 @@ afterEach(() => usePlannerStore.getState().resetAll());
 
 const seed = () => {
   const s = usePlannerStore.getState();
-  s.toggleSelected("mega-mewtwo-x");
-  s.toggleSelected("mega-mewtwo-y");
+  s.setSelected("mega-mewtwo-x", true);
+  s.setSelected("mega-mewtwo-y", true);
   s.addMewtwoCopy(); // seeds #1 + appends #2 → two Mewtwo
 };
 

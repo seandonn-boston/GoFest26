@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
@@ -229,8 +230,8 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
     <div className="rounded-lg border border-white/10 bg-white/[0.02]">
       <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-          <span className="truncate">
-            <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
+          <span className="inline-flex items-center truncate">
+            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
             <span className="font-medium text-slate-200">{block.name}</span>
             <span className="ml-1.5 text-slate-500">
               {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}

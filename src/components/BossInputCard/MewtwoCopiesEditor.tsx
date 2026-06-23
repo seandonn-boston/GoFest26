@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { perMewtwoCopyNeeds } from "@/domain";
 import { MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
@@ -22,7 +23,7 @@ const iconBtn =
  * pre-unlocked, so raising one current zeroes the other). The four shared pools
  * (Candy, XL, X-Energy, Y-Energy) cascade to the #1 Mewtwo first.
  */
-export function MewtwoCopiesEditor() {
+export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
   const xi = usePlannerStore((s) => s.inputs[MEWTWO_X_ID]);
   const yi = usePlannerStore((s) => s.inputs[MEWTWO_Y_ID]);
   const addMewtwoCopy = usePlannerStore((s) => s.addMewtwoCopy);
@@ -43,6 +44,7 @@ export function MewtwoCopiesEditor() {
         Shared Candy / XL / X-Energy / Y-Energy (above) fill the #1 Mewtwo first. A caught Mewtwo only has one
         branch unlocked, so setting an X level clears Y (and vice-versa).
       </p>
+      {scanSlot ? <div className="mb-2">{scanSlot}</div> : null}
       <div className="space-y-2">
         {copies.map((c, i) => {
           const net = needs[i];
@@ -62,7 +64,7 @@ export function MewtwoCopiesEditor() {
                 <div className="ml-auto flex items-center gap-1">
                   <button type="button" disabled={i === 0} onClick={() => moveMewtwoCopy(c.id, -1)} className={iconBtn} aria-label="Raise priority">↑</button>
                   <button type="button" disabled={i === copies.length - 1} onClick={() => moveMewtwoCopy(c.id, 1)} className={iconBtn} aria-label="Lower priority">↓</button>
-                  <button type="button" onClick={() => removeMewtwoCopy(c.id)} className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`} aria-label="Remove Mewtwo">✕</button>
+                  <button type="button" disabled={copies.length === 1} onClick={() => removeMewtwoCopy(c.id)} className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`} aria-label="Remove Mewtwo">✕</button>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">

@@ -12,6 +12,13 @@ export const MEGA_KIND_RING: Record<MegaKind, string> = {
   boss: "ring-white/15",
 };
 
+/** The same kind colors as plain CSS hex, for tinting text (not just rings). */
+export const MEGA_KIND_COLOR: Record<MegaKind, string> = {
+  attacker: "#c084fc", // purple-400
+  wild: "#38bdf8", // sky-400
+  boss: "#cbd5e1", // slate-300
+};
+
 export const MEGA_KIND_LABEL: Record<MegaKind, string> = {
   attacker: "also a super-effective attacker",
   wild: "also boosts the hour's wild spawns",

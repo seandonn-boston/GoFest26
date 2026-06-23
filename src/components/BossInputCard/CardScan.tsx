@@ -15,7 +15,7 @@ type State = "idle" | "scanning" | "done" | "error";
  * Per-card screenshot scan: OCR a single Pokémon detail screenshot (in the
  * browser) and apply its Candy / XL / Mega Energy to this card — but only if
  * the screenshot's species (read from its labels) matches this card's Pokémon.
- * Beta — the detected values are shown for review before applying.
+ * The detected values are shown for review before applying.
  */
 
 export function CardScan({
@@ -89,7 +89,6 @@ export function CardScan({
         >
           📷 Scan screenshot
         </button>
-        <span className="rounded-sm border border-amber-400/40 px-1 font-mono text-[9px] uppercase text-amber-200">beta</span>
       </div>
 
       {state === "scanning" ? <p className="mt-1.5 text-[11px] text-slate-400">Scanning…</p> : null}

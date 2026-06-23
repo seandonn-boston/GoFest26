@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { perCopyNeeds } from "@/domain";
 import type { BossInput, RaidBoss, Variant } from "@/domain/types";
@@ -22,7 +23,7 @@ const iconBtn =
  * priority order. The shared on-hand pool (entered above) cascades to the #1
  * individual first — `perCopyNeeds` reports each one's remaining need.
  */
-export function CopiesEditor({ boss, input }: { boss: RaidBoss; input: BossInput }) {
+export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input: BossInput; scanSlot?: ReactNode }) {
   const addCopy = usePlannerStore((s) => s.addCopy);
   const removeCopy = usePlannerStore((s) => s.removeCopy);
   const updateCopy = usePlannerStore((s) => s.updateCopy);
@@ -35,11 +36,12 @@ export function CopiesEditor({ boss, input }: { boss: RaidBoss; input: BossInput
   return (
     <div className="mt-3 rounded-lg border border-gofest-accent2/25 bg-gofest-accent2/[0.04] p-2.5">
       <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gofest-accent2">
-        Maxing {copies.length} individuals · priority order
+        Maxing {copies.length} {copies.length === 1 ? "individual" : "individuals"} · priority order
       </div>
       <p className="mb-2 text-[10px] text-slate-500">
         Your on-hand XL / Candy / Energy above is one shared pool — it fills the #1 individual first, then the next.
       </p>
+      {scanSlot ? <div className="mb-2">{scanSlot}</div> : null}
       <div className="space-y-2">
         {copies.map((c, i) => {
           const net = needs[i]?.net ?? {};
@@ -63,7 +65,7 @@ export function CopiesEditor({ boss, input }: { boss: RaidBoss; input: BossInput
                   >
                     ↓
                   </button>
-                  <button type="button" onClick={() => removeCopy(boss.id, c.id)} className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`} aria-label="Remove individual">
+                  <button type="button" disabled={copies.length === 1} onClick={() => removeCopy(boss.id, c.id)} className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`} aria-label="Remove individual">
                     ✕
                   </button>
                 </div>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { NumberInput } from "@/components/ui/NumberInput";
-import { QuantityStepper } from "@/components/ui/QuantityStepper";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 import { megaBoostsForBoss, megaBoostSpecies, isL4Eligible } from "@/domain";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { Sprite } from "@/components/ui/Sprite";
@@ -15,22 +15,17 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 import { Copyable } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
-import { xlToMaxRemaining } from "@/lib/xlToMax";
 import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
 import { MewtwoCopiesEditor } from "./MewtwoCopiesEditor";
 import { MewtwoTitle } from "./MewtwoTitle";
 import { CounterTable } from "./CounterTable";
-import { PresetPicker } from "./PresetPicker";
-import { PRESETS } from "@/data/presets";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
   xlCandy: "XL Candy",
   megaEnergy: "Mega Energy",
 };
-
-const VARIANT_LABEL = { standard: "Regular", shadow: "Shadow", purified: "Purified" } as const;
 
 // Combined Mewtwo types (X is Psychic/Fighting, Y is Psychic).
 const MEWTWO_TYPES = ["Psychic", "Fighting"];
@@ -55,42 +50,30 @@ export function MewtwoCard({
   const inputX = usePlannerStore((s) => s.inputs[bossX.id]);
   const inputY = usePlannerStore((s) => s.inputs[bossY.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
-  const setQuantity = usePlannerStore((s) => s.setQuantity);
-  const setTargetLevel = usePlannerStore((s) => s.setTargetLevel);
-  const setTargetMegaLevel = usePlannerStore((s) => s.setTargetMegaLevel);
-  const applyPreset = usePlannerStore((s) => s.applyPreset);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
-  const addMewtwoCopy = usePlannerStore((s) => s.addMewtwoCopy);
+  const ensureMewtwoCopies = usePlannerStore((s) => s.ensureMewtwoCopies);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const preview = usePlannerStore((s) => s.screenshots["mewtwo"]);
   const [open, setOpen] = useState(false); // collapsed by default (inputs hidden)
 
   const selectedX = !!inputX?.selected;
   const selectedY = !!inputY?.selected;
+  const owner = selectedX ? inputX : inputY;
+  const hasCopies = (owner?.copies?.length ?? 0) > 0;
+  // The maxing editor is always shown — seed Mewtwo individual #1 once opened.
+  useEffect(() => {
+    if (open && (selectedX || selectedY) && !hasCopies) ensureMewtwoCopies();
+  }, [open, selectedX, selectedY, hasCopies, ensureMewtwoCopies]);
+
   // Render whenever EITHER form is selected (selecting only X never creates the
   // Y input, and vice-versa). The per-form columns below are gated individually.
-  if (!selectedX && !selectedY) return null;
+  if (!selectedX && !selectedY || !owner) return null;
 
   // The shared Mewtwo (candy/XL/level/variant) lives on a selected form so its
   // leveling is counted exactly once; prefer X when both are selected.
   const ownerId = selectedX ? bossX.id : bossY.id;
-  const owner = (selectedX ? inputX : inputY)!;
-  const copiesMode = (owner.copies?.length ?? 0) > 0;
-  const wantsLeveling = owner.target.level > owner.current.level;
-  const toMax = xlToMaxRemaining(owner.current.level, owner.current.xlCandy);
-
-  // Presets: a leveling preset sets the shared target level (on the owner form);
-  // a mega-level preset applies to BOTH forms (each has its own Mega Level).
-  const applyMewtwoPreset = (presetId: string) => {
-    if (PRESETS.find((p) => p.id === presetId)?.kind === "mega") {
-      applyPreset(bossX.id, presetId);
-      applyPreset(bossY.id, presetId);
-    } else {
-      applyPreset(ownerId, presetId);
-    }
-  };
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
@@ -101,12 +84,8 @@ export function MewtwoCard({
           aria-expanded={open}
           className="block w-full text-left"
         >
-          <span
-            aria-hidden
-            className={`absolute right-3 top-2 text-2xl leading-none text-slate-300 transition-transform ${open ? "rotate-90" : ""}`}
-            title={open ? "Collapse" : "Expand"}
-          >
-            ▸
+          <span className="absolute right-3 top-3" title={open ? "Collapse" : "Expand"}>
+            <PlusToggle open={open} size={22} className="text-slate-200" />
           </span>
           <div className="mt-1 flex justify-center gap-1">
             {MEWTWO_TYPES.map((t) => (
@@ -130,90 +109,45 @@ export function MewtwoCard({
 
         {!open ? null : (
         <>
-        <div className="mb-4 flex items-start gap-2">
-          <div className="min-w-0 flex-1">
-            <CardScan
-              expectedSpecies="mewtwo"
-              bossLabel="Mega Mewtwo"
-              onThumb={(thumb, capturedAt) => setScreenshot("mewtwo", thumb, capturedAt)}
-              onApply={(s) => {
-                if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
-                if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
-                const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
-                if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
-                if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
-              }}
-            />
-          </div>
-          {preview ? <ImageThumb src={preview.src} alt="Mewtwo screenshot" size={56} /> : null}
-        </div>
-
-        {/* Quick presets — above the inputs they fill (leveling → shared target,
-            mega level → both forms). */}
-        <div className="mb-4">
-          <PresetPicker boss={bossX} activePresetId={owner.presetId} onApply={applyMewtwoPreset} />
-        </div>
-
-        {/* Shared Mewtwo */}
+        {/* On-hand pool — shared Candy/XL plus each form's Mega Energy. */}
         <div className="mb-4 rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gofest-accent2">
-            Shared Mewtwo
+            How much Mewtwo candy do you already have?
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <NumberInput label="Current Candy" value={owner.current.candy} onChange={(v) => setCurrent(ownerId, "candy", v)} />
             <NumberInput label="Current XL Candy" value={owner.current.xlCandy} onChange={(v) => setCurrent(ownerId, "xlCandy", v)} />
-            {!copiesMode ? (
-              <>
-                <NumberInput label="Current level" value={owner.current.level} min={1} max={50} step={0.5} onChange={(v) => setCurrent(ownerId, "level", v)} />
-                <NumberInput label="Target level" value={owner.target.level} min={1} max={50} step={0.5} onChange={(v) => setTargetLevel(ownerId, v)} />
-              </>
+            {selectedX ? (
+              <NumberInput label="Current Mega X Candy" value={inputX!.current.megaEnergy} onChange={(v) => setCurrent(bossX.id, "megaEnergy", v)} />
+            ) : null}
+            {selectedY ? (
+              <NumberInput label="Current Mega Y Candy" value={inputY!.current.megaEnergy} onChange={(v) => setCurrent(bossY.id, "megaEnergy", v)} />
             ) : null}
           </div>
-          {!copiesMode ? (
-            <>
-              <div className="mt-3">
-                <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">XL Candy to max (→ lvl 50)</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["standard", "shadow", "purified"] as const).map((v) => (
-                    <div key={v} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-1.5 text-center">
-                      <div className="text-base font-bold text-gofest-accent2">{formatNumber(toMax[v])}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-1.5 text-[11px] text-slate-500">
-                  Remaining XL Candy to reach level 50 from your current level &amp; XL. Mega Energy below is
-                  separate and driven by each form&apos;s Mega Level goal.
-                </p>
-              </div>
-              {wantsLeveling ? (
-                <p className="mt-2 text-xs text-slate-500">
-                  {selectedX && selectedY
-                    ? `Leveling to ${owner.target.level} (XL Candy) is split across both forms — you farm Mewtwo XL from X (Sat) and Y (Sun) raids alike, so neither day carries the whole climb.`
-                    : `Leveling to ${owner.target.level} (XL Candy) is counted under the form you raid, since you farm Mewtwo XL from those raids.`}
-                </p>
-              ) : null}
-              <div className="mt-3">
-                <QuantityStepper
-                  value={owner.quantity ?? 1}
-                  label="Max out (identical)"
-                  onChange={(n) => {
-                    setQuantity(bossX.id, n);
-                    setQuantity(bossY.id, n);
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={addMewtwoCopy}
-                  className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
-                >
-                  ＋ Max another Mewtwo (different level / X / Y)
-                </button>
-              </div>
-            </>
-          ) : (
-            <MewtwoCopiesEditor />
-          )}
+          {preview ? (
+            <div className="mt-2 flex justify-end">
+              <ImageThumb src={preview.src} alt="Mewtwo screenshot" size={48} />
+            </div>
+          ) : null}
+
+          {/* Maxing section — always shown, with the screenshot uploader inline
+              above the #1 / #2 priority tiles. */}
+          <MewtwoCopiesEditor
+            scanSlot={
+              <CardScan
+                expectedSpecies="mewtwo"
+                bossLabel="Mega Mewtwo"
+                onThumb={(thumb, capturedAt) => setScreenshot("mewtwo", thumb, capturedAt)}
+                onApply={(s) => {
+                  if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
+                  if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
+                  const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
+                  if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
+                  if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
+                }}
+              />
+            }
+          />
         </div>
 
         {/* Per-form (only the forms you selected) */}
@@ -224,13 +158,6 @@ export function MewtwoCard({
               subtitle={describeAvailability(bossX)}
               types={bossX.types}
               sprite={bossX.sprite}
-              energy={inputX!.current.megaEnergy}
-              megaLevel={inputX!.current.megaLevel}
-              targetMegaLevel={inputX!.target.megaLevel}
-              onEnergy={(v) => setCurrent(bossX.id, "megaEnergy", v)}
-              onMegaLevel={(v) => setCurrent(bossX.id, "megaLevel", v)}
-              onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
-              hideMegaLevels={copiesMode}
               skipCatch={inputX!.skipCatch ?? false}
               megaBuddy={inputX!.megaBuddy ?? true}
               l4Buddy={inputX!.l4Buddy ?? false}
@@ -248,13 +175,6 @@ export function MewtwoCard({
               subtitle={describeAvailability(bossY)}
               types={bossY.types}
               sprite={bossY.sprite}
-              energy={inputY!.current.megaEnergy}
-              megaLevel={inputY!.current.megaLevel}
-              targetMegaLevel={inputY!.target.megaLevel}
-              onEnergy={(v) => setCurrent(bossY.id, "megaEnergy", v)}
-              onMegaLevel={(v) => setCurrent(bossY.id, "megaLevel", v)}
-              onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
-              hideMegaLevels={copiesMode}
               skipCatch={inputY!.skipCatch ?? false}
               megaBuddy={inputY!.megaBuddy ?? true}
               l4Buddy={inputY!.l4Buddy ?? false}
@@ -279,13 +199,6 @@ function FormColumn({
   subtitle,
   types,
   sprite,
-  energy,
-  megaLevel,
-  targetMegaLevel,
-  onEnergy,
-  onMegaLevel,
-  onTargetMegaLevel,
-  hideMegaLevels,
   skipCatch,
   megaBuddy,
   l4Buddy,
@@ -300,13 +213,6 @@ function FormColumn({
   subtitle: string;
   types?: string[];
   sprite?: string;
-  energy: number;
-  megaLevel: number;
-  targetMegaLevel: number;
-  onEnergy: (v: number) => void;
-  onMegaLevel: (v: number) => void;
-  onTargetMegaLevel: (v: number) => void;
-  hideMegaLevels?: boolean;
   skipCatch: boolean;
   megaBuddy: boolean;
   l4Buddy: boolean;
@@ -330,17 +236,8 @@ function FormColumn({
           <div className="text-[11px] text-slate-400">🗓 {subtitle}</div>
         </div>
       </div>
-      <div className={`grid gap-2 ${hideMegaLevels ? "grid-cols-1" : "grid-cols-3"}`}>
-        <NumberInput label="Mega Energy" value={energy} onChange={onEnergy} />
-        {!hideMegaLevels ? (
-          <>
-            <NumberInput label="Mega lvl" value={megaLevel} min={0} max={4} onChange={onMegaLevel} />
-            <NumberInput label="Target lvl" value={targetMegaLevel} min={0} max={4} onChange={onTargetMegaLevel} />
-          </>
-        ) : null}
-      </div>
 
-      <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-300">
+      <div className="flex flex-col gap-1 text-[11px] text-slate-300">
         <label className="flex items-center gap-1.5">
           <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={skipCatch} onChange={(e) => onSkipCatch(e.target.checked)} />
           Run from encounter
