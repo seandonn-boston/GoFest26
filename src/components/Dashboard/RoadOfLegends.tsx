@@ -52,6 +52,12 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
           {over ? ` · ${day.remaining} over` : ""}
         </span>
       </div>
+      {day.focus ? (
+        <p className="mb-1 text-[10px] text-gofest-acid/90">
+          🎯 Targeting <b>{day.focus.blockName}</b> — the weekend block with the most raids that won&apos;t fit (
+          {day.focus.overflow} over), worked down its priority order.
+        </p>
+      ) : null}
       <BandBar height="h-2.5" bands={day.bands} fitted={day.fitted} capacityMax={day.capacity.max} />
       {used.length > 0 ? (
         <div className="mt-1.5 divide-y divide-white/[0.04]">

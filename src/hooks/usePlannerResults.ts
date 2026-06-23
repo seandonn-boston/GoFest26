@@ -57,7 +57,16 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
   const playDays = useDeferredValue(usePlannerStore((s) => s.playDays));
   return useMemo(() => {
     const list = Object.values(inputs);
-    const road = computeRoadPlan(list, summary.results, summary.capacity, settings, playDays, blockPriority);
+    const road = computeRoadPlan(
+      list,
+      summary.results,
+      summary.capacity,
+      settings,
+      playDays,
+      blockPriority,
+      remoteAllocations,
+      quickCatchBlocks,
+    );
     const weekend = computeBlockPlan(
       list,
       summary.results,
