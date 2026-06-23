@@ -14,8 +14,10 @@ import { collapseForms, primaryFormId } from "./forms";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import {
+  computeBlockPlan,
   fillShares,
   globalPriorityFromBlocks,
+  mostOverflowingBlock,
   sized,
   type BlockSpeciesShare,
   type RawShare,
@@ -37,6 +39,9 @@ export interface RoadDayPlan {
   fitted: number;
   /** Raids that didn't fit the raid hour. */
   remaining: number;
+  /** Set on Monday when its raid hour is being steered at the weekend's
+   *  most-overflowing habitat block (vs. plain featured-priority order). */
+  focus?: { blockName: string; overflow: number };
   bands: Record<RiskBand, number>;
   species: BlockSpeciesShare[];
 }
@@ -79,12 +84,22 @@ export function computeRoadPlan(
   settings: PlannerSettings = DEFAULT_SETTINGS,
   playDays: Record<string, boolean> = {},
   blockPriority: Record<string, string[]> = {},
+  remoteAllocations: Record<string, number> = {},
+  quickCatchBlocks: Record<string, boolean> = {},
 ): RoadPlan {
   const rewardCase = settings.rewardCase;
   const rpH = capacity.raidsPerHour;
   const resultById = new Map(results.map((r) => [r.bossId, r]));
   // Multi-form species collapse to one shared-resource target (primary forme).
   const collapsed = collapseForms(inputs);
+
+  // Look at the weekend first (no weekday head start): which 3-hour habitat
+  // block has the most raids that WON'T fit? Monday's marathon raid hour — the
+  // only weekday featuring the full 5★ roster — is steered there, working down
+  // that block's priority order, so the heaviest weekend overload gets relieved.
+  const worstBlock = mostOverflowingBlock(
+    computeBlockPlan(inputs, results, capacity, settings, blockPriority, remoteAllocations, quickCatchBlocks, {}),
+  );
 
   // Raids still wanted per selected, LOCAL species (region-locked targets can't
   // be raided in person during a weekday raid hour — they stay weekend/remote).
@@ -111,11 +126,8 @@ export function computeRoadPlan(
     if (!playDays[day.id]) continue;
     const cap: Range = { min: rpH.min * day.raidHourHours, max: rpH.max * day.raidHourHours };
 
-    // Featured-this-day primaries that the player still wants.
-    const primaries = Array.from(new Set(day.bossIds.map(toPrimary))).filter(
-      (id) => (remaining.get(id) ?? 0) > 0,
-    );
-    const shares: RawShare[] = primaries.map((id) => {
+    const featured = new Set(day.bossIds.map(toPrimary));
+    const buildShare = (id: string): RawShare => {
       const boss = getBoss(id)!;
       const res = resultById.get(id)!;
       const total = sized(res.raids, rewardCase);
@@ -134,10 +146,31 @@ export function computeRoadPlan(
         range,
         mewtwo: false,
       };
-    });
-    shares.sort(
-      (a, z) => rankOf(a.bossId) - rankOf(z.bossId) || (rosterRank.get(a.bossId) ?? 0) - (rosterRank.get(z.bossId) ?? 0),
-    );
+    };
+
+    // Monday is steered at the most-overflowing weekend block: raid that block's
+    // overflow targets (the ones the weekend can't fit), in ITS priority order —
+    // so the heaviest overload is relieved first. Other days, and Monday when the
+    // worst block has no Monday-raidable overflow, fall back to featured-this-day
+    // targets in global weekend-priority order. `remaining` only holds local
+    // targets, so region-locked/Mewtwo overflow is naturally skipped.
+    const mondayOverflow =
+      day.id === "mon" && worstBlock
+        ? worstBlock.species.filter((s) => s.remaining > 0 && featured.has(s.bossId) && (remaining.get(s.bossId) ?? 0) > 0)
+        : [];
+    let shares: RawShare[];
+    let focus: RoadDayPlan["focus"];
+    if (mondayOverflow.length) {
+      shares = mondayOverflow.map((s) => buildShare(s.bossId)); // already in block-priority order
+      focus = { blockName: worstBlock!.name, overflow: worstBlock!.remaining };
+    } else {
+      shares = Array.from(featured)
+        .filter((id) => (remaining.get(id) ?? 0) > 0)
+        .map(buildShare)
+        .sort(
+          (a, z) => rankOf(a.bossId) - rankOf(z.bossId) || (rosterRank.get(a.bossId) ?? 0) - (rosterRank.get(z.bossId) ?? 0),
+        );
+    }
 
     const filled = fillShares(shares, cap);
     for (const s of filled.species) {
@@ -154,6 +187,7 @@ export function computeRoadPlan(
       raidHourLabel: day.raidHourLabel,
       raidHourHours: day.raidHourHours,
       capacity: cap,
+      focus,
       ...filled,
     });
   }

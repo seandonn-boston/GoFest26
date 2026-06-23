@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeRoadPlan } from "./roadOfLegends";
-import { computeBlockPlan } from "./blockPlan";
+import { computeBlockPlan, mostOverflowingBlock, type BlockPlan } from "./blockPlan";
 import { DEFAULT_SETTINGS } from "./settings";
 import type { BossInput, BossResult, CapacityModel } from "./types";
 
@@ -67,6 +67,50 @@ describe("computeRoadPlan", () => {
     // raided in person during a weekday raid hour.
     const road = computeRoadPlan([input("xurkitree")], [result("xurkitree", 10)], capacity, DEFAULT_SETTINGS, { mon: true });
     expect(road.headStart.xurkitree ?? 0).toBe(0);
+  });
+
+  it("steers Monday at the most-overflowing weekend block, overriding plain priority", () => {
+    // reshiram (Sat 6–9 block, roster #33) vs zacian (Sun 6–9 block, roster #85).
+    // Give zacian a far bigger goal so ITS block overflows the most. By plain
+    // priority (roster order) Monday would fill reshiram first; the overflow
+    // steering must instead spend Monday's whole budget on zacian's block.
+    const inputs = [input("reshiram"), input("zacian")];
+    const results = [result("reshiram", 8), result("zacian", 40)];
+
+    const baseline = computeBlockPlan(inputs, results, capacity, DEFAULT_SETTINGS, {}, {}, {}, {});
+    const worst = mostOverflowingBlock(baseline)!;
+    const topOverflow = worst.species.find((s) => s.remaining > 0)!;
+    expect(topOverflow.bossId).toBe("zacian"); // sanity: zacian's block overflows most
+
+    const road = computeRoadPlan(inputs, results, capacity, DEFAULT_SETTINGS, { mon: true });
+    const monday = road.days[0];
+    expect(monday.focus?.blockName).toBe(worst.name);
+    expect(road.headStart.zacian).toBe(12); // Monday's full 12-raid budget
+    expect(road.headStart.reshiram ?? 0).toBe(0); // not the lower-overflow block
+  });
+
+  it("falls back to featured-priority when the worst block has no Monday-raidable overflow", () => {
+    // No weekend overflow at all (tiny goal) → no focus, plain featured fill.
+    const road = computeRoadPlan([input("zekrom")], [result("zekrom", 5)], capacity, DEFAULT_SETTINGS, { mon: true });
+    expect(road.days[0].focus).toBeUndefined();
+    expect(road.headStart.zekrom).toBe(5);
+  });
+
+  it("mostOverflowingBlock picks the largest remaining, or null when all fit", () => {
+    const mk = (name: string, remaining: number): BlockPlan => ({
+      day: "sat",
+      name,
+      startHour: 0,
+      endHour: 3,
+      capacity: { min: 0, max: 0 },
+      demand: 0,
+      fitted: 0,
+      remaining,
+      bands: { blue: 0, green: 0, yellow: 0, red: 0 },
+      species: [],
+    });
+    expect(mostOverflowingBlock({ blocks: [mk("A", 3), mk("B", 9), mk("C", 0)], feasible: false })!.name).toBe("B");
+    expect(mostOverflowingBlock({ blocks: [mk("A", 0)], feasible: true })).toBeNull();
   });
 
   it("the head start reduces the weekend block demand", () => {

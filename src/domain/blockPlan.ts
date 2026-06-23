@@ -449,6 +449,20 @@ export function computeBlockPlan(
 }
 
 /**
+ * The weekend habitat block with the most raids that DON'T fit (the largest
+ * `remaining`), or null when every block's demand fits. Its `species` are
+ * already in the block's priority order, so the overflow targets to relieve
+ * first are `species.filter(s => s.remaining > 0)`.
+ */
+export function mostOverflowingBlock(plan: WeekendBlockPlan): BlockPlan | null {
+  let worst: BlockPlan | null = null;
+  for (const b of plan.blocks) {
+    if (b.remaining > 0 && (!worst || b.remaining > worst.remaining)) worst = b;
+  }
+  return worst;
+}
+
+/**
  * Rare Candy / Rare Candy XL the plan's raids will hand out (species-agnostic,
  * on top of each boss's own candy/energy). Every raid drops ~1 Rare Candy; every
  * 5★, regional, or super-mega (Mewtwo) raid also drops ~1 Rare Candy XL —
