@@ -116,8 +116,11 @@ export interface PokemonCopy {
   variant: Variant;
   /** Lucky halves Stardust cost (informational — Stardust isn't a raid cost). */
   lucky?: boolean;
-  current: { level: number; megaLevel: number };
-  target: { level: number; megaLevel: number };
+  /** `megaLevel` is the sole mega for normal bosses; for Mewtwo it's the X
+   *  branch and `megaLevelY` the (independent) Y branch — a caught Mewtwo has at
+   *  most one branch pre-unlocked, so the other starts at 0. */
+  current: { level: number; megaLevel: number; megaLevelY?: number };
+  target: { level: number; megaLevel: number; megaLevelY?: number };
 }
 
 /** Per-boss user input. */
