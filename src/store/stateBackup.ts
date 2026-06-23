@@ -12,6 +12,8 @@ export interface StateBackup {
   settings: PlannerSettings;
   research: Record<string, boolean>;
   blockPriority: Record<string, string[]>;
+  /** Canonical global priority order (may be absent in old backups). */
+  globalPriority?: string[];
   quickCatchBlocks: Record<string, boolean>;
   remoteAllocations: Record<string, number>;
   remoteAuto: boolean;
@@ -34,6 +36,7 @@ export function serializeState(): StateBackup {
     settings: s.settings,
     research: s.research,
     blockPriority: s.blockPriority,
+    globalPriority: s.globalPriority,
     quickCatchBlocks: s.quickCatchBlocks,
     remoteAllocations: s.remoteAllocations,
     remoteAuto: s.remoteAuto,

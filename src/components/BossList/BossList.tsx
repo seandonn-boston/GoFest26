@@ -40,7 +40,7 @@ export function BossList() {
   return (
     <Card className="p-4">
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">1. Pick your raid targets</h2>
+        <h2 className="text-lg font-semibold">Pick your raid targets</h2>
         <span className="text-sm text-slate-400">{selectedCount} selected</span>
       </div>
       <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-slate-500">

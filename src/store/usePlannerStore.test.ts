@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { MEWTWO_X_ID } from "@/data";
-import { usePlannerStore } from "./usePlannerStore";
+import { MEWTWO_X_ID, HABITATS } from "@/data";
+import { blockKey } from "@/data/habitats";
+import { usePlannerStore, selectedInPriorityOrder } from "./usePlannerStore";
 import { serializeState } from "./stateBackup";
 
 const store = () => usePlannerStore.getState();
@@ -116,6 +117,42 @@ describe("planner store interactive actions", () => {
     expect(store().settings.calibration.superMegaEnergy).toBe(433);
     store().setCalibration("superMegaEnergy", 0);
     expect(store().settings.calibration.superMegaEnergy).toBeUndefined();
+  });
+
+  it("setGlobalPriority seeds every habitat block's order", () => {
+    const order = ["zekrom", "reshiram"];
+    store().setGlobalPriority(order);
+    expect(store().globalPriority).toEqual(order);
+    // The same ranking is written to all six blocks (each block uses only the
+    // ids it actually contains; extras are harmlessly ignored downstream).
+    for (const h of HABITATS) {
+      expect(store().blockPriority[blockKey(h.day, h.startHour)]).toEqual(order);
+    }
+  });
+
+  it("selectedInPriorityOrder ranks selected targets, unranked last in roster order", () => {
+    store().toggleSelected("zekrom");
+    store().toggleSelected("reshiram");
+    store().toggleSelected("kyurem");
+    // Rank kyurem above the others; zekrom/reshiram stay unranked.
+    store().setGlobalPriority(["kyurem"]);
+    const ordered = selectedInPriorityOrder({
+      inputs: store().inputs,
+      globalPriority: store().globalPriority,
+    });
+    expect(ordered[0]).toBe("kyurem");
+    expect(ordered).toContain("zekrom");
+    expect(ordered).toContain("reshiram");
+    expect(ordered).toHaveLength(3);
+  });
+
+  it("globalPriority survives serializeState → loadState", () => {
+    store().setGlobalPriority(["zekrom", "reshiram"]);
+    const snapshot = serializeState();
+    store().resetAll();
+    expect(store().globalPriority).toEqual([]);
+    store().loadState(snapshot);
+    expect(store().globalPriority).toEqual(["zekrom", "reshiram"]);
   });
 
   it("serializeState → loadState restores the planning state", () => {
