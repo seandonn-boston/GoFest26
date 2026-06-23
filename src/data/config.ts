@@ -39,20 +39,43 @@ export const GAME_CONFIG = {
     defaultLobbySize: 20,
   },
 
-  // XL Candy required to power a Pokémon from level 40 to level 50.
+  // XL Candy to power a Pokémon from level 40 → 50 (the 20 half-level steps).
   // Levels 40→50 are powered with XL Candy (+ Stardust); regular Candy is only
-  // spent below level 40. source: confirmed community values.
+  // spent below level 40. source: CONFIRMED against the Pokémon GO Hub "Guide to
+  // Power Up Costs" and "Candy XL Guide" — the standard 40→50 ladder sums to
+  // exactly 296 XL. Shadow/Purified have no separate XL chart; they apply the
+  // per-step variant multiplier (Shadow ×1.2, Purified ×0.9) rounding each step
+  // up, giving 360 / 272. (Lucky shares the standard 296 — Lucky only halves
+  // Stardust, never Candy or XL.)
   xlToLevel50: {
     standard: 296,
     shadow: 360,
     purified: 272,
   } satisfies Record<Variant, number>,
 
-  // Coarse estimate of regular Candy to raise a Pokémon from level 1 to 40.
-  // Used to estimate regular-candy need only when the current level is below 40.
-  // This is an approximation and rarely the binding currency for a level-50 goal.
+  // Regular Candy to raise a Pokémon from level 1 → 40 (Candy is only spent
+  // below 40; XL takes over at 40). source: CONFIRMED — the Power Up Costs chart
+  // sums to 304 Candy over levels 1→39.5, identical for every variant (Lucky
+  // changes only Stardust). requirements.ts spreads this linearly across the
+  // 39-level band when the current level is below 40, so it is exact at the
+  // 1→40 endpoints and an approximation for partial sub-40 climbs.
   leveling: {
-    candyToLevel40: 270,
+    candyToLevel40: 304,
+  },
+
+  // Stardust costs per single Pokémon, CONFIRMED against the same Pokémon GO Hub
+  // charts. Not consumed by the planner today (the engine tracks Candy / XL /
+  // Mega Energy), but recorded here as the source of truth for the level-up
+  // economy and for any future Stardust modeling. Two bands:
+  //   toLevel40   — sum of the 1→39.5 ladder
+  //   level40to50 — sum of the 40→49.5 ladder (the XL band)
+  // Standard & Lucky are read straight off the charts; Shadow = standard ×1.2
+  // and Purified = standard ×0.9 (exact per-step multipliers). Note: Shadow
+  // Pokémon only exist from level 8, so their full 1→40 figure is notional (the
+  // as-caught level 8→40 chart sums to 316,320).
+  stardust: {
+    toLevel40: { standard: 270_000, lucky: 135_000, shadow: 324_000, purified: 243_000 },
+    level40to50: { standard: 250_000, lucky: 125_000, shadow: 300_000, purified: 225_000 },
   },
 
   // Mega Energy rewarded for *completing* (defeating) a raid, by tier. Awarded
