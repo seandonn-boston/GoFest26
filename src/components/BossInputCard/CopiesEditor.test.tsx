@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { CopiesEditor } from "./CopiesEditor";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { getBoss } from "@/data";
