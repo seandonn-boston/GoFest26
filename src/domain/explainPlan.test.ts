@@ -6,6 +6,9 @@ import {
   explainUtilization,
   explainGoalProgress,
   explainPassCost,
+  explainRareCandy,
+  explainRoadDay,
+  explainHeadStart,
 } from "./explainPlan";
 import { computeCapacity } from "./capacity";
 import type { Explanation } from "./explainPlan";
@@ -107,5 +110,46 @@ describe("explainPassCost", () => {
     expect(t).toContain("Link Charges");
     expect(t).toContain("975"); // lowest total
     expect(t).toContain("1,042"); // highest total, localized
+  });
+});
+
+describe("explainRareCandy", () => {
+  it("shows both Rare Candy and Rare Candy XL totals", () => {
+    const t = text(explainRareCandy(40, 25));
+    expect(t).toContain("40");
+    expect(t).toContain("25");
+  });
+});
+
+describe("explainRoadDay", () => {
+  it("shows the time budget, demand, and what fit", () => {
+    const t = text(explainRoadDay(10, { min: 6, max: 8 }, 8, 2));
+    expect(t).toContain("6–8");
+    expect(t).toContain("10");
+    expect(t).toContain("8");
+    expect(t).toContain("2 over");
+  });
+
+  it("omits the over-budget line when everything fits", () => {
+    const exp = explainRoadDay(5, { min: 6, max: 8 }, 5, 0);
+    expect(exp.lines).toHaveLength(2);
+  });
+});
+
+describe("explainHeadStart", () => {
+  it("lists only the days that contributed, then the total", () => {
+    const exp = explainHeadStart(
+      [
+        { label: "Monday", fitted: 4 },
+        { label: "Tuesday", fitted: 0 },
+        { label: "Friday", fitted: 3 },
+      ],
+      7,
+    );
+    const t = text(exp);
+    expect(t).toContain("Monday");
+    expect(t).toContain("Friday");
+    expect(t).not.toContain("Tuesday");
+    expect(t).toContain("7 raids");
   });
 });

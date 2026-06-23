@@ -22,6 +22,9 @@ export {
   explainUtilization,
   explainGoalProgress,
   explainPassCost,
+  explainRareCandy,
+  explainRoadDay,
+  explainHeadStart,
 } from "./explainPlan";
 export type { Explanation } from "./explainPlan";
 export { computeCapacity } from "./capacity";

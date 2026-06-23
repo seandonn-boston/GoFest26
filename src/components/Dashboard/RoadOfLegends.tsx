@@ -2,10 +2,11 @@
 
 import { getBoss } from "@/data";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
-import { type RoadDayPlan, type RoadPlan } from "@/domain";
+import { explainRoadDay, explainHeadStart, type RoadDayPlan, type RoadPlan } from "@/domain";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
+import { ExplainValue } from "@/components/ui/ExplainValue";
 
 const CURRENCY_CHIP: Record<string, string> = {
   candy: "Candy",
@@ -48,8 +49,16 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
           </span>
         </span>
         <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {day.fitted} raid{day.fitted === 1 ? "" : "s"}
-          {over ? ` · ${day.remaining} over` : ""}
+          <ExplainValue
+            label="How this day's head start is calculated"
+            trigger={
+              <span>
+                {day.fitted} raid{day.fitted === 1 ? "" : "s"}
+                {over ? ` · ${day.remaining} over` : ""}
+              </span>
+            }
+            explanation={explainRoadDay(day.demand, day.capacity, day.fitted, day.remaining)}
+          />
         </span>
       </div>
       {day.focus ? (
@@ -87,7 +96,17 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-gofest-acid">Road of Legends · raid week</h3>
         {road.totalFitted > 0 ? (
-          <span className="shrink-0 text-[11px] text-emerald-300">★ {road.totalFitted}-raid head start</span>
+          <span className="shrink-0 text-[11px] text-emerald-300">
+            ★{" "}
+            <ExplainValue
+              label="How the head start is calculated"
+              trigger={<span>{road.totalFitted}-raid head start</span>}
+              explanation={explainHeadStart(
+                road.days.map((d) => ({ label: d.label, fitted: d.fitted })),
+                road.totalFitted,
+              )}
+            />
+          </span>
         ) : null}
       </div>
       <p className="mb-2 text-[11px] text-slate-400">

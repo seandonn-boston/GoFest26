@@ -6,7 +6,8 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
-import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
+import { RISK_BANDS, rareCandyForecast, explainRareCandy, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
+import { ExplainValue } from "@/components/ui/ExplainValue";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
@@ -373,10 +374,22 @@ export function BlockAccordion({
         <div className="text-[11px] uppercase tracking-wide text-amber-200/80">Rare Candy from these raids</div>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
           <span>
-            <span className="font-bold text-amber-200">≈{bonus.rareCandy}</span> <span className="text-slate-300">Rare Candy</span>
+            <span className="font-bold text-amber-200">
+              <ExplainValue
+                trigger={<span>≈{bonus.rareCandy}</span>}
+                explanation={explainRareCandy(bonus.rareCandy, bonus.rareCandyXl)}
+              />
+            </span>{" "}
+            <span className="text-slate-300">Rare Candy</span>
           </span>
           <span>
-            <span className="font-bold text-amber-200">≈{bonus.rareCandyXl}</span> <span className="text-slate-300">Rare Candy XL</span>
+            <span className="font-bold text-amber-200">
+              <ExplainValue
+                trigger={<span>≈{bonus.rareCandyXl}</span>}
+                explanation={explainRareCandy(bonus.rareCandy, bonus.rareCandyXl)}
+              />
+            </span>{" "}
+            <span className="text-slate-300">Rare Candy XL</span>
           </span>
         </div>
         <p className="mt-1 text-[10px] text-slate-500">

@@ -134,6 +134,39 @@ export function explainGoalProgress(achievable: number, required: number): Expla
   };
 }
 
+/** Rare Candy forecast: ~1 per raid, plus 1 XL per 5★ / Mega Mewtwo (non-Mega) raid. */
+export function explainRareCandy(rareCandy: number, rareCandyXl: number): Explanation {
+  return {
+    title: "Rare Candy from these raids",
+    lines: [
+      { tokens: [txt("≈ 1 Rare Candy per planned raid →"), out(`${fmtN(rareCandy)}`)] },
+      { tokens: [txt("≈ 1 Rare Candy XL per 5★ / Mega Mewtwo raid →"), out(`${fmtN(rareCandyXl)}`)] },
+    ],
+    note: "Regular Mega raids don't drop Rare Candy XL.",
+  };
+}
+
+/** A single Road-of-Legends day: featured demand poured into the Raid Hour's time budget. */
+export function explainRoadDay(demand: number, capacity: Range, fitted: number, remaining: number): Explanation {
+  const lines: ExplainLine[] = [
+    { tokens: [txt("Raid Hour budget ≈"), out(`${rng(capacity)}`), txt("raids (time-capped, not passes)")] },
+    { tokens: [txt("Featured targets demand"), out(`${fmtN(demand)}`), txt("→ fits"), out(`${fmtN(fitted)}`)] },
+  ];
+  if (remaining > 0) {
+    lines.push({ tokens: [out(`${fmtN(remaining)}`), txt("over — carries to the next day / the weekend")] });
+  }
+  return { title: "Raid Hour head start", lines };
+}
+
+/** The Road-of-Legends head start = raids fitted across every selected weekday. */
+export function explainHeadStart(days: { label: string; fitted: number }[], total: number): Explanation {
+  const lines: ExplainLine[] = days
+    .filter((d) => d.fitted > 0)
+    .map((d) => ({ tokens: [txt(`${d.label}:`), out(`${fmtN(d.fitted)} raids`)] }));
+  lines.push({ tokens: [txt("Head start ="), out(`${fmtN(total)} raids`), txt("off the weekend")] });
+  return { title: "Road of Legends head start", lines };
+}
+
 /** PokéCoin pass cost: free passes first, then paid Premium / Remote / Link Charges. */
 export function explainPassCost(cost: PassCost): Explanation {
   const lines: ExplainLine[] = [
