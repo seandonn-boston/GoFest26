@@ -49,6 +49,7 @@ export function BossInputCard({
   const input = usePlannerStore((s) => s.inputs[boss.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
   const setQuantity = usePlannerStore((s) => s.setQuantity);
+  const setVariant = usePlannerStore((s) => s.setVariant);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const sKey = speciesKey(boss.name);
   const preview = usePlannerStore((s) => s.screenshots[sKey]);
@@ -67,6 +68,7 @@ export function BossInputCard({
 
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
   const wantsLeveling = boss.rewardsCurrencies.includes("xlCandy");
+  const variant = input.variant ?? "standard";
   const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
   const l4Buddy = input.l4Buddy ?? false;
@@ -211,19 +213,39 @@ export function BossInputCard({
         ) : null}
       </div>
 
-      {/* XL Candy still needed to max (40→50), computed from current level + XL. */}
+      {/* XL Candy to max (40→50) per variant — tap one to set THIS target's form
+          (Regular / Shadow / Purified), which drives its XL total in the plan. */}
       {wantsLeveling ? (
         <div className="mt-2">
-          <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">XL Candy to max (→ lvl 50)</div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["standard", "shadow", "purified"] as const).map((v) => (
-              <div key={v} className="rounded-sm border border-white/10 bg-gofest-bg/40 p-1.5 text-center">
-                <div className="text-base font-bold text-gofest-accent2">{formatNumber(toMax[v])}</div>
-                <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
-              </div>
-            ))}
+          <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">
+            XL Candy to max (→ lvl 50) · tap your form
           </div>
-          <p className="mt-1 text-[10px] text-slate-500">Remaining XL Candy to reach level 50 from your current level &amp; XL on hand.</p>
+          <div className="grid grid-cols-3 gap-2">
+            {(["standard", "shadow", "purified"] as const).map((v) => {
+              const on = variant === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setVariant(boss.id, v)}
+                  aria-pressed={on}
+                  className={`rounded-sm border p-1.5 text-center transition ${
+                    on
+                      ? "border-gofest-accent2 bg-gofest-accent2/15"
+                      : "border-white/10 bg-gofest-bg/40 hover:border-white/25"
+                  }`}
+                >
+                  <div className={`text-base font-bold ${on ? "text-gofest-accent2" : "text-slate-300"}`}>
+                    {formatNumber(toMax[v])}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wide text-slate-400">{VARIANT_LABEL[v]}</div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-[10px] text-slate-500">
+            Remaining XL to reach level 50 from your current level &amp; XL on hand. Shadow costs more, Purified less.
+          </p>
         </div>
       ) : null}
 

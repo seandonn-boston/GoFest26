@@ -171,6 +171,7 @@ interface PlannerState {
   setSelected: (bossId: string, selected: boolean) => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
   setQuantity: (bossId: string, value: number) => void;
+  setVariant: (bossId: string, variant: Variant) => void;
   /** Set one block's priority order (highest first). */
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
@@ -378,6 +379,13 @@ export const usePlannerStore = create<PlannerState>()(
           if (!input) return state;
           const safe = Number.isFinite(value) ? Math.max(1, Math.round(value)) : 1;
           return { inputs: { ...state.inputs, [bossId]: { ...input, quantity: safe } } };
+        }),
+
+      setVariant: (bossId, variant) =>
+        set((state) => {
+          const input = ensureInput(state, bossId);
+          if (!input) return state;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, variant } } };
         }),
 
       setBlockPriority: (blockKey, ids) =>
