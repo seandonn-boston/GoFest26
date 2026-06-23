@@ -23,13 +23,12 @@ import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
-import { BackupControls } from "@/components/Settings/BackupControls";
 import { SharedPlanBanner } from "@/components/Settings/SharedPlanBanner";
-import { EstimateConfidence } from "@/components/ui/EstimateConfidence";
-import { CalibrationPanel } from "@/components/ui/CalibrationPanel";
+import { AdvancedTools } from "@/components/Settings/AdvancedTools";
 import { HowToUse } from "@/components/Stepper/HowToUse";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
 import { StepFooter } from "@/components/Stepper/StepFooter";
+import { StepNudge, missingStep } from "@/components/Stepper/StepNudge";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -168,6 +167,11 @@ function StepContent({
   onResetAll: () => void;
   onJump: (id: StepId) => void;
 }) {
+  const hasGoals = summary.totalRaids.max > 0;
+  // The first step blocking a real plan (no targets → step 1; targets but no
+  // goal → step 3), so empty states point at the exact thing that's missing.
+  const blocking = missingStep(anySelected, hasGoals);
+
   if (step === 1) {
     return <BossList />;
   }
@@ -187,9 +191,9 @@ function StepContent({
             <SearchStringBar />
             <BulkImportSection />
           </>
-        ) : (
-          <NeedTargets onJump={onJump} />
-        )}
+        ) : blocking ? (
+          <StepNudge missing={blocking} onJump={onJump} />
+        ) : null}
       </section>
     );
   }
@@ -197,13 +201,18 @@ function StepContent({
   if (step === 3) {
     return (
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Enter what you have</h2>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Enter what you have</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Required — your current Candy / XL / Mega Energy and a goal above what you already have.
+            </p>
+          </div>
           {anySelected ? (
             <button
               type="button"
               onClick={onResetAll}
-              className="text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
+              className="shrink-0 text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
             >
               Reset all
             </button>
@@ -233,9 +242,9 @@ function StepContent({
             <CounterSearchBar />
             <MegaSearchBar />
           </>
-        ) : (
-          <NeedTargets onJump={onJump} />
-        )}
+        ) : blocking ? (
+          <StepNudge missing={blocking} onJump={onJump} />
+        ) : null}
       </section>
     );
   }
@@ -247,6 +256,8 @@ function StepContent({
   // step === 5
   return (
     <>
+      {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
+
       <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
 
       {summary.schedule.raids.length > 0 ? (
@@ -260,31 +271,8 @@ function StepContent({
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Backup &amp; restore</h2>
-        <BackupControls />
-      </section>
-
-      <CalibrationPanel />
-      <EstimateConfidence />
+      <AdvancedTools />
     </>
-  );
-}
-
-/** Gentle nudge back to step 1 when a later step needs targets first. */
-function NeedTargets({ onJump }: { onJump: (id: StepId) => void }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-400">
-      Pick at least one target first.{" "}
-      <button
-        type="button"
-        onClick={() => onJump(1)}
-        className="font-semibold text-gofest-accent2 underline-offset-2 hover:underline"
-      >
-        Go to step 1
-      </button>
-      .
-    </div>
   );
 }
 
