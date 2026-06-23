@@ -116,7 +116,8 @@ export function explainCurrency(
     const curLvl = clamp(input.current.level, 40, 50);
     const tgtLvl = clamp(input.target.level, 40, 50);
     const bandFrac = Math.max(0, tgtLvl - curLvl) / 10;
-    const perCopy = Math.round(GAME_CONFIG.xlToLevel50.standard * bandFrac);
+    const xlTo50 = GAME_CONFIG.xlToLevel50[input.variant ?? "standard"];
+    const perCopy = Math.round(xlTo50 * bandFrac);
     const gross = perCopy * quantity;
     const held = input.current.xlCandy;
     const needed = Math.max(0, gross - held);
@@ -126,7 +127,7 @@ export function explainCurrency(
     }
     lines.push({
       tokens: [
-        cst(GAME_CONFIG.xlToLevel50.standard, "XL to go 40→50 (regular)"),
+        cst(xlTo50, `XL to go 40→50 (${input.variant ?? "standard"})`),
         txt("XL ×"),
         out(`${fmt(bandFrac)}`),
         txt("of the band (L"),

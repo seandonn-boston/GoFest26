@@ -104,6 +104,22 @@ export interface RaidBoss {
   goFestPreUnlocked?: boolean;
 }
 
+/**
+ * One specific individual the user wants to max — its own current level, mega
+ * level, variant and target. Multiple copies of a species are planned together
+ * and draw from ONE shared on-hand pool (BossInput.current.{candy,xlCandy,
+ * megaEnergy}), allocated to the highest-priority copy first.
+ */
+export interface PokemonCopy {
+  /** Stable id for priority ordering / React keys. */
+  id: string;
+  variant: Variant;
+  /** Lucky halves Stardust cost (informational — Stardust isn't a raid cost). */
+  lucky?: boolean;
+  current: { level: number; megaLevel: number };
+  target: { level: number; megaLevel: number };
+}
+
 /** Per-boss user input. */
 export interface BossInput {
   bossId: string;
@@ -130,6 +146,14 @@ export interface BossInput {
     level: number;
     megaLevel: number;
   };
+  /** Variant of the single default copy (when `copies` is empty). Affects the
+   *  XL-to-50 total (regular 296 / shadow 360 / purified 272). */
+  variant?: Variant;
+  /** Distinct individuals to max, in PRIORITY order (highest first). When
+   *  non-empty this supersedes the single current/target/quantity for the
+   *  leveling + mega requirement; current.{candy,xlCandy,megaEnergy} stay the
+   *  shared on-hand pool, allocated to the highest-priority copy first. */
+  copies?: PokemonCopy[];
   /** Run from the encounter (raid-completion rewards only, no catch candy/XL). */
   skipCatch?: boolean;
   /** Assume a matching Mega-Evolved buddy is active for the same-type candy bonus. */

@@ -36,6 +36,13 @@ describe("planner store interactive actions", () => {
     expect(store().remoteAllocations.zekrom).toBe(4);
   });
 
+  it("setVariant sets the target's form (drives the XL total)", () => {
+    store().toggleSelected(MEWTWO_X_ID);
+    expect(store().inputs[MEWTWO_X_ID].variant ?? "standard").toBe("standard");
+    store().setVariant(MEWTWO_X_ID, "shadow");
+    expect(store().inputs[MEWTWO_X_ID].variant).toBe("shadow");
+  });
+
   it("setL4Buddy toggles the per-boss Level-4 catch flag", () => {
     store().toggleSelected(MEWTWO_X_ID);
     expect(store().inputs[MEWTWO_X_ID].l4Buddy ?? false).toBe(false);
