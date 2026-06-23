@@ -177,23 +177,12 @@ function StepContent({
   if (step === 2) {
     return (
       <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Enter what you have</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal
-              above what you already have.
-            </p>
-          </div>
-          {anySelected ? (
-            <button
-              type="button"
-              onClick={onResetAll}
-              className="shrink-0 text-xs text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
-            >
-              Reset all
-            </button>
-          ) : null}
+        <div>
+          <h2 className="text-lg font-semibold">Enter what you have</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal
+            above what you already have.
+          </p>
         </div>
         {anySelected ? (
           <>
@@ -201,6 +190,17 @@ function StepContent({
                 cards below, but is entirely optional (type by hand instead). */}
             <SearchStringBar />
             <BulkImportSection />
+
+            {/* Reset all sits between the uploader and the cards. */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onResetAll}
+                className="rounded-md border border-rose-500/50 bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/25"
+              >
+                Reset all
+              </button>
+            </div>
 
             {mewtwoSelected ? (
               <MewtwoCard

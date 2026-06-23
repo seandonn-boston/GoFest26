@@ -8,6 +8,9 @@ const store = () => usePlannerStore.getState();
 
 beforeEach(() => {
   store().resetAll();
+  // A fresh plan now pre-selects Mega Mewtwo X & Y; these tests assume an empty
+  // roster, so clear it after the reset.
+  usePlannerStore.setState({ inputs: {} });
 });
 
 describe("planner store interactive actions", () => {
@@ -162,7 +165,9 @@ describe("planner store interactive actions", () => {
     const snapshot = serializeState();
 
     store().resetAll();
-    expect(store().inputs[MEWTWO_X_ID]?.selected ?? false).toBe(false);
+    // resetAll re-seeds the default plan (Mewtwo pre-selected); confirm the
+    // other planning state was cleared.
+    expect(store().raidsDone["zekrom-standard"] ?? 0).toBe(0);
 
     store().loadState(snapshot);
     expect(store().inputs[MEWTWO_X_ID].selected).toBe(true);

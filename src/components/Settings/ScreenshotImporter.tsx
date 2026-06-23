@@ -230,7 +230,6 @@ export function ScreenshotImporter() {
           className="flex items-center gap-1.5 rounded-sm border-2 border-black/40 bg-gofest-acid px-3 py-2 font-mono text-xs font-extrabold uppercase tracking-wider text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:shadow-none"
         >
           📷 Upload screenshots
-          <span className="rounded-sm border border-black/40 px-1 text-[9px]">beta</span>
         </button>
         <button
           type="button"
@@ -247,7 +246,7 @@ export function ScreenshotImporter() {
               clearImports();
               setSummary(null);
             }}
-            className="text-[11px] text-slate-400 underline-offset-2 hover:text-slate-200 hover:underline"
+            className="rounded-md border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 text-[11px] font-semibold text-rose-200 transition hover:bg-rose-500/25"
           >
             Clear all
           </button>

@@ -8,7 +8,7 @@ import type { EventDay } from "@/domain/types";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
-import { MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
+import { MEGA_KIND_COLOR } from "@/components/ui/MegaBoostRow";
 
 /**
  * Copyable "& mega3" search strings of the candy-boost megas worth evolving —
@@ -41,7 +41,7 @@ export function MegaSearchBar() {
         label={`${dayLabel} mega-evolve`}
         accent="text-purple-300"
         search={search}
-        items={boosts.map((b) => ({ key: b.mega.name, label: b.mega.name, sprite: b.mega.sprite, ring: MEGA_KIND_RING[b.kind] }))}
+        items={boosts.map((b) => ({ key: b.mega.name, label: b.mega.name, color: MEGA_KIND_COLOR[b.kind] }))}
         caption={
           <>
             Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL

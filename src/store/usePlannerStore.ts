@@ -248,11 +248,15 @@ interface PlannerState {
   setVariant: (bossId: string, variant: Variant) => void;
   /** Multi-copy maxing: distinct individuals of one species, in priority order. */
   addCopy: (bossId: string) => void;
+  /** Seed individual #1 from the single fields when a card has no copies yet. */
+  ensureCopies: (bossId: string) => void;
   removeCopy: (bossId: string, copyId: string) => void;
   updateCopy: (bossId: string, copyId: string, patch: CopyPatch) => void;
   moveCopy: (bossId: string, copyId: string, dir: -1 | 1) => void;
   /** Mewtwo individuals (independent X/Y branches), stored on the owner form. */
   addMewtwoCopy: () => void;
+  /** Seed Mewtwo individual #1 so the always-on maxing editor has a row. */
+  ensureMewtwoCopies: () => void;
   removeMewtwoCopy: (copyId: string) => void;
   updateMewtwoCopy: (copyId: string, patch: CopyPatch) => void;
   moveMewtwoCopy: (copyId: string, dir: -1 | 1) => void;
@@ -376,10 +380,21 @@ export function selectedInPriorityOrder(state: {
 // Every GO Fest research line counts toward goals by default (both on).
 const DEFAULT_RESEARCH: Record<string, boolean> = Object.fromEntries(RESEARCH_LINES.map((l) => [l.id, true]));
 
+// Mega Mewtwo X & Y are the event headliners everyone hunts, so a fresh plan
+// starts with both pre-selected. A returning user's persisted selection wins.
+function seededInputs(): Record<string, BossInput> {
+  const out: Record<string, BossInput> = {};
+  for (const id of [MEWTWO_X_ID, MEWTWO_Y_ID]) {
+    const boss = getBoss(id);
+    if (boss) out[id] = makeDefaultInput(boss);
+  }
+  return out;
+}
+
 export const usePlannerStore = create<PlannerState>()(
   persist(
     (set) => ({
-      inputs: {},
+      inputs: seededInputs(),
       settings: { ...DEFAULT_SETTINGS },
       research: { ...DEFAULT_RESEARCH },
       screenshots: {},
@@ -509,6 +524,16 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs: { ...state.inputs, [bossId]: { ...input, copies: [...copies, newCopy(input)] } } };
         }),
 
+      // Seed copy #1 from the single fields if a card has no copies yet — the
+      // input cards always show the per-individual "maxing" editor, so there's
+      // always at least one individual to edit.
+      ensureCopies: (bossId) =>
+        set((state) => {
+          const input = state.inputs[bossId];
+          if (!input || (input.copies && input.copies.length)) return state;
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies: [copyFromInput(input)] } } };
+        }),
+
       removeCopy: (bossId, copyId) =>
         set((state) => {
           const input = state.inputs[bossId];
@@ -561,6 +586,17 @@ export const usePlannerStore = create<PlannerState>()(
           const yi = state.inputs[MEWTWO_Y_ID];
           const copies = owner.copies?.length ? owner.copies : [mewtwoSeedCopy(xi, yi, owner)];
           return { inputs: { ...state.inputs, [ownerId]: { ...owner, copies: [...copies, newMewtwoCopy(owner)] } } };
+        }),
+
+      // Seed Mewtwo individual #1 so the always-on maxing editor has a row.
+      ensureMewtwoCopies: () =>
+        set((state) => {
+          const ownerId = mewtwoOwnerId(state.inputs);
+          if (!ownerId) return state;
+          const owner = state.inputs[ownerId]!;
+          if (owner.copies && owner.copies.length) return state;
+          const copies = [mewtwoSeedCopy(state.inputs[MEWTWO_X_ID], state.inputs[MEWTWO_Y_ID], owner)];
+          return { inputs: { ...state.inputs, [ownerId]: { ...owner, copies } } };
         }),
 
       updateMewtwoCopy: (copyId, patch) =>
@@ -761,7 +797,7 @@ export const usePlannerStore = create<PlannerState>()(
 
       resetAll: () =>
         set({
-          inputs: {},
+          inputs: seededInputs(),
           settings: { ...DEFAULT_SETTINGS },
           research: { ...DEFAULT_RESEARCH },
           screenshots: {},

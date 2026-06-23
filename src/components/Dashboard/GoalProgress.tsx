@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 import { getBoss } from "@/data";
 import { goalProgress } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
@@ -54,8 +55,8 @@ export function GoalProgress({
     <div className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/30">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-xs text-slate-300">
-            <span className={`mr-1 inline-block text-slate-500 transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
+          <span className="inline-flex items-center text-xs text-slate-300">
+            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
             Raids you can do toward your goals:{" "}
             <span className={`font-mono font-bold ${ratioTone(achievable, required)}`}>
               {achievable}/{required}
