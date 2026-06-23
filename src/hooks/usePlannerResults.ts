@@ -3,16 +3,20 @@ import {
   autoRemoteAllocations,
   computeBlockPlan,
   computePlanSummary,
+  computePassCoverage,
   computeRoadPlan,
   globalPriorityFromBlocks,
+  type PassCoverage,
   type RoadPlan,
+  type SpeciesPassNeed,
   type WeekendBlockPlan,
 } from "@/domain";
 import { applyResearchCredits, type ResearchCredit } from "@/domain/research";
 import { midpoint } from "@/lib/math";
 import { RESEARCH_LINES } from "@/data/research";
+import { getBoss } from "@/data";
 import type { PlanSummary } from "@/domain/types";
-import { usePlannerStore } from "@/store/usePlannerStore";
+import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
 
 /**
  * Recomputes the full plan summary whenever inputs, settings, or research
@@ -79,6 +83,29 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
     );
     return { weekend, road };
   }, [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks, playDays]);
+}
+
+/**
+ * Allocates the user's owned raid passes across their selected targets in global
+ * priority order, so owned passes cover the most-important goals and the rest is
+ * what they'd need to buy. Pure of the weekend plan — it's a have/need/buy view.
+ */
+export function usePassCoverage(summary: PlanSummary): PassCoverage {
+  const inputs = usePlannerStore((s) => s.inputs);
+  const globalPriority = usePlannerStore((s) => s.globalPriority);
+  const passesOwned = usePlannerStore((s) => s.settings.passesOwned);
+  return useMemo(() => {
+    const order = selectedInPriorityOrder({ inputs, globalPriority });
+    const byId = new Map(summary.results.map((r) => [r.bossId, r]));
+    const ordered: SpeciesPassNeed[] = order
+      .map((id) => {
+        const r = byId.get(id);
+        if (!r || r.raids.max <= 0) return null;
+        return { bossId: id, bossName: getBoss(id)?.name ?? id, raids: r.raids };
+      })
+      .filter((x): x is SpeciesPassNeed => x !== null);
+    return computePassCoverage(ordered, passesOwned);
+  }, [inputs, globalPriority, passesOwned, summary.results]);
 }
 
 /** The id→count entries that actually matter (positive), for stable comparison. */

@@ -5,6 +5,7 @@ import type { RoadPlan } from "@/domain";
 import { Card } from "@/components/ui/Card";
 import { PriorityList } from "./PriorityList";
 import { RoadOfLegends } from "./RoadOfLegends";
+import { PassesOwned } from "./PassesOwned";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
 
 /**
@@ -24,6 +25,7 @@ export function PlanSetup({ roadPlan, capacity }: { roadPlan: RoadPlan; capacity
 
       <PriorityList />
       <RoadOfLegends road={roadPlan} />
+      <PassesOwned />
       <RemoteRaidToggle capacity={capacity} />
     </Card>
   );

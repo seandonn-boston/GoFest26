@@ -37,6 +37,13 @@ export interface PlannerSettings {
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
   /**
+   * Raid passes the user already holds. Allocated to their goals in priority
+   * order (highest first), so owned passes cover the most-important targets and
+   * only the remainder needs buying. 0 = not provided. Doesn't change the plan,
+   * just the have/need/buy split.
+   */
+  passesOwned: number;
+  /**
    * Assumed Mega buddy level (0..4) for same-type catches, driving the XL-Candy
    * boost (see GAME_CONFIG.megaCatchBoost). 1 = base (no XL boost — the default,
    * so plans don't silently change); 3 = the "standard" leveled mega (+25%).
@@ -70,6 +77,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   useRemoteRaids: false,
   sleepHoursPerNight: DEFAULT_SLEEP_HOURS,
   region: DEFAULT_REGION,
+  passesOwned: 0,
   // L3 (Max) is the "standard" leveled mega — the realistic same-type buddy a
   // GO Fest raider runs, so the XL numbers reflect a +25% boost out of the box.
   megaBuddyLevel: 3,
@@ -87,6 +95,7 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     s.sleepHoursPerNight === DEFAULT_SETTINGS.sleepHoursPerNight &&
-    s.megaBuddyLevel === DEFAULT_SETTINGS.megaBuddyLevel
+    s.megaBuddyLevel === DEFAULT_SETTINGS.megaBuddyLevel &&
+    s.passesOwned === DEFAULT_SETTINGS.passesOwned
   );
 }

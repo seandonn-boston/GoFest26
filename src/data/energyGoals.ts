@@ -49,5 +49,19 @@ export function energyGoalsFor(bossId: string): EnergyGoalDef[] {
   return ENERGY_GOALS[bossId] ?? [];
 }
 
+/** Energy goals whose source raid is featured on a given Road of Legends day. */
+export function energyGoalsForDay(roadDayId: string): { bossId: string; def: EnergyGoalDef }[] {
+  const out: { bossId: string; def: EnergyGoalDef }[] = [];
+  for (const [bossId, defs] of Object.entries(ENERGY_GOALS)) {
+    for (const def of defs) if (def.roadDayId === roadDayId) out.push({ bossId, def });
+  }
+  return out;
+}
+
+/** Road of Legends day ids that feature at least one fusion/crowned/primal raid. */
+export const ENERGY_ROAD_DAYS = new Set(
+  Object.values(ENERGY_GOALS).flatMap((defs) => defs.map((d) => d.roadDayId).filter(Boolean)),
+);
+
 /** True if any roster boss offers fusion/crowned/primal energy goals. */
 export const HAS_ENERGY_GOALS = Object.keys(ENERGY_GOALS).length > 0;
