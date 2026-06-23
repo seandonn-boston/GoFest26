@@ -76,6 +76,12 @@ export const ESTIMATE_NOTES: EstimateNote[] = [
     note: "Observed in-person Tier-5 rates; remote sees the 3-XL floor.",
   },
   {
+    label: "Mega buddy XL boost",
+    value: "+10% / +25% / +30% at Mega Level 2 / 3 / 4 (same-type)",
+    confidence: "community",
+    note: "A same-type Mega raises Candy-XL odds per roll; scales the assumed XL range. Excludes transfer/trade XL.",
+  },
+  {
     label: "Raiding pace",
     value: "battle + ~100 s catch + downtime → raids/hour",
     confidence: "community",

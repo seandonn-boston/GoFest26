@@ -1,11 +1,20 @@
 "use client";
 
 import { type PlannerSettings, isDefaultSettings } from "@/domain/settings";
+import { GAME_CONFIG } from "@/data/config";
 import { RESEARCH_LINES } from "@/data/research";
 import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Badge } from "@/components/ui/Badge";
+
+// Assumed same-type Mega buddy levels (the +30% Level-4 tier is opt-in per boss).
+const BUDDY_LEVELS: { level: number; label: string; hint: string }[] = [
+  { level: 1, label: "L1 Base", hint: "1 evolution — Candy bonus only, no XL boost." },
+  { level: 2, label: "L2 High", hint: "7 evolutions — +10% Candy XL per same-type catch." },
+  { level: 3, label: "L3 Max", hint: "30 evolutions — +25% Candy XL (the typical leveled mega)." },
+];
+const buddyXlPct = (level: number) => Math.round((GAME_CONFIG.megaCatchBoost.xlByLevel[level] ?? 0) * 100);
 
 const RESEARCH_CURRENCY: Record<string, string> = {
   candy: "Candy",
@@ -129,6 +138,49 @@ export function AssumptionsControls() {
             ))}
           </div>
         ) : null}
+      </div>
+
+      {/* Mega buddy XL boost */}
+      <div>
+        <div className="mb-1.5 text-sm text-slate-300">Assumed Mega buddy level (same-type XL boost)</div>
+        <div className="flex gap-2">
+          {BUDDY_LEVELS.map((b) => (
+            <button
+              key={b.level}
+              type="button"
+              title={b.hint}
+              onClick={() => setSettings({ megaBuddyLevel: b.level })}
+              className={`flex-1 rounded-sm border px-3 py-2 text-sm transition ${
+                settings.megaBuddyLevel === b.level
+                  ? "border-gofest-accent2 bg-gofest-accent2/15 text-white"
+                  : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"
+              }`}
+            >
+              {b.label}
+              <span className="block text-[11px] text-slate-400">+{buddyXlPct(b.level)}% XL</span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          A same-type Mega/Primal buddy raises Candy XL on catches, scaling with its Mega Level — applied to
+          every boss whose “Mega buddy” toggle is on. Five 2026 species reach{" "}
+          <span className="text-white">Level 4 (+30%)</span>; enable it per boss on
+          Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon targets.
+        </p>
+      </div>
+
+      {/* What the XL numbers count — readily-available scope, so the math is trustable */}
+      <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-relaxed">
+        <div className="mb-1 font-semibold text-slate-200">What the Candy-XL numbers count</div>
+        <p className="text-slate-400">
+          <span className="text-emerald-300">Counted:</span> in-person 5★/Legendary catch (guaranteed 3 +
+          completion bonus), Mega-tier catch (0–3), the same-type Mega buddy boost above, and GO Fest research
+          XL when enabled.
+        </p>
+        <p className="mt-1 text-slate-400">
+          <span className="text-rose-300">Not counted:</span> XL from transferring or trading, egg hatches, or
+          buddy walking. Running from the encounter yields Mega Energy only — no catch XL.
+        </p>
       </div>
 
       {/* Quick-catch is now chosen per species per time block on each target row

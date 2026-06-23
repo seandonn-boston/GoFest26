@@ -37,6 +37,13 @@ export interface PlannerSettings {
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
   /**
+   * Assumed Mega buddy level (0..4) for same-type catches, driving the XL-Candy
+   * boost (see GAME_CONFIG.megaCatchBoost). 1 = base (no XL boost — the default,
+   * so plans don't silently change); 3 = the "standard" leveled mega (+25%).
+   * Per-boss `l4Buddy` overrides this to level 4 for type-eligible bosses.
+   */
+  megaBuddyLevel: number;
+  /**
    * Observed per-raid yields the player has logged, as point estimates that
    * OVERRIDE the assumed reward ranges (tightening the plan to their real luck).
    * Empty = use the assumptions. Keyed by reward metric; absent = not calibrated.
@@ -63,6 +70,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   useRemoteRaids: false,
   sleepHoursPerNight: DEFAULT_SLEEP_HOURS,
   region: DEFAULT_REGION,
+  megaBuddyLevel: 1,
   calibration: {},
 };
 
@@ -76,6 +84,7 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
-    s.sleepHoursPerNight === DEFAULT_SETTINGS.sleepHoursPerNight
+    s.sleepHoursPerNight === DEFAULT_SETTINGS.sleepHoursPerNight &&
+    s.megaBuddyLevel === DEFAULT_SETTINGS.megaBuddyLevel
   );
 }

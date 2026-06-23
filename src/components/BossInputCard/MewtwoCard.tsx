@@ -8,7 +8,7 @@ import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
-import { megaBoostsForBoss, megaBoostSpecies } from "@/domain";
+import { megaBoostsForBoss, megaBoostSpecies, isL4Eligible } from "@/domain";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
@@ -60,6 +60,7 @@ export function MewtwoCard({
   const applyPreset = usePlannerStore((s) => s.applyPreset);
   const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
+  const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const preview = usePlannerStore((s) => s.screenshots["mewtwo"]);
   const [open, setOpen] = useState(false); // collapsed by default (inputs hidden)
@@ -219,8 +220,11 @@ export function MewtwoCard({
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossX.id, v)}
               skipCatch={inputX!.skipCatch ?? false}
               megaBuddy={inputX!.megaBuddy ?? true}
+              l4Buddy={inputX!.l4Buddy ?? false}
+              l4Eligible={isL4Eligible(bossX)}
               onSkipCatch={(v) => setSkipCatch(bossX.id, v)}
               onMegaBuddy={(v) => setMegaBuddy(bossX.id, v)}
+              onL4Buddy={(v) => setL4Buddy(bossX.id, v)}
               result={resultX}
               preUnlocked={!!bossX.goFestPreUnlocked}
             />
@@ -239,8 +243,11 @@ export function MewtwoCard({
               onTargetMegaLevel={(v) => setTargetMegaLevel(bossY.id, v)}
               skipCatch={inputY!.skipCatch ?? false}
               megaBuddy={inputY!.megaBuddy ?? true}
+              l4Buddy={inputY!.l4Buddy ?? false}
+              l4Eligible={isL4Eligible(bossY)}
               onSkipCatch={(v) => setSkipCatch(bossY.id, v)}
               onMegaBuddy={(v) => setMegaBuddy(bossY.id, v)}
+              onL4Buddy={(v) => setL4Buddy(bossY.id, v)}
               result={resultY}
               preUnlocked={!!bossY.goFestPreUnlocked}
             />
@@ -266,8 +273,11 @@ function FormColumn({
   onTargetMegaLevel,
   skipCatch,
   megaBuddy,
+  l4Buddy,
+  l4Eligible,
   onSkipCatch,
   onMegaBuddy,
+  onL4Buddy,
   result,
   preUnlocked,
 }: {
@@ -283,8 +293,11 @@ function FormColumn({
   onTargetMegaLevel: (v: number) => void;
   skipCatch: boolean;
   megaBuddy: boolean;
+  l4Buddy: boolean;
+  l4Eligible: boolean;
   onSkipCatch: (v: boolean) => void;
   onMegaBuddy: (v: boolean) => void;
+  onL4Buddy: (v: boolean) => void;
   result?: BossResult;
   preUnlocked: boolean;
 }) {
@@ -316,6 +329,18 @@ function FormColumn({
           <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={megaBuddy} disabled={skipCatch} onChange={(e) => onMegaBuddy(e.target.checked)} />
           Mega buddy bonus
         </label>
+        {l4Eligible ? (
+          <label className={`flex items-center gap-1.5 ${skipCatch || !megaBuddy ? "opacity-40" : ""}`}>
+            <input
+              type="checkbox"
+              className="h-3 w-3 accent-gofest-accent2"
+              checked={l4Buddy}
+              disabled={skipCatch || !megaBuddy}
+              onChange={(e) => onL4Buddy(e.target.checked)}
+            />
+            Level-4 Mega active (+30% XL)
+          </label>
+        ) : null}
       </div>
 
       <div className="mt-3 rounded-lg border border-white/10 bg-gofest-bg/40 p-2.5">

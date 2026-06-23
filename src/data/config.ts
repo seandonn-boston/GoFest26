@@ -78,6 +78,22 @@ export const GAME_CONFIG = {
     buddyBonusCandy: 1,
   },
 
+  // Same-type Mega buddy XL-Candy boost. An active Mega / Primal Evolution that
+  // SHARES A TYPE with the Pokémon you catch raises the chance of Candy XL per
+  // roll, scaling with the buddy's Mega Level. We model it as a proportional
+  // multiplier on the assumed catch-XL range (a logged calibration value already
+  // reflects the player's own mega, so it is NOT boosted again).
+  //   xlByLevel indexed by Mega Level 0..4 (flat % increase per roll):
+  //     L0/L1 (Base, 1 evo) none · L2 (High, 7 evo) +10% ·
+  //     L3 (Max, 30 evo, "standard") +25% · L4 (Super Max) +30%.
+  //   l4Types — the typings of the five Mega Level 4 species available in 2026;
+  //     a boss can use the +30% boost only if its typing includes one of these.
+  // source: community-reported boost tiers; Mega Level 4 is 2026-only. Editable.
+  megaCatchBoost: {
+    xlByLevel: [0, 0, 0.1, 0.25, 0.3],
+    l4Types: ["Fighting", "Psychic", "Grass", "Poison", "Dark", "Flying", "Dragon"],
+  },
+
   // Approximate cumulative Mega Energy to reach Mega Level 0..3 for a typical
   // (non-Mewtwo) Mega — covers the first evolution plus the level-ups. Real costs
   // vary per species; override a specific boss via its megaLevelEnergyTotals.

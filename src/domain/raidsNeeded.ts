@@ -15,6 +15,28 @@ const CURRENCY_ORDER: Currency[] = ["megaEnergy", "xlCandy", "candy"];
 
 type Calibration = Partial<Record<CalibrationMetric, number>>;
 
+const XL_BOOST_BY_LEVEL = GAME_CONFIG.megaCatchBoost.xlByLevel;
+const L4_TYPES: readonly string[] = GAME_CONFIG.megaCatchBoost.l4Types;
+
+/** True when the boss's typing includes one of the Level-4 (Super Max) Mega
+ *  types, so the per-boss "Level-4 Mega active" XL boost can apply. */
+export function isL4Eligible(boss: RaidBoss): boolean {
+  return (boss.types ?? []).some((t) => L4_TYPES.includes(t));
+}
+
+/**
+ * Same-type Mega buddy XL multiplier for this boss under the current toggles.
+ * 1 = no boost. Requires an active matching buddy (megaBuddy on, not skipping
+ * the catch); the per-boss l4Buddy overrides the assumed level to 4 when the
+ * boss is type-eligible. Returns just the multiplier so callers can show the math.
+ */
+export function xlBoostFactor(boss: RaidBoss, input: BossInput, megaBuddyLevel: number): number {
+  if ((input.skipCatch ?? false) || !(input.megaBuddy ?? true)) return 1;
+  const level = input.l4Buddy && isL4Eligible(boss) ? 4 : megaBuddyLevel;
+  const idx = Math.max(0, Math.min(XL_BOOST_BY_LEVEL.length - 1, Math.round(level)));
+  return 1 + (XL_BOOST_BY_LEVEL[idx] ?? 0);
+}
+
 /** Which calibratable metric (if any) a currency maps to for this boss's tier. */
 function calibrationMetric(boss: RaidBoss, currency: Currency): CalibrationMetric | null {
   if (currency === "megaEnergy") return boss.tier === "super-mega" ? "superMegaEnergy" : "megaEnergy";
@@ -36,6 +58,7 @@ function perRaidReward(
   currency: Currency,
   input: BossInput,
   calibration: Calibration = {},
+  megaBuddyLevel = 1,
 ): Range | undefined {
   const c = GAME_CONFIG.catch;
   const skipCatch = input.skipCatch ?? false;
@@ -52,7 +75,13 @@ function perRaidReward(
     const bonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);
     return { min: boss.rewards.candy.min + bonus, max: boss.rewards.candy.max + bonus };
   }
-  return calRange ?? boss.rewards.xlCandy; // xlCandy
+  // xlCandy. A logged calibration value already reflects the player's own mega,
+  // so it's used as-is; otherwise the assumed range scales by the same-type Mega
+  // buddy XL boost (1 = none).
+  if (calRange) return calRange;
+  const factor = xlBoostFactor(boss, input, megaBuddyLevel);
+  const base = boss.rewards.xlCandy;
+  return factor === 1 ? base : { min: base.min * factor, max: base.max * factor };
 }
 
 function raidsForCurrency(needed: number, reward: Range): Range {
@@ -76,8 +105,13 @@ function bindingOf(perCurrency: Partial<Record<Currency, Range>>): Currency | nu
   return binding;
 }
 
-export function computeBossResult(boss: RaidBoss, input: BossInput, calibration: Calibration = {}): BossResult {
-  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input), calibration);
+export function computeBossResult(
+  boss: RaidBoss,
+  input: BossInput,
+  calibration: Calibration = {},
+  megaBuddyLevel = 1,
+): BossResult {
+  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input), calibration, megaBuddyLevel);
 }
 
 /**
@@ -91,13 +125,14 @@ export function bossResultFromNeeds(
   input: BossInput,
   net: Partial<Record<Currency, number>>,
   calibration: Calibration = {},
+  megaBuddyLevel = 1,
 ): BossResult {
   const needs: Partial<Record<Currency, CurrencyNeed>> = {};
   const ranges: Partial<Record<Currency, Range>> = {};
 
   for (const c of CURRENCY_ORDER) {
     const needed = net[c];
-    const reward = perRaidReward(boss, c, input, calibration);
+    const reward = perRaidReward(boss, c, input, calibration, megaBuddyLevel);
     if (needed === undefined || needed <= 0 || !reward || reward.max <= 0) continue;
 
     const range = raidsForCurrency(needed, reward);
