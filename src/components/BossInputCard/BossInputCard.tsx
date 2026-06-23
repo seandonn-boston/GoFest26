@@ -6,8 +6,10 @@ import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
 import { describeAvailability } from "@/data";
 import { wildTypesForBoss } from "@/data/habitats";
-import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows, groupDisplayName, isL4Eligible } from "@/domain";
+import { megaBoostsForBoss, megaBoostSpecies, formMembers, planningWindows, groupDisplayName, isL4Eligible, explainCurrency } from "@/domain";
 import { GAME_CONFIG } from "@/data/config";
+import { MathTooltip } from "@/components/ui/MathTooltip";
+import { ExplainEquation } from "@/components/ui/ExplainEquation";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -56,6 +58,7 @@ export function BossInputCard({
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
   const megaBuddyLevel = usePlannerStore((s) => s.settings.megaBuddyLevel);
+  const calibration = usePlannerStore((s) => s.settings.calibration);
   const applyPreset = usePlannerStore((s) => s.applyPreset);
   const region = usePlannerStore((s) => s.settings.region);
   const [open, setOpen] = useState(false); // cards start collapsed (inputs hidden)
@@ -94,6 +97,13 @@ export function BossInputCard({
   const windowSlots = planWindows.reduce((s, wd) => s + (wd.endHour - wd.startHour) * planningRaidsPerHour, 0);
   const overWindow = result.raids.min > windowSlots && windowSlots > 0;
   const needEntries = Object.entries(result.needs) as [Currency, { needed: number; raidsRange: { min: number; max: number } }][];
+  // The step-by-step breakdown for a currency, but ONLY when it reproduces the
+  // engine's displayed numbers — so the inline-editable math is never misleading
+  // (e.g. collapsed multi-form groups whose shared pool differs are skipped).
+  const explainFor = (c: Currency, n: { needed: number; raidsRange: { min: number; max: number } }) => {
+    const ex = explainCurrency(boss, input, c, calibration, megaBuddyLevel);
+    return ex && ex.needed === n.needed && ex.raids.min === n.raidsRange.min && ex.raids.max === n.raidsRange.max ? ex : null;
+  };
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(cardTypes)}>
@@ -250,10 +260,38 @@ export function BossInputCard({
             <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
               <div>
                 <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids needed</span>
-                <div className="text-xl font-bold text-gofest-accent2">{formatRange(result.raids)}</div>
+                <div className="text-xl font-bold text-gofest-accent2">
+                  {(() => {
+                    const bindExp = result.bindingCurrency
+                      ? explainFor(result.bindingCurrency, result.needs[result.bindingCurrency]!)
+                      : null;
+                    return bindExp ? (
+                      <MathTooltip label="How many raids and why" trigger={<span>{formatRange(result.raids)}</span>}>
+                        <ExplainEquation bossId={boss.id} explanation={bindExp} />
+                      </MathTooltip>
+                    ) : (
+                      formatRange(result.raids)
+                    );
+                  })()}
+                </div>
               </div>
-              <span className="text-[11px] text-slate-400">
-                {needEntries.map(([c, n]) => `${CURRENCY_LABELS[c]} ${formatNumber(n.needed)}`).join(" · ")}
+              <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
+                {needEntries.map(([c, n], i) => {
+                  const exp = explainFor(c, n);
+                  const text = `${CURRENCY_LABELS[c]} ${formatNumber(n.needed)}`;
+                  return (
+                    <span key={c} className="inline-flex items-center">
+                      {i > 0 ? <span className="mr-1.5 text-slate-600">·</span> : null}
+                      {exp ? (
+                        <MathTooltip label={`How ${CURRENCY_LABELS[c]} is calculated`} trigger={<span>{text}</span>}>
+                          <ExplainEquation bossId={boss.id} explanation={exp} />
+                        </MathTooltip>
+                      ) : (
+                        text
+                      )}
+                    </span>
+                  );
+                })}
               </span>
             </div>
             {overWindow ? (
