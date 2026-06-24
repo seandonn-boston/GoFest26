@@ -7,14 +7,15 @@ import { megaBoostsForBoss, mergeMegaBoosts, megaBoostSpecies, type MegaBoost } 
 import type { EventDay } from "@/domain/types";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
-import { MEGA_KIND_COLOR } from "@/components/ui/MegaBoostRow";
+import { Copyable } from "@/components/ui/Copyable";
+import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 
 /**
- * Copyable "& mega3" search strings of the candy-boost megas worth evolving —
- * one for Saturday, one for Sunday — so you can grab the right Mega-Level-3 list
- * the day of. Sprites are outlined by role (attacker / wild / boss); a mega can
- * appear on both days. Inputs are deferred so rapid selections coalesce.
+ * Copyable "& mega3" lists of the candy-boost megas worth evolving — one for
+ * Saturday, one for Sunday — shown as ringed sprite chips (same colour scheme as
+ * the per-block megas on the results step), so the outline tells you what each
+ * brings (boss-type / wild-spawn / attacker). Inputs are deferred so rapid
+ * selections coalesce.
  */
 export function MegaSearchBar() {
   const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
@@ -37,26 +38,30 @@ export function MegaSearchBar() {
     const search = buildMegaSearchString(megaBoostSpecies(boosts));
     if (!search) return null;
     return (
-      <CopyableSearchString
-        label={`${dayLabel} mega-evolve`}
-        accent="text-purple-300"
+      <Copyable
         search={search}
-        items={boosts.map((b) => ({ key: b.mega.name, label: b.mega.name, color: MEGA_KIND_COLOR[b.kind] }))}
-        caption={
-          <>
-            Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL
-            boost — outline shows <span className="text-purple-300">attacker</span>,{" "}
-            <span className="text-sky-300">wild-spawn boost</span>, or boss-only. Only one counts at a time.
-          </>
-        }
-      />
+        label={`${dayLabel} mega-evolve`}
+        className="brutal rounded-xl bg-gofest-panel/80 p-3 transition hover:bg-gofest-panel"
+      >
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pr-8">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+            {dayLabel} mega-evolve
+          </span>
+          <MegaBoostLegend />
+        </div>
+        <p className="mb-2 text-[11px] text-slate-400">
+          Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL
+          boost — the outline shows what each mega brings this day (see key). Only one counts at a time.
+        </p>
+        <MegaBoostRow boosts={boosts} size={24} />
+      </Copyable>
     );
   };
 
   return (
-    <>
+    <div className="space-y-3">
       {bar(byDay.sat, "Saturday")}
       {bar(byDay.sun, "Sunday")}
-    </>
+    </div>
   );
 }

@@ -49,6 +49,52 @@ export function ActionDock() {
     setPanel(id);
     setOpen(false);
   };
+
+  // Nuke everything this app has persisted on the device — the whole localStorage
+  // JSON (every store), sessionStorage, IndexedDB, the service-worker caches and
+  // registration, cookies — then reload fresh so nothing cached is served. One
+  // confirm guards it since it's irreversible.
+  const hardReset = async () => {
+    if (
+      !window.confirm(
+        "⚠ HARD RESET\n\nThis permanently erases EVERYTHING saved on this device — your entire plan, every setting, and all cached app data — then reloads the app fresh.\n\nThis cannot be undone. Continue?",
+      )
+    ) {
+      return;
+    }
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {}
+    try {
+      if (indexedDB.databases) {
+        const dbs = await indexedDB.databases();
+        await Promise.all(dbs.map((d) => (d.name ? indexedDB.deleteDatabase(d.name) : undefined)));
+      }
+    } catch {}
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {}
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+    } catch {}
+    try {
+      for (const c of document.cookie.split(";")) {
+        const name = c.split("=")[0].trim();
+        if (name) document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      }
+    } catch {}
+    // Reload to the bare path (drops any shared-plan query) with a cache-buster so
+    // the document itself isn't served from the HTTP cache.
+    const fresh = `${window.location.pathname}?_r=${Date.now()}`;
+    window.location.replace(fresh);
+  };
   const closePanel = useCallback(() => setPanel(null), []);
   const sheetRef = useDialog<HTMLDivElement>(panel !== null, closePanel);
 
@@ -106,6 +152,27 @@ export function ActionDock() {
             </div>
           ))}
 
+          {/* Bottom row: the main FAB, with Hard reset fanning out to its LEFT
+              (horizontal, not stacked with the items above). */}
+          <div className="flex items-center gap-2.5">
+            <div
+              className={`flex items-center gap-2.5 transition-all duration-200 ${
+                open ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0"
+              }`}
+            >
+              <span className="rounded-md bg-rose-500 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-white shadow">
+                Hard reset
+              </span>
+              <button
+                type="button"
+                onClick={hardReset}
+                aria-label="Hard reset — erase everything saved on this device and reload"
+                className={`${miniFab} bg-rose-500 text-white`}
+              >
+                🗑
+              </button>
+            </div>
+
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -137,6 +204,7 @@ export function ActionDock() {
               />
             </span>
           </button>
+          </div>
         </div>
       ) : null}
 
