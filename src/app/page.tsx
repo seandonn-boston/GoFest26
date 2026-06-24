@@ -2,6 +2,7 @@
 
 import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useSwipeNav } from "@/hooks/useSwipeNav";
 import { usePlannerResults, useBlockPlan } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore, type StepId } from "@/store/useUiStore";
@@ -48,6 +49,8 @@ export default function Home() {
   const setStep = useUiStore((s) => s.setStep);
   const nextStep = useUiStore((s) => s.nextStep);
   const prevStep = useUiStore((s) => s.prevStep);
+  // Swipe left → next step, right → previous (touch only; clamped at the ends).
+  const swipe = useSwipeNav({ onLeft: nextStep, onRight: prevStep });
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
@@ -113,7 +116,7 @@ export default function Home() {
             <SharedPlanBanner />
             <StepNav steps={steps} active={step} onSelect={setStep} />
 
-            <div className="space-y-6">
+            <div className="space-y-6" {...swipe}>
               <StepContent
                 step={step}
                 anySelected={anySelected}
