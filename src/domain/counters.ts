@@ -230,6 +230,72 @@ export function topCounters(types: string[], n = 6): ScoredCounter[] {
   return out;
 }
 
+/** A block-level counter: an attacker ranked by how many of the block's raids it's
+ *  super-effective against (the only weight), tie-broken by raw attack power. */
+export interface BlockCounter {
+  attacker: Attacker;
+  /** How many of the block's bosses this attacker is super-effective against. */
+  bossesCovered: number;
+  /** Strongest super-effective attacking type vs the block — for the chip ring. */
+  via: PType;
+  /** Attack-power proxy (max eDPS across its moves, so a Mega's higher attack wins
+   *  ties) — we have no raw base-attack stat in the data, and eDPS tracks it. */
+  power: number;
+}
+
+/**
+ * The best counters for a whole hour-block: attackers ranked ONLY by how many of
+ * the block's raids they're super-effective ("good") against, so a broad-coverage
+ * pick beats a narrow specialist. Ties go to the highest attack power (max eDPS,
+ * which includes a Mega's boosted attack). One entry per species (best form).
+ */
+export function topBlockCounters(bossTypesList: string[][], n = 6): BlockCounter[] {
+  const defsList = bossTypesList
+    .map((types) => (types ?? []).filter((t): t is PType => (ALL_TYPES as string[]).includes(t)))
+    .filter((d) => d.length > 0);
+  if (defsList.length === 0) return [];
+
+  const scored: BlockCounter[] = [];
+  for (const attacker of ATTACKERS) {
+    const entries = Object.entries(attacker.attacks) as [PType, number][];
+    if (entries.length === 0) continue;
+    let covered = 0;
+    for (const defTypes of defsList) {
+      if (entries.some(([t]) => effectiveness(t, defTypes) > 1.01)) covered++;
+    }
+    if (covered === 0) continue;
+    // Ring by the strongest type that's super-effective somewhere in the block.
+    let via: PType | null = null;
+    let viaDps = -1;
+    for (const [t, dps] of entries) {
+      if (dps > viaDps && defsList.some((d) => effectiveness(t, d) > 1.01)) {
+        viaDps = dps;
+        via = t;
+      }
+    }
+    const power = Math.max(...entries.map(([, d]) => d));
+    scored.push({ attacker, bossesCovered: covered, via: via ?? entries[0][0], power });
+  }
+
+  scored.sort(
+    (a, b) =>
+      b.bossesCovered - a.bossesCovered || // weighted ONLY by # of raids it's good in
+      b.power - a.power || // tie → highest attack power (incl. Mega attack)
+      a.attacker.name.localeCompare(b.attacker.name),
+  );
+
+  const seen = new Set<string>();
+  const out: BlockCounter[] = [];
+  for (const c of scored) {
+    const key = c.attacker.species.toLowerCase();
+    if (seen.has(key)) continue; // one chip per species (best form already first)
+    seen.add(key);
+    out.push(c);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
 /** All counter species (deduped, final-evolution names) across a set of bosses. */
 export function counterSearchSpecies(bossTypes: string[][]): string[] {
   return counterSearchPicks(bossTypes).map((p) => p.attacker.species);

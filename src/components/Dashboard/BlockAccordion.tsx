@@ -10,7 +10,7 @@ import { TYPE_COLORS } from "@/data/typeVisuals";
 import { RISK_BANDS, megaBoostsForBoss, topBlockMegas, megaBoostSpecies } from "@/domain";
 import { sized } from "@/domain/blockPlan";
 import type { BlockMegaRank, BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
-import { topCounters } from "@/domain/counters";
+import { topCounters, topBlockCounters, type BlockCounter } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
 import { buildSearchString, buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
@@ -18,8 +18,8 @@ import { usePlannerStore, blockMembersInOrder } from "@/store/usePlannerStore";
 import { useDragList } from "./useDragList";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
-import { MegaBoostRow, MEGA_KIND_RING, MEGA_KIND_LABEL, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
-import { Copyable, CopyableInline } from "@/components/ui/Copyable";
+import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { CopyableInline } from "@/components/ui/Copyable";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
@@ -32,44 +32,45 @@ const blockKey = (b: BlockPlan) => `${b.day}${b.startHour}`;
  *  so a block's priority order can be matched to mega species for tie-breaking. */
 const speciesTerm = (name: string) => name.replace(/^(Mega|Primal)\s+/, "").replace(/\s+[XY]$/, "").trim();
 
-/** Terse rationale for a top-mega row: candy reach · counter reach · wild matches. */
-function megaReason(m: BlockMegaRank): string {
-  const parts: string[] = [];
-  if (m.bossesBoosted > 0) parts.push(`boosts ${m.bossesBoosted}`);
-  const counters = m.attackerSameType + m.attackerOffType;
-  if (counters > 0) parts.push(`counters ${counters}`);
-  if (m.wildMatches > 0) parts.push(`wild ×${m.wildMatches}`);
-  return parts.join(" · ");
-}
-
-/** The handful of megas most worth evolving for an hour-block, ranked by same-type
- *  boss coverage (40%), featured wild-spawn matches (30%) and super-effective
- *  reach with (20%) / without (10%) a candy match. Replaces the old per-block
- *  "Mega-evolve" search string; still copyable as a GO search string. */
-function TopMegasPanel({ megas, search, blockName }: { megas: BlockMegaRank[]; search: string; blockName: string }) {
-  if (megas.length === 0) return null;
+/** Block-level best counters + megas to evolve, each as a horizontal row of sprite
+ *  chips (matching the per-target tile rows). Counters are ringed by their best
+ *  super-effective type; megas carry their kind ring (key shown once up top). */
+function BlockChips({
+  counters,
+  counterSearch,
+  megas,
+  megaSearch,
+}: {
+  counters: BlockCounter[];
+  counterSearch: string;
+  megas: BlockMegaRank[];
+  megaSearch: string;
+}) {
+  if (counters.length === 0 && megas.length === 0) return null;
   return (
-    <Copyable search={search} label={`top megas for ${blockName}`} className="border-t border-white/10 px-2.5 py-2">
-      <div className="mb-1.5 flex items-center justify-between gap-2 pr-8">
-        <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">Top megas to evolve</span>
-        <MegaBoostLegend />
-      </div>
-      <ol className="space-y-1">
-        {megas.map((m, i) => (
-          <li key={m.mega.name} className="flex items-center gap-2">
-            <span className="w-3.5 shrink-0 text-right font-mono text-[10px] text-slate-500">{i + 1}</span>
+    <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
+      {counters.length > 0 ? (
+        <CopyableInline search={counterSearch} label="counters for this block" className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
+          {counters.map((c) => (
             <span
-              title={`${m.mega.name} (${m.mega.types.join("/")}) — ${MEGA_KIND_LABEL[m.kind]}`}
-              className={`inline-flex shrink-0 rounded-full bg-black/30 ring-2 ${MEGA_KIND_RING[m.kind]}`}
+              key={c.attacker.name}
+              title={`${c.attacker.name} · strong vs ${c.bossesCovered} raid${c.bossesCovered === 1 ? "" : "s"} this block`}
+              className="inline-flex rounded-full bg-black/30 ring-2"
+              style={{ ["--tw-ring-color" as string]: TYPE_COLORS[c.via.toLowerCase()] }}
             >
-              <Sprite src={m.mega.sprite} alt={m.mega.name} size={22} />
+              <Sprite src={attackerIconUrl(c.attacker)} alt={c.attacker.name} size={20} />
             </span>
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-200">{m.mega.name.replace(/^Mega /, "")}</span>
-            <span className="shrink-0 text-[10px] text-slate-500">{megaReason(m)}</span>
-          </li>
-        ))}
-      </ol>
-    </Copyable>
+          ))}
+        </CopyableInline>
+      ) : null}
+      {megas.length > 0 ? (
+        <CopyableInline search={megaSearch} label="megas to evolve for this block" className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-purple-300">Megas</span>
+          <MegaBoostRow boosts={megas} size={20} />
+        </CopyableInline>
+      ) : null}
+    </div>
   );
 }
 
@@ -271,6 +272,18 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   }, [memoKey]);
   const megaSearch = useMemo(() => buildMegaSearchString(megaBoostSpecies(topMegas)), [topMegas]);
 
+  // Top counters for the whole block — ranked by how many of its raids each
+  // attacker is super-effective against (see topBlockCounters).
+  const blockCounters = useMemo(() => {
+    const bossTypes = block.species.map((s) => getBoss(s.bossId)?.types ?? []).filter((t) => t.length > 0);
+    return topBlockCounters(bossTypes, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- memoKey encodes the inputs
+  }, [memoKey]);
+  const blockCounterSearch = useMemo(
+    () => buildSearchString(blockCounters.map((c) => c.attacker.name)),
+    [blockCounters],
+  );
+
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02]">
       <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
@@ -346,9 +359,9 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         </div>
       ) : null}
 
-      {/* Top megas to evolve for this hour-block — kept visible whether the block
-          is expanded or collapsed (the best mega varies block to block). */}
-      <TopMegasPanel megas={topMegas} search={megaSearch} blockName={block.name} />
+      {/* Block-wide best counters + megas to evolve — kept visible whether the
+          block is expanded or collapsed (they vary block to block). */}
+      <BlockChips counters={blockCounters} counterSearch={blockCounterSearch} megas={topMegas} megaSearch={megaSearch} />
     </div>
   );
 }
@@ -407,9 +420,14 @@ export function BlockAccordion({
 
   return (
     <div className="mt-4">
-      <div className="mb-1 flex items-center justify-between gap-2">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="text-sm font-semibold text-slate-200">Your raid blocks</h3>
-        <Legend />
+        {/* Both keys together: the band colours and the mega-chip ring meaning
+            (moved here from each block so it's shown once). */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Legend />
+          <MegaBoostLegend />
+        </div>
       </div>
       <p className="mb-2 text-[10px] leading-snug text-slate-500">
         Reward luck makes each target a range. The bars fill from{" "}
