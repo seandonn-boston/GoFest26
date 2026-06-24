@@ -19,6 +19,7 @@ function Pretitle({ text }: { text: string }) {
 
 const dropShadow = "[filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.55))]";
 const SPRITE = 60; // flanking sprite size, mirroring the Mewtwo hero title
+const STACK = 44; // each sprite in a two-forme right-slot stack (Kyurem / Necrozma)
 
 /**
  * The hero card title — sprite(s) flanking a CENTERED name, positioned exactly
@@ -26,7 +27,9 @@ const SPRITE = 60; // flanking sprite size, mirroring the Mewtwo hero title
  * and right, slightly overlapping the title, the whole cluster centered (≤350px).
  * A two-forme species shows both sprites (X / Y slots); a lone boss fills the
  * right slot with an invisible, same-size spacer so the name stays at the card's
- * true center regardless of the sprite. Mega bosses get a centered "Mega" pre-title.
+ * true center regardless of the sprite. `rightStack` puts TWO fused formes in the
+ * right slot, vertically stacked and diagonally offset (Kyurem / Necrozma), in the
+ * same position a single right sprite would sit. Mega bosses get a "Mega" pre-title.
  */
 export function CardTitle({
   name,
@@ -34,6 +37,7 @@ export function CardTitle({
   sprites,
   isMega,
   pretitle: pretitleProp,
+  rightStack,
 }: {
   name: string;
   types?: string[];
@@ -41,6 +45,8 @@ export function CardTitle({
   isMega?: boolean;
   /** Overrides the small pre-title (e.g. "Altered & Origin" for a forme group). */
   pretitle?: string;
+  /** Two fused formes stacked in the right slot (base on the left). */
+  rightStack?: TitleSprite[];
 }) {
   const displayName = name.replace(/^Mega\s+/, "");
   const pretitle = pretitleProp ?? (isMega ? "Mega" : null);
@@ -49,7 +55,7 @@ export function CardTitle({
 
   return (
     <div className="mx-auto flex max-w-[350px] items-center justify-center">
-      {/* Left slot — Mega Mewtwo X position. */}
+      {/* Left slot — Mega Mewtwo X position (the base / non-fused sprite). */}
       {left?.src ? (
         <span className={`relative z-20 -mr-3 shrink-0 ${dropShadow}`}>
           <Sprite src={left.src} alt={left.alt ?? displayName} size={SPRITE} />
@@ -63,9 +69,25 @@ export function CardTitle({
         <CyberTitle name={displayName} types={types} className="text-2xl" />
       </div>
 
-      {/* Right slot — Mega Mewtwo Y position; an invisible spacer when there's no
-          second forme, so the name stays centered. */}
-      {right?.src ? (
+      {/* Right slot — Mega Mewtwo Y position. Two fused formes stack here (top
+          nudged down-right, bottom nudged up-left, occupying the single slot);
+          else a single forme; else an invisible spacer to keep the name centered. */}
+      {rightStack && rightStack.length >= 2 ? (
+        <span className="relative -ml-3 shrink-0" style={{ width: SPRITE, height: SPRITE }}>
+          <span
+            className={`absolute left-1/2 top-0 z-20 ${dropShadow}`}
+            style={{ transform: "translate(calc(-50% + 5px), 5px)" }}
+          >
+            <Sprite src={rightStack[0].src} alt={rightStack[0].alt} size={STACK} />
+          </span>
+          <span
+            className={`absolute bottom-0 left-1/2 z-10 ${dropShadow}`}
+            style={{ transform: "translate(calc(-50% - 5px), -5px)" }}
+          >
+            <Sprite src={rightStack[1].src} alt={rightStack[1].alt} size={STACK} />
+          </span>
+        </span>
+      ) : right?.src ? (
         <span className={`relative z-20 -ml-3 shrink-0 ${dropShadow}`}>
           <Sprite src={right.src} alt={right.alt} size={SPRITE} />
         </span>
