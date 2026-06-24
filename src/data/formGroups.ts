@@ -27,11 +27,11 @@ export const FORM_GROUPS: Record<string, FormMember[]> = {
     { id: "giratina-origin", label: "Origin" },
   ],
   dialga: [
-    { id: "dialga", label: "Standard" },
+    { id: "dialga", label: "Regular" },
     { id: "dialga-origin", label: "Origin" },
   ],
   palkia: [
-    { id: "palkia", label: "Standard" },
+    { id: "palkia", label: "Regular" },
     { id: "palkia-origin", label: "Origin" },
   ],
   tornadus: [
