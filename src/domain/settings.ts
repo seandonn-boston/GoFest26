@@ -41,6 +41,10 @@ export interface PlannerSettings {
   passesOwned: number;
   /** Link Charges the user already holds (spent on Mega / Super Mega raids). */
   linkChargesOwned: number;
+  /** Rare Candy the user already holds (flexible — spend on any species). */
+  rareCandyOwned: number;
+  /** Rare Candy XL the user already holds. */
+  rareCandyXlOwned: number;
   /** The user intends to use Link Charges on Mega / Super Mega raids — alters the
    *  PokéCoin pass cost (LC can stand in for an in-person Mega pass; remote Super
    *  Mega raids REQUIRE 200 LC on top of a Remote Pass). Off by default. */
@@ -75,6 +79,8 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   region: DEFAULT_REGION,
   passesOwned: 0,
   linkChargesOwned: 0,
+  rareCandyOwned: 0,
+  rareCandyXlOwned: 0,
   useLinkCharges: false,
   // L3 (Max) is the "standard" leveled mega — the realistic same-type buddy a
   // GO Fest raider runs, so the XL numbers reflect a +25% boost out of the box.

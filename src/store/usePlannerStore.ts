@@ -830,7 +830,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 19, // sleep→remote-passes + Link Charge settings (backfilled via DEFAULT_SETTINGS)
+      version: 20, // +rareCandy holdings (backfilled via DEFAULT_SETTINGS)
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),

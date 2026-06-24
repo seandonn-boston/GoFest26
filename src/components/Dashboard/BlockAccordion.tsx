@@ -7,7 +7,7 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
-import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
+import { RISK_BANDS, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
 import { sized } from "@/domain/blockPlan";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters } from "@/domain/counters";
@@ -340,7 +340,6 @@ export function BlockAccordion({
   }
   const remote = plan.remote && plan.remote.species.length > 0 ? plan.remote : undefined;
   if (!byDay.length && !useRemote) return null;
-  const bonus = rareCandyForecast(plan);
 
   return (
     <div className="mt-4">
@@ -374,21 +373,6 @@ export function BlockAccordion({
       </div>
 
       <GoalProgress plan={plan} results={results} headStart={headStart} />
-
-      <div className="mt-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.05] p-2.5">
-        <div className="text-[11px] uppercase tracking-wide text-amber-200/80">Rare Candy from these raids</div>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
-          <span>
-            <span className="font-bold text-amber-200">≈{bonus.rareCandy}</span> <span className="text-slate-300">Rare Candy</span>
-          </span>
-          <span>
-            <span className="font-bold text-amber-200">≈{bonus.rareCandyXl}</span> <span className="text-slate-300">Rare Candy XL</span>
-          </span>
-        </div>
-        <p className="mt-1 text-[10px] text-slate-500">
-          ~1 Rare Candy per raid, plus 1 Rare Candy XL per 5★ &amp; Mega Mewtwo raid (not regular Megas) — spend it on any species.
-        </p>
-      </div>
     </div>
   );
 }
