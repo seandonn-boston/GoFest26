@@ -1,6 +1,6 @@
 "use client";
 
-import { type PlannerSettings, isDefaultSettings } from "@/domain/settings";
+import { isDefaultSettings } from "@/domain/settings";
 import { GAME_CONFIG } from "@/data/config";
 import { RESEARCH_LINES } from "@/data/research";
 import { formatNumber } from "@/lib/format";
@@ -22,12 +22,6 @@ const RESEARCH_CURRENCY: Record<string, string> = {
   megaEnergy: "Mega Energy",
 };
 
-const REWARD_CASES: { id: PlannerSettings["rewardCase"]; label: string; hint: string }[] = [
-  { id: "optimistic", label: "Best case", hint: "Plan for the highest reward rolls (fewest raids)." },
-  { id: "expected", label: "Expected", hint: "Plan around average reward rolls." },
-  { id: "safe", label: "Worst case", hint: "Plan for the lowest reward rolls (most raids)." },
-];
-
 /** The full set of planning-assumption controls (shared by the action dock). */
 export function AssumptionsControls() {
   const settings = usePlannerStore((s) => s.settings);
@@ -39,27 +33,8 @@ export function AssumptionsControls() {
 
   return (
     <div className="space-y-5">
-      {/* Reward case */}
-      <div>
-        <div className="mb-1.5 text-sm text-slate-300">Plan around which reward rolls?</div>
-        <div className="flex gap-2">
-          {REWARD_CASES.map((rc) => (
-            <button
-              key={rc.id}
-              type="button"
-              title={rc.hint}
-              onClick={() => setSettings({ rewardCase: rc.id })}
-              className={`flex-1 rounded-sm border px-3 py-2 text-sm transition ${
-                settings.rewardCase === rc.id
-                  ? "border-gofest-accent2 bg-gofest-accent2/15 text-white"
-                  : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"
-              }`}
-            >
-              {rc.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* The reward-case (best / expected / worst) selector now lives on the
+          results page, right under the headline numbers it drives. */}
 
       {/* Timing / limits */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
