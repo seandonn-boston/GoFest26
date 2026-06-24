@@ -276,7 +276,7 @@ function StepContent({
 
 function Disclaimer() {
   return (
-    <footer className="space-y-2 px-1 pb-8 text-xs text-slate-500">
+    <footer className="mt-10 space-y-2 border-t border-white/10 px-1 pb-8 pt-6 text-xs text-slate-500">
       <p>
         Reward amounts vary per raid, so raid counts are shown as ranges (best-case to worst-case
         rolls). The “with mega buddy” figure assumes a matching Mega-Evolved buddy is boosting your

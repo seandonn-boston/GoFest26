@@ -35,13 +35,23 @@ export function BossList() {
     return n;
   });
   const region = usePlannerStore((s) => s.settings.region);
+  const resetAll = usePlannerStore((s) => s.resetAll);
   const start = GAME_CONFIG.event.hourStartLocal;
 
   return (
     <Card className="p-4">
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Pick your raid targets</h2>
-        <span className="text-sm text-slate-400">{selectedCount} selected</span>
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 text-sm text-slate-400">{selectedCount} selected</span>
+          <button
+            type="button"
+            onClick={resetAll}
+            className="shrink-0 rounded-md border border-rose-500/50 bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/25"
+          >
+            Reset all
+          </button>
+        </div>
       </div>
       <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-slate-500">
         <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span>{" "}

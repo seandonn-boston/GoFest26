@@ -158,6 +158,7 @@ function FlatView({ speciesOrder, inputs }: { speciesOrder: string[]; inputs: Re
             rowRef={(el) => drag.setRow(key, el)}
             dragging={drag.dragId === key}
             grip={<Grip {...drag.gripProps(key, it.label)} />}
+            gripRight={<Grip {...drag.gripProps(key, it.label)} />}
             rank={i + 1}
             sprite={boss?.sprite}
             label={it.label}
@@ -186,6 +187,7 @@ function GroupedView({ speciesOrder, inputs }: { speciesOrder: string[]; inputs:
           rowRef={(el) => drag.setRow(id, el)}
           dragging={drag.dragId === id}
           grip={<Grip {...drag.gripProps(id, speciesName(id))} />}
+          gripRight={<Grip {...drag.gripProps(id, speciesName(id))} />}
         />
       ))}
     </div>
@@ -202,6 +204,7 @@ function SpeciesGroup({
   rowRef,
   dragging,
   grip,
+  gripRight,
 }: {
   bossId: string;
   input: BossInput | undefined;
@@ -209,6 +212,7 @@ function SpeciesGroup({
   rowRef: (el: HTMLElement | null) => void;
   dragging: boolean;
   grip: ReactNode;
+  gripRight: ReactNode;
 }) {
   const reorderCopies = usePlannerStore((s) => s.reorderCopies);
   const boss = getBoss(bossId);
@@ -232,6 +236,7 @@ function SpeciesGroup({
         {copies.length > 1 ? (
           <span className="shrink-0 text-[10px] text-slate-500">{copies.length} individuals</span>
         ) : null}
+        {gripRight}
       </div>
 
       {/* Within-species copy ranking — only when there's more than one to order. */}
@@ -253,6 +258,7 @@ function SpeciesGroup({
                 <span className="w-4 shrink-0 text-center font-mono text-[10px] font-bold text-slate-400">{i + 1}</span>
                 <span className="min-w-0 flex-1 truncate text-xs text-slate-300">Individual #{i + 1}</span>
                 <span className="shrink-0 text-[10px] text-slate-500">{copyTarget(c, isMega)}</span>
+                <Grip {...drag.gripProps(cid, `${speciesName(bossId)} #${i + 1}`)} small />
               </div>
             );
           })}
@@ -281,6 +287,7 @@ function Row({
   rowRef,
   dragging,
   grip,
+  gripRight,
   rank,
   sprite,
   label,
@@ -289,6 +296,8 @@ function Row({
   rowRef: (el: HTMLElement | null) => void;
   dragging: boolean;
   grip: ReactNode;
+  /** A second grip on the right edge so the list is thumb-reachable either-handed. */
+  gripRight: ReactNode;
   rank: number;
   sprite?: string;
   label: string;
@@ -306,6 +315,7 @@ function Row({
       <Sprite src={sprite} alt={label} size={28} />
       <span className="min-w-0 flex-1 truncate text-sm text-slate-200">{label}</span>
       {sub ? <span className="shrink-0 text-[10px] text-slate-500">{sub}</span> : null}
+      {gripRight}
     </div>
   );
 }

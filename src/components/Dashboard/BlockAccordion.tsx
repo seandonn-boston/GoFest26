@@ -81,6 +81,7 @@ function TargetCard({
   dkey,
   wildTypes,
   grip,
+  gripRight,
   rowRef,
   dragging,
   quickCatch,
@@ -89,6 +90,8 @@ function TargetCard({
   dkey: string;
   wildTypes: string[];
   grip?: ReactNode;
+  /** A second grip on the right edge so the list is thumb-reachable either-handed. */
+  gripRight?: ReactNode;
   rowRef?: (el: HTMLElement | null) => void;
   dragging?: boolean;
   quickCatch?: { on: boolean; onToggle: () => void };
@@ -149,6 +152,7 @@ function TargetCard({
             {goalPct}%
           </span>
         ) : null}
+        {gripRight}
       </div>
 
       {/* Per-block quick-catch toggle — sits below the name and above the
@@ -296,7 +300,9 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
           <p className="text-[10px] text-slate-500">Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).</p>
           {drag.list.map((id) => {
             const share = shareFor(id);
-            const grip = (
+            // Two grips per row (left + right) so either thumb can drag — same
+            // drag id, so either handle reorders the same target.
+            const gripEl = (
               <span
                 {...drag.gripProps(id, share.bossName)}
                 className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
@@ -310,7 +316,15 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
                 share={share}
                 dkey={`${id}@${key}`}
                 wildTypes={wildTypes}
-                grip={grip}
+                grip={gripEl}
+                gripRight={
+                  <span
+                    {...drag.gripProps(id, share.bossName)}
+                    className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
+                  >
+                    ⠿
+                  </span>
+                }
                 rowRef={(el) => drag.setRow(id, el)}
                 dragging={drag.dragId === id}
                 quickCatch={{ on: !!quickCatchBlocks[`${id}@${key}`], onToggle: () => toggleQuickCatch(id, key) }}
