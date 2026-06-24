@@ -5,7 +5,6 @@ import type { EventDay } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { Card } from "@/components/ui/Card";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
@@ -39,7 +38,7 @@ export function BossList() {
   const start = GAME_CONFIG.event.hourStartLocal;
 
   return (
-    <Card className="p-4">
+    <section>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Pick your raid targets</h2>
         <div className="flex items-center gap-3">
@@ -85,6 +84,6 @@ export function BossList() {
           </div>
         ))}
       </div>
-    </Card>
+    </section>
   );
 }

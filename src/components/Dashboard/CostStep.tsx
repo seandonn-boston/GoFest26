@@ -1,7 +1,6 @@
 "use client";
 
 import type { PlanSummary } from "@/domain/types";
-import { Card } from "@/components/ui/Card";
 import { PassCoverageBar } from "./PassCoverage";
 import { PassEconomy } from "./PassEconomy";
 
@@ -13,7 +12,7 @@ import { PassEconomy } from "./PassEconomy";
 export function CostStep({ summary }: { summary: PlanSummary }) {
   const hasGoals = summary.totalRaids.max > 0;
   return (
-    <Card className="p-4">
+    <section>
       <h2 className="mb-1 text-lg font-semibold">What it&apos;ll cost</h2>
       <p className="mb-3 text-sm text-slate-400">
         Passes you already hold are spent on your highest priorities first; everything below is the
@@ -30,6 +29,6 @@ export function CostStep({ summary }: { summary: PlanSummary }) {
           Pick targets and enter what you hold on the earlier steps to see the pass cost.
         </p>
       )}
-    </Card>
+    </section>
   );
 }
