@@ -74,6 +74,8 @@ export interface EnergyGoalDef {
   perRaid: Range;
   /** The raid that drops it, e.g. "White Kyurem". */
   source: string;
+  /** Short forme label for the card pre-title, e.g. "White", "Dawn Wings", "Crowned". */
+  forme?: string;
   /** PokeMiners sprite filename of the SOURCE forme (White Kyurem, Primal Groudon,
    *  …) — distinct from the base Pokémon's icon. */
   sprite?: string;

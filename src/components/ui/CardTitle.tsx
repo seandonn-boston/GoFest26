@@ -8,10 +8,16 @@ export interface TitleSprite {
   alt: string;
 }
 
-/** Small uppercase pre-title (e.g. "Mega"), echoing the Mewtwo hero title. */
+/** Small uppercase pre-title (e.g. "Mega", "Hero & Crowned"), echoing the Mewtwo
+ *  hero title. Long forme lists tighten their tracking so they stay on one line. */
 function Pretitle({ text }: { text: string }) {
+  const tight = text.length > 20;
   return (
-    <span className="text-[11px] font-extrabold uppercase tracking-[0.3em] text-slate-300 [text-shadow:0_1px_3px_rgba(0,0,0,0.85)]">
+    <span
+      className={`font-extrabold uppercase text-slate-300 [text-shadow:0_1px_3px_rgba(0,0,0,0.85)] ${
+        tight ? "text-[10px] tracking-[0.12em]" : "text-[11px] tracking-[0.3em]"
+      }`}
+    >
       {text}
     </span>
   );

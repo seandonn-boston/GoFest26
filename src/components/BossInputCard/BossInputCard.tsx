@@ -89,7 +89,9 @@ export function BossInputCard({
   // but counters / megas / availability stay per forme.
   const formes = boss.formGroup ? formMembers(boss.formGroup) : [boss];
   const isGroup = formes.length > 1;
-  const displayName = isGroup ? groupDisplayName(boss) : boss.name;
+  // Title with the bare species ("Zacian (Hero of Many Battles)" → "Zacian"); the
+  // forme(s) ride in the pre-title.
+  const displayName = isGroup ? groupDisplayName(boss) : boss.species ?? boss.name;
   const candySpecies = displayName.replace(/^Mega\s+/, "");
   // A cross-species shared-candy group (Solgaleo + Lunala) and a same-species
   // forme group (Giratina, the genies) both show every forme's sprite on the
@@ -100,17 +102,31 @@ export function BossInputCard({
   // A same-species forme group titles with the species name, so its pre-title is
   // the formes (e.g. "Altered & Origin", "Incarnate & Therian"). A cross-species
   // group already names both in the title, so it keeps none.
-  const sameSpeciesGroup = isGroup && new Set(formes.map((f) => speciesKey(f.name))).size === 1;
-  const formePretitle = sameSpeciesGroup ? formes.map((f) => f.formLabel ?? "").join(" & ") : undefined;
   // Road of Legends fused formes (off-roster) flank the base sprite: a boss with
   // TWO fused formes (Kyurem → White/Black, Necrozma → Dawn Wings/Dusk Mane) stacks
   // them in the right slot; ONE fused forme (Groudon/Kyogre → Primal, the Crowned
   // genie-dogs) sits as the single right sprite. Megas and plain 5★ have none, and
   // dual-forme groups (Giratina, Solgaleo & Lunala, …) already fill both slots.
-  const fusedSprites = energyGoalsFor(boss.id)
+  const energyGoals = energyGoalsFor(boss.id);
+  const fusedSprites = energyGoals
     .filter((g) => g.sprite)
     .map((g) => ({ src: spriteUrl(g.sprite as string), alt: g.source }));
   const rightStack = !isGroup && fusedSprites.length >= 2 ? fusedSprites.slice(0, 2) : undefined;
+
+  // Pre-title (where a Mega shows "Mega"): the formes. A same-species group shows
+  // its formes ("Altered & Origin"); an energy-fusion boss shows its fused formes
+  // + the base ("Black, White, Regular"; "Hero & Crowned"). Cross-species groups
+  // already name both in the title, so they keep none.
+  const sameSpeciesGroup = isGroup && new Set(formes.map((f) => speciesKey(f.name))).size === 1;
+  const fusedFormes = energyGoals.map((g) => g.forme).filter((f): f is string => !!f).sort((a, b) => a.localeCompare(b));
+  let formePretitle: string | undefined;
+  if (sameSpeciesGroup) {
+    formePretitle = formes.map((f) => f.formLabel ?? "").join(" & ");
+  } else if (fusedFormes.length > 0) {
+    const baseForme = boss.name.match(/\(([^)\s]+)/)?.[1] ?? "Regular";
+    formePretitle =
+      fusedFormes.length >= 2 ? `${fusedFormes.join(", ")}, ${baseForme}` : `${baseForme} & ${fusedFormes[0]}`;
+  }
   const titleSprites =
     !isGroup && fusedSprites.length === 1
       ? [{ src: boss.sprite, alt: boss.name }, fusedSprites[0]]
