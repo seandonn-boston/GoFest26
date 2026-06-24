@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-/** Total steps in the planner flow (Pick → Enter what you have → Prioritize → Results). */
-export const STEP_COUNT = 4;
-export type StepId = 1 | 2 | 3 | 4;
+/** Total steps in the planner flow (Pick → Enter what you have → Prioritize →
+ *  Results → Cost). */
+export const STEP_COUNT = 5;
+export type StepId = 1 | 2 | 3 | 4 | 5;
 
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
@@ -42,7 +43,7 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 1, // steps merged 5 → 4; clamp any stored step into range
+      version: 1, // clamp any stored step into range (a dedicated Cost step makes 5)
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
       migrate: (persisted) => {
         const s = (persisted ?? {}) as Partial<UiState>;

@@ -16,6 +16,7 @@ import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
+import { CostStep } from "@/components/Dashboard/CostStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ExportButton } from "@/components/ExportButton";
@@ -68,6 +69,7 @@ export default function Home() {
     { id: 2, label: "Enter what you have", done: anySelected && hasGoals },
     { id: 3, label: "Prioritize", done: priorityCount > 0 || anyPlayDay || useRemote },
     { id: 4, label: "Results", done: hasGoals },
+    { id: 5, label: "Cost", done: hasGoals },
   ];
 
   if (!hydrated) {
@@ -129,7 +131,7 @@ export default function Home() {
                 step={step}
                 onPrev={prevStep}
                 onNext={nextStep}
-                nextLabel={step === 3 ? "See results" : undefined}
+                nextLabel={step === 3 ? "See results" : step === 4 ? "See cost" : undefined}
               />
             </div>
 
@@ -237,25 +239,34 @@ function StepContent({
     return <PlanSetup roadPlan={roadPlan} />;
   }
 
-  // step === 4
+  if (step === 4) {
+    return (
+      <>
+        {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
+
+        <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
+
+        {summary.schedule.raids.length > 0 ? (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold">Export</h2>
+            <p className="text-sm text-slate-400">
+              Download your full chronological plan — every raid with its pass type, the Mega buddy to
+              evolve, and top counters — as an Excel workbook.
+            </p>
+            <ExportButton summary={summary} />
+          </section>
+        ) : null}
+
+        <AdvancedTools />
+      </>
+    );
+  }
+
+  // step === 5 — Cost
   return (
     <>
       {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
-
-      <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
-
-      {summary.schedule.raids.length > 0 ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Export</h2>
-          <p className="text-sm text-slate-400">
-            Download your full chronological plan — every raid with its pass type, the Mega buddy to
-            evolve, and top counters — as an Excel workbook.
-          </p>
-          <ExportButton summary={summary} />
-        </section>
-      ) : null}
-
-      <AdvancedTools />
+      <CostStep summary={summary} />
     </>
   );
 }

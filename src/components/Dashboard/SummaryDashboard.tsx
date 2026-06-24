@@ -12,9 +12,7 @@ import { Disclosure } from "@/components/ui/Disclosure";
 import { CapacityGauge } from "./CapacityGauge";
 import { PlanPasses } from "./PlanPasses";
 import { RareCandyPanel } from "./RareCandyPanel";
-import { PassCoverageBar } from "./PassCoverage";
 import { BlockAccordion } from "./BlockAccordion";
-import { PassEconomy } from "./PassEconomy";
 
 type RewardCase = PlannerSettings["rewardCase"];
 
@@ -109,7 +107,6 @@ export function SummaryDashboard({
         <>
           <RareCandyPanel plan={blockPlan} />
           <CapacityGauge utilization={summary.utilization} />
-          <PassCoverageBar summary={summary} />
           {(() => {
             const ok = blockPlan.feasible;
             return (
@@ -126,7 +123,6 @@ export function SummaryDashboard({
           })()}
 
           <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
-          <PassEconomy summary={summary} />
         </>
       ) : (
         <p className="text-sm text-slate-400">
