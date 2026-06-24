@@ -6,6 +6,7 @@ import type {
 } from "@/domain/types";
 import { GAME_CONFIG } from "./config";
 import { FORM_META } from "./formGroups";
+import { pokemonSearchName } from "@/lib/pokemonSearch";
 
 /**
  * RAID_BOSSES — the GO Fest 2026: Global raid roster.
@@ -908,6 +909,9 @@ export const RAID_BOSSES: RaidBoss[] = ROSTER.map((b, i) => {
   return {
     ...b,
     sortPriority: i,
+    // Base species, shared across formes (Mega/Crowned/Hero/Origin/X-Y all collapse
+    // to the bare species). An explicit b.species on a roster entry wins.
+    species: b.species ?? pokemonSearchName(b.name),
     sprite: SPRITES[b.id] ? spriteUrl(SPRITES[b.id]) : undefined,
     ...(form ? { formGroup: form.group, formLabel: form.label, formPrimary: form.primary } : {}),
   };

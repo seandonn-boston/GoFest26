@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   counterBreakdown,
   counterSearchSpecies,
+  topBlockCounters,
   effectiveness,
   COUNTER_CATEGORIES,
 } from "./counters";
@@ -87,5 +88,37 @@ describe("counterSearchSpecies", () => {
     expect(species.filter((s) => s === "Gengar")).toHaveLength(1);
     // Sorted alphabetically.
     expect([...species].sort((a, b) => a.localeCompare(b))).toEqual(species);
+  });
+});
+
+describe("topBlockCounters", () => {
+  it("ranks by how many of the block's raids each attacker is super-effective against", () => {
+    // Two Psychic bosses + one Dark boss. A Dark/Ghost attacker (e.g. Tyranitar
+    // via Dark, Gengar via Ghost) is super-effective against all three; a pure
+    // Fighting attacker only hits the Dark one's Psychic siblings, etc.
+    const ranked = topBlockCounters([["Psychic"], ["Psychic"], ["Dark"]]);
+    expect(ranked.length).toBeGreaterThan(0);
+    // Descending coverage, and coverage never exceeds the boss count.
+    for (let i = 1; i < ranked.length; i++) {
+      expect(ranked[i - 1].bossesCovered).toBeGreaterThanOrEqual(ranked[i].bossesCovered);
+    }
+    expect(ranked[0].bossesCovered).toBeLessThanOrEqual(3);
+    expect(ranked[0].bossesCovered).toBeGreaterThanOrEqual(2);
+  });
+
+  it("breaks ties by attack power (higher max eDPS wins)", () => {
+    const ranked = topBlockCounters([["Dragon"]]);
+    // Within the top run sharing the same coverage, power must be non-increasing.
+    const top = ranked.filter((c) => c.bossesCovered === ranked[0].bossesCovered);
+    for (let i = 1; i < top.length; i++) {
+      expect(top[i - 1].power).toBeGreaterThanOrEqual(top[i].power);
+    }
+  });
+
+  it("dedupes to one entry per species and returns nothing for typeless blocks", () => {
+    const ranked = topBlockCounters([["Water"], ["Fire"]]);
+    const species = ranked.map((c) => c.attacker.species.toLowerCase());
+    expect(new Set(species).size).toBe(species.length);
+    expect(topBlockCounters([[]])).toEqual([]);
   });
 });

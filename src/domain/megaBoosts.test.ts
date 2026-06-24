@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { megaBoostsForBoss, blockMegaBoosts, topBlockMegas, megaBoostSpecies } from "./megaBoosts";
+import { megaBoostsForBoss, blockMegaBoosts, topBlockMegas, megaBoostSpecies, megaTier } from "./megaBoosts";
+
+describe("megaTier (boss-type / wild-type / attacker → colour)", () => {
+  it("maps every signal combination", () => {
+    expect(megaTier(true, true, true)).toBe("rainbow");
+    expect(megaTier(true, true, false)).toBe("gold");
+    expect(megaTier(true, false, true)).toBe("silver");
+    expect(megaTier(false, true, true)).toBe("bronze");
+    expect(megaTier(true, false, false)).toBe("boss");
+    expect(megaTier(false, true, false)).toBe("wild");
+    expect(megaTier(false, false, true)).toBe("attacker");
+  });
+});
 
 const names = (b: { mega: { name: string } }[]) => b.map((x) => x.mega.name);
 
@@ -16,21 +28,21 @@ describe("megaBoostsForBoss", () => {
     expect(boosts.every((b) => b.mega.types.includes("Psychic"))).toBe(true);
   });
 
-  it("flags a type-sharing super-effective mega as an 'attacker' and ranks it first", () => {
-    const boosts = megaBoostsForBoss(["Dragon", "Flying"]);
+  it("flags a type-sharing super-effective mega as 'silver' (boss-type + attacker) and ranks it first", () => {
+    const boosts = megaBoostsForBoss(["Dragon", "Flying"]); // no wild types passed
     const ray = boosts.find((b) => b.mega.name === "Mega Rayquaza");
-    expect(ray?.kind).toBe("attacker"); // Dragon is super-effective vs Dragon
-    // Attacker tier sorts above wild/boss tiers.
-    expect(boosts[0].kind).toBe("attacker");
+    expect(ray?.kind).toBe("silver"); // shares Dragon AND Dragon is super-effective vs Dragon
+    // Silver (boss-type + attacker) sorts above plain boss-type.
+    expect(boosts[0].kind).toBe("silver");
   });
 
-  it("flags 'wild' when a non-attacker shares a featured wild-spawn type", () => {
+  it("flags 'gold' when a non-attacker shares both the boss type and a wild-spawn type", () => {
     const boosts = megaBoostsForBoss(["Psychic"], ["Steel"]);
-    const meta = boosts.find((b) => b.mega.name === "Mega Metagross"); // Steel/Psychic
-    expect(meta?.kind).toBe("wild");
-    const ala = boosts.find((b) => b.mega.name === "Mega Alakazam"); // pure Psychic
+    const meta = boosts.find((b) => b.mega.name === "Mega Metagross"); // Steel/Psychic, not SE vs Psychic
+    expect(meta?.kind).toBe("gold"); // boss type (Psychic) + wild type (Steel), no attacker
+    const ala = boosts.find((b) => b.mega.name === "Mega Alakazam"); // pure Psychic, boss type only
     expect(ala?.kind).toBe("boss");
-    // wild outranks boss.
+    // gold outranks plain boss.
     expect(meta!.score).toBeGreaterThan(ala!.score);
   });
 
@@ -47,7 +59,8 @@ describe("blockMegaBoosts", () => {
     const bosses = [["Dragon"], ["Dragon", "Flying"], ["Dragon"], ["Dragon", "Ground"], ["Rock", "Dragon"]];
     const ranked = blockMegaBoosts(wild, bosses);
     expect(ranked[0].mega.name).toBe("Mega Rayquaza");
-    expect(ranked[0].kind).toBe("attacker");
+    // Shares a boss type, matches the wild theme, AND fights → all three = rainbow.
+    expect(ranked[0].kind).toBe("rainbow");
   });
 
   it("excludes megas that boost no target in the block", () => {
@@ -79,7 +92,7 @@ describe("topBlockMegas", () => {
     // Mega Rayquaza (Dragon/Flying) shares a type with all five, fights them
     // super-effectively, and matches the Flying + Dragon wild theme → top.
     expect(ranked[0].mega.name).toBe("Mega Rayquaza");
-    expect(ranked[0].kind).toBe("attacker");
+    expect(ranked[0].kind).toBe("rainbow"); // boss type + wild theme + attacker
     expect(ranked[0].bossesBoosted).toBe(5);
     expect(ranked[0].wildMatches).toBe(2); // Dragon + Flying
   });

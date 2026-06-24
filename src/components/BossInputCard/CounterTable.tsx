@@ -75,7 +75,7 @@ function CategoryRow({ cat, picks }: { cat: CounterCategory; picks: ScoredCounte
       <span className="w-[58px] shrink-0 text-[9px] font-semibold uppercase leading-tight tracking-wide text-slate-400">
         {COUNTER_CATEGORY_LABEL[cat]}
       </span>
-      <div className="flex flex-1 flex-wrap items-center gap-1">
+      <div className="flex flex-1 flex-wrap items-center gap-1.5">
         {picks.map((p) => (
           <span
             key={p.attacker.name}

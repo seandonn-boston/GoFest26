@@ -7,7 +7,6 @@ import type { PlannerSettings } from "@/domain/settings";
 import { midpoint } from "@/lib/math";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { CapacityGauge } from "./CapacityGauge";
@@ -67,7 +66,7 @@ export function SummaryDashboard({
   }, [blockPlan]);
 
   return (
-    <Card className="p-4">
+    <section>
       <h2 className="mb-3 text-lg font-semibold">Your weekend plan</h2>
 
       <div className="mb-3 grid grid-cols-3 gap-4">
@@ -169,7 +168,7 @@ export function SummaryDashboard({
           </p>
         </Disclosure>
       </div>
-    </Card>
+    </section>
   );
 }
 

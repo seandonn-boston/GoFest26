@@ -265,3 +265,45 @@ input[type="number"] {
   background: #050507;
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Animated rainbow outline for a top-tier mega chip (boss-type + wild-type +
+   attacker). A spinning conic-gradient drawn as a 2px ring via the mask trick,
+   so only the border shows. Respects reduced-motion. */
+.mega-rainbow {
+  position: relative;
+}
+.mega-rainbow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    #ff0040,
+    #ff8a00,
+    #ffe600,
+    #14e07a,
+    #00b3ff,
+    #7a5cff,
+    #ff00c8,
+    #ff0040
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: megaRainbowSpin 2.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes megaRainbowSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mega-rainbow::before {
+    animation: none;
+  }
+}

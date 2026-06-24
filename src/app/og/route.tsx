@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SubstituteSprite } from "@/lib/substituteSprite";
+import { MewtwoMark } from "@/lib/brandMark";
 
 // Social-share card served at <base>/og and wired up via metadata.openGraph in
 // layout.tsx — a plain route (not the `opengraph-image` file convention) so the
@@ -89,26 +89,15 @@ export function GET() {
           </div>
         </div>
 
-        {/* Right: the floating Substitute voxel on its platform */}
+        {/* Right: the brand tile (Mega Mewtwo X) */}
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <SubstituteSprite cell={31} />
-          <div
-            style={{
-              display: "flex",
-              marginTop: 14,
-              width: 250,
-              height: 26,
-              borderRadius: 999,
-              background: "rgba(111,167,99,0.35)",
-            }}
-          />
+          <MewtwoMark px={320} form="x" radius={56} />
         </div>
       </div>
     ),

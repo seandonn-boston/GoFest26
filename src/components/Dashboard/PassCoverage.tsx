@@ -99,7 +99,7 @@ export function PassCoverageSummary({ summary }: { summary: PlanSummary }) {
 
       {cov.owned <= 0 ? (
         <p className="mt-2 text-[10px] text-slate-500">
-          Tell us how many raid passes you already have on the <b>Prioritize</b> step to see which goals they cover.
+          Tell us how many raid passes you already have on the <b>Enter what you have</b> step to see which goals they cover.
         </p>
       ) : null}
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import type { RoadPlan } from "@/domain";
-import { Card } from "@/components/ui/Card";
 import { PriorityList } from "./PriorityList";
 import { RoadOfLegends } from "./RoadOfLegends";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
@@ -14,7 +13,7 @@ import { RemoteRaidToggle } from "./RemoteRaidToggle";
  */
 export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
   return (
-    <Card className="p-4">
+    <section>
       <h2 className="mb-1 text-lg font-semibold">Set your priorities</h2>
       <p className="mb-3 text-sm text-slate-400">
         Rank what matters most, choose any weekday head-start days, and decide whether you&apos;ll do
@@ -24,6 +23,6 @@ export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
       <PriorityList />
       <RoadOfLegends road={roadPlan} />
       <RemoteRaidToggle />
-    </Card>
+    </section>
   );
 }
