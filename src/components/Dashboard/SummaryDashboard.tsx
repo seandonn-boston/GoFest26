@@ -10,6 +10,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { CapacityGauge } from "./CapacityGauge";
+import { RareCandyPanel } from "./RareCandyPanel";
 import { PassCoverageBar } from "./PassCoverage";
 import { BlockAccordion } from "./BlockAccordion";
 import { PassEconomy } from "./PassEconomy";
@@ -100,6 +101,7 @@ export function SummaryDashboard({
 
       {hasGoals ? (
         <>
+          <RareCandyPanel plan={blockPlan} />
           <CapacityGauge utilization={summary.utilization} />
           <PassCoverageBar summary={summary} />
           {(() => {
