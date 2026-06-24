@@ -30,7 +30,7 @@ export function MegaBoostRow({ boosts, size = 26, max }: { boosts: MegaBoost[]; 
   const shown = typeof max === "number" ? boosts.slice(0, max) : boosts;
   if (shown.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1.5">
       {shown.map((b) => (
         <span
           key={b.mega.name}

@@ -185,9 +185,9 @@ function TargetCard({
         <CopyableInline
           search={counterSearch}
           label="counters"
-          className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]"
+          className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[36px]"
         >
-          <span className="mr-0.5 font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
           {counters.map((c) => (
             <span
               key={c.attacker.name}
@@ -207,10 +207,10 @@ function TargetCard({
         <CopyableInline
           search={megaSearch}
           label="mega evolutions"
-          className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]"
+          className="mt-2.5 flex flex-wrap items-center gap-1.5 pl-[36px]"
         >
-          <span className="mr-0.5 font-mono text-[9px] uppercase tracking-wider text-purple-300">Mega</span>
-          <MegaBoostRow boosts={boosts} size={18} max={6} />
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-purple-300">Mega</span>
+          <MegaBoostRow boosts={boosts} size={20} max={6} />
         </CopyableInline>
       ) : null}
     </div>
@@ -277,8 +277,20 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
           <span className="inline-flex items-center truncate">
             <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
-            <span className="font-medium text-slate-200">{block.name}</span>
-            <span className="ml-1.5 text-slate-500">
+            <span className="truncate font-medium text-slate-200">{block.name}</span>
+            {wildTypes.length ? (
+              <span
+                className="ml-1.5 inline-flex shrink-0 items-center gap-0.5"
+                title={`Featured wild spawns: ${wildTypes.join(", ")}`}
+              >
+                {wildTypes.map((t) => (
+                  <span key={t} className="inline-flex rounded-full bg-black/40 ring-1 ring-white/15">
+                    <TypeIcon type={t} size={13} />
+                  </span>
+                ))}
+              </span>
+            ) : null}
+            <span className="ml-1.5 shrink-0 text-slate-500">
               {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}
             </span>
           </span>
