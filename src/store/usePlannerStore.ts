@@ -243,6 +243,8 @@ interface PlannerState {
   playDays: Record<string, boolean>;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
+  /** Select every roster boss at once. */
+  selectAll: () => void;
   setCount: (bossId: string, variant: Variant, value: number) => void;
   setQuantity: (bossId: string, value: number) => void;
   setVariant: (bossId: string, variant: Variant) => void;
@@ -488,6 +490,18 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => {
           if (!getBoss(bossId)) return state;
           return { inputs: selectFamily(state.inputs, bossId, selected) };
+        }),
+
+      selectAll: () =>
+        set((state) => {
+          const inputs = { ...state.inputs };
+          for (const boss of SORTED_BOSSES) {
+            const existing = inputs[boss.id];
+            inputs[boss.id] = existing
+              ? { ...existing, selected: true }
+              : { ...makeDefaultInput(boss), selected: true };
+          }
+          return { inputs };
         }),
 
       setCount: (bossId, variant, value) =>
