@@ -4,9 +4,6 @@ import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
 import { usePlannerStore } from "@/store/usePlannerStore";
 
-const numField =
-  "w-16 rounded-sm border border-gofest-accent/40 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent";
-
 /**
  * Opt-in for Remote Raids. GO Fest 2026 lifts the daily remote-pass limit, so
  * the only real constraint is how many Remote Raid Passes the user has — entered
@@ -59,27 +56,11 @@ export function RemoteRaidToggle() {
 
       {on ? (
         <>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="flex items-center gap-1.5 text-xs text-slate-400">
-              <span>Remote Raid Passes I&apos;ll use</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={String(budget)}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => setNum("remoteRaidPassesPlanned")(e.target.value)}
-                aria-label="Remote Raid Passes you'll use"
-                className={numField}
-              />
-            </label>
-          </div>
-
           <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
             Remote passes are <b className="text-slate-200">unlimited</b> this event — the only limit is how many you
-            have. You&apos;re budgeting <span className="font-mono text-slate-200">{budget}</span>;{" "}
-            <span className="font-mono text-slate-300">{assigned}</span> assigned so far
-            {assigned > budget ? <span className="text-rose-300"> — {assigned - budget} over your budget</span> : null}.
+            have, which you enter on the results step. You&apos;ve assigned{" "}
+            <span className="font-mono text-slate-300">{assigned}</span> so far
+            {assigned > budget ? <span className="text-rose-300"> — {assigned - budget} over your {budget}</span> : null}.
             Region-locked targets are filled first, then your priority order.
           </p>
           <p className="mt-1.5 rounded-sm border border-gofest-acid/30 bg-gofest-acid/[0.06] p-2 text-[11px] leading-relaxed text-gofest-acid">
