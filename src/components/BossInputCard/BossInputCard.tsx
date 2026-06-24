@@ -90,12 +90,17 @@ export function BossInputCard({
   const isGroup = formes.length > 1;
   const displayName = isGroup ? groupDisplayName(boss) : boss.name;
   const candySpecies = displayName.replace(/^Mega\s+/, "");
-  // A cross-species shared-candy group (Solgaleo + Lunala) shows BOTH species'
-  // sprites, types and colors; same-species formes (Giratina) look alike, so the
-  // primary alone is enough. Card theming uses the union of every forme's types.
-  const crossSpecies = isGroup && new Set(formes.map((f) => speciesKey(f.name))).size > 1;
+  // A cross-species shared-candy group (Solgaleo + Lunala) and a same-species
+  // forme group (Giratina, the genies) both show every forme's sprite on the
+  // card so both are visible; a lone boss shows just itself. Card theming uses
+  // the union of every forme's types.
   const cardTypes = isGroup ? Array.from(new Set(formes.flatMap((f) => f.types ?? []))) : boss.types ?? [];
-  const headerFormes = crossSpecies ? formes : [boss];
+  const headerFormes = isGroup ? formes : [boss];
+  // A same-species forme group titles with the species name, so its pre-title is
+  // the formes (e.g. "Altered & Origin", "Incarnate & Therian"). A cross-species
+  // group already names both in the title, so it keeps none.
+  const sameSpeciesGroup = isGroup && new Set(formes.map((f) => speciesKey(f.name))).size === 1;
+  const formePretitle = sameSpeciesGroup ? formes.map((f) => f.formLabel ?? "").join(" & ") : undefined;
   // De-duplicate the union windows (same-day formes share a block) before counting
   // capacity, so a dual-day species (Dialga) counts both days but Giratina once.
   const planWindows = isGroup
@@ -144,6 +149,7 @@ export function BossInputCard({
           name={displayName}
           types={cardTypes}
           isMega={isMega}
+          pretitle={formePretitle}
           sprites={headerFormes.map((f) => ({ src: f.sprite, alt: f.name }))}
         />
 
