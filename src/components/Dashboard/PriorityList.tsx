@@ -2,6 +2,7 @@
 
 import { useMemo, type ReactNode } from "react";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
+import { groupDisplayName } from "@/domain/forms";
 import type { BossInput, PokemonCopy } from "@/domain/types";
 import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
 import { useUiStore } from "@/store/useUiStore";
@@ -10,8 +11,15 @@ import { Sprite } from "@/components/ui/Sprite";
 
 const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
 
-/** Base species label ("Mega Mewtwo X" → "Mewtwo", "Giratina (Altered)" → "Giratina"). */
-const speciesName = (id: string) => getBoss(id)?.species ?? (getBoss(id)?.name ?? id).replace(/^Mega /, "");
+/** Species label — one entry per Pokémon regardless of forme. A shared-candy form
+ *  group reads as its base species ("Giratina (Altered)" → "Giratina") or, for a
+ *  cross-species group, both names ("Solgaleo & Lunala"); otherwise the base
+ *  species ("Mega Mewtwo X" → "Mewtwo"). */
+const speciesName = (id: string) => {
+  const boss = getBoss(id);
+  if (!boss) return id;
+  return boss.formGroup ? groupDisplayName(boss) : boss.species ?? boss.name.replace(/^Mega /, "");
+};
 
 /** A compact "what you're powering it up to" tag for one individual. Mewtwo carries
  *  both Mega goals (one Pokémon, X and Y branches), so it shows both. */
