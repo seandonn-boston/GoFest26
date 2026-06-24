@@ -17,8 +17,12 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#050507",
     theme_color: "#050507",
     icons: [
-      { src: `${base}/icon`, sizes: "64x64", type: "image/png" },
-      { src: `${base}/apple-icon`, sizes: "180x180", type: "image/png" },
+      { src: `${base}/icon`, sizes: "64x64", type: "image/png", purpose: "any" },
+      { src: `${base}/apple-icon`, sizes: "180x180", type: "image/png", purpose: "any" },
+      // 512 serves the 192 slot (downscaled), the install icon, and the maskable.
+      { src: `${base}/icon-512`, sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: `${base}/icon-512`, sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: `${base}/icon-512`, sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }
