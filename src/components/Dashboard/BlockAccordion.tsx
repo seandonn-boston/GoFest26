@@ -19,7 +19,7 @@ import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
 import { MegaBoostRow, MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
-import { CopyableInline, Copyable } from "@/components/ui/Copyable";
+import { CopyableInline } from "@/components/ui/Copyable";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
@@ -79,7 +79,10 @@ function TargetCard({
       <div className="flex items-center gap-2">
         {grip}
         <Sprite src={boss?.sprite} alt={share.bossName} size={28} />
-        <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-slate-200">
+          {share.bossName.replace(/^Mega /, "")}
+          {typeIconEls.length ? <span className="ml-1 inline-flex translate-y-[2px] gap-0.5">{typeIconEls}</span> : null}
+        </span>
 
         <div className="flex items-center gap-1 font-mono text-sm font-bold">
           <input
@@ -151,20 +154,17 @@ function TargetCard({
         </CopyableInline>
       ) : null}
 
-      {/* Boss typing + the megas worth evolving for its candy. The mega sprites
-          copy as a search string, with the copy icon in the row's top-right. */}
+      {/* Megas worth evolving for this boss's candy — copyable as a search
+          string, in the same inline style as the counters row above. */}
       {boosts.length > 0 ? (
-        <Copyable
+        <CopyableInline
           search={megaSearch}
           label="mega evolutions"
-          className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px] pr-7"
+          className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]"
         >
-          {typeIconEls}
-          <span className="mx-0.5 text-slate-600" aria-hidden>·</span>
+          <span className="mr-0.5 font-mono text-[9px] uppercase tracking-wider text-purple-300">Mega</span>
           <MegaBoostRow boosts={boosts} size={18} max={6} />
-        </Copyable>
-      ) : types.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1 pl-[36px]">{typeIconEls}</div>
+        </CopyableInline>
       ) : null}
     </div>
   );
@@ -345,10 +345,16 @@ export function BlockAccordion({
 
   return (
     <div className="mt-4">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-200">Your raid blocks</h3>
         <Legend />
       </div>
+      <p className="mb-2 text-[10px] leading-snug text-slate-500">
+        Reward luck makes each target a range. The bars fill from{" "}
+        <span className="text-sky-300">guaranteed</span> raids you&apos;ll always need, through the{" "}
+        <span className="text-emerald-300">best</span> and <span className="text-amber-300">average</span> cases, out to
+        the <span className="text-rose-300">worst</span> case if your drops run cold.
+      </p>
       <div className="space-y-4">
         {byDay.map(({ day, blocks }) => (
           <div key={day}>
@@ -384,13 +390,6 @@ export function BlockAccordion({
           ~1 Rare Candy per raid, plus 1 Rare Candy XL per 5★ &amp; Mega Mewtwo raid (not regular Megas) — spend it on any species.
         </p>
       </div>
-
-      <p className="mt-3 text-[11px] text-slate-500">
-        Tap a block to track each target: <span className="font-mono text-slate-300">done</span> ⁄{" "}
-        <span className="font-mono text-emerald-400">best</span> <span className="font-mono text-amber-400">avg</span>{" "}
-        <span className="font-mono text-rose-400">worst</span> raids. Mega Mewtwo spreads across blocks (X energy
-        Saturday, Y Sunday; XL-candy raids flow to whichever block has room).
-      </p>
     </div>
   );
 }

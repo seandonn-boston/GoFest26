@@ -119,11 +119,11 @@ export interface CounterBreakdown {
 }
 
 export const COUNTER_CATEGORIES: CounterCategory[] = [
+  "budget",
   "shadow",
+  "legendary",
   "shadowLegendary",
   "mega",
-  "legendary",
-  "budget",
 ];
 
 export const COUNTER_CATEGORY_LABEL: Record<CounterCategory, string> = {
