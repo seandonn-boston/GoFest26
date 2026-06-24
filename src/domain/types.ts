@@ -106,6 +106,11 @@ export interface HabitatWindow {
 export interface RaidBoss {
   id: string;
   name: string;
+  /** Base species name, shared across formes — "Zacian (Hero of Many Battles)" and
+   *  Crowned Zacian both → "Zacian", "Mega Tyranitar" → "Tyranitar", Lunala stays
+   *  "Lunala" (the species itself, not its Cosmog pre-evolution). Always populated
+   *  on roster bosses (derived in RAID_BOSSES). */
+  species?: string;
   tier: RaidTier;
   /** Lower sorts first; Mega Mewtwo X/Y are pinned to the top. */
   sortPriority: number;
