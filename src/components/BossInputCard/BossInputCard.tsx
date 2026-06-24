@@ -25,6 +25,7 @@ import { ImageThumb } from "@/components/ui/ImageThumb";
 import { speciesKey } from "@/lib/pokemonSearch";
 import { energyForBosses, fusionEnergyFromScan } from "@/lib/screenshotScan";
 import { energyGoalsFor } from "@/data/energyGoals";
+import { spriteUrl } from "@/data/bosses";
 import { CardScan } from "./CardScan";
 import { CounterTable } from "./CounterTable";
 import { CopiesEditor } from "./CopiesEditor";
@@ -101,6 +102,19 @@ export function BossInputCard({
   // group already names both in the title, so it keeps none.
   const sameSpeciesGroup = isGroup && new Set(formes.map((f) => speciesKey(f.name))).size === 1;
   const formePretitle = sameSpeciesGroup ? formes.map((f) => f.formLabel ?? "").join(" & ") : undefined;
+  // Road of Legends fused formes (off-roster) flank the base sprite: a boss with
+  // TWO fused formes (Kyurem → White/Black, Necrozma → Dawn Wings/Dusk Mane) stacks
+  // them in the right slot; ONE fused forme (Groudon/Kyogre → Primal, the Crowned
+  // genie-dogs) sits as the single right sprite. Megas and plain 5★ have none, and
+  // dual-forme groups (Giratina, Solgaleo & Lunala, …) already fill both slots.
+  const fusedSprites = energyGoalsFor(boss.id)
+    .filter((g) => g.sprite)
+    .map((g) => ({ src: spriteUrl(g.sprite as string), alt: g.source }));
+  const rightStack = !isGroup && fusedSprites.length >= 2 ? fusedSprites.slice(0, 2) : undefined;
+  const titleSprites =
+    !isGroup && fusedSprites.length === 1
+      ? [{ src: boss.sprite, alt: boss.name }, fusedSprites[0]]
+      : headerFormes.map((f) => ({ src: f.sprite, alt: f.name }));
   // De-duplicate the union windows (same-day formes share a block) before counting
   // capacity, so a dual-day species (Dialga) counts both days but Giratina once.
   const planWindows = isGroup
@@ -150,7 +164,8 @@ export function BossInputCard({
           types={cardTypes}
           isMega={isMega}
           pretitle={formePretitle}
-          sprites={headerFormes.map((f) => ({ src: f.sprite, alt: f.name }))}
+          sprites={titleSprites}
+          rightStack={rightStack}
         />
 
         {regionLabel || remoteOnly ? (

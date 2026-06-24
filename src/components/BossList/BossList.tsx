@@ -35,13 +35,21 @@ export function BossList() {
   });
   const region = usePlannerStore((s) => s.settings.region);
   const resetAll = usePlannerStore((s) => s.resetAll);
+  const selectAll = usePlannerStore((s) => s.selectAll);
   const start = GAME_CONFIG.event.hourStartLocal;
 
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Pick your raid targets</h2>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={selectAll}
+            className="shrink-0 rounded-md border border-emerald-500/50 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+          >
+            Select all
+          </button>
           <span className="shrink-0 text-sm text-slate-400">{selectedCount} selected</span>
           <button
             type="button"
