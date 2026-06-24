@@ -18,6 +18,7 @@ import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { CostStep } from "@/components/Dashboard/CostStep";
+import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ExportButton } from "@/components/ExportButton";
@@ -193,7 +194,11 @@ function StepContent({
         </div>
         {anySelected ? (
           <>
-            {/* Screenshot upload sits at the top of the step — auto-fills the
+            {/* Your current resources — passes, remote passes, Link Charges — at
+                the very top of "what you have", above the search-string box. */}
+            <ResourcesOnHand />
+
+            {/* Screenshot upload sits near the top of the step — auto-fills the
                 cards below, but is entirely optional (type by hand instead). */}
             <SearchStringBar />
             <BulkImportSection />

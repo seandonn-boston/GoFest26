@@ -11,7 +11,6 @@ import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { CapacityGauge } from "./CapacityGauge";
-import { PlanPasses } from "./PlanPasses";
 import { RareCandyPanel } from "./RareCandyPanel";
 import { BlockAccordion } from "./BlockAccordion";
 
@@ -70,11 +69,6 @@ export function SummaryDashboard({
   return (
     <Card className="p-4">
       <h2 className="mb-3 text-lg font-semibold">Your weekend plan</h2>
-
-      {/* Passes you already hold — sit between the title and the headline numbers
-          so the have/need/buy split below reflects them (free daily passes are
-          auto-counted). Moved here from the prioritize step. */}
-      <PlanPasses />
 
       <div className="mb-3 grid grid-cols-3 gap-4">
         <Stat label="Total raids needed" value={String(caseValue(summary.totalRaids, rewardCase, false))} accent="text-gofest-accent2" />
