@@ -2,14 +2,23 @@
 
 import { getBoss } from "@/data";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
-import { energyGoalsForDay, ENERGY_ROAD_DAYS } from "@/data/energyGoals";
+import { energyGoalsForDay } from "@/data/energyGoals";
 import { type RoadDayPlan, type RoadPlan, energyRaidsNeeded, energyRemaining } from "@/domain";
+import type { EnergyKind } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
 
 const stripForme = (name: string) => name.replace(/^Mega /, "").replace(/\s*\(.*\)/, "");
+
+// Per-energy-kind chip badge for the day-picker — Crowned days (Zacian/Zamazenta)
+// get a crown, distinct from the Fusion / Primal ⚡.
+const ENERGY_KIND_BADGE: Record<EnergyKind, { icon: string; title: string }> = {
+  fusion: { icon: "⚡", title: "Fusion energy raids this day" },
+  crowned: { icon: "👑", title: "Crowned energy raids this day" },
+  primal: { icon: "⚡", title: "Primal energy raids this day" },
+};
 
 const CURRENCY_CHIP: Record<string, string> = {
   candy: "Candy",
@@ -188,9 +197,12 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
               <span className="text-slate-400">
                 {d.dateLabel} · {d.raidHourHours}h
               </span>
-              {ENERGY_ROAD_DAYS.has(d.id) ? (
-                <span className="text-cyan-300" title="Fusion / Primal energy raids this day">⚡</span>
-              ) : null}
+              {(() => {
+                const kind = energyGoalsForDay(d.id)[0]?.def.kind;
+                if (!kind) return null;
+                const badge = ENERGY_KIND_BADGE[kind];
+                return <span className="text-cyan-300" title={badge.title}>{badge.icon}</span>;
+              })()}
             </button>
           );
         })}
