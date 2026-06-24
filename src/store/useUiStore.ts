@@ -9,6 +9,11 @@ export type StepId = 1 | 2 | 3 | 4 | 5;
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
   step: StepId;
+  /** Priority list grouping: off = one flat list of individuals (mixed species);
+   *  on = individuals grouped under each species, with the species ranked as a
+   *  whole and copies ranked within. */
+  groupBySpecies: boolean;
+  setGroupBySpecies: (on: boolean) => void;
   /** Whether the "How to use" guide has been dismissed (remembered per-device). */
   howToDismissed: boolean;
   /** Whether we've asked the user for their location yet (one-time prompt). */
@@ -32,6 +37,8 @@ export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
       step: 1,
+      groupBySpecies: false,
+      setGroupBySpecies: (on) => set({ groupBySpecies: on }),
       howToDismissed: false,
       locationAsked: false,
       setLocationAsked: () => set({ locationAsked: true }),

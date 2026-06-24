@@ -253,6 +253,8 @@ interface PlannerState {
   removeCopy: (bossId: string, copyId: string) => void;
   updateCopy: (bossId: string, copyId: string, patch: CopyPatch) => void;
   moveCopy: (bossId: string, copyId: string, dir: -1 | 1) => void;
+  /** Set a species' individuals to an explicit order (drag-to-rank). */
+  reorderCopies: (bossId: string, copyIds: string[]) => void;
   /** Mewtwo individuals (independent X/Y branches), stored on the owner form. */
   addMewtwoCopy: () => void;
   /** Seed Mewtwo individual #1 so the always-on maxing editor has a row. */
@@ -574,6 +576,19 @@ export const usePlannerStore = create<PlannerState>()(
           if (idx < 0 || to < 0 || to >= copies.length) return state;
           [copies[idx], copies[to]] = [copies[to], copies[idx]];
           return { inputs: { ...state.inputs, [bossId]: { ...input, copies } } };
+        }),
+
+      reorderCopies: (bossId, copyIds) =>
+        set((state) => {
+          const input = state.inputs[bossId];
+          if (!input?.copies) return state;
+          const byId = new Map(input.copies.map((c) => [c.id, c] as const));
+          // Reorder by the given ids; keep any copy the list omits (defensive) at the end.
+          const reordered = [
+            ...copyIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c),
+            ...input.copies.filter((c) => !copyIds.includes(c.id)),
+          ];
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies: reordered } } };
         }),
 
       addMewtwoCopy: () =>
