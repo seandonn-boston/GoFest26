@@ -10,6 +10,9 @@ interface UiState {
   step: StepId;
   /** Whether the "How to use" guide has been dismissed (remembered per-device). */
   howToDismissed: boolean;
+  /** Whether we've asked the user for their location yet (one-time prompt). */
+  locationAsked: boolean;
+  setLocationAsked: () => void;
   setStep: (step: StepId) => void;
   /** Move one step forward / back, clamped to the valid range. */
   nextStep: () => void;
@@ -29,6 +32,8 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       step: 1,
       howToDismissed: false,
+      locationAsked: false,
+      setLocationAsked: () => set({ locationAsked: true }),
       setStep: (step) => set({ step: clampStep(step) }),
       nextStep: () => set((s) => ({ step: clampStep(s.step + 1) })),
       prevStep: () => set((s) => ({ step: clampStep(s.step - 1) })),

@@ -24,6 +24,7 @@ import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
 import { SharedPlanBanner } from "@/components/Settings/SharedPlanBanner";
+import { LocationPrompt } from "@/components/Settings/LocationPrompt";
 import { AdvancedTools } from "@/components/Settings/AdvancedTools";
 import { HowToUse } from "@/components/Stepper/HowToUse";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
@@ -106,6 +107,7 @@ export default function Home() {
             </header>
 
             <HowToUse />
+            <LocationPrompt />
             <SharedPlanBanner />
             <StepNav steps={steps} active={step} onSelect={setStep} />
 
@@ -232,7 +234,7 @@ function StepContent({
   }
 
   if (step === 3) {
-    return <PlanSetup roadPlan={roadPlan} capacity={summary.capacity} />;
+    return <PlanSetup roadPlan={roadPlan} />;
   }
 
   // step === 4

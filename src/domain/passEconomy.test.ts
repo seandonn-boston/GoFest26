@@ -19,7 +19,7 @@ const result = (bossId: string, raids: number): BossResult => ({
 });
 
 describe("linkChargeCost", () => {
-  it("buys 800 Link Charges (one Super Mega raid) for 350 coins via 600+200", () => {
+  it("buys 800 Link Charges for 350 coins via 600+200", () => {
     const { coins, counts } = linkChargeCost(800);
     expect(coins).toBe(350);
     expect(counts).toEqual([
@@ -60,7 +60,7 @@ describe("computePassCost", () => {
     expect(cost.paidInPerson).toBe(8);
   });
 
-  it("requires a remote pass AND 800 Link Charges per remote Super Mega raid", () => {
+  it("requires a remote pass AND 200 Link Charges per remote Super Mega raid", () => {
     const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
     const cost = computePassCost(
       [input("mega-mewtwo-x")],
@@ -70,10 +70,26 @@ describe("computePassCost", () => {
     );
     expect(cost.remoteSuperMegaRaids).toBe(2);
     expect(cost.superMegaInPersonRaids).toBe(8); // covered by free passes
-    expect(cost.linkChargesNeeded).toBe(1600);
-    expect(cost.high.linkChargeCoins).toBe(700);
+    expect(cost.linkChargesNeeded).toBe(400); // 2 × 200 LC
+    expect(cost.high.linkChargeCoins).toBe(200); // 2× 200-LC pack (100 ea)
     expect(cost.high.remoteCoins).toBe(525); // ceil(2/3) × 525
     expect(cost.paidInPerson).toBe(0);
+  });
+
+  it("owned Link Charges cover the mandatory remote Super-Mega LC", () => {
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true, linkChargesOwned: 400 };
+    const cost = computePassCost([input("mega-mewtwo-x")], [result("mega-mewtwo-x", 10)], settings, { "mega-mewtwo-x": 2 });
+    expect(cost.linkChargesNeeded).toBe(0); // 400 owned == 2×200 needed
+    expect(cost.high.linkChargeCoins).toBe(0);
+  });
+
+  it("opting in spends owned Link Charges on paid in-person Mega raids, freeing green passes", () => {
+    // 30 in-person Mega raids − 18 free = 12 paid. 900 owned LC ÷ 150 = 6 raids
+    // covered by LC → 6 paid green passes left.
+    const settings = { ...DEFAULT_SETTINGS, useLinkCharges: true, linkChargesOwned: 900 };
+    const cost = computePassCost([input("mega-blaziken")], [result("mega-blaziken", 30)], settings);
+    expect(cost.passesSavedByLinkCharges).toBe(6);
+    expect(cost.paidInPerson).toBe(6);
   });
 
   it("treats a region-locked target as remote even without a remote allocation", () => {

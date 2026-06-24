@@ -143,13 +143,15 @@ export const GAME_CONFIG = {
     // Remote Raid Pass ("blue"). 3-pack = 525 (175/pass). Carry limit 3, so no
     // big packs — boxes rarely beat the 3-pack, so the low rate matches it.
     remote: { bundlePasses: 3, bundleCoins: 525, bestBoxCoinsPerPass: 175 },
-    // Link Charges — entering a Super Mega Raid (Mewtwo) costs 800. In person
-    // they substitute for a pass (never cheaper); a REMOTE Super Mega Raid needs
-    // a Remote Raid Pass AND 800 Link Charges. Packs (best per-LC first):
+    // Link Charges — usable only on Mega (150 LC) or Super Mega (200 LC) raids.
+    // In person they can stand in for a Mega/Super-Mega pass; a REMOTE Super Mega
+    // Raid needs a Remote Pass AND 200 LC (LC alone can't remote a Mega raid).
+    // Packs (best per-LC first): 600 LC = 250 coins, 200 LC = 100 coins.
     linkCharge: {
-      perSuperMegaRaid: 800,
+      perMegaRaid: 150,
+      perSuperMegaRaid: 200,
       packs: [
-        { lc: 600, coins: 250 }, // currently 16% off (reg. 300)
+        { lc: 600, coins: 250 },
         { lc: 200, coins: 100 },
       ],
     },

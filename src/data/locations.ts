@@ -2,8 +2,9 @@ import type { UserRegion } from "@/domain/types";
 
 /**
  * Representative locations covering every combination of the three region axes
- * Niantic uses for region-locked raids. The target audience is Boston, so it is
- * the default; users can pick another preset or adjust the axes manually.
+ * Niantic uses for region-locked raids. The app asks for the visitor's real
+ * location on first load; Boston is only the fallback if that's declined. Users
+ * can also pick another preset or adjust the axes manually.
  */
 export const LOCATION_PRESETS: UserRegion[] = [
   { label: "Boston, MA (USA)", ns: "N", ew: "W", continent: "americas" },

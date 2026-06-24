@@ -2,12 +2,11 @@ import { RAID_BOSSES } from "./bosses";
 
 /**
  * The Road of Legends — the raid-heavy week leading into GO Fest 2026: Global
- * (Mon Jul 6 → Fri Jul 10, local time). Each day a set of Legendaries / Ultra
- * Beasts / Megas appears in raids, and that day's 5★ roster is concentrated into
- * a Raid Hour from 6–7 PM local — except Monday, whose Raid Hour runs 6–8 PM (a
- * 2-hour block). These weekday raids let a player pre-farm the SAME targets they
- * plan to max over the weekend, so completing them here is a head start that
- * reduces what the weekend has to cover.
+ * (Mon Jul 6 → Fri Jul 10, local time). Each day runs a two-hour Raid Hour from
+ * 6–8 PM local: 6–7 PM is that day's 5★ raids (Monday's is the whole roster),
+ * and 7–8 PM is a single featured Mega. These weekday raids let a player pre-farm
+ * the SAME targets they plan to max over the weekend, so completing them here is
+ * a head start that reduces what the weekend has to cover.
  *
  * Mega Mewtwo X/Y are NOT here — Super Mega Raids are a weekend-only debut.
  *
@@ -48,8 +47,8 @@ export const ROAD_DAYS: RoadDay[] = [
     id: "tue",
     label: "Tuesday",
     dateLabel: "Jul 7",
-    raidHourHours: 1,
-    raidHourLabel: "6–7 PM",
+    raidHourHours: 2,
+    raidHourLabel: "6–8 PM",
     // 5★: White Kyurem*, Zekrom, Dawn Wings Necrozma* · Mega: Tyranitar
     bossIds: ["zekrom", "mega-tyranitar"],
   },
@@ -57,8 +56,8 @@ export const ROAD_DAYS: RoadDay[] = [
     id: "wed",
     label: "Wednesday",
     dateLabel: "Jul 8",
-    raidHourHours: 1,
-    raidHourLabel: "6–7 PM",
+    raidHourHours: 2,
+    raidHourLabel: "6–8 PM",
     // 5★: Black Kyurem*, Reshiram, Dusk Mane Necrozma* · Mega: Gardevoir
     bossIds: ["reshiram", "mega-gardevoir"],
   },
@@ -66,8 +65,8 @@ export const ROAD_DAYS: RoadDay[] = [
     id: "thu",
     label: "Thursday",
     dateLabel: "Jul 9",
-    raidHourHours: 1,
-    raidHourLabel: "6–7 PM",
+    raidHourHours: 2,
+    raidHourLabel: "6–8 PM",
     // 5★: Crowned Sword Zacian, Crowned Shield Zamazenta (share each Hero form's
     // Candy) · Mega: Gengar
     bossIds: ["zacian", "zamazenta", "mega-gengar"],
@@ -76,8 +75,8 @@ export const ROAD_DAYS: RoadDay[] = [
     id: "fri",
     label: "Friday",
     dateLabel: "Jul 10",
-    raidHourHours: 1,
-    raidHourLabel: "6–7 PM",
+    raidHourHours: 2,
+    raidHourLabel: "6–8 PM",
     // 5★: Origin Forme Dialga, Origin Forme Palkia · Primal: Kyogre*, Groudon* (off-roster)
     bossIds: ["dialga-origin", "palkia-origin"],
   },

@@ -87,11 +87,18 @@ export function PassEconomy({ summary }: { summary: PlanSummary }) {
                 value={`${coins(cost.low.remoteCoins)}–${coins(cost.high.remoteCoins)}`}
               />
             ) : null}
-            {cost.remoteSuperMegaRaids > 0 ? (
+            {cost.linkChargesNeeded > 0 ? (
               <Row
-                label="Link Charges"
-                detail={`${cost.linkChargesNeeded.toLocaleString()} LC · ${cost.remoteSuperMegaRaids} remote Super Mega raid${cost.remoteSuperMegaRaids === 1 ? "" : "s"}`}
+                label="Link Charges to buy"
+                detail={`${cost.linkChargesNeeded.toLocaleString()} LC · ${cost.remoteSuperMegaRaids} remote Super Mega raid${cost.remoteSuperMegaRaids === 1 ? "" : "s"} (200 LC ea)`}
                 value={`${coins(cost.high.linkChargeCoins)}`}
+              />
+            ) : null}
+            {cost.passesSavedByLinkCharges > 0 ? (
+              <Row
+                label="Passes covered by your Link Charges"
+                detail="in-person Megas (150 LC) / Super Megas (200 LC)"
+                value={`−${cost.passesSavedByLinkCharges}`}
               />
             ) : null}
           </div>
@@ -104,9 +111,10 @@ export function PassEconomy({ summary }: { summary: PlanSummary }) {
       )}
 
       <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-        Singles excluded (3-pack+ only). In-person Super Mega Raids use a pass; only <b>remote</b> Super Mega Mewtwo raids
-        also cost 800 Link Charges. Box prices are personalized &amp; vary — the “lowest” uses a best-case bulk box estimate
-        (editable). Assumes a free daily pass can enter an in-person Super Mega Raid.
+        Singles excluded (3-pack+ only). A <b>remote</b> Super Mega (Mewtwo) raid needs a Remote Pass <b>and</b> 200 Link
+        Charges; in person, Link Charges can stand in for a Mega (150) / Super Mega (200) pass when you opt in. Box prices
+        are personalized &amp; vary — the “lowest” uses a best-case bulk box estimate (editable). Assumes a free daily pass
+        can enter an in-person Super Mega Raid.
       </p>
     </div>
   );

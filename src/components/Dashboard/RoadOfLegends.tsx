@@ -142,8 +142,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
         ) : null}
       </div>
       <p className="mb-2 text-[11px] text-slate-400">
-        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–7 PM local; Monday 6–8 PM). Your selected targets are poured
-        into each day&apos;s budget — what fits is a head start that reduces your weekend below.
+        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local): <b>6–7</b> is 5★ raids (Monday&apos;s is the
+        whole roster), <b>7–8</b> is a single featured Mega. Your selected targets are poured into each day&apos;s budget —
+        what fits is a head start that reduces your weekend below.
       </p>
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
@@ -157,7 +158,7 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
           Groudon, Kyogre). Each energy comes from one specific raid on one day.
         </p>
         <p>
-          <span className="font-semibold text-cyan-300">🗡 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
+          <span className="font-semibold text-cyan-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
           already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
           <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting it.
         </p>

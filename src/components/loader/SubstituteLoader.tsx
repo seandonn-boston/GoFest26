@@ -8,18 +8,6 @@ import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { lockBodyScroll } from "@/lib/scrollLock";
 import { useAppReady } from "@/store/useAppReady";
 
-/** Warm the browser cache with every Pokémon icon so search-string sprites and
- *  cards render instantly (and broken hotlinks surface their fallback) once the
- *  loading screen lifts. Best-effort — failures are silent. */
-function warmSprites() {
-  if (typeof window === "undefined") return;
-  for (const url of allSpriteUrls()) {
-    const img = new Image();
-    img.decoding = "async";
-    img.src = url;
-  }
-}
-
 /** Front-load the importer's two example screenshots so the "Which screenshots?"
  *  guide renders instantly when opened. Best-effort. */
 function warmGuideImages() {
@@ -63,14 +51,15 @@ const SAFETY_REVEAL_MS = 8000;
 
 /**
  * Voxel Substitute loading sequence: the sculpted doll hovers over a battle
- * platform while a Gen-5 HP bar depletes inversely to load progress. At 0 HP
- * it is knocked down, bounces, and fades; the overlay then veils out and the
- * app switches in beneath.
+ * platform while a Gen-5 HP bar depletes in step with REAL load progress (how
+ * many sprites have downloaded + the window 'load' event) — a fast/cached load
+ * empties it in a blink, a slow one takes as long as it takes. At 0 HP the doll
+ * faints (the one timed beat), bounces, and fades; the overlay veils out and the
+ * app switches in beneath. There is no skip.
  *
  * Fast/robust paths: reduced-motion users skip the WebGL entirely (three.js is
- * never even downloaded); a tap skips the animation; a hard timeout reveals the
- * app if the loader bundle is slow or fails; and the OCR engine + sprite
- * prefetch run on idle so they don't compete with the first load.
+ * never even downloaded); a hard timeout reveals the app if the loader bundle is
+ * slow or fails; the OCR engine + guide images prefetch on idle.
  */
 export function SubstituteLoader({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<"loading" | "veil" | "app">("loading");
@@ -82,6 +71,10 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
   // and its three.js bundle — is never rendered/downloaded for these users.
   const [reduced] = useState(prefersReducedMotion);
   const veilTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Real load progress (0..100) the HP bar tracks — driven by how many sprites
+  // have actually downloaded + the window 'load' event, NOT a fixed timer. Only
+  // moves forward. The faint animation is the sole timed element.
+  const progressRef = useRef(0);
 
   const handleDone = useCallback(() => {
     setPhase((p) => (p === "app" ? p : "veil"));
@@ -92,12 +85,45 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
     }, 750);
   }, []);
 
-  // Prefetch the OCR engine, sprites and guide images on IDLE time (after first
-  // paint) rather than synchronously on mount, so they don't contend for
-  // bandwidth with the critical load + the loader bundle.
+  // Track REAL load progress: download every sprite (this doubles as the warm-up)
+  // and watch the window 'load' event. The HP bar empties as these complete, so a
+  // fast (cached) load drains it instantly and a slow one takes as long as it
+  // actually takes. onerror counts too, so a broken hotlink can't stall it.
+  useEffect(() => {
+    if (reduced) return;
+    let cancelled = false;
+    const urls = allSpriteUrls();
+    const total = Math.max(1, urls.length);
+    let loaded = 0;
+    let windowLoaded = typeof document !== "undefined" && document.readyState === "complete";
+    const recompute = () => {
+      const frac = loaded / total;
+      const p = Math.min(100, (frac * 0.85 + (windowLoaded ? 0.15 : 0)) * 100);
+      if (p > progressRef.current) progressRef.current = p;
+    };
+    const onWin = () => { windowLoaded = true; recompute(); };
+    if (!windowLoaded) window.addEventListener("load", onWin);
+    const imgs = urls.map((url) => {
+      const img = new Image();
+      img.decoding = "async";
+      const tick = () => { if (!cancelled) { loaded++; recompute(); } };
+      img.onload = tick;
+      img.onerror = tick;
+      img.src = url;
+      return img;
+    });
+    recompute();
+    return () => {
+      cancelled = true;
+      window.removeEventListener("load", onWin);
+      imgs.forEach((i) => { i.onload = null; i.onerror = null; });
+    };
+  }, [reduced]);
+
+  // Prefetch the OCR engine and guide images on IDLE time (after first paint) so
+  // they don't contend for bandwidth with the critical load + the loader bundle.
   useEffect(() => runWhenIdle(() => {
     warmupOcr();
-    warmSprites();
     warmGuideImages();
   }), []);
 
@@ -144,7 +170,6 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
             transition: "opacity 0.75s ease",
             pointerEvents: phase === "veil" ? "none" : "auto",
           }}
-          onClick={phase === "loading" && !reduced ? handleDone : undefined}
         >
           {reduced ? (
             // Static (no animation) splash for reduced-motion users.
@@ -152,18 +177,7 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
               <span className="font-mono text-xs uppercase tracking-[0.3em] text-gofest-accent2">GO FEST // 2026</span>
             </div>
           ) : (
-            <>
-              <SubstituteScreen onDone={handleDone} />
-              {phase === "loading" ? (
-                <button
-                  type="button"
-                  onClick={handleDone}
-                  className="absolute bottom-4 right-4 z-10 rounded-full border border-white/20 bg-black/40 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-slate-300 transition hover:text-white"
-                >
-                  Skip ›
-                </button>
-              ) : null}
-            </>
+            <SubstituteScreen onDone={handleDone} getProgress={() => progressRef.current} />
           )}
         </div>
       ) : null}

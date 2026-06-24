@@ -14,9 +14,14 @@ import type { BossInput, BossResult, Range } from "./types";
 
 const sum = (b: Record<string, number>) => RISK_BANDS.reduce((s, k) => s + b[k], 0);
 
-// A roomy capacity so nothing falls into grey unless we mean it to.
-const ROOMY = computeCapacity({ ...DEFAULT_SETTINGS, lobbySize: 20, downtimeSecRange: { min: 0, max: 0 } });
-// Time-based remote ceiling for that capacity (auto-balance is bounded by it).
+// A roomy capacity so nothing falls into grey unless we mean it to, with a
+// generous Remote Raid Pass budget (auto-balance is bounded by it).
+const ROOMY = computeCapacity({
+  ...DEFAULT_SETTINGS,
+  lobbySize: 20,
+  downtimeSecRange: { min: 0, max: 0 },
+  remoteRaidPassesPlanned: 300,
+});
 const ROOMY_REMOTE = Math.round(midpoint(ROOMY.remoteCapacity));
 
 describe("quantity scaling (requirements ×N)", () => {
@@ -131,12 +136,11 @@ describe("multi-form species (shared resources)", () => {
     expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
   });
 
-  it("remote capacity is time-based: less sleep → more remote raids fit (passes are unlimited)", () => {
-    const rested = computeCapacity({ ...DEFAULT_SETTINGS, sleepHoursPerNight: 8 });
-    const tired = computeCapacity({ ...DEFAULT_SETTINGS, sleepHoursPerNight: 4 });
-    expect(rested.remoteCapacity.max).toBeGreaterThan(0);
-    expect(tired.remoteHoursPerDay).toBeGreaterThan(rested.remoteHoursPerDay);
-    expect(tired.remoteCapacity.max).toBeGreaterThan(rested.remoteCapacity.max);
+  it("remote capacity is the number of Remote Raid Passes the user plans to use", () => {
+    const cap = computeCapacity({ ...DEFAULT_SETTINGS, remoteRaidPassesPlanned: 12 });
+    expect(cap.remoteCapacity).toEqual({ min: 12, max: 12 });
+    const none = computeCapacity({ ...DEFAULT_SETTINGS, remoteRaidPassesPlanned: 0 });
+    expect(none.remoteCapacity).toEqual({ min: 0, max: 0 });
   });
 });
 

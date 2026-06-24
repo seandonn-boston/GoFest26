@@ -24,16 +24,12 @@ export interface PlannerSettings {
   rewardCase: "optimistic" | "expected" | "safe";
   /** Free Raid Passes the user expects to get per day. */
   freeDailyPerDay: number;
-  /** The user plans to use Remote Raid Passes. GO Fest 2026 lifts the daily remote
-   *  limit, so these are unlimited in count — the only constraint is the time the
-   *  user has for them (see `sleepHoursPerNight`). */
+  /** The user plans to use Remote Raid Passes. GO Fest 2026 lifts the daily
+   *  remote limit, so the constraint is simply how many the user has / will use. */
   useRemoteRaids: boolean;
-  /**
-   * Hours of sleep per night during the event. Remote raids happen in the user's
-   * waking hours outside the in-person event window, so more sleep = less remote
-   * raiding time. Default 8 (≈ midnight–8am).
-   */
-  sleepHoursPerNight: number;
+  /** How many Remote Raid Passes the user has and plans to use this event — the
+   *  size of the remote-raid budget (replaces the old sleep-hours model). */
+  remoteRaidPassesPlanned: number;
   /** Player location — decides which region-locked raids are local vs. remote-only. */
   region: UserRegion;
   /**
@@ -43,6 +39,12 @@ export interface PlannerSettings {
    * just the have/need/buy split.
    */
   passesOwned: number;
+  /** Link Charges the user already holds (spent on Mega / Super Mega raids). */
+  linkChargesOwned: number;
+  /** The user intends to use Link Charges on Mega / Super Mega raids — alters the
+   *  PokéCoin pass cost (LC can stand in for an in-person Mega pass; remote Super
+   *  Mega raids REQUIRE 200 LC on top of a Remote Pass). Off by default. */
+  useLinkCharges: boolean;
   /**
    * Assumed Mega buddy level (0..4) for same-type catches, driving the XL-Candy
    * boost (see GAME_CONFIG.megaCatchBoost). 1 = base (no XL boost — the default,
@@ -61,12 +63,6 @@ export interface PlannerSettings {
 /** Reward metrics the player can calibrate to their own observed drops. */
 export type CalibrationMetric = "superMegaEnergy" | "megaEnergy" | "legendaryXl" | "megaXl";
 
-/** Below this nightly sleep, the planner warns it's ill-advised (the event is a
- *  full day of walking and sun). */
-export const MIN_HEALTHY_SLEEP_HOURS = 7;
-/** Default nightly sleep (≈ midnight–8am). */
-export const DEFAULT_SLEEP_HOURS = 8;
-
 export const DEFAULT_SETTINGS: PlannerSettings = {
   lobbySize: GAME_CONFIG.capacity.defaultLobbySize,
   partyPlay: false,
@@ -75,9 +71,11 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
   useRemoteRaids: false,
-  sleepHoursPerNight: DEFAULT_SLEEP_HOURS,
+  remoteRaidPassesPlanned: 0,
   region: DEFAULT_REGION,
   passesOwned: 0,
+  linkChargesOwned: 0,
+  useLinkCharges: false,
   // L3 (Max) is the "standard" leveled mega — the realistic same-type buddy a
   // GO Fest raider runs, so the XL numbers reflect a +25% boost out of the box.
   megaBuddyLevel: 3,
@@ -94,8 +92,10 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
-    s.sleepHoursPerNight === DEFAULT_SETTINGS.sleepHoursPerNight &&
+    s.remoteRaidPassesPlanned === DEFAULT_SETTINGS.remoteRaidPassesPlanned &&
     s.megaBuddyLevel === DEFAULT_SETTINGS.megaBuddyLevel &&
-    s.passesOwned === DEFAULT_SETTINGS.passesOwned
+    s.passesOwned === DEFAULT_SETTINGS.passesOwned &&
+    s.linkChargesOwned === DEFAULT_SETTINGS.linkChargesOwned &&
+    s.useLinkCharges === DEFAULT_SETTINGS.useLinkCharges
   );
 }
