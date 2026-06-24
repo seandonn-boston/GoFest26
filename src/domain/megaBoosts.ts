@@ -102,6 +102,124 @@ export function blockMegaBoosts(wildTypes: string[], bossTypesList: string[][]):
   return out.sort((a, b) => b.score - a.score || a.mega.name.localeCompare(b.mega.name));
 }
 
+/**
+ * The few megas genuinely WORTH evolving for an hour-block, ranked by a weighted
+ * blend (item-13 spec) rather than the flat reach score above. Per the request:
+ *
+ *   1. same-type raid-boss coverage (40%) — count of the block's bosses this mega
+ *      shares a type with (so its candy bonus applies), weighting a boss it can
+ *      ALSO fight super-effectively as +2 ("good attacker vs its own-type
+ *      matchup"), a plain same-type boss as +1, and a boss it isn't same-type
+ *      with but still counters super-effectively as +1.
+ *   2. featured wild-spawn matchups (30%) — how many of the hour's wild-spawn
+ *      types the mega shares (its candy bonus extends to those catches too).
+ *   3. good attacker WITH same-type (20%) — bosses it both shares a type with and
+ *      hits super-effectively.
+ *   4. good attacker WITHOUT same-type (10%) — bosses it only counters.
+ *
+ * Each component is normalized by the best value across candidate megas so the
+ * 40/30/20/10 weights govern relative influence, not raw magnitude. Ties break to
+ * the mega of the higher-priority target (when `prioritySpecies` is supplied),
+ * then the stronger mega attacker, then name.
+ */
+export interface BlockMegaRank {
+  mega: MegaForm;
+  /** Combined weighted score in [0,1] (higher ranks first). */
+  score: number;
+  /** Role outline, mirroring MegaBoost.kind (attacker / wild / boss). */
+  kind: MegaKind;
+  /** Weighted same-type coverage tally (component 1). */
+  coverage: number;
+  /** Block bosses whose candy this mega boosts (shares a type with). */
+  bossesBoosted: number;
+  /** Featured wild-spawn types shared (component 2). */
+  wildMatches: number;
+  /** Bosses it's a good attacker against AND shares a type with (component 3). */
+  attackerSameType: number;
+  /** Bosses it's a good attacker against but shares no type with (component 4). */
+  attackerOffType: number;
+}
+
+const BLOCK_MEGA_WEIGHTS = { coverage: 0.4, wild: 0.3, attackerSame: 0.2, attackerOff: 0.1 } as const;
+
+export function topBlockMegas(
+  wildTypes: string[],
+  bossTypesList: string[][],
+  opts: { prioritySpecies?: string[]; limit?: number } = {},
+): BlockMegaRank[] {
+  const defs = bossTypesList.map(asPTypes).filter((d) => d.length > 0);
+  type Raw = {
+    mega: MegaForm;
+    coverage: number;
+    wild: number;
+    attackerSame: number;
+    attackerOff: number;
+    candyBosses: number;
+  };
+  const raws: Raw[] = [];
+  for (const mega of MEGAS) {
+    let coverage = 0;
+    let attackerSame = 0;
+    let attackerOff = 0;
+    let candyBosses = 0;
+    for (const def of defs) {
+      const shares = overlaps(mega.types, def);
+      const attacks = attackerScore(mega, def) > 0;
+      if (shares) {
+        candyBosses++;
+        coverage += attacks ? 2 : 1; // good attacker vs its own-type matchup = +2
+        if (attacks) attackerSame++;
+      } else if (attacks) {
+        coverage += 1; // good counter even without a candy match
+        attackerOff++;
+      }
+    }
+    const wild = mega.types.filter((t) => wildTypes.includes(t)).length;
+    // Worth evolving only if it boosts at least one boss's candy or a wild spawn.
+    if (candyBosses === 0 && wild === 0) continue;
+    raws.push({ mega, coverage, wild, attackerSame, attackerOff, candyBosses });
+  }
+  if (raws.length === 0) return [];
+
+  // Normalize each component by the best candidate so the weights compare like
+  // for like (max 1 guards against divide-by-zero when a component is all zero).
+  const maxOf = (sel: (r: Raw) => number) => Math.max(1, ...raws.map(sel));
+  const mc = maxOf((r) => r.coverage);
+  const mw = maxOf((r) => r.wild);
+  const ms = maxOf((r) => r.attackerSame);
+  const mo = maxOf((r) => r.attackerOff);
+
+  const priority = (opts.prioritySpecies ?? []).map((s) => s.toLowerCase());
+  const priorityRank = (mega: MegaForm) => {
+    const i = priority.indexOf(mega.species.toLowerCase());
+    return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+  };
+
+  const ranked: BlockMegaRank[] = raws.map((r) => ({
+    mega: r.mega,
+    kind: r.attackerSame + r.attackerOff > 0 ? "attacker" : r.wild > 0 ? "wild" : "boss",
+    coverage: r.coverage,
+    bossesBoosted: r.candyBosses,
+    wildMatches: r.wild,
+    attackerSameType: r.attackerSame,
+    attackerOffType: r.attackerOff,
+    score:
+      BLOCK_MEGA_WEIGHTS.coverage * (r.coverage / mc) +
+      BLOCK_MEGA_WEIGHTS.wild * (r.wild / mw) +
+      BLOCK_MEGA_WEIGHTS.attackerSame * (r.attackerSame / ms) +
+      BLOCK_MEGA_WEIGHTS.attackerOff * (r.attackerOff / mo),
+  }));
+
+  ranked.sort(
+    (a, b) =>
+      b.score - a.score ||
+      priorityRank(a.mega) - priorityRank(b.mega) || // tie → mega of the higher-priority target
+      maxDps(b.mega) - maxDps(a.mega) || // then the stronger mega attacker
+      a.mega.name.localeCompare(b.mega.name),
+  );
+  return ranked.slice(0, opts.limit ?? 5);
+}
+
 /** Merge per-boss boost lists into one ranked list (best kind/score per mega). */
 export function mergeMegaBoosts(lists: MegaBoost[][]): MegaBoost[] {
   const best = new Map<string, MegaBoost>();

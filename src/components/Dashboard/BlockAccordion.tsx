@@ -7,9 +7,9 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
-import { RISK_BANDS, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
+import { RISK_BANDS, megaBoostsForBoss, topBlockMegas, megaBoostSpecies } from "@/domain";
 import { sized } from "@/domain/blockPlan";
-import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
+import type { BlockMegaRank, BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
 import { buildSearchString, buildMegaSearchString } from "@/lib/pokemonSearch";
@@ -18,9 +18,8 @@ import { usePlannerStore, blockMembersInOrder } from "@/store/usePlannerStore";
 import { useDragList } from "./useDragList";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
-import { CopyableSearchString } from "@/components/ui/CopyableSearchString";
-import { MegaBoostRow, MEGA_KIND_RING } from "@/components/ui/MegaBoostRow";
-import { CopyableInline } from "@/components/ui/Copyable";
+import { MegaBoostRow, MEGA_KIND_RING, MEGA_KIND_LABEL, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { Copyable, CopyableInline } from "@/components/ui/Copyable";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { GoalProgress } from "./GoalProgress";
@@ -28,6 +27,51 @@ import { GoalProgress } from "./GoalProgress";
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
 
 const blockKey = (b: BlockPlan) => `${b.day}${b.startHour}`;
+
+/** Final-evolution species term from a boss name (e.g. "Mega Mewtwo X" → "Mewtwo"),
+ *  so a block's priority order can be matched to mega species for tie-breaking. */
+const speciesTerm = (name: string) => name.replace(/^(Mega|Primal)\s+/, "").replace(/\s+[XY]$/, "").trim();
+
+/** Terse rationale for a top-mega row: candy reach · counter reach · wild matches. */
+function megaReason(m: BlockMegaRank): string {
+  const parts: string[] = [];
+  if (m.bossesBoosted > 0) parts.push(`boosts ${m.bossesBoosted}`);
+  const counters = m.attackerSameType + m.attackerOffType;
+  if (counters > 0) parts.push(`counters ${counters}`);
+  if (m.wildMatches > 0) parts.push(`wild ×${m.wildMatches}`);
+  return parts.join(" · ");
+}
+
+/** The handful of megas most worth evolving for an hour-block, ranked by same-type
+ *  boss coverage (40%), featured wild-spawn matches (30%) and super-effective
+ *  reach with (20%) / without (10%) a candy match. Replaces the old per-block
+ *  "Mega-evolve" search string; still copyable as a GO search string. */
+function TopMegasPanel({ megas, search, blockName }: { megas: BlockMegaRank[]; search: string; blockName: string }) {
+  if (megas.length === 0) return null;
+  return (
+    <Copyable search={search} label={`top megas for ${blockName}`} className="border-t border-white/10 px-2.5 py-2">
+      <div className="mb-1.5 flex items-center justify-between gap-2 pr-8">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">Top megas to evolve</span>
+        <MegaBoostLegend />
+      </div>
+      <ol className="space-y-1">
+        {megas.map((m, i) => (
+          <li key={m.mega.name} className="flex items-center gap-2">
+            <span className="w-3.5 shrink-0 text-right font-mono text-[10px] text-slate-500">{i + 1}</span>
+            <span
+              title={`${m.mega.name} (${m.mega.types.join("/")}) — ${MEGA_KIND_LABEL[m.kind]}`}
+              className={`inline-flex shrink-0 rounded-full bg-black/30 ring-2 ${MEGA_KIND_RING[m.kind]}`}
+            >
+              <Sprite src={m.mega.sprite} alt={m.mega.name} size={22} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-200">{m.mega.name.replace(/^Mega /, "")}</span>
+            <span className="shrink-0 text-[10px] text-slate-500">{megaReason(m)}</span>
+          </li>
+        ))}
+      </ol>
+    </Copyable>
+  );
+}
 
 /** One species' target in a block: a drag grip, completed (editable) / best ·
  *  avg · worst raid counts, the boss's types + candy-boost megas, and its best
@@ -211,19 +255,17 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
       mewtwo: true,
     };
 
-  // Mega-evolve search string for this hour-block's roster (counters now live
-  // per-boss inside the accordion). Keyed on the species set + wild theme so it
-  // only recomputes when the block changes.
-  const memoKey = `${block.species.map((s) => s.bossId).join(",")}|${wildTypes.join(",")}`;
-  const { megaSearch, megaItems } = useMemo(() => {
+  // Top megas worth evolving this hour-block (counters now live per-boss inside
+  // the accordion). Keyed on the species set + wild theme + block priority order
+  // (the latter only breaks ranking ties) so it recomputes when the block changes.
+  const memoKey = `${block.species.map((s) => s.bossId).join(",")}|${wildTypes.join(",")}|${orderKey}`;
+  const topMegas = useMemo(() => {
     const bossTypes = block.species.map((s) => getBoss(s.bossId)?.types ?? []).filter((t) => t.length > 0);
-    const boosts = blockMegaBoosts(wildTypes, bossTypes);
-    return {
-      megaSearch: buildMegaSearchString(megaBoostSpecies(boosts)),
-      megaItems: boosts.map((b) => ({ key: b.mega.name, label: b.mega.name, sprite: b.mega.sprite, ring: MEGA_KIND_RING[b.kind] })),
-    };
+    const prioritySpecies = orderedIds.map((id) => speciesTerm(getBoss(id)?.name ?? id));
+    return topBlockMegas(wildTypes, bossTypes, { prioritySpecies, limit: 5 });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- memoKey encodes the inputs
   }, [memoKey]);
+  const megaSearch = useMemo(() => buildMegaSearchString(megaBoostSpecies(topMegas)), [topMegas]);
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02]">
@@ -278,13 +320,9 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         </div>
       ) : null}
 
-      {/* Mega-evolve search string for the hour-block — kept visible whether the
-          block is expanded or collapsed (the best mega varies block to block). */}
-      {megaSearch ? (
-        <div className="border-t border-white/10 px-2.5 py-2">
-          <CopyableSearchString label={`Mega-evolve · ${block.name}`} accent="text-purple-300" search={megaSearch} items={megaItems} />
-        </div>
-      ) : null}
+      {/* Top megas to evolve for this hour-block — kept visible whether the block
+          is expanded or collapsed (the best mega varies block to block). */}
+      <TopMegasPanel megas={topMegas} search={megaSearch} blockName={block.name} />
     </div>
   );
 }
