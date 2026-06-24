@@ -1,41 +1,42 @@
-// The app's brand mark: a big "26" over a small "GO FEST", on a violet→pink
-// gradient tile. Used by the favicon, the iOS/Android home-screen icons, the PWA
-// install icon and the social card — a simple, legible logo (no Substitute
-// sprite). Rendered by Satori (next/og ImageResponse), so it's plain inline
-// styles only and every element with text/children carries display:flex.
+// The app's icon mark: a Mega Mewtwo sprite (X or Y) on the brand backdrop, used
+// by the favicon, the iOS/Android home-screen icons, the PWA install icon and the
+// social card. Rendered by Satori (next/og ImageResponse) at build time, so the
+// sprite is read from disk and inlined as a data URI (no build-time network).
 
-const GRADIENT = "linear-gradient(150deg, #a78bfa 0%, #c026d3 52%, #ec4899 100%)";
-const INK = "#1a0b2e"; // dark plum text — high contrast on the bright gradient
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-/** Square brand tile sized to `px`; pass `radius` for an embedded (non-OS-masked) tile. */
-export function BrandMark({ px, radius = 0 }: { px: number; radius?: number }) {
+function spriteDataUri(file: string): string {
+  const buf = readFileSync(join(process.cwd(), "public/brand", file));
+  return `data:image/png;base64,${buf.toString("base64")}`;
+}
+
+// Read once at module load (each icon route imports this).
+const MEWTWO: Record<"x" | "y", string> = {
+  x: spriteDataUri("mewtwo-x.png"),
+  y: spriteDataUri("mewtwo-y.png"),
+};
+
+const BACKDROP = "radial-gradient(120% 120% at 30% 0%, #2a1248 0%, #0b0712 60%, #050507 100%)";
+
+/** Mega Mewtwo (X or Y) on the brand backdrop, sized to `px`. The favicon/app-icon
+ *  surfaces alternate between the two forms. `radius` rounds an embedded tile. */
+export function MewtwoMark({ px, form, radius = 0 }: { px: number; form: "x" | "y"; radius?: number }) {
+  const sprite = Math.round(px * 0.84);
   return (
     <div
       style={{
         width: px,
         height: px,
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: Math.round(px * 0.01),
+        background: BACKDROP,
         borderRadius: radius,
-        background: GRADIENT,
-        fontFamily: "sans-serif",
-        color: INK,
       }}
     >
-      <div style={{ display: "flex", fontSize: Math.round(px * 0.46), fontWeight: 800, lineHeight: 1 }}>26</div>
-      <div
-        style={{
-          display: "flex",
-          fontSize: Math.round(px * 0.145),
-          fontWeight: 700,
-          letterSpacing: Math.max(1, Math.round(px * 0.02)),
-        }}
-      >
-        GO FEST
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={MEWTWO[form]} width={sprite} height={sprite} alt={`Mega Mewtwo ${form.toUpperCase()}`} />
     </div>
   );
 }

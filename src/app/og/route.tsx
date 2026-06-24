@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { BrandMark } from "@/lib/brandMark";
+import { MewtwoMark } from "@/lib/brandMark";
 
 // Social-share card served at <base>/og and wired up via metadata.openGraph in
 // layout.tsx — a plain route (not the `opengraph-image` file convention) so the
@@ -89,7 +89,7 @@ export function GET() {
           </div>
         </div>
 
-        {/* Right: the brand tile */}
+        {/* Right: the brand tile (Mega Mewtwo X) */}
         <div
           style={{
             display: "flex",
@@ -97,7 +97,7 @@ export function GET() {
             justifyContent: "center",
           }}
         >
-          <BrandMark px={300} radius={56} />
+          <MewtwoMark px={320} form="x" radius={56} />
         </div>
       </div>
     ),
