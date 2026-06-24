@@ -2,20 +2,22 @@
 
 import { getBoss } from "@/data";
 import { bossIsLocal } from "@/domain/region";
-import { MIN_HEALTHY_SLEEP_HOURS } from "@/domain/settings";
-import { midpoint } from "@/lib/math";
-import type { CapacityModel } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
+
+const numField =
+  "w-16 rounded-sm border border-gofest-accent/40 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent";
 
 /**
  * Opt-in for Remote Raids. GO Fest 2026 lifts the daily remote-pass limit, so
- * remote raids are UNLIMITED in count — the only constraint is the time the user
- * has outside the in-person event and sleep. So instead of a pass budget, the
- * user sets how much they sleep, which sizes the remote-raid time window.
+ * the only real constraint is how many Remote Raid Passes the user has — entered
+ * directly. Also collects Link Charges (how many they hold + whether they intend
+ * to use them), which changes the PokéCoin pass economy.
  */
-export function RemoteRaidToggle({ capacity }: { capacity: CapacityModel }) {
+export function RemoteRaidToggle() {
   const on = usePlannerStore((s) => s.settings.useRemoteRaids);
-  const sleep = usePlannerStore((s) => s.settings.sleepHoursPerNight);
+  const planned = usePlannerStore((s) => s.settings.remoteRaidPassesPlanned);
+  const linkChargesOwned = usePlannerStore((s) => s.settings.linkChargesOwned);
+  const useLinkCharges = usePlannerStore((s) => s.settings.useLinkCharges);
   const setSettings = usePlannerStore((s) => s.setSettings);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
   const assigned = usePlannerStore((s) => {
@@ -34,8 +36,7 @@ export function RemoteRaidToggle({ capacity }: { capacity: CapacityModel }) {
     return false;
   });
 
-  const capRaids = Math.round(midpoint(capacity.remoteCapacity));
-  const lowSleep = sleep < MIN_HEALTHY_SLEEP_HOURS;
+  const budget = Math.max(0, Math.round(planned ?? 0));
 
   function toggle(checked: boolean) {
     setSettings({ useRemoteRaids: checked });
@@ -44,60 +45,78 @@ export function RemoteRaidToggle({ capacity }: { capacity: CapacityModel }) {
     if (checked) setRemoteAuto(false);
   }
 
+  const setNum = (key: "remoteRaidPassesPlanned" | "linkChargesOwned") => (raw: string) => {
+    const n = Math.round(Number(raw.replace(/[^\d]/g, "")) || 0);
+    setSettings({ [key]: Math.max(0, n) } as Partial<{ remoteRaidPassesPlanned: number; linkChargesOwned: number }>);
+  };
+
   return (
     <div className="mt-4 rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.05] p-2.5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <label className="flex items-center gap-2 text-xs font-medium text-slate-200">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-gofest-accent"
-            checked={on}
-            onChange={(e) => toggle(e.target.checked)}
-          />
-          I&apos;ll do remote raids
-        </label>
-        {on ? (
-          <label className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span>Sleep / night</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={String(sleep)}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => {
-                const n = Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0);
-                setSettings({ sleepHoursPerNight: Math.max(0, Math.min(16, n)) });
-              }}
-              aria-label="Hours of sleep per night"
-              className="w-12 rounded-sm border border-gofest-accent/40 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent"
-            />
-            <span>hrs</span>
-          </label>
-        ) : null}
-      </div>
+      <label className="flex items-center gap-2 text-xs font-medium text-slate-200">
+        <input type="checkbox" className="h-4 w-4 accent-gofest-accent" checked={on} onChange={(e) => toggle(e.target.checked)} />
+        I&apos;ll do remote raids
+      </label>
 
       {on ? (
         <>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <label className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span>Remote Raid Passes I&apos;ll use</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={String(budget)}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setNum("remoteRaidPassesPlanned")(e.target.value)}
+                aria-label="Remote Raid Passes you'll use"
+                className={numField}
+              />
+            </label>
+          </div>
+
           <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
-            Remote passes are <b className="text-slate-200">unlimited</b> this event — the limit is your time.
-            With {sleep}h sleep you have ~<span className="font-mono text-slate-200">{capacity.remoteHoursPerDay}h</span>/day
-            outside the event, ≈ <span className="font-mono text-slate-200">{capRaids}</span> remote raids over the weekend.
+            Remote passes are <b className="text-slate-200">unlimited</b> this event — the only limit is how many you
+            have. You&apos;re budgeting <span className="font-mono text-slate-200">{budget}</span>;{" "}
+            <span className="font-mono text-slate-300">{assigned}</span> assigned so far
+            {assigned > budget ? <span className="text-rose-300"> — {assigned - budget} over your budget</span> : null}.
+            Region-locked targets are filled first, then your priority order.
           </p>
-          <p className="mt-1 text-[11px] text-slate-500">
-            <span className="font-mono text-slate-300">{assigned}</span> remote raids assigned so far
-            {assigned > capRaids ? (
-              <span className="text-rose-300"> — {assigned - capRaids} more than fit your remote time</span>
-            ) : null}
-            . Region-locked targets are filled first, then your priority order — fine-tune how many of
-            each on the results step.
+          <p className="mt-1.5 rounded-sm border border-gofest-acid/30 bg-gofest-acid/[0.06] p-2 text-[11px] leading-relaxed text-gofest-acid">
+            💤 Don&apos;t raid all night — play Pokémon Sleep instead <span className="not-italic">;)</span>
           </p>
-          {lowSleep ? (
-            <p className="mt-1.5 rounded-sm border border-rose-400/40 bg-rose-500/10 p-2 text-[10px] leading-relaxed text-rose-200">
-              ⚠ {sleep}h of sleep is ill-advised for a GO Fest weekend — it&apos;s two full days of walking and time in
-              the sun. Consider at least {MIN_HEALTHY_SLEEP_HOURS} hours.
+
+          {/* Link Charges — used for remote Super Mega (mandatory 200) and,
+              optionally, in-person Mega / Super Mega raids. */}
+          <div className="mt-3 rounded-md border border-purple-300/25 bg-purple-300/[0.05] p-2">
+            <label className="flex items-center gap-2 text-xs font-medium text-purple-200">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-purple-400"
+                checked={useLinkCharges}
+                onChange={(e) => setSettings({ useLinkCharges: e.target.checked })}
+              />
+              I&apos;ll use Link Charges on Mega / Super Mega raids
+            </label>
+            <label className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
+              <span>Link Charges I have</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={String(Math.max(0, Math.round(linkChargesOwned ?? 0)))}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setNum("linkChargesOwned")(e.target.value)}
+                aria-label="Link Charges you have"
+                className="w-20 rounded-sm border border-purple-300/40 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-purple-300"
+              />
+            </label>
+            <p className="mt-1.5 text-[10px] leading-relaxed text-slate-500">
+              A remote Super Mega raid needs a Remote Pass <b className="text-slate-300">and</b> 200 Link Charges. Opting in
+              also spends spare Link Charges on in-person Megas (150 each) — the cheapest way to free up passes for other
+              raids. Buy LC at 200 for 100 coins or 600 for 250.
             </p>
-          ) : null}
+          </div>
         </>
       ) : hasRemoteOnly ? (
         <p className="mt-1.5 text-[11px] text-gofest-accent">

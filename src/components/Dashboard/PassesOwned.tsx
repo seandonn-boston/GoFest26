@@ -9,7 +9,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
  * the rest is what you'd still buy. Doesn't change the plan, only the have/need/buy split.
  */
 export function PassesOwned() {
-  const passesOwned = usePlannerStore((s) => s.settings.passesOwned);
+  const passesOwned = usePlannerStore((s) => s.settings.passesOwned ?? 0);
   const setSettings = usePlannerStore((s) => s.setSettings);
 
   return (

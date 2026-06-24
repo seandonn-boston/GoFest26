@@ -1,6 +1,5 @@
 "use client";
 
-import type { CapacityModel } from "@/domain/types";
 import type { RoadPlan } from "@/domain";
 import { Card } from "@/components/ui/Card";
 import { PriorityList } from "./PriorityList";
@@ -14,7 +13,7 @@ import { RemoteRaidToggle } from "./RemoteRaidToggle";
  * remote raids. These all feed the results on the next step (and priority can
  * still be tweaked per-block there).
  */
-export function PlanSetup({ roadPlan, capacity }: { roadPlan: RoadPlan; capacity: CapacityModel }) {
+export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
   return (
     <Card className="p-4">
       <h2 className="mb-1 text-lg font-semibold">Set your priorities</h2>
@@ -26,7 +25,7 @@ export function PlanSetup({ roadPlan, capacity }: { roadPlan: RoadPlan; capacity
       <PriorityList />
       <RoadOfLegends road={roadPlan} />
       <PassesOwned />
-      <RemoteRaidToggle capacity={capacity} />
+      <RemoteRaidToggle />
     </Card>
   );
 }

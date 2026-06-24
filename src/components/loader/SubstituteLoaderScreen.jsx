@@ -582,12 +582,15 @@ const loadMsgs = (move) => [
 ];
 const FAINT_MSG = "SUBSTITUTE fainted!";
 
-function SubstituteLoader({ onDone }) {
+function SubstituteLoader({ onDone, getProgress }) {
   const glRef = useRef(null);
   const playerRef = useRef(null);
   const msgRef = useRef(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  // Real load progress (0..100) supplied by the parent; the HP bar follows it.
+  const progressRef = useRef(getProgress);
+  progressRef.current = getProgress;
   const simRef = useRef(null);
 
   const motes = useMemo(
@@ -686,12 +689,11 @@ function SubstituteLoader({ onDone }) {
       sim.t += dt;
 
       if (sim.phase === "load") {
-        if (sim.stallLeft > 0) sim.stallLeft -= dt;
-        else {
-          for (const s of sim.stalls) if (!s.hit && sim.progress >= s.at) { s.hit = true; sim.stallLeft = s.dur; }
-          const rate = 15 + Math.sin(sim.t * 1.9) * 5 + Math.sin(sim.t * 0.7) * 3;
-          sim.progress = Math.min(100, sim.progress + rate * dt);
-        }
+        // HP depletes to match REAL load progress (only ever forward). When the
+        // assets are downloaded (progress 100), the doll faints — that animation
+        // is the only timed part of the sequence.
+        const real = progressRef.current ? Number(progressRef.current()) || 0 : 100;
+        sim.progress = Math.max(sim.progress, Math.min(100, real));
         if (sim.progress >= 100) { sim.phase = "dying"; sim.dieAt = now; }
       }
       if (sim.phase === "dying" && now - sim.dieAt > 480) {

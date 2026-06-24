@@ -30,7 +30,9 @@ export function StepNav({
   return (
     <nav
       aria-label="Planner steps"
-      className="-mx-4 mb-6 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      // Sticky: rides in its natural spot, then pins to the top of the viewport
+      // once scrolled past, and snaps back into place when you scroll back up.
+      className="sticky top-0 z-30 -mx-4 mb-6 overflow-x-auto border-b border-white/5 bg-gofest-bg/90 px-4 py-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <ol className="flex min-w-max items-stretch gap-2">
         {steps.map((s) => {
