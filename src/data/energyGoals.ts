@@ -21,26 +21,40 @@ const FUSION_PER_RAID = { min: 80, max: 140 } as const;
 const PRIMAL_PER_RAID = { min: 80, max: 100 } as const;
 const PRIMAL_NOTE = "400 energy reverts it the first time; 80 each time after.";
 
+// PokeMiners addressable-asset icons for each SOURCE forme (verified to resolve).
+// These are the fused / crowned / primal raid bosses — not the base Pokémon, so
+// the Road of Legends rows show the actual creature you'll be fighting.
+const SOURCE_SPRITE = {
+  whiteKyurem: "pm646.fWHITE.icon.png",
+  blackKyurem: "pm646.fBLACK.icon.png",
+  dawnWings: "pm800.fDAWN_WINGS.icon.png",
+  duskMane: "pm800.fDUSK_MANE.icon.png",
+  crownedSword: "pm888.fCROWNED_SWORD.icon.png",
+  crownedShield: "pm889.fCROWNED_SHIELD.icon.png",
+  primalGroudon: "pm383.fPRIMAL.icon.png",
+  primalKyogre: "pm382.fPRIMAL.icon.png",
+} as const;
+
 export const ENERGY_GOALS: Record<string, EnergyGoalDef[]> = {
   kyurem: [
-    { key: "blaze", kind: "fusion", label: "Blaze · White Kyurem", flavor: "blaze", cost: 1000, perRaid: FUSION_PER_RAID, source: "White Kyurem", roadDayId: "tue" },
-    { key: "volt", kind: "fusion", label: "Volt · Black Kyurem", flavor: "volt", cost: 1000, perRaid: FUSION_PER_RAID, source: "Black Kyurem", roadDayId: "wed" },
+    { key: "blaze", kind: "fusion", label: "Blaze · White Kyurem", flavor: "blaze", cost: 1000, perRaid: FUSION_PER_RAID, source: "White Kyurem", sprite: SOURCE_SPRITE.whiteKyurem, roadDayId: "tue" },
+    { key: "volt", kind: "fusion", label: "Volt · Black Kyurem", flavor: "volt", cost: 1000, perRaid: FUSION_PER_RAID, source: "Black Kyurem", sprite: SOURCE_SPRITE.blackKyurem, roadDayId: "wed" },
   ],
   necrozma: [
-    { key: "lunar", kind: "fusion", label: "Lunar · Dawn Wings", flavor: "lunar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dawn Wings Necrozma", roadDayId: "tue" },
-    { key: "solar", kind: "fusion", label: "Solar · Dusk Mane", flavor: "solar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dusk Mane Necrozma", roadDayId: "wed" },
+    { key: "lunar", kind: "fusion", label: "Lunar · Dawn Wings", flavor: "lunar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dawn Wings Necrozma", sprite: SOURCE_SPRITE.dawnWings, roadDayId: "tue" },
+    { key: "solar", kind: "fusion", label: "Solar · Dusk Mane", flavor: "solar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dusk Mane Necrozma", sprite: SOURCE_SPRITE.duskMane, roadDayId: "wed" },
   ],
   zacian: [
-    { key: "sword", kind: "crowned", label: "Crowned Sword", flavor: "sword", cost: 1000, perRaid: FUSION_PER_RAID, source: "Crowned Sword Zacian", roadDayId: "thu" },
+    { key: "sword", kind: "crowned", label: "Crowned Sword", flavor: "sword", cost: 1000, perRaid: FUSION_PER_RAID, source: "Crowned Sword Zacian", sprite: SOURCE_SPRITE.crownedSword, roadDayId: "thu" },
   ],
   zamazenta: [
-    { key: "shield", kind: "crowned", label: "Crowned Shield", flavor: "shield", cost: 1000, perRaid: FUSION_PER_RAID, source: "Crowned Shield Zamazenta", roadDayId: "thu" },
+    { key: "shield", kind: "crowned", label: "Crowned Shield", flavor: "shield", cost: 1000, perRaid: FUSION_PER_RAID, source: "Crowned Shield Zamazenta", sprite: SOURCE_SPRITE.crownedShield, roadDayId: "thu" },
   ],
   groudon: [
-    { key: "primal", kind: "primal", label: "Primal Energy", flavor: "primal", cost: 400, perRaid: PRIMAL_PER_RAID, source: "Primal Groudon", roadDayId: "fri", note: PRIMAL_NOTE },
+    { key: "primal", kind: "primal", label: "Primal Energy", flavor: "primal", cost: 400, perRaid: PRIMAL_PER_RAID, source: "Primal Groudon", sprite: SOURCE_SPRITE.primalGroudon, roadDayId: "fri", note: PRIMAL_NOTE },
   ],
   kyogre: [
-    { key: "primal", kind: "primal", label: "Primal Energy", flavor: "primal", cost: 400, perRaid: PRIMAL_PER_RAID, source: "Primal Kyogre", roadDayId: "fri", note: PRIMAL_NOTE },
+    { key: "primal", kind: "primal", label: "Primal Energy", flavor: "primal", cost: 400, perRaid: PRIMAL_PER_RAID, source: "Primal Kyogre", sprite: SOURCE_SPRITE.primalKyogre, roadDayId: "fri", note: PRIMAL_NOTE },
   ],
 };
 

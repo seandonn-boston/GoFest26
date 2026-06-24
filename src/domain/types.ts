@@ -74,6 +74,9 @@ export interface EnergyGoalDef {
   perRaid: Range;
   /** The raid that drops it, e.g. "White Kyurem". */
   source: string;
+  /** PokeMiners sprite filename of the SOURCE forme (White Kyurem, Primal Groudon,
+   *  …) — distinct from the base Pokémon's icon. */
+  sprite?: string;
   /** Road of Legends day id the source raid is featured (mon..fri). */
   roadDayId?: string;
   /** Extra context (e.g. the cheaper repeat-revert cost for Primals). */

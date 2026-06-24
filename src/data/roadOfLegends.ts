@@ -22,7 +22,9 @@ export interface RoadDay {
   label: string;
   /** Short calendar date, e.g. "Jul 6". */
   dateLabel: string;
-  /** Length of that day's Raid Hour block in hours (Monday is 2, the rest 1). */
+  /** Length of that day's Raid Hour block in hours. Every day runs the full
+   *  6–8 PM window (2h): 6–7 is the day's 5★ raids, 7–8 the featured Mega (or
+   *  Friday's Primal Kyogre / Groudon). */
   raidHourHours: number;
   /** Human Raid-Hour window, e.g. "6–8 PM". */
   raidHourLabel: string;
