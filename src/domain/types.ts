@@ -196,8 +196,6 @@ export interface BossInput {
    *  leveling + mega requirement; current.{candy,xlCandy,megaEnergy} stay the
    *  shared on-hand pool, allocated to the highest-priority copy first. */
   copies?: PokemonCopy[];
-  /** Run from the encounter (raid-completion rewards only, no catch candy/XL). */
-  skipCatch?: boolean;
   /** Assume a matching Mega-Evolved buddy is active for the same-type candy bonus. */
   megaBuddy?: boolean;
   /** Catch this boss with a Level-4 (Super Max) same-type Mega active for the

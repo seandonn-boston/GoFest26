@@ -59,7 +59,6 @@ export function BossInputCard({
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const sKey = speciesKey(boss.name);
   const preview = usePlannerStore((s) => s.screenshots[sKey]);
-  const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
   const setEnergy = usePlannerStore((s) => s.setEnergy);
@@ -78,7 +77,6 @@ export function BossInputCard({
   if (!input) return null;
 
   const isMega = boss.tier === "mega" || boss.tier === "super-mega";
-  const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
   const l4Buddy = input.l4Buddy ?? false;
   const l4Eligible = isL4Eligible(boss);
@@ -219,23 +217,20 @@ export function BossInputCard({
         }
       />
 
-      {/* Catch toggles */}
+      {/* Catch toggles (quick-catch / "run from encounter" now lives per-block on
+          the results priority tiles, so it can vary block to block). */}
       <div className="mt-2 flex flex-col gap-1.5 text-xs text-slate-300">
         <label className="flex items-center gap-2">
-          <input type="checkbox" className="h-3.5 w-3.5 accent-gofest-accent2" checked={skipCatch} onChange={(e) => setSkipCatch(boss.id, e.target.checked)} />
-          Run from encounter (raid rewards only — no catch candy/XL)
-        </label>
-        <label className={`flex items-center gap-2 ${skipCatch ? "opacity-40" : ""}`}>
-          <input type="checkbox" className="h-3.5 w-3.5 accent-gofest-accent2" checked={megaBuddy} disabled={skipCatch} onChange={(e) => setMegaBuddy(boss.id, e.target.checked)} />
+          <input type="checkbox" className="h-3.5 w-3.5 accent-gofest-accent2" checked={megaBuddy} onChange={(e) => setMegaBuddy(boss.id, e.target.checked)} />
           Mega buddy same-type bonus (+1 candy{globalXlPct > 0 ? `, +${globalXlPct}% XL` : ""}/catch)
         </label>
         {l4Eligible ? (
-          <label className={`flex items-center gap-2 ${skipCatch || !megaBuddy ? "opacity-40" : ""}`}>
+          <label className={`flex items-center gap-2 ${!megaBuddy ? "opacity-40" : ""}`}>
             <input
               type="checkbox"
               className="h-3.5 w-3.5 accent-gofest-accent2"
               checked={l4Buddy}
-              disabled={skipCatch || !megaBuddy}
+              disabled={!megaBuddy}
               onChange={(e) => setL4Buddy(boss.id, e.target.checked)}
             />
             Catch with a Level-4 (Super Max) Mega active (+30% XL)

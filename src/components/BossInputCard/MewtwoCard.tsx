@@ -50,7 +50,6 @@ export function MewtwoCard({
   const inputX = usePlannerStore((s) => s.inputs[bossX.id]);
   const inputY = usePlannerStore((s) => s.inputs[bossY.id]);
   const setCurrent = usePlannerStore((s) => s.setCurrent);
-  const setSkipCatch = usePlannerStore((s) => s.setSkipCatch);
   const setMegaBuddy = usePlannerStore((s) => s.setMegaBuddy);
   const setL4Buddy = usePlannerStore((s) => s.setL4Buddy);
   const ensureMewtwoCopies = usePlannerStore((s) => s.ensureMewtwoCopies);
@@ -158,11 +157,9 @@ export function MewtwoCard({
               subtitle={describeAvailability(bossX)}
               types={bossX.types}
               sprite={bossX.sprite}
-              skipCatch={inputX!.skipCatch ?? false}
               megaBuddy={inputX!.megaBuddy ?? true}
               l4Buddy={inputX!.l4Buddy ?? false}
               l4Eligible={isL4Eligible(bossX)}
-              onSkipCatch={(v) => setSkipCatch(bossX.id, v)}
               onMegaBuddy={(v) => setMegaBuddy(bossX.id, v)}
               onL4Buddy={(v) => setL4Buddy(bossX.id, v)}
               result={resultX}
@@ -175,11 +172,9 @@ export function MewtwoCard({
               subtitle={describeAvailability(bossY)}
               types={bossY.types}
               sprite={bossY.sprite}
-              skipCatch={inputY!.skipCatch ?? false}
               megaBuddy={inputY!.megaBuddy ?? true}
               l4Buddy={inputY!.l4Buddy ?? false}
               l4Eligible={isL4Eligible(bossY)}
-              onSkipCatch={(v) => setSkipCatch(bossY.id, v)}
               onMegaBuddy={(v) => setMegaBuddy(bossY.id, v)}
               onL4Buddy={(v) => setL4Buddy(bossY.id, v)}
               result={resultY}
@@ -199,11 +194,9 @@ function FormColumn({
   subtitle,
   types,
   sprite,
-  skipCatch,
   megaBuddy,
   l4Buddy,
   l4Eligible,
-  onSkipCatch,
   onMegaBuddy,
   onL4Buddy,
   result,
@@ -213,11 +206,9 @@ function FormColumn({
   subtitle: string;
   types?: string[];
   sprite?: string;
-  skipCatch: boolean;
   megaBuddy: boolean;
   l4Buddy: boolean;
   l4Eligible: boolean;
-  onSkipCatch: (v: boolean) => void;
   onMegaBuddy: (v: boolean) => void;
   onL4Buddy: (v: boolean) => void;
   result?: BossResult;
@@ -239,20 +230,16 @@ function FormColumn({
 
       <div className="flex flex-col gap-1 text-[11px] text-slate-300">
         <label className="flex items-center gap-1.5">
-          <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={skipCatch} onChange={(e) => onSkipCatch(e.target.checked)} />
-          Run from encounter
-        </label>
-        <label className={`flex items-center gap-1.5 ${skipCatch ? "opacity-40" : ""}`}>
-          <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={megaBuddy} disabled={skipCatch} onChange={(e) => onMegaBuddy(e.target.checked)} />
+          <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={megaBuddy} onChange={(e) => onMegaBuddy(e.target.checked)} />
           Mega buddy bonus
         </label>
         {l4Eligible ? (
-          <label className={`flex items-center gap-1.5 ${skipCatch || !megaBuddy ? "opacity-40" : ""}`}>
+          <label className={`flex items-center gap-1.5 ${!megaBuddy ? "opacity-40" : ""}`}>
             <input
               type="checkbox"
               className="h-3 w-3 accent-gofest-accent2"
               checked={l4Buddy}
-              disabled={skipCatch || !megaBuddy}
+              disabled={!megaBuddy}
               onChange={(e) => onL4Buddy(e.target.checked)}
             />
             Level-4 Mega active (+30% XL)
