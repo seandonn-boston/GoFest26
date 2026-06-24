@@ -54,10 +54,10 @@ describe("computePassCost", () => {
   });
 
   it("adds free passes for each Road of Legends weekday played (lowering cost)", () => {
-    // 30 in-person, 2 weekdays played → 18 + 2×2 = 22 free → 8 paid.
+    // 30 in-person, 2 weekdays played → 18 + 2×3 = 24 free → 6 paid.
     const cost = computePassCost([input("zekrom")], [result("zekrom", 30)], DEFAULT_SETTINGS, {}, { mon: true, tue: true });
-    expect(cost.freePasses).toBe(22);
-    expect(cost.paidInPerson).toBe(8);
+    expect(cost.freePasses).toBe(24);
+    expect(cost.paidInPerson).toBe(6);
   });
 
   it("requires a remote pass AND 200 Link Charges per remote Super Mega raid", () => {

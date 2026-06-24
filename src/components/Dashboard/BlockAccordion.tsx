@@ -8,6 +8,7 @@ import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS } from "@/data/typeVisuals";
 import { RISK_BANDS, rareCandyForecast, megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "@/domain";
+import { sized } from "@/domain/blockPlan";
 import type { BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
@@ -50,6 +51,7 @@ function TargetCard({
 }) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
+  const rewardCase = usePlannerStore((s) => s.settings.rewardCase);
   // For a multi-form species, show the forme available in THIS block (name/sprite/
   // counters); share.bossId stays the shared primary for result/progress linkage.
   const boss = getBoss(share.formeBossId ?? share.bossId);
@@ -64,9 +66,8 @@ function TargetCard({
     </span>
   ));
 
-  const g = share.range.min; // best case
-  const r = share.range.max; // worst case
-  const y = Math.min(r, Math.max(g, Math.round((g + r) / 2))); // average
+  // One number per the selected reward-luck case (optimistic = fewest raids).
+  const need = sized(share.range, rewardCase);
   const goalPct = share.raids > 0 ? Math.round((share.fitted / share.raids) * 100) : 100;
 
   return (
@@ -96,9 +97,7 @@ function TargetCard({
             className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
           />
           <span className="text-slate-500">/</span>
-          <span className="text-emerald-400" title="Best case (fewest raids)">{g}</span>
-          <span className="text-amber-400" title="Average">{y}</span>
-          <span className="text-rose-400" title="Worst case (most raids)">{r}</span>
+          <span className="text-gofest-accent2" title="Raids needed (selected reward case)">{need}</span>
         </div>
 
         {share.remaining > 0 ? (

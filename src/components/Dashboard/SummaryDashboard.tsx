@@ -1,16 +1,35 @@
 "use client";
 
 import { useMemo } from "react";
-import type { PlanSummary } from "@/domain/types";
+import type { PlanSummary, Range } from "@/domain/types";
 import type { RoadPlan, WeekendBlockPlan } from "@/domain";
-import { formatRange } from "@/lib/format";
+import type { PlannerSettings } from "@/domain/settings";
+import { midpoint } from "@/lib/math";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
+import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { CapacityGauge } from "./CapacityGauge";
 import { PassCoverageBar } from "./PassCoverage";
 import { BlockAccordion } from "./BlockAccordion";
 import { PassEconomy } from "./PassEconomy";
+
+type RewardCase = PlannerSettings["rewardCase"];
+
+const REWARD_CASES: { id: RewardCase; label: string }[] = [
+  { id: "optimistic", label: "Best case" },
+  { id: "expected", label: "Expected" },
+  { id: "safe", label: "Worst case" },
+];
+
+/** Single value for a range under the chosen case. `favorHigh` flips which end
+ *  is "best": fewer raids needed is good (low), more raids/hour is good (high). */
+function caseValue(range: Range, rc: RewardCase, favorHigh: boolean): number {
+  if (rc === "expected") return Math.round(midpoint(range));
+  const best = favorHigh ? range.max : range.min;
+  const worst = favorHigh ? range.min : range.max;
+  return rc === "optimistic" ? best : worst;
+}
 
 export function SummaryDashboard({
   summary,
@@ -23,6 +42,8 @@ export function SummaryDashboard({
 }) {
   // Re-balance remote passes by priority while in auto mode (no-op once manual).
   useRemoteAutoBalance(summary);
+  const rewardCase = usePlannerStore((s) => s.settings.rewardCase);
+  const setSettings = usePlannerStore((s) => s.setSettings);
   const { capacity, remotePool } = summary;
   const hasGoals = summary.totalRaids.max > 0;
   // Max raids the gauge measures against = in-person weekend capacity + the
@@ -49,14 +70,32 @@ export function SummaryDashboard({
     <Card className="p-4">
       <h2 className="mb-3 text-lg font-semibold">Your weekend plan</h2>
 
-      <div className="mb-4 grid grid-cols-3 gap-4">
-        <Stat label="Total raids needed" value={formatRange(summary.totalRaids)} accent="text-gofest-accent2" />
-        <Stat label="Raids / hour" value={formatRange(capacity.raidsPerHour)} />
+      <div className="mb-3 grid grid-cols-3 gap-4">
+        <Stat label="Total raids needed" value={String(caseValue(summary.totalRaids, rewardCase, false))} accent="text-gofest-accent2" />
+        <Stat label="Raids / hour" value={String(caseValue(capacity.raidsPerHour, rewardCase, true))} />
         <Stat
           label="Max raids"
-          value={formatRange(maxRaids)}
+          value={String(caseValue(maxRaids, rewardCase, true))}
           sub={remotePool > 0 ? `incl. ${remotePool} remote` : undefined}
         />
+      </div>
+
+      {/* Reward-luck case selector — drives the single numbers above and on every
+          priority tile (best = luckiest drops → fewest raids). */}
+      <div className="mb-4 inline-flex rounded-lg border border-white/10 bg-gofest-bg/40 p-0.5">
+        {REWARD_CASES.map((rc) => (
+          <button
+            key={rc.id}
+            type="button"
+            onClick={() => setSettings({ rewardCase: rc.id })}
+            aria-pressed={rewardCase === rc.id}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+              rewardCase === rc.id ? "bg-gofest-accent2 text-black" : "text-slate-300 hover:text-white"
+            }`}
+          >
+            {rc.label}
+          </button>
+        ))}
       </div>
 
       {hasGoals ? (
