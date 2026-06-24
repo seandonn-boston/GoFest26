@@ -25,7 +25,7 @@ function Pretitle({ text }: { text: string }) {
 
 const dropShadow = "[filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.55))]";
 const SPRITE = 60; // flanking sprite size, mirroring the Mewtwo hero title
-const STACK = 44; // each sprite in a two-forme right-slot stack (Kyurem / Necrozma)
+const STACK_OFFSET = 10; // px each fused forme is nudged from centre (diagonal spread)
 
 /**
  * The hero card title — sprite(s) flanking a CENTERED name, positioned exactly
@@ -80,17 +80,19 @@ export function CardTitle({
           else a single forme; else an invisible spacer to keep the name centered. */}
       {rightStack && rightStack.length >= 2 ? (
         <span className="relative -ml-3 shrink-0" style={{ width: SPRITE, height: SPRITE }}>
+          {/* Both formes render at full SPRITE size — neither shrinks — and spread
+              diagonally from centre so together they occupy more than one slot. */}
           <span
-            className={`absolute left-1/2 top-0 z-20 ${dropShadow}`}
-            style={{ transform: "translate(calc(-50% + 5px), 5px)" }}
+            className={`absolute left-1/2 top-1/2 z-20 ${dropShadow}`}
+            style={{ transform: `translate(calc(-50% + ${STACK_OFFSET}px), calc(-50% - ${STACK_OFFSET}px))` }}
           >
-            <Sprite src={rightStack[0].src} alt={rightStack[0].alt} size={STACK} />
+            <Sprite src={rightStack[0].src} alt={rightStack[0].alt} size={SPRITE} />
           </span>
           <span
-            className={`absolute bottom-0 left-1/2 z-10 ${dropShadow}`}
-            style={{ transform: "translate(calc(-50% - 5px), -5px)" }}
+            className={`absolute left-1/2 top-1/2 z-10 ${dropShadow}`}
+            style={{ transform: `translate(calc(-50% - ${STACK_OFFSET}px), calc(-50% + ${STACK_OFFSET}px))` }}
           >
-            <Sprite src={rightStack[1].src} alt={rightStack[1].alt} size={STACK} />
+            <Sprite src={rightStack[1].src} alt={rightStack[1].alt} size={SPRITE} />
           </span>
         </span>
       ) : right?.src ? (
