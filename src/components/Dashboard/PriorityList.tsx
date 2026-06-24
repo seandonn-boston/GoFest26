@@ -1,17 +1,22 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { getBoss } from "@/data";
+import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import type { BossInput, PokemonCopy } from "@/domain/types";
 import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStore";
 import { useUiStore } from "@/store/useUiStore";
 import { useDragList } from "./useDragList";
 import { Sprite } from "@/components/ui/Sprite";
 
-const speciesName = (id: string) => (getBoss(id)?.name ?? id).replace(/^Mega /, "");
+const isMewtwo = (id: string) => id === MEWTWO_X_ID || id === MEWTWO_Y_ID;
 
-/** A compact "what you're powering it up to" tag for one individual. */
-function copyTarget(copy: PokemonCopy, isMega: boolean): string {
+/** Base species label ("Mega Mewtwo X" → "Mewtwo", "Giratina (Altered)" → "Giratina"). */
+const speciesName = (id: string) => getBoss(id)?.species ?? (getBoss(id)?.name ?? id).replace(/^Mega /, "");
+
+/** A compact "what you're powering it up to" tag for one individual. Mewtwo carries
+ *  both Mega goals (one Pokémon, X and Y branches), so it shows both. */
+function copyTarget(copy: PokemonCopy, isMega: boolean, mewtwo: boolean): string {
+  if (mewtwo) return `Mega X${copy.target.megaLevel} · Y${copy.target.megaLevelY ?? 0}`;
   return isMega ? `Mega Lv ${copy.target.megaLevel}` : `Lv ${copy.target.level}`;
 }
 
@@ -30,17 +35,18 @@ interface Individual {
 function individualsFor(bossId: string, input: BossInput | undefined): Individual[] {
   const boss = getBoss(bossId);
   const isMega = boss?.tier === "mega" || boss?.tier === "super-mega";
+  const mewtwo = isMewtwo(bossId);
   const name = speciesName(bossId);
   const copies = input?.copies ?? [];
   if (copies.length === 0) {
-    return [{ key: `${bossId}::single`, bossId, copyId: null, label: name }];
+    return [{ key: `${bossId}::single`, bossId, copyId: null, label: name, sub: mewtwo ? "Mega X & Y" : undefined }];
   }
   return copies.map((c, i) => ({
     key: `${bossId}::${c.id}`,
     bossId,
     copyId: c.id,
     label: copies.length > 1 ? `${name} #${i + 1}` : name,
-    sub: copyTarget(c, isMega),
+    sub: copyTarget(c, isMega, mewtwo),
   }));
 }
 
@@ -56,17 +62,38 @@ function individualsFor(bossId: string, input: BossInput | undefined): Individua
  * which seeds every habitat block) and each species' copy order (which copy gets
  * the shared candy first). A per-block drag on the results step can still
  * override an individual block on top of this.
+ *
+ * Mega Mewtwo X & Y are shown as ONE "Mewtwo" entry — it's one Pokémon you take to
+ * three goals (level 50, Mega X 4, Mega Y 4). They stay separate engine targets
+ * (X only raids Saturday and gives no Y energy; Y only raids Sunday and gives no X
+ * energy), but rank together: the entry expands back to [X, Y] adjacent when the
+ * global order is written, so both share the same priority tier.
  */
 export function PriorityList() {
   const inputs = usePlannerStore((s) => s.inputs);
   const globalPriority = usePlannerStore((s) => s.globalPriority);
+  const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
   const grouped = useUiStore((s) => s.groupBySpecies);
   const setGrouped = useUiStore((s) => s.setGroupBySpecies);
 
-  const speciesOrder = useMemo(
+  const rawOrder = useMemo(
     () => selectedInPriorityOrder({ inputs, globalPriority }),
     [inputs, globalPriority],
   );
+
+  // Collapse the selected Mewtwo formes to a single representative entry (X first).
+  const mewtwoSelected = useMemo(
+    () => [MEWTWO_X_ID, MEWTWO_Y_ID].filter((id) => inputs[id]?.selected),
+    [inputs],
+  );
+  const mewtwoRep = mewtwoSelected[0];
+  const speciesOrder = useMemo(
+    () => rawOrder.filter((id) => !mewtwoSelected.includes(id) || id === mewtwoRep),
+    [rawOrder, mewtwoSelected, mewtwoRep],
+  );
+  // Re-expand the Mewtwo entry to both formes (adjacent) before writing the order.
+  const setOrder = (ids: string[]) =>
+    setGlobalPriority(ids.flatMap((id) => (id === mewtwoRep ? mewtwoSelected : [id])));
 
   if (speciesOrder.length === 0) {
     return (
@@ -87,9 +114,9 @@ export function PriorityList() {
       </div>
 
       {grouped ? (
-        <GroupedView speciesOrder={speciesOrder} inputs={inputs} />
+        <GroupedView speciesOrder={speciesOrder} inputs={inputs} setOrder={setOrder} />
       ) : (
-        <FlatView speciesOrder={speciesOrder} inputs={inputs} />
+        <FlatView speciesOrder={speciesOrder} inputs={inputs} setOrder={setOrder} />
       )}
     </div>
   );
@@ -118,8 +145,15 @@ function GroupToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 
 /* ----------------------------- Flat (off) view ---------------------------- */
 
-function FlatView({ speciesOrder, inputs }: { speciesOrder: string[]; inputs: Record<string, BossInput> }) {
-  const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
+function FlatView({
+  speciesOrder,
+  inputs,
+  setOrder,
+}: {
+  speciesOrder: string[];
+  inputs: Record<string, BossInput>;
+  setOrder: (ids: string[]) => void;
+}) {
   const reorderCopies = usePlannerStore((s) => s.reorderCopies);
 
   // The flat order is derived from the engine state (species order × each
@@ -136,7 +170,7 @@ function FlatView({ speciesOrder, inputs }: { speciesOrder: string[]; inputs: Re
     // Species rank = first appearance of any of its individuals.
     const speciesRank: string[] = [];
     for (const it of seq) if (!speciesRank.includes(it.bossId)) speciesRank.push(it.bossId);
-    setGlobalPriority(speciesRank);
+    setOrder(speciesRank);
     // Within each species, the copies follow their relative order in the flat list.
     for (const id of speciesRank) {
       const copyIds = seq.filter((it) => it.bossId === id && it.copyId).map((it) => it.copyId as string);
@@ -172,9 +206,16 @@ function FlatView({ speciesOrder, inputs }: { speciesOrder: string[]; inputs: Re
 
 /* -------------------------- Grouped (species) view ------------------------ */
 
-function GroupedView({ speciesOrder, inputs }: { speciesOrder: string[]; inputs: Record<string, BossInput> }) {
-  const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
-  const drag = useDragList(speciesOrder, setGlobalPriority);
+function GroupedView({
+  speciesOrder,
+  inputs,
+  setOrder,
+}: {
+  speciesOrder: string[];
+  inputs: Record<string, BossInput>;
+  setOrder: (ids: string[]) => void;
+}) {
+  const drag = useDragList(speciesOrder, setOrder);
 
   return (
     <div className="space-y-2" {...drag.containerProps}>
@@ -217,6 +258,7 @@ function SpeciesGroup({
   const reorderCopies = usePlannerStore((s) => s.reorderCopies);
   const boss = getBoss(bossId);
   const isMega = boss?.tier === "mega" || boss?.tier === "super-mega";
+  const mewtwo = isMewtwo(bossId);
   const copies = input?.copies ?? [];
   const copyIds = copies.map((c) => c.id);
   const drag = useDragList(copyIds, (ids) => reorderCopies(bossId, ids));
@@ -257,7 +299,7 @@ function SpeciesGroup({
                 <Grip {...drag.gripProps(cid, `${speciesName(bossId)} #${i + 1}`)} small />
                 <span className="w-4 shrink-0 text-center font-mono text-[10px] font-bold text-slate-400">{i + 1}</span>
                 <span className="min-w-0 flex-1 truncate text-xs text-slate-300">Individual #{i + 1}</span>
-                <span className="shrink-0 text-[10px] text-slate-500">{copyTarget(c, isMega)}</span>
+                <span className="shrink-0 text-[10px] text-slate-500">{copyTarget(c, isMega, mewtwo)}</span>
                 <Grip {...drag.gripProps(cid, `${speciesName(bossId)} #${i + 1}`)} small />
               </div>
             );
