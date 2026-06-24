@@ -4,12 +4,14 @@
 // So the question per boss / per habitat block is: which single mega, evolved
 // before you battle, boosts the most of what you'll catch?
 //
-// Suggestions are drawn ONLY from megas that share a type with the boss (no
-// shared type → no candy bonus), then ranked by a fixed priority:
-//   1. also an attacking counter (super-effective)          → "attacker" (purple)
-//   2. also shares the habitat's featured wild-spawn type    → "wild"     (blue)
-//   3. only matches the boss                                 → "boss"     (no ring)
-// The kind doubles as the sprite's outline color (see ui/megaSymbol colors).
+// A mega is rated by three independent signals against a boss / hour-block:
+//   B = shares a type with a raid boss (its candy bonus applies)
+//   W = shares a type with the block's featured wild spawns
+//   A = is a good (super-effective) attacker against the boss(es)
+// The combination picks the outline colour (see megaTier): the three-signal
+// "rainbow" is best, the medal tiers stack two signals, and the single-signal
+// purple/blue/grey are the plain matches — grey (attacker only, no type match)
+// being the least useful, since we mega-evolve mainly for the candy type match.
 
 import { MEGAS, type MegaForm } from "@/data/megas";
 import { effectiveness } from "./counters";
@@ -26,7 +28,36 @@ function asPTypes(types: readonly string[]): PType[] {
 
 const overlaps = (a: readonly string[], b: readonly string[]) => a.some((t) => b.includes(t));
 
-export type MegaKind = "attacker" | "wild" | "boss";
+export type MegaKind =
+  | "rainbow" // boss-type + wild-type + attacker (all three)
+  | "gold" // boss-type + wild-type, not an attacker
+  | "silver" // boss-type + attacker, no wild match
+  | "bronze" // wild-type + attacker, no boss-type match
+  | "boss" // boss-type match only (purple)
+  | "wild" // wild-type match only (blue)
+  | "attacker"; // good attacker only, no type match (grey)
+
+/** Outline kind from the three signals: boss-type (B), wild-type (W), attacker (A). */
+export function megaTier(boss: boolean, wild: boolean, attacker: boolean): MegaKind {
+  if (boss && wild && attacker) return "rainbow";
+  if (boss && wild) return "gold";
+  if (boss && attacker) return "silver";
+  if (wild && attacker) return "bronze";
+  if (boss) return "boss";
+  if (wild) return "wild";
+  return "attacker";
+}
+
+/** Sort weight by usefulness (rainbow best → attacker-only least). */
+export const MEGA_KIND_RANK: Record<MegaKind, number> = {
+  rainbow: 6,
+  gold: 5,
+  silver: 4,
+  bronze: 3,
+  boss: 2,
+  wild: 1,
+  attacker: 0,
+};
 
 export interface MegaBoost {
   mega: MegaForm;
@@ -45,12 +76,11 @@ function attackerScore(mega: MegaForm, defTypes: PType[]): number {
   return best;
 }
 
-const TIER = { attacker: 2000, wild: 1000, boss: 0 } as const;
-
 /**
  * Ranked candy-boost megas for a single boss. `wildTypes` is the featured wild
- * spawn typing of the boss's habitat block (empty for all-weekend bosses), used
- * only to flag the "also boosts wild spawns" tier.
+ * spawn typing of the boss's habitat block (empty for all-weekend bosses). Every
+ * suggestion shares a type with the boss (B is always true here), so kinds range
+ * over rainbow / gold / silver / boss depending on the wild + attacker signals.
  */
 export function megaBoostsForBoss(bossTypes: string[], wildTypes: string[] = []): MegaBoost[] {
   const def = asPTypes(bossTypes);
@@ -61,11 +91,10 @@ export function megaBoostsForBoss(bossTypes: string[], wildTypes: string[] = [])
     const atk = attackerScore(mega, def);
     const boostsWild = overlaps(mega.types, wildTypes);
     const overlap = mega.types.filter((t) => def.includes(t)).length;
-    const kind: MegaKind = atk > 0 ? "attacker" : boostsWild ? "wild" : "boss";
-    // Within a tier: attackers by combat value; others by how many of the boss's
-    // types they cover (a dual-match is a surer boost), then raw attack power.
-    const within = kind === "attacker" ? atk : overlap * 100 + maxDps(mega);
-    out.push({ mega, kind, score: TIER[kind] + within });
+    const kind = megaTier(true, boostsWild, atk > 0);
+    // Tier dominates; within a tier prefer combat value, then candy coverage.
+    const within = atk > 0 ? atk : overlap * 100 + maxDps(mega);
+    out.push({ mega, kind, score: MEGA_KIND_RANK[kind] * 100000 + within });
   }
   return out.sort((a, b) => b.score - a.score || a.mega.name.localeCompare(b.mega.name));
 }
@@ -96,7 +125,7 @@ export function blockMegaBoosts(wildTypes: string[], bossTypesList: string[][]):
     if (candyMatches === 0) continue;
     const wildHits = mega.types.filter((t) => wildTypes.includes(t)).length;
     const score = attackerHits * 3 + candyMatches * 1 + wildHits * 2;
-    const kind: MegaKind = attackerHits > 0 ? "attacker" : wildHits > 0 ? "wild" : "boss";
+    const kind = megaTier(candyMatches > 0, wildHits > 0, attackerHits > 0);
     out.push({ mega, kind, score });
   }
   return out.sort((a, b) => b.score - a.score || a.mega.name.localeCompare(b.mega.name));
@@ -126,7 +155,7 @@ export interface BlockMegaRank {
   mega: MegaForm;
   /** Combined weighted score in [0,1] (higher ranks first). */
   score: number;
-  /** Role outline, mirroring MegaBoost.kind (attacker / wild / boss). */
+  /** Outline kind from boss-type / wild-type / attacker signals (see megaTier). */
   kind: MegaKind;
   /** Weighted same-type coverage tally (component 1). */
   coverage: number;
@@ -197,7 +226,7 @@ export function topBlockMegas(
 
   const ranked: BlockMegaRank[] = raws.map((r) => ({
     mega: r.mega,
-    kind: r.attackerSame + r.attackerOff > 0 ? "attacker" : r.wild > 0 ? "wild" : "boss",
+    kind: megaTier(r.candyBosses > 0, r.wild > 0, r.attackerSame + r.attackerOff > 0),
     coverage: r.coverage,
     bossesBoosted: r.candyBosses,
     wildMatches: r.wild,
