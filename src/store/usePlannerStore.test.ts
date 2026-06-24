@@ -74,6 +74,19 @@ describe("planner store interactive actions", () => {
     expect(after[1].id).toBe(a.id);
   });
 
+  it("reorderCopies sets an explicit drag order and keeps any omitted copy", () => {
+    store().toggleSelected("zekrom");
+    store().addCopy("zekrom");
+    store().addCopy("zekrom"); // 3 individuals: a, b, c
+    const [a, b, c] = store().inputs.zekrom.copies!;
+    store().reorderCopies("zekrom", [c.id, a.id, b.id]);
+    expect(store().inputs.zekrom.copies!.map((x) => x.id)).toEqual([c.id, a.id, b.id]);
+    // A partial list (drag of a subset) puts the named ones first, omitted last.
+    store().reorderCopies("zekrom", [b.id]);
+    expect(store().inputs.zekrom.copies![0].id).toBe(b.id);
+    expect(store().inputs.zekrom.copies!).toHaveLength(3);
+  });
+
   it("addMewtwoCopy seeds from both forms; removeMewtwoCopy collapses to both inputs", () => {
     store().toggleSelected("mega-mewtwo-x");
     store().toggleSelected("mega-mewtwo-y");

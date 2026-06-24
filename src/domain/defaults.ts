@@ -21,7 +21,6 @@ export function makeDefaultInput(boss: RaidBoss): BossInput {
     // Mega bosses default to "just the mega level" (no leveling) since that's the
     // headline use case; 5★ legendaries default to a full level 40→50 climb.
     target: { level: isMega ? 40 : 50, megaLevel: defaultTargetMegaLevel(boss) },
-    skipCatch: false,
     megaBuddy: true,
   };
 }

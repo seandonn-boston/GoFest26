@@ -102,14 +102,6 @@ describe("raidsNeeded", () => {
     expect(withBuddy.raids.max).toBeLessThan(noBuddy.raids.max);
   });
 
-  it("skipping the catch removes catch-based candy/XL needs", () => {
-    const base = input("reshiram", { level: 40, targetLevel: 50 });
-    expect(computeBossResult(reshiram, base).bindingCurrency).toBe("xlCandy");
-    const skip = computeBossResult(reshiram, { ...base, skipCatch: true });
-    expect(skip.bindingCurrency).toBeNull();
-    expect(skip.raids).toEqual({ min: 0, max: 0 });
-  });
-
   it("uses Super Mega energy rewards to size Mewtwo raids", () => {
     // Isolate the mega-energy goal (no leveling) so Mega Energy is the constraint.
     const result = computeBossResult(

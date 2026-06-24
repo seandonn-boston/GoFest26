@@ -9,11 +9,11 @@ import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
+import { MathTooltip } from "@/components/ui/MathTooltip";
 import { CapacityGauge } from "./CapacityGauge";
+import { PlanPasses } from "./PlanPasses";
 import { RareCandyPanel } from "./RareCandyPanel";
-import { PassCoverageBar } from "./PassCoverage";
 import { BlockAccordion } from "./BlockAccordion";
-import { PassEconomy } from "./PassEconomy";
 
 type RewardCase = PlannerSettings["rewardCase"];
 
@@ -71,6 +71,11 @@ export function SummaryDashboard({
     <Card className="p-4">
       <h2 className="mb-3 text-lg font-semibold">Your weekend plan</h2>
 
+      {/* Passes you already hold — sit between the title and the headline numbers
+          so the have/need/buy split below reflects them (free daily passes are
+          auto-counted). Moved here from the prioritize step. */}
+      <PlanPasses />
+
       <div className="mb-3 grid grid-cols-3 gap-4">
         <Stat label="Total raids needed" value={String(caseValue(summary.totalRaids, rewardCase, false))} accent="text-gofest-accent2" />
         <Stat label="Raids / hour" value={String(caseValue(capacity.raidsPerHour, rewardCase, true))} />
@@ -81,29 +86,62 @@ export function SummaryDashboard({
         />
       </div>
 
-      {/* Reward-luck case selector — drives the single numbers above and on every
-          priority tile (best = luckiest drops → fewest raids). */}
-      <div className="mb-4 inline-flex rounded-lg border border-white/10 bg-gofest-bg/40 p-0.5">
-        {REWARD_CASES.map((rc) => (
-          <button
-            key={rc.id}
-            type="button"
-            onClick={() => setSettings({ rewardCase: rc.id })}
-            aria-pressed={rewardCase === rc.id}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-              rewardCase === rc.id ? "bg-gofest-accent2 text-black" : "text-slate-300 hover:text-white"
-            }`}
+      {/* Reward-luck case selector — centered; drives the single numbers above and
+          on every priority tile (best = luckiest drops → fewest raids). */}
+      <div className="mb-4 flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+          <span>Plan for which reward luck?</span>
+          <MathTooltip
+            label="How reward luck works"
+            trigger={
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
+                i
+              </span>
+            }
           >
-            {rc.label}
-          </button>
-        ))}
+            <div className="space-y-1.5 text-[11px] leading-relaxed text-slate-300">
+              <p>
+                Every raid&apos;s Candy / XL / Mega Energy drop is a range, so the raids you need are a range
+                too. This picks which end of that range <b>every number on this page</b> assumes:
+              </p>
+              <p>
+                <b className="text-emerald-300">Best case</b> — luckiest drops, so the <b>fewest</b> raids.
+              </p>
+              <p>
+                <b className="text-amber-300">Expected</b> — the middle, a realistic average.
+              </p>
+              <p>
+                <b className="text-rose-300">Worst case</b> — coldest drops, so the <b>most</b> raids (won&apos;t
+                leave you short).
+              </p>
+              <p className="text-slate-400">
+                It sets the totals above and the <span className="font-mono">done / needed</span> target on every
+                priority tile below.
+              </p>
+            </div>
+          </MathTooltip>
+        </div>
+        <div className="inline-flex rounded-lg border border-white/10 bg-gofest-bg/40 p-0.5">
+          {REWARD_CASES.map((rc) => (
+            <button
+              key={rc.id}
+              type="button"
+              onClick={() => setSettings({ rewardCase: rc.id })}
+              aria-pressed={rewardCase === rc.id}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                rewardCase === rc.id ? "bg-gofest-accent2 text-black" : "text-slate-300 hover:text-white"
+              }`}
+            >
+              {rc.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {hasGoals ? (
         <>
           <RareCandyPanel plan={blockPlan} />
           <CapacityGauge utilization={summary.utilization} />
-          <PassCoverageBar summary={summary} />
           {(() => {
             const ok = blockPlan.feasible;
             return (
@@ -120,7 +158,6 @@ export function SummaryDashboard({
           })()}
 
           <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
-          <PassEconomy summary={summary} />
         </>
       ) : (
         <p className="text-sm text-slate-400">

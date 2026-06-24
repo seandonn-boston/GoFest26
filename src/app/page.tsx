@@ -2,6 +2,7 @@
 
 import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useSwipeNav } from "@/hooks/useSwipeNav";
 import { usePlannerResults, useBlockPlan } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore, type StepId } from "@/store/useUiStore";
@@ -16,6 +17,7 @@ import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
+import { CostStep } from "@/components/Dashboard/CostStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ExportButton } from "@/components/ExportButton";
@@ -47,6 +49,8 @@ export default function Home() {
   const setStep = useUiStore((s) => s.setStep);
   const nextStep = useUiStore((s) => s.nextStep);
   const prevStep = useUiStore((s) => s.prevStep);
+  // Swipe left → next step, right → previous (touch only; clamped at the ends).
+  const swipe = useSwipeNav({ onLeft: nextStep, onRight: prevStep });
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
@@ -68,6 +72,7 @@ export default function Home() {
     { id: 2, label: "Enter what you have", done: anySelected && hasGoals },
     { id: 3, label: "Prioritize", done: priorityCount > 0 || anyPlayDay || useRemote },
     { id: 4, label: "Results", done: hasGoals },
+    { id: 5, label: "Cost", done: hasGoals },
   ];
 
   if (!hydrated) {
@@ -111,7 +116,7 @@ export default function Home() {
             <SharedPlanBanner />
             <StepNav steps={steps} active={step} onSelect={setStep} />
 
-            <div className="space-y-6">
+            <div className="space-y-6" {...swipe}>
               <StepContent
                 step={step}
                 anySelected={anySelected}
@@ -129,7 +134,7 @@ export default function Home() {
                 step={step}
                 onPrev={prevStep}
                 onNext={nextStep}
-                nextLabel={step === 3 ? "See results" : undefined}
+                nextLabel={step === 3 ? "See results" : step === 4 ? "See cost" : undefined}
               />
             </div>
 
@@ -237,32 +242,41 @@ function StepContent({
     return <PlanSetup roadPlan={roadPlan} />;
   }
 
-  // step === 4
+  if (step === 4) {
+    return (
+      <>
+        {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
+
+        <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
+
+        {summary.schedule.raids.length > 0 ? (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold">Export</h2>
+            <p className="text-sm text-slate-400">
+              Download your full chronological plan — every raid with its pass type, the Mega buddy to
+              evolve, and top counters — as an Excel workbook.
+            </p>
+            <ExportButton summary={summary} />
+          </section>
+        ) : null}
+
+        <AdvancedTools />
+      </>
+    );
+  }
+
+  // step === 5 — Cost
   return (
     <>
       {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
-
-      <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
-
-      {summary.schedule.raids.length > 0 ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Export</h2>
-          <p className="text-sm text-slate-400">
-            Download your full chronological plan — every raid with its pass type, the Mega buddy to
-            evolve, and top counters — as an Excel workbook.
-          </p>
-          <ExportButton summary={summary} />
-        </section>
-      ) : null}
-
-      <AdvancedTools />
+      <CostStep summary={summary} />
     </>
   );
 }
 
 function Disclaimer() {
   return (
-    <footer className="space-y-2 px-1 pb-8 text-xs text-slate-500">
+    <footer className="mt-10 space-y-2 border-t border-white/10 px-1 pb-8 pt-6 text-xs text-slate-500">
       <p>
         Reward amounts vary per raid, so raid counts are shown as ranges (best-case to worst-case
         rolls). The “with mega buddy” figure assumes a matching Mega-Evolved buddy is boosting your

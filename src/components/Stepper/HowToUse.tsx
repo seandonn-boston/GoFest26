@@ -43,7 +43,7 @@ const GUIDE: GuideStep[] = [
         Drag your targets into the order that matters most — if you can&apos;t do everything, the ones
         at the bottom get cut first, so put <b>Mewtwo on top</b> if it&apos;s your priority. Then pick
         which <b>Road of Legends</b> weekday evenings you&apos;ll raid for a head start, and say whether
-        you&apos;ll do <b>remote raids</b> (and roughly how much you sleep, which sets how many fit).
+        you&apos;ll do <b>remote raids</b>.
       </>
     ),
   },
@@ -53,8 +53,19 @@ const GUIDE: GuideStep[] = [
     body: (
       <>
         Here&apos;s your payoff: how many raids each target needs, a block-by-block weekend schedule, the
-        PokéCoin cost, and a spreadsheet export. You can still re-rank targets inside any block right on
-        this page — no need to go back.
+        top counters and the best <b>Mega to evolve</b> each hour, and a spreadsheet export. You can still
+        re-rank targets inside any block right on this page — no need to go back.
+      </>
+    ),
+  },
+  {
+    id: 5,
+    title: "Check the cost",
+    body: (
+      <>
+        Last, the money. Enter the <b>passes you already have</b> and the app spends them on your top
+        priorities first, then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to own them
+        after your free daily passes.
       </>
     ),
   },
@@ -92,7 +103,7 @@ export function HowToUse() {
             How to use this app
           </h2>
           <p className="mt-1 text-xs text-slate-300">
-            New here? The whole thing is just four steps. You only need to pick a target and enter your
+            New here? The whole thing is just five steps. You only need to pick a target and enter your
             numbers — everything else is optional. Here&apos;s the flow, using Mega Mewtwo as the example.
           </p>
         </div>

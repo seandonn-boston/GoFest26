@@ -26,12 +26,12 @@ export function isL4Eligible(boss: RaidBoss): boolean {
 
 /**
  * Same-type Mega buddy XL multiplier for this boss under the current toggles.
- * 1 = no boost. Requires an active matching buddy (megaBuddy on, not skipping
- * the catch); the per-boss l4Buddy overrides the assumed level to 4 when the
- * boss is type-eligible. Returns just the multiplier so callers can show the math.
+ * 1 = no boost. Requires an active matching buddy (megaBuddy on); the per-boss
+ * l4Buddy overrides the assumed level to 4 when the boss is type-eligible.
+ * Returns just the multiplier so callers can show the math.
  */
 export function xlBoostFactor(boss: RaidBoss, input: BossInput, megaBuddyLevel: number): number {
-  if ((input.skipCatch ?? false) || !(input.megaBuddy ?? true)) return 1;
+  if (!(input.megaBuddy ?? true)) return 1;
   const level = input.l4Buddy && isL4Eligible(boss) ? 4 : megaBuddyLevel;
   const idx = Math.max(0, Math.min(XL_BOOST_BY_LEVEL.length - 1, Math.round(level)));
   return 1 + (XL_BOOST_BY_LEVEL[idx] ?? 0);
@@ -47,10 +47,11 @@ function calibrationMetric(boss: RaidBoss, currency: Currency): CalibrationMetri
 /**
  * Per-raid reward for a currency, accounting for the catch toggles:
  * - Mega Energy comes from defeating the raid (always, even if you run).
- * - Candy = catch candy + transfer candy (+1 if a matching Mega buddy is active),
- *   and is 0 if you skip the catch.
- * - XL Candy = catch XL, 0 if you skip the catch.
+ * - Candy = catch candy + transfer candy (+1 if a matching Mega buddy is active).
+ * - XL Candy = catch XL.
  * A logged calibration value overrides the assumed range with a point estimate.
+ * Quick-catch (forfeiting catch Candy/XL) is now a per-block choice on the results
+ * tiles, so it's applied there rather than to this whole-goal reward.
  * Returns undefined when this boss can't yield that currency under the toggles.
  */
 /** The per-raid reward for a currency, broken into its parts so a tooltip can
@@ -75,7 +76,6 @@ export function rewardBreakdown(
   megaBuddyLevel = 1,
 ): RewardBreakdown {
   const c = GAME_CONFIG.catch;
-  const skipCatch = input.skipCatch ?? false;
   const megaBuddy = input.megaBuddy ?? true;
 
   const metric = calibrationMetric(boss, currency);
@@ -86,7 +86,6 @@ export function rewardBreakdown(
     if (calibrated) return { range: { min: calibrated, max: calibrated }, calibrated };
     return { range: boss.rewards.megaEnergy, base: boss.rewards.megaEnergy };
   }
-  if (skipCatch) return { range: undefined }; // ran from the encounter → no catch rewards
 
   if (currency === "candy") {
     const candyBonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);

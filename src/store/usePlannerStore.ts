@@ -253,6 +253,8 @@ interface PlannerState {
   removeCopy: (bossId: string, copyId: string) => void;
   updateCopy: (bossId: string, copyId: string, patch: CopyPatch) => void;
   moveCopy: (bossId: string, copyId: string, dir: -1 | 1) => void;
+  /** Set a species' individuals to an explicit order (drag-to-rank). */
+  reorderCopies: (bossId: string, copyIds: string[]) => void;
   /** Mewtwo individuals (independent X/Y branches), stored on the owner form. */
   addMewtwoCopy: () => void;
   /** Seed Mewtwo individual #1 so the always-on maxing editor has a row. */
@@ -279,7 +281,6 @@ interface PlannerState {
   setCurrent: (bossId: string, field: CurrentField, value: number) => void;
   setTargetLevel: (bossId: string, level: number) => void;
   setTargetMegaLevel: (bossId: string, megaLevel: number) => void;
-  setSkipCatch: (bossId: string, skip: boolean) => void;
   setMegaBuddy: (bossId: string, on: boolean) => void;
   setL4Buddy: (bossId: string, on: boolean) => void;
   /** Update one fusion/crowned/primal energy goal's progress (have / goal / on). */
@@ -577,6 +578,19 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs: { ...state.inputs, [bossId]: { ...input, copies } } };
         }),
 
+      reorderCopies: (bossId, copyIds) =>
+        set((state) => {
+          const input = state.inputs[bossId];
+          if (!input?.copies) return state;
+          const byId = new Map(input.copies.map((c) => [c.id, c] as const));
+          // Reorder by the given ids; keep any copy the list omits (defensive) at the end.
+          const reordered = [
+            ...copyIds.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => !!c),
+            ...input.copies.filter((c) => !copyIds.includes(c.id)),
+          ];
+          return { inputs: { ...state.inputs, [bossId]: { ...input, copies: reordered } } };
+        }),
+
       addMewtwoCopy: () =>
         set((state) => {
           const ownerId = mewtwoOwnerId(state.inputs);
@@ -717,13 +731,6 @@ export const usePlannerStore = create<PlannerState>()(
               [bossId]: { ...input, presetId: undefined, target: { ...input.target, megaLevel } },
             },
           };
-        }),
-
-      setSkipCatch: (bossId, skip) =>
-        set((state) => {
-          const input = ensureInput(state, bossId);
-          if (!input) return state;
-          return { inputs: { ...state.inputs, [bossId]: { ...input, skipCatch: skip } } };
         }),
 
       setMegaBuddy: (bossId, on) =>

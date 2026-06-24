@@ -8,6 +8,7 @@ const STEP_LABELS: Record<StepId, string> = {
   2: "Enter what you have",
   3: "Prioritize",
   4: "Results",
+  5: "Cost",
 };
 
 export interface MissingStep {

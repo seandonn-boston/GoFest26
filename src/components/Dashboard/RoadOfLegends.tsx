@@ -1,6 +1,7 @@
 "use client";
 
-import { getBoss } from "@/data";
+import { getBoss, GAME_CONFIG } from "@/data";
+import { spriteUrl } from "@/data/bosses";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
 import { energyGoalsForDay } from "@/data/energyGoals";
 import { type RoadDayPlan, type RoadPlan, energyRaidsNeeded, energyRemaining } from "@/domain";
@@ -12,13 +13,29 @@ import { BandBar } from "@/components/ui/BandBar";
 
 const stripForme = (name: string) => name.replace(/^Mega /, "").replace(/\s*\(.*\)/, "");
 
-// Per-energy-kind chip badge for the day-picker — Crowned days (Zacian/Zamazenta)
-// get a crown, distinct from the Fusion / Primal ⚡.
+// Per-resource chip badge for the day-picker, so each day's icons reflect the
+// raid bosses + rewards on offer: Fusion ⚡, Crowned 👑, Primal 🌋, plus a 🔷 for
+// the day's featured Mega raid (Mega Energy).
 const ENERGY_KIND_BADGE: Record<EnergyKind, { icon: string; title: string }> = {
   fusion: { icon: "⚡", title: "Fusion energy raids this day" },
   crowned: { icon: "👑", title: "Crowned energy raids this day" },
-  primal: { icon: "⚡", title: "Primal energy raids this day" },
+  primal: { icon: "🌋", title: "Primal energy raids this day" },
 };
+const MEGA_BADGE = { icon: "🔷", title: "Featured Mega raid (Mega Energy) this day" };
+
+/** The distinct resource icons available on a Road of Legends day. */
+function dayBadges(dayId: string, bossIds: string[]): { icon: string; title: string }[] {
+  const out: { icon: string; title: string }[] = [];
+  const seen = new Set<EnergyKind>();
+  for (const { def } of energyGoalsForDay(dayId)) {
+    if (!seen.has(def.kind)) {
+      seen.add(def.kind);
+      out.push(ENERGY_KIND_BADGE[def.kind]);
+    }
+  }
+  if (bossIds.some((id) => getBoss(id)?.tier === "mega")) out.push(MEGA_BADGE);
+  return out;
+}
 
 const CURRENCY_CHIP: Record<string, string> = {
   candy: "Candy",
@@ -69,9 +86,11 @@ function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
           const remaining = energyRemaining(have, goal);
           const raids = energyRaidsNeeded(have, goal, def.perRaid);
           const boss = getBoss(bossId);
+          // The actual raid is the fused / crowned / primal forme, not the base.
+          const sprite = def.sprite ? spriteUrl(def.sprite) : boss?.sprite;
           return (
             <div key={`${bossId}-${def.key}`} className="flex items-center gap-2 text-[11px]">
-              <Sprite src={boss?.sprite} alt={def.source} size={18} />
+              <Sprite src={sprite} alt={def.source} size={18} />
               <span className="min-w-0 flex-1 truncate text-slate-200">{def.source}</span>
               {on ? (
                 remaining > 0 ? (
@@ -152,8 +171,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
       </div>
       <p className="mb-2 text-[11px] text-slate-400">
         Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local): <b>6–7</b> is 5★ raids (Monday&apos;s is the
-        whole roster), <b>7–8</b> is a single featured Mega. Your selected targets are poured into each day&apos;s budget —
-        what fits is a head start that reduces your weekend below.
+        whole roster), <b>7–8</b> is a single featured Mega — except <b>Friday</b>, whose 7–8 is <b>Primal Kyogre &amp;
+        Groudon</b>. Your selected targets are poured into each day&apos;s budget — what fits is a head start that reduces
+        your weekend below.
       </p>
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
@@ -197,12 +217,11 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
               <span className="text-slate-400">
                 {d.dateLabel} · {d.raidHourHours}h
               </span>
-              {(() => {
-                const kind = energyGoalsForDay(d.id)[0]?.def.kind;
-                if (!kind) return null;
-                const badge = ENERGY_KIND_BADGE[kind];
-                return <span className="text-cyan-300" title={badge.title}>{badge.icon}</span>;
-              })()}
+              {dayBadges(d.id, d.bossIds).map((b) => (
+                <span key={b.title} title={b.title}>
+                  {b.icon}
+                </span>
+              ))}
             </button>
           );
         })}
@@ -215,7 +234,7 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
             <RoadDayCard key={day.id} day={day} />
           ))}
           <p className="text-[10px] text-slate-500">
-            During Road of Legends you get up to <b>2 free Raid Passes</b>/day, and Remote Raid Passes are <b>unlimited</b>{" "}
+            During Road of Legends you get up to <b>{GAME_CONFIG.passEconomy.freePassesPerRoadDay} free Raid Passes</b>/day, and Remote Raid Passes are <b>unlimited</b>{" "}
             (Jul 6–12) — so a raid hour is capped by time (≈{road.days[0]?.capacity.min}–{road.days[0]?.capacity.max} raids/hour),
             not passes.
           </p>

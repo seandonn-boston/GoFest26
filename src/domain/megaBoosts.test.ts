@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { megaBoostsForBoss, blockMegaBoosts, megaBoostSpecies } from "./megaBoosts";
+import { megaBoostsForBoss, blockMegaBoosts, topBlockMegas, megaBoostSpecies } from "./megaBoosts";
 
 const names = (b: { mega: { name: string } }[]) => b.map((x) => x.mega.name);
 
@@ -66,6 +66,57 @@ describe("blockMegaBoosts", () => {
     const n = names(boosts);
     expect(n).toEqual(expect.arrayContaining(["Mega Pidgeot", "Mega Kangaskhan", "Mega Lopunny", "Mega Audino"]));
     expect(boosts.every((b) => b.mega.types.includes("Normal"))).toBe(true);
+  });
+});
+
+describe("topBlockMegas", () => {
+  // Dragonflight Summit again: dragon-heavy bosses, dragon/flying/rock wilds.
+  const wild = ["Flying", "Rock", "Dragon"];
+  const bosses = [["Dragon"], ["Dragon", "Flying"], ["Dragon"], ["Dragon", "Ground"], ["Rock", "Dragon"]];
+
+  it("ranks the mega with the best weighted coverage/wild/attacker blend first", () => {
+    const ranked = topBlockMegas(wild, bosses);
+    // Mega Rayquaza (Dragon/Flying) shares a type with all five, fights them
+    // super-effectively, and matches the Flying + Dragon wild theme → top.
+    expect(ranked[0].mega.name).toBe("Mega Rayquaza");
+    expect(ranked[0].kind).toBe("attacker");
+    expect(ranked[0].bossesBoosted).toBe(5);
+    expect(ranked[0].wildMatches).toBe(2); // Dragon + Flying
+  });
+
+  it("caps the list at five (or the requested limit) and sorts by descending score", () => {
+    const ranked = topBlockMegas(wild, bosses);
+    expect(ranked.length).toBeLessThanOrEqual(5);
+    for (let i = 1; i < ranked.length; i++) {
+      expect(ranked[i - 1].score).toBeGreaterThanOrEqual(ranked[i].score);
+    }
+    expect(topBlockMegas(wild, bosses, { limit: 3 }).length).toBeLessThanOrEqual(3);
+  });
+
+  it("counts a same-type super-effective boss as coverage +2, an off-type counter as +1", () => {
+    // A single pure-Dragon boss: Mega Rayquaza shares Dragon AND hits it
+    // super-effectively → coverage 2, one same-type attacker hit, no off-type.
+    const ranked = topBlockMegas([], [["Dragon"]]);
+    const ray = ranked.find((m) => m.mega.name === "Mega Rayquaza");
+    expect(ray?.coverage).toBe(2);
+    expect(ray?.attackerSameType).toBe(1);
+    expect(ray?.attackerOffType).toBe(0);
+  });
+
+  it("breaks ties toward the mega of the higher-priority target", () => {
+    // Mega Kangaskhan (Normal) and Mega Audino (Normal/Fairy) are both candy-only
+    // boosts that share Normal with these bosses but counter neither — identical
+    // component vectors, so their scores tie and priority order decides.
+    const normalBosses = [["Normal"], ["Normal"]];
+    const a = topBlockMegas([], normalBosses, { prioritySpecies: ["Kangaskhan", "Audino"] });
+    const b = topBlockMegas([], normalBosses, { prioritySpecies: ["Audino", "Kangaskhan"] });
+    const idx = (r: { mega: { species: string } }[], s: string) => r.findIndex((x) => x.mega.species === s);
+    expect(idx(a, "Kangaskhan")).toBeLessThan(idx(a, "Audino"));
+    expect(idx(b, "Audino")).toBeLessThan(idx(b, "Kangaskhan"));
+  });
+
+  it("returns nothing when no mega boosts any candy or wild spawn", () => {
+    expect(topBlockMegas([], [[]])).toEqual([]);
   });
 });
 

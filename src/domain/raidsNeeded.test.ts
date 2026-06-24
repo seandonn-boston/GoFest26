@@ -61,8 +61,7 @@ describe("same-type Mega buddy XL boost", () => {
     expect(xlBoostFactor(raikou, { ...input("raikou"), l4Buddy: true }, 1)).toBeCloseTo(1.0);
   });
 
-  it("requires an active matching buddy (no boost when skipping or buddy off)", () => {
-    expect(xlBoostFactor(articuno, { ...input("articuno"), skipCatch: true }, 3)).toBe(1);
+  it("requires an active matching buddy (no boost when buddy off)", () => {
     expect(xlBoostFactor(articuno, { ...input("articuno"), megaBuddy: false }, 3)).toBe(1);
   });
 
