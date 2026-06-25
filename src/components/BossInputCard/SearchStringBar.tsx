@@ -31,6 +31,8 @@ export function SearchStringBar() {
       search={search}
       // No per-forme chips here — show the bare species string itself.
       items={[]}
+      // Long list of species — clamp to two rows behind a clickable “…”.
+      collapsible
       caption={
         <>
           Paste into Pokémon GO’s search bar (commas = “or”) to surface all {count} species at once and
