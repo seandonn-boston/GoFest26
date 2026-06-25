@@ -72,6 +72,15 @@ h1, h2, h3 {
   box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.85);
 }
 
+/* Lifts card body text off the sprite backdrop — a soft outline + drop shadow
+   for depth, without a solid panel that would hide the sprite. The title and
+   pre-title set their own text-shadow, so they're unaffected. */
+.card-text-legible {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 0 4px rgba(0, 0, 0, 0.7);
+}
+
 /* Marquee ticker for the masthead strip. */
 @keyframes ticker {
   from { transform: translateX(0); }
