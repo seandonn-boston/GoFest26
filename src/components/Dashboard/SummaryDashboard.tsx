@@ -86,6 +86,7 @@ export function SummaryDashboard({
           <span>Plan for which reward luck?</span>
           <MathTooltip
             label="How reward luck works"
+            hideIcon
             trigger={
               <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
                 i

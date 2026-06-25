@@ -12,6 +12,7 @@ function Info({ children }: { children: ReactNode }) {
   return (
     <MathTooltip
       label="More info"
+      hideIcon
       trigger={
         <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
           i

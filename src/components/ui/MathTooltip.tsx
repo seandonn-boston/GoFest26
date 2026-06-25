@@ -14,10 +14,13 @@ export function MathTooltip({
   trigger,
   label,
   children,
+  hideIcon,
 }: {
   trigger: ReactNode;
   label?: string;
   children: ReactNode;
+  /** Suppress the auto-appended ⓘ — for triggers that are already an icon. */
+  hideIcon?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -70,9 +73,11 @@ export function MathTooltip({
         className="group inline-flex items-center gap-0.5 rounded outline-none"
       >
         {trigger}
-        <span aria-hidden className="text-[10px] text-slate-500 transition group-hover:text-gofest-accent2">
-          ⓘ
-        </span>
+        {hideIcon ? null : (
+          <span aria-hidden className="text-[10px] text-slate-500 transition group-hover:text-gofest-accent2">
+            ⓘ
+          </span>
+        )}
       </button>
       {open && pos && typeof document !== "undefined"
         ? createPortal(
