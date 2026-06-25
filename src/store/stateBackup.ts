@@ -14,6 +14,8 @@ export interface StateBackup {
   blockPriority: Record<string, string[]>;
   /** Canonical global priority order (may be absent in old backups). */
   globalPriority?: string[];
+  /** Flat per-individual rank for the interleaved priority view (may be absent). */
+  individualPriority?: string[];
   quickCatchBlocks: Record<string, boolean>;
   remoteAllocations: Record<string, number>;
   remoteAuto: boolean;
@@ -37,6 +39,7 @@ export function serializeState(): StateBackup {
     research: s.research,
     blockPriority: s.blockPriority,
     globalPriority: s.globalPriority,
+    individualPriority: s.individualPriority,
     quickCatchBlocks: s.quickCatchBlocks,
     remoteAllocations: s.remoteAllocations,
     remoteAuto: s.remoteAuto,

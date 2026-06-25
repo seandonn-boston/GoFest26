@@ -233,6 +233,16 @@ interface PlannerState {
    */
   globalPriority: string[];
   /**
+   * The flat "one row per individual" rank on the Prioritize step (highest
+   * first), keyed by `${bossId}::${copyId}` (or `${bossId}::single`). This lets
+   * a species' individuals INTERLEAVE with other species — e.g. three Mewtwo
+   * goals at ranks 2, 8 and 13 — instead of being forced together. The engine's
+   * species order (globalPriority) and each species' copy order are derived from
+   * it (species rank = its highest-placed individual). Empty = fall back to the
+   * species order. Only the flat view writes it.
+   */
+  individualPriority: string[];
+  /**
    * Per species, per time block: `${bossId}@${blockKey}` → true means quick-catch
    * those raids (saves time but forfeits catch Candy/XL — only completion rewards
    * like Mega Energy / Rare Candy). Absent = off (normal catch). Off by default.
@@ -271,6 +281,8 @@ interface PlannerState {
   setBlockPriority: (blockKey: string, ids: string[]) => void;
   /** Set the single global priority order; seeds every block's order. */
   setGlobalPriority: (ids: string[]) => void;
+  /** Set the flat per-individual rank (drag-to-rank on the Prioritize step). */
+  setIndividualPriority: (keys: string[]) => void;
   /** Toggle quick-catch for a species in a given block (forfeits catch Candy/XL). */
   toggleQuickCatch: (bossId: string, blockKey: string) => void;
   /** Toggle whether the player will raid a given Road of Legends weekday. */
@@ -410,6 +422,7 @@ export const usePlannerStore = create<PlannerState>()(
       remoteAuto: false,
       blockPriority: {},
       globalPriority: [],
+      individualPriority: [],
       quickCatchBlocks: {},
       playDays: {},
 
@@ -707,6 +720,8 @@ export const usePlannerStore = create<PlannerState>()(
           return { globalPriority: ids, blockPriority };
         }),
 
+      setIndividualPriority: (keys) => set({ individualPriority: keys }),
+
       toggleQuickCatch: (bossId, blockKey) =>
         set((state) => {
           const key = `${bossId}@${blockKey}`;
@@ -831,6 +846,7 @@ export const usePlannerStore = create<PlannerState>()(
           remoteAuto: false,
           blockPriority: {},
           globalPriority: [],
+          individualPriority: [],
           quickCatchBlocks: {},
           playDays: {},
         }),
@@ -845,6 +861,7 @@ export const usePlannerStore = create<PlannerState>()(
           research: b.research && Object.keys(b.research).length ? b.research : { ...DEFAULT_RESEARCH },
           blockPriority: b.blockPriority ?? {},
           globalPriority: b.globalPriority ?? [],
+          individualPriority: b.individualPriority ?? [],
           quickCatchBlocks: b.quickCatchBlocks ?? {},
           remoteAllocations: b.remoteAllocations ?? {},
           remoteAuto: typeof b.remoteAuto === "boolean" ? b.remoteAuto : false,
@@ -873,6 +890,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!Array.isArray(state.imports)) state.imports = [];
         if (!state.blockPriority || typeof state.blockPriority !== "object") state.blockPriority = {};
         if (!Array.isArray(state.globalPriority)) state.globalPriority = [];
+        if (!Array.isArray(state.individualPriority)) state.individualPriority = [];
         if (!state.quickCatchBlocks || typeof state.quickCatchBlocks !== "object") state.quickCatchBlocks = {};
         if (!state.raidsDone || typeof state.raidsDone !== "object") state.raidsDone = {};
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
