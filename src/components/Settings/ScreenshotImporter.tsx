@@ -15,6 +15,7 @@ import { usePlannerStore, type ImportedShot } from "@/store/usePlannerStore";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { ScreenshotGrid, type ShotStatus } from "./ScreenshotGrid";
+import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
@@ -252,6 +253,10 @@ export function ScreenshotImporter() {
           </button>
         ) : null}
       </div>
+
+      {/* Copyable PoGo search string for every selected target — sits below the
+          upload button, above the screenshot results. */}
+      <SearchStringBar />
 
       <p className="text-[11px] text-amber-300">
         <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read yet.

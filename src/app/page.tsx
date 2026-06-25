@@ -13,7 +13,6 @@ import type { PlanSummary, BossResult, RaidBoss } from "@/domain/types";
 import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
-import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
 import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
@@ -223,10 +222,9 @@ function StepContent({
         </div>
         {anySelected ? (
           <>
-
             {/* Screenshot upload sits near the top of the step — auto-fills the
-                cards below, but is entirely optional (type by hand instead). */}
-            <SearchStringBar />
+                cards below, but is entirely optional (type by hand instead). The
+                copyable search string now lives inside the bulk-import box. */}
             <BulkImportSection />
 
             {mewtwoSelected ? (

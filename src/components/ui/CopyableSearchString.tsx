@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Copyable } from "./Copyable";
 
 export interface SearchSpriteItem {
@@ -26,13 +26,33 @@ export function CopyableSearchString({
   items,
   caption,
   accent = "text-gofest-acid",
+  collapsible = false,
 }: {
   label: string;
   search: string;
   items: SearchSpriteItem[];
   caption?: ReactNode;
   accent?: string;
+  /** Clamp the plain search text to two rows behind a clickable “…” that expands
+   *  it. The copy button stays in the corner, never hidden behind the ellipsis. */
+  collapsible?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  // Only offer the “…” when the (clamped) text actually spills past two rows.
+  useEffect(() => {
+    if (!collapsible) return;
+    const measure = () => {
+      const el = textRef.current;
+      if (el) setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [collapsible, search, expanded]);
+
   if (!search) return null;
 
   return (
@@ -52,6 +72,41 @@ export function CopyableSearchString({
             </span>
           ))}
         </p>
+      ) : collapsible ? (
+        <div className="relative">
+          <p
+            ref={textRef}
+            className={`break-words font-mono text-sm text-slate-200 ${expanded ? "" : "line-clamp-2"}`}
+          >
+            {search}
+          </p>
+          {expanded ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(false);
+              }}
+              className="mt-1 font-mono text-[10px] font-bold uppercase tracking-wider text-gofest-acid hover:underline"
+            >
+              Show less
+            </button>
+          ) : overflowing ? (
+            // Sits at the end of the clamped second row; a fade makes it read as
+            // the “…”. Stops propagation so it expands instead of copying.
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(true);
+              }}
+              aria-label="Show the full search string"
+              className="absolute bottom-0 right-0 z-[1] flex items-end bg-gradient-to-l from-gofest-panel from-60% to-transparent pl-8 pr-0.5 font-mono text-base font-bold leading-none text-gofest-acid hover:text-white"
+            >
+              …
+            </button>
+          ) : null}
+        </div>
       ) : (
         <p className="break-words font-mono text-sm text-slate-200">{search}</p>
       )}
