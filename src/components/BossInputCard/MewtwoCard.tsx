@@ -19,7 +19,7 @@ import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
 import { MewtwoCopiesEditor } from "./MewtwoCopiesEditor";
 import { MewtwoTitle } from "./MewtwoTitle";
-import { CardSpriteBackdrop } from "@/components/ui/CardSpriteBackdrop";
+import { MewtwoBackdrop } from "./MewtwoBackdrop";
 import { CounterTable } from "./CounterTable";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
@@ -79,20 +79,16 @@ export function MewtwoCard({
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(MEWTWO_TYPES)}>
         <div className="card-text-legible relative z-10 p-4">
-        {/* Hero sprites (Mewtwo X left / Y right) fill the header and centre in it
-            (= the collapsed card), so they don't move when the card opens. */}
+        {/* Three z-layers, all centered in the header (= the collapsed card) so they
+            don't move when the card opens: the "X Y" letters (back) and the X / Y
+            sprites (middle) sit behind the card text/wordmark (button, z-20). */}
         <div className="relative">
-        <CardSpriteBackdrop
-          sprites={[
-            { src: bossX.sprite, alt: "Mega Mewtwo X" },
-            { src: bossY.sprite, alt: "Mega Mewtwo Y" },
-          ]}
-        />
+        <MewtwoBackdrop spriteX={bossX.sprite} spriteY={bossY.sprite} />
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="block w-full text-left"
+          className="relative z-20 block w-full text-left"
         >
           <span className="absolute right-3 top-3" title={open ? "Collapse" : "Expand"}>
             <PlusToggle open={open} size={22} className="text-slate-200" />
