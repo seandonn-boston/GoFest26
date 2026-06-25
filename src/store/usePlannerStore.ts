@@ -5,6 +5,7 @@ import { blockKey } from "@/data/habitats";
 import { FORM_META } from "@/data/formGroups";
 import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
+import { bossIsLocal } from "@/domain/region";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings, type CalibrationMetric } from "@/domain/settings";
@@ -497,15 +498,25 @@ export const usePlannerStore = create<PlannerState>()(
 
       toggleSelected: (bossId) =>
         set((state) => {
-          if (!getBoss(bossId)) return state;
-          const cur = state.inputs[bossId]?.selected ?? false;
-          return { inputs: selectFamily(state.inputs, bossId, !cur) };
+          const boss = getBoss(bossId);
+          if (!boss) return state;
+          const next = !(state.inputs[bossId]?.selected ?? false);
+          const inputs = selectFamily(state.inputs, bossId, next);
+          // Selecting a target that's remote-only in the user's region flips on
+          // step 3's "do remote raids" toggle automatically.
+          return next && !state.settings.useRemoteRaids && !bossIsLocal(boss, state.settings.region)
+            ? { inputs, settings: { ...state.settings, useRemoteRaids: true } }
+            : { inputs };
         }),
 
       setSelected: (bossId, selected) =>
         set((state) => {
-          if (!getBoss(bossId)) return state;
-          return { inputs: selectFamily(state.inputs, bossId, selected) };
+          const boss = getBoss(bossId);
+          if (!boss) return state;
+          const inputs = selectFamily(state.inputs, bossId, selected);
+          return selected && !state.settings.useRemoteRaids && !bossIsLocal(boss, state.settings.region)
+            ? { inputs, settings: { ...state.settings, useRemoteRaids: true } }
+            : { inputs };
         }),
 
       selectAll: () =>
@@ -517,7 +528,10 @@ export const usePlannerStore = create<PlannerState>()(
               ? { ...existing, selected: true }
               : { ...makeDefaultInput(boss), selected: true };
           }
-          return { inputs };
+          const anyRemote = SORTED_BOSSES.some((b) => !bossIsLocal(b, state.settings.region));
+          return anyRemote && !state.settings.useRemoteRaids
+            ? { inputs, settings: { ...state.settings, useRemoteRaids: true } }
+            : { inputs };
         }),
 
       setCount: (bossId, variant, value) =>
