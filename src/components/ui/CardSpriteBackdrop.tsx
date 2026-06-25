@@ -8,9 +8,11 @@ export interface TitleSprite {
 }
 
 const dropShadow = "[filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.55))]";
-const SIZE = 184; // backdrop sprite — large enough to clip at the bottom of a collapsed card
-const STACK_SIZE = 208; // fused formes (wide-short canvas) sized up to match
-const STACK_OFFSET = 14; // px each fused forme is nudged from centre (diagonal spread)
+// The GO CDN icons are only 256×256, so rendering them large upscales (and
+// pixelates) on high-DPR phones. 200% (≈184px) was too soft; 150% reads cleaner.
+const SIZE = 138; // backdrop sprite — 150% of the 60px flank baseline
+const STACK_SIZE = 156; // fused formes (wide-short canvas) sized up to match
+const STACK_OFFSET = 11; // px each fused forme is nudged from centre (diagonal spread)
 
 /**
  * The card's hero sprite(s) as a backdrop layer: anchored FLUSH to the top of the
