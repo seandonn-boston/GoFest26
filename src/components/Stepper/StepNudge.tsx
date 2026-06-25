@@ -6,7 +6,7 @@ import type { StepId } from "@/store/useUiStore";
 const STEP_LABELS: Record<StepId, string> = {
   1: "Pick targets",
   2: "Enter what you have",
-  3: "Prioritize",
+  3: "Add-ons",
   4: "Results",
   5: "Cost",
 };

@@ -37,13 +37,13 @@ const GUIDE: GuideStep[] = [
   },
   {
     id: 3,
-    title: "Set your priorities",
+    title: "Optional add-ons",
     body: (
       <>
-        Drag your targets into the order that matters most — if you can&apos;t do everything, the ones
-        at the bottom get cut first, so put <b>Mewtwo on top</b> if it&apos;s your priority. Then pick
-        which <b>Road of Legends</b> weekday evenings you&apos;ll raid for a head start, and say whether
-        you&apos;ll do <b>remote raids</b>.
+        All optional. Pick which <b>Road of Legends</b> weekday evenings you&apos;ll raid for a head
+        start, say whether you&apos;ll do <b>remote raids</b>, and enter the <b>passes, remote passes
+        and Link Charges</b> you already hold. Target priority is set later, by ordering each time
+        block on the Results step.
       </>
     ),
   },
@@ -53,8 +53,9 @@ const GUIDE: GuideStep[] = [
     body: (
       <>
         Here&apos;s your payoff: how many raids each target needs, a block-by-block weekend schedule, the
-        top counters and the best <b>Mega to evolve</b> each hour, and a spreadsheet export. You can still
-        re-rank targets inside any block right on this page — no need to go back.
+        top counters and the best <b>Mega to evolve</b> each hour, and a spreadsheet export. This is also
+        where you <b>set priority</b> — drag your targets to rank them inside each time block; if a block
+        is over capacity, the ones at the bottom get cut first.
       </>
     ),
   },
@@ -63,9 +64,9 @@ const GUIDE: GuideStep[] = [
     title: "Check the cost",
     body: (
       <>
-        Last, the money. Enter the <b>passes you already have</b> and the app spends them on your top
-        priorities first, then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to own them
-        after your free daily passes.
+        Last, the money. Using the <b>passes you entered</b> on the add-ons step, the app spends them on
+        your top priorities first, then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to
+        own them after your free daily passes.
       </>
     ),
   },

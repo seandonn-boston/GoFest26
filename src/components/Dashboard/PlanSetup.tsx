@@ -1,28 +1,32 @@
 "use client";
 
 import type { RoadPlan } from "@/domain";
-import { PriorityList } from "./PriorityList";
 import { RoadOfLegends } from "./RoadOfLegends";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
+import { ResourcesOnHand } from "./ResourcesOnHand";
 
 /**
- * Step 4 — everything that shapes the plan before you see the numbers: rank your
- * targets, pick the Road of Legends weekday evenings you'll raid, and opt into
- * remote raids. These all feed the results on the next step (and priority can
- * still be tweaked per-block there).
+ * Step 3 — the OPTIONAL add-ons that refine the plan: the Road of Legends weekday
+ * evenings you'll raid, whether you'll do remote raids, and the passes / remote
+ * passes / Link Charges you already hold. All optional — skip any of it. Target
+ * priority is no longer set here; it's set by ordering each time block on the
+ * Results step.
  */
 export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
   return (
-    <section>
-      <h2 className="mb-1 text-lg font-semibold">Set your priorities</h2>
-      <p className="mb-3 text-sm text-slate-400">
-        Rank what matters most, choose any weekday head-start days, and decide whether you&apos;ll do
-        remote raids. You can change all of this later without losing your place.
-      </p>
+    <section className="space-y-4">
+      <div>
+        <h2 className="mb-1 text-lg font-semibold">Optional add-ons</h2>
+        <p className="text-sm text-slate-400">
+          All optional — pick any weekday head-start days, decide whether you&apos;ll do remote raids,
+          and tell us the passes you already hold. Priority is now set by ordering each time block on
+          the Results step.
+        </p>
+      </div>
 
-      <PriorityList />
       <RoadOfLegends road={roadPlan} />
       <RemoteRaidToggle />
+      <ResourcesOnHand />
     </section>
   );
 }
