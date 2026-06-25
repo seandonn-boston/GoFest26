@@ -8,6 +8,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
+import { RoadOfLegendsPicker } from "./RoadOfLegendsPicker";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
@@ -64,6 +65,9 @@ export function BossList() {
         <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span>{" "}
         = not raidable in {region.label}; needs a Remote Raid Pass (capped per day).
       </p>
+
+      {/* Road of Legends pre-farm raids (week before) — above the headliners. */}
+      <RoadOfLegendsPicker />
 
       {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
       <div className="mb-5 grid grid-cols-2 gap-3">
