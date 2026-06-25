@@ -24,23 +24,25 @@ function Pretitle({ text }: { text: string }) {
 }
 
 const dropShadow = "[filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.55))]";
-const SPRITE = 60; // flanking sprite size, mirroring the Mewtwo hero title
+const SPRITE = 60; // base flanking-sprite size
+// The sprites now sit BEHIND the title as enlarged hero art. "200% bigger" =
+// ×3 the base size; a single constant so it's a one-line tune.
+const BG_SCALE = 3;
+const BIG = SPRITE * BG_SCALE; // 180 — a single flank sprite, behind the text
 // Fused-forme icons (White/Black Kyurem, Dawn Wings/Dusk Mane Necrozma) have
-// wide-short canvases, so `object-contain` in a square box renders them shorter
-// — and visually smaller — than the near-square base sprite. Render them larger
-// so each fused forme reads at the same size as a lone base sprite would.
-const STACK_SPRITE = 80;
-const STACK_OFFSET = 12; // px each fused forme is nudged from centre (diagonal spread)
+// wide-short canvases, so object-contain renders them smaller; size them up first.
+const STACK_BASE = 80;
+const BIG_STACK = STACK_BASE * BG_SCALE; // 240 — each stacked fused forme
+const STACK_OFFSET = 12 * BG_SCALE; // px each fused forme is nudged from centre
 
 /**
- * The hero card title — sprite(s) flanking a CENTERED name, positioned exactly
- * like the Mega Mewtwo X / Y sprites on the Mewtwo card: tucked close on the left
- * and right, slightly overlapping the title, the whole cluster centered (≤350px).
- * A two-forme species shows both sprites (X / Y slots); a lone boss fills the
- * right slot with an invisible, same-size spacer so the name stays at the card's
- * true center regardless of the sprite. `rightStack` puts TWO fused formes in the
- * right slot, vertically stacked and diagonally offset (Kyurem / Necrozma), in the
- * same position a single right sprite would sit. Mega bosses get a "Mega" pre-title.
+ * The hero card title — the species name (and its forme pre-title) CENTERED, with
+ * the boss's sprite(s) enlarged and tucked BEHIND the text (lower z-index than
+ * both the name and the pre-title) as backdrop art. The sprites overflow their
+ * slots and are masked to the title's bounding box (`overflow-hidden`). A single
+ * boss shows one sprite behind the left of the name; a two-forme species shows
+ * both (left + right); `rightStack` puts TWO fused formes behind the right
+ * (Kyurem / Necrozma). Mega bosses get a "Mega" pre-title.
  */
 export function CardTitle({
   name,
@@ -56,7 +58,7 @@ export function CardTitle({
   isMega?: boolean;
   /** Overrides the small pre-title (e.g. "Altered & Origin" for a forme group). */
   pretitle?: string;
-  /** Two fused formes stacked in the right slot (base on the left). */
+  /** Two fused formes stacked behind the right of the title (base on the left). */
   rightStack?: TitleSprite[];
 }) {
   const displayName = name.replace(/^Mega\s+/, "");
@@ -65,48 +67,52 @@ export function CardTitle({
   const right = sprites[1]; // undefined for a single boss
 
   return (
-    <div className="mx-auto flex max-w-[350px] items-center justify-center">
-      {/* Left slot — Mega Mewtwo X position (the base / non-fused sprite). */}
+    <div className="relative mx-auto flex max-w-[350px] items-center justify-center overflow-hidden">
+      {/* Left sprite — enlarged, BEHIND the title (z-0), masked to the title box. */}
       {left?.src ? (
-        <span className={`relative z-20 -mr-3 shrink-0 ${dropShadow}`}>
-          <Sprite src={left.src} alt={left.alt ?? displayName} size={SPRITE} />
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute left-0 top-1/2 z-0 -translate-x-1/3 -translate-y-1/2 ${dropShadow}`}
+        >
+          <Sprite src={left.src} alt="" size={BIG} />
         </span>
-      ) : (
-        <span className="-mr-3 shrink-0" style={{ width: SPRITE, height: SPRITE }} aria-hidden />
-      )}
+      ) : null}
 
-      <div className="relative z-10 flex min-w-0 flex-col items-center text-center">
-        {pretitle ? <Pretitle text={pretitle} /> : null}
-        <CyberTitle name={displayName} types={types} className="text-2xl" />
-      </div>
-
-      {/* Right slot — Mega Mewtwo Y position. Two fused formes stack here (top
-          nudged down-right, bottom nudged up-left, occupying the single slot);
-          else a single forme; else an invisible spacer to keep the name centered. */}
+      {/* Right side — two stacked fused formes, or a single right forme; behind
+          the title (z-0), tucked toward the right edge and clipped to the box. */}
       {rightStack && rightStack.length >= 2 ? (
-        <span className="relative -ml-3 shrink-0" style={{ width: SPRITE, height: SPRITE }}>
-          {/* Both formes render at full SPRITE size — neither shrinks — and spread
-              diagonally from centre so together they occupy more than one slot. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-0 top-1/2 z-0"
+          style={{ width: BIG_STACK, height: BIG_STACK, transform: "translate(33%, -50%)" }}
+        >
           <span
-            className={`absolute left-1/2 top-1/2 z-20 ${dropShadow}`}
+            className={`absolute left-1/2 top-1/2 ${dropShadow}`}
             style={{ transform: `translate(calc(-50% + ${STACK_OFFSET}px), calc(-50% - ${STACK_OFFSET}px))` }}
           >
-            <Sprite src={rightStack[0].src} alt={rightStack[0].alt} size={STACK_SPRITE} />
+            <Sprite src={rightStack[0].src} alt="" size={BIG_STACK} />
           </span>
           <span
-            className={`absolute left-1/2 top-1/2 z-10 ${dropShadow}`}
+            className={`absolute left-1/2 top-1/2 ${dropShadow}`}
             style={{ transform: `translate(calc(-50% - ${STACK_OFFSET}px), calc(-50% + ${STACK_OFFSET}px))` }}
           >
-            <Sprite src={rightStack[1].src} alt={rightStack[1].alt} size={STACK_SPRITE} />
+            <Sprite src={rightStack[1].src} alt="" size={BIG_STACK} />
           </span>
         </span>
       ) : right?.src ? (
-        <span className={`relative z-20 -ml-3 shrink-0 ${dropShadow}`}>
-          <Sprite src={right.src} alt={right.alt} size={SPRITE} />
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute right-0 top-1/2 z-0 translate-x-1/3 -translate-y-1/2 ${dropShadow}`}
+        >
+          <Sprite src={right.src} alt="" size={BIG} />
         </span>
-      ) : (
-        <span className="-ml-3 shrink-0" style={{ width: SPRITE, height: SPRITE }} aria-hidden />
-      )}
+      ) : null}
+
+      {/* Title — name + pre-title, ABOVE the sprites (higher z-index). */}
+      <div className="relative z-10 flex min-w-0 flex-col items-center px-2 text-center">
+        {pretitle ? <Pretitle text={pretitle} /> : null}
+        <CyberTitle name={displayName} types={types} className="text-2xl" />
+      </div>
     </div>
   );
 }
