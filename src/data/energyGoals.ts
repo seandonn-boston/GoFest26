@@ -37,12 +37,12 @@ const SOURCE_SPRITE = {
 
 export const ENERGY_GOALS: Record<string, EnergyGoalDef[]> = {
   kyurem: [
-    { key: "blaze", kind: "fusion", label: "Blaze · White Kyurem", flavor: "blaze", cost: 1000, perRaid: FUSION_PER_RAID, source: "White Kyurem", forme: "White", sprite: SOURCE_SPRITE.whiteKyurem, roadDayId: "tue" },
-    { key: "volt", kind: "fusion", label: "Volt · Black Kyurem", flavor: "volt", cost: 1000, perRaid: FUSION_PER_RAID, source: "Black Kyurem", forme: "Black", sprite: SOURCE_SPRITE.blackKyurem, roadDayId: "wed" },
+    { key: "blaze", kind: "fusion", label: "Blaze · White Kyurem", flavor: "blaze", cost: 1000, perRaid: FUSION_PER_RAID, source: "White Kyurem", forme: "White", addedTypes: ["Fire"], sprite: SOURCE_SPRITE.whiteKyurem, roadDayId: "tue" },
+    { key: "volt", kind: "fusion", label: "Volt · Black Kyurem", flavor: "volt", cost: 1000, perRaid: FUSION_PER_RAID, source: "Black Kyurem", forme: "Black", addedTypes: ["Electric"], sprite: SOURCE_SPRITE.blackKyurem, roadDayId: "wed" },
   ],
   necrozma: [
-    { key: "lunar", kind: "fusion", label: "Lunar · Dawn Wings", flavor: "lunar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dawn Wings Necrozma", forme: "Dawn Wings", sprite: SOURCE_SPRITE.dawnWings, roadDayId: "tue" },
-    { key: "solar", kind: "fusion", label: "Solar · Dusk Mane", flavor: "solar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dusk Mane Necrozma", forme: "Dusk Mane", sprite: SOURCE_SPRITE.duskMane, roadDayId: "wed" },
+    { key: "lunar", kind: "fusion", label: "Lunar · Dawn Wings", flavor: "lunar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dawn Wings Necrozma", forme: "Dawn Wings", addedTypes: ["Ghost"], sprite: SOURCE_SPRITE.dawnWings, roadDayId: "tue" },
+    { key: "solar", kind: "fusion", label: "Solar · Dusk Mane", flavor: "solar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dusk Mane Necrozma", forme: "Dusk Mane", addedTypes: ["Steel"], sprite: SOURCE_SPRITE.duskMane, roadDayId: "wed" },
   ],
   zacian: [
     { key: "sword", kind: "crowned", label: "Crowned Sword", flavor: "sword", cost: 1000, perRaid: FUSION_PER_RAID, source: "Crowned Sword Zacian", forme: "Crowned", sprite: SOURCE_SPRITE.crownedSword, roadDayId: "thu" },
