@@ -16,6 +16,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { Badge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CardTitle } from "@/components/ui/CardTitle";
+import { CardSpriteBackdrop } from "@/components/ui/CardSpriteBackdrop";
 import { PlusToggle } from "@/components/ui/PlusToggle";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
@@ -158,7 +159,11 @@ export function BossInputCard({
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(cardTypes)}>
-      <div className="relative z-10 rounded-[12px] p-3" style={typePanelStyle(cardTypes)}>
+      <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(cardTypes)}>
+      {/* Hero sprite(s) — flush with the card top, behind everything but the card
+          background; the card's overflow-hidden crops only the bottom when collapsed. */}
+      <CardSpriteBackdrop sprites={titleSprites} rightStack={rightStack} />
+      <div className="relative z-10 p-3">
       {/* Header — always shown; tapping it expands/collapses the inputs below. */}
       <button
         type="button"
@@ -187,8 +192,6 @@ export function BossInputCard({
           types={cardTypes}
           isMega={isMega}
           pretitle={formePretitle}
-          sprites={titleSprites}
-          rightStack={rightStack}
         />
 
         {regionLabel || remoteOnly ? (
@@ -378,6 +381,7 @@ export function BossInputCard({
       })}
       </>
       )}
+      </div>
       </div>
     </div>
   );
