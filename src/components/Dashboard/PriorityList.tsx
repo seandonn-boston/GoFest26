@@ -163,23 +163,37 @@ function FlatView({
   setOrder: (ids: string[]) => void;
 }) {
   const reorderCopies = usePlannerStore((s) => s.reorderCopies);
+  const individualPriority = usePlannerStore((s) => s.individualPriority);
+  const setIndividualPriority = usePlannerStore((s) => s.setIndividualPriority);
 
-  // The flat order is derived from the engine state (species order × each
-  // species' copy order), so what you see always matches what the plan will do.
+  // Every selected individual (across all species), keyed for the drag list.
   const items = useMemo(
     () => speciesOrder.flatMap((id) => individualsFor(id, inputs[id])),
     [speciesOrder, inputs],
   );
   const byKey = useMemo(() => new Map(items.map((it) => [it.key, it])), [items]);
-  const order = items.map((it) => it.key);
+
+  // Display order = the saved per-individual rank, reconciled with what's
+  // actually selected now: stale keys dropped, brand-new individuals appended in
+  // species order. This is the source of truth that lets one species' individuals
+  // INTERLEAVE with other species (e.g. three Mewtwo at ranks 2, 8 and 13) rather
+  // than being forced back together under a single species rank.
+  const order = useMemo(() => {
+    const present = new Set(items.map((it) => it.key));
+    const ranked = individualPriority.filter((k) => present.has(k));
+    const seen = new Set(ranked);
+    return [...ranked, ...items.map((it) => it.key).filter((k) => !seen.has(k))];
+  }, [items, individualPriority]);
 
   const onReorder = (keys: string[]) => {
+    // The interleaved order IS the persisted state (so it sticks across renders).
+    setIndividualPriority(keys);
     const seq = keys.map((k) => byKey.get(k)).filter((it): it is Individual => !!it);
-    // Species rank = first appearance of any of its individuals.
+    // The engine is species-keyed, so derive a species order (first appearance of
+    // any of a species' individuals) and each species' copy order from the flat list.
     const speciesRank: string[] = [];
     for (const it of seq) if (!speciesRank.includes(it.bossId)) speciesRank.push(it.bossId);
     setOrder(speciesRank);
-    // Within each species, the copies follow their relative order in the flat list.
     for (const id of speciesRank) {
       const copyIds = seq.filter((it) => it.bossId === id && it.copyId).map((it) => it.copyId as string);
       if (copyIds.length > 1) reorderCopies(id, copyIds);
