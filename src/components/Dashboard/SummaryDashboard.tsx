@@ -10,7 +10,6 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { CapacityGauge } from "./CapacityGauge";
-import { RareCandyPanel } from "./RareCandyPanel";
 import { BlockAccordion } from "./BlockAccordion";
 
 type RewardCase = PlannerSettings["rewardCase"];
@@ -134,7 +133,6 @@ export function SummaryDashboard({
 
       {hasGoals ? (
         <>
-          <RareCandyPanel plan={blockPlan} />
           {(() => {
             const ok = blockPlan.feasible;
             return (
