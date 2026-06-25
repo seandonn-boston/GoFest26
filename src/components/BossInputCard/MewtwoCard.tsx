@@ -78,15 +78,16 @@ export function MewtwoCard({
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(MEWTWO_TYPES)}>
-        {/* Hero sprites — Mega Mewtwo X (left) / Y (right), flush with the card
-            top and behind all content, the same backdrop the other cards use. */}
+        <div className="card-text-legible relative z-10 p-4">
+        {/* Hero sprites (Mewtwo X left / Y right) fill the header and centre in it
+            (= the collapsed card), so they don't move when the card opens. */}
+        <div className="relative">
         <CardSpriteBackdrop
           sprites={[
             { src: bossX.sprite, alt: "Mega Mewtwo X" },
             { src: bossY.sprite, alt: "Mega Mewtwo Y" },
           ]}
         />
-        <div className="card-text-legible relative z-10 p-4">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -115,6 +116,7 @@ export function MewtwoCard({
             so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
           </p>
         </button>
+        </div>
 
         {!open ? null : (
         <>

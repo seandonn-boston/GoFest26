@@ -160,11 +160,13 @@ export function BossInputCard({
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(cardTypes)}>
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(cardTypes)}>
-      {/* Hero sprite(s) — flush with the card top, behind everything but the card
-          background; the card's overflow-hidden crops only the bottom when collapsed. */}
-      <CardSpriteBackdrop sprites={titleSprites} rightStack={rightStack} />
       <div className="card-text-legible relative z-10 p-3">
-      {/* Header — always shown; tapping it expands/collapses the inputs below. */}
+      {/* Header — always shown; tapping it expands/collapses the inputs below.
+          The hero sprite(s) fill this header and centre vertically in it (= the
+          collapsed card), so they don't move when the card opens; the card's
+          overflow-hidden crops the overflow and expanding reveals the bottom. */}
+      <div className="relative">
+      <CardSpriteBackdrop sprites={titleSprites} rightStack={rightStack} />
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -211,6 +213,7 @@ export function BossInputCard({
 
         {boss.note ? <p className="mt-2 text-[11px] text-slate-400">💡 {boss.note}</p> : null}
       </button>
+      </div>
 
       {!open ? null : (
       <>
