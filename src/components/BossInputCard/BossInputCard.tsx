@@ -110,16 +110,15 @@ export function BossInputCard({
   // A same-species forme group titles with the species name, so its pre-title is
   // the formes (e.g. "Altered & Origin", "Incarnate & Therian"). A cross-species
   // group already names both in the title, so it keeps none.
-  // Road of Legends fused formes (off-roster) flank the base sprite: a boss with
-  // TWO fused formes (Kyurem → White/Black, Necrozma → Dawn Wings/Dusk Mane) stacks
-  // them in the right slot; ONE fused forme (Groudon/Kyogre → Primal, the Crowned
-  // genie-dogs) sits as the single right sprite. Megas and plain 5★ have none, and
-  // dual-forme groups (Giratina, Solgaleo & Lunala, …) already fill both slots.
+  // Fused formes from Road of Legends: a boss with ONE fused forme (Groudon /
+  // Kyogre → Primal, the Crowned genie-dogs) shows base on the left + fused on the
+  // right. A boss with TWO fused formes (Kyurem, Necrozma) shows only its base for
+  // now — its two fused sprites are deferred. Megas / plain 5★ have none; dual-forme
+  // groups (Giratina, Solgaleo & Lunala, …) already fill both slots.
   const energyGoals = energyGoalsFor(boss.id);
   const fusedSprites = energyGoals
     .filter((g) => g.sprite)
     .map((g) => ({ src: spriteUrl(g.sprite as string), alt: g.source }));
-  const rightStack = !isGroup && fusedSprites.length >= 2 ? fusedSprites.slice(0, 2) : undefined;
 
   // Pre-title (where a Mega shows "Mega"): the formes. A same-species group shows
   // its formes ("Altered & Origin"); an energy-fusion boss shows its fused formes
@@ -166,7 +165,7 @@ export function BossInputCard({
           collapsed card), so they don't move when the card opens; the card's
           overflow-hidden crops the overflow and expanding reveals the bottom. */}
       <div className="relative">
-      <CardSpriteBackdrop sprites={titleSprites} rightStack={rightStack} />
+      <CardSpriteBackdrop sprites={titleSprites} />
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
