@@ -9,8 +9,9 @@ import { useDialog } from "@/hooks/useDialog";
 import { AssumptionsControls } from "./AssumptionsControls";
 import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
+import { BackupControls } from "./BackupControls";
 
-type Panel = "assumptions" | "location" | "feedback";
+type Panel = "assumptions" | "location" | "feedback" | "backup";
 
 interface DialItem {
   id: string;
@@ -25,6 +26,7 @@ const TITLES: Record<Panel, string> = {
   assumptions: "⚙ Assumptions",
   location: "📍 Your location",
   feedback: "✎ Feedback",
+  backup: "💾 Backup & restore",
 };
 
 const miniFab =
@@ -116,6 +118,7 @@ export function ActionDock() {
   }
   items.push(
     { id: "feedback", label: "Feedback", icon: "✎", circle: "bg-gofest-accent text-black", onClick: () => openPanel("feedback") },
+    { id: "backup", label: "Backup", icon: "💾", circle: "bg-gofest-bone text-black", onClick: () => openPanel("backup") },
     { id: "location", label: "Location", icon: "📍", circle: "bg-gofest-accent2 text-black", onClick: () => openPanel("location") },
     { id: "assumptions", label: "Assumptions", icon: "⚙", circle: "bg-gofest-mewtwo text-white", onClick: () => openPanel("assumptions"), badge: customized },
   );
@@ -240,6 +243,7 @@ export function ActionDock() {
               {panel === "assumptions" ? <AssumptionsControls /> : null}
               {panel === "location" ? <LocationControls /> : null}
               {panel === "feedback" ? <FeedbackForm onDone={() => setPanel(null)} /> : null}
+              {panel === "backup" ? <BackupControls /> : null}
             </div>
           </div>
         </>
