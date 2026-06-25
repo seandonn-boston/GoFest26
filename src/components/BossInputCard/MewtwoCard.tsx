@@ -19,6 +19,7 @@ import { energyForBosses } from "@/lib/screenshotScan";
 import { CardScan } from "./CardScan";
 import { MewtwoCopiesEditor } from "./MewtwoCopiesEditor";
 import { MewtwoTitle } from "./MewtwoTitle";
+import { CardSpriteBackdrop } from "@/components/ui/CardSpriteBackdrop";
 import { CounterTable } from "./CounterTable";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
@@ -76,7 +77,16 @@ export function MewtwoCard({
 
   return (
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
-      <div className="relative z-10 rounded-[12px] p-4" style={typePanelStyle(MEWTWO_TYPES)}>
+      <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(MEWTWO_TYPES)}>
+        {/* Hero sprites — Mega Mewtwo X (left) / Y (right), flush with the card
+            top and behind all content, the same backdrop the other cards use. */}
+        <CardSpriteBackdrop
+          sprites={[
+            { src: bossX.sprite, alt: "Mega Mewtwo X" },
+            { src: bossY.sprite, alt: "Mega Mewtwo Y" },
+          ]}
+        />
+        <div className="card-text-legible relative z-10 p-4">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -98,7 +108,7 @@ export function MewtwoCard({
             <span className="text-[10px] leading-none">✦</span>
             <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
           </div>
-          <MewtwoTitle spriteX={bossX.sprite} spriteY={bossY.sprite} />
+          <MewtwoTitle />
           <p className="mb-3 mt-2 text-xs text-slate-400">
             One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
             appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
@@ -184,6 +194,7 @@ export function MewtwoCard({
         </div>
         </>
         )}
+        </div>
       </div>
     </div>
   );
