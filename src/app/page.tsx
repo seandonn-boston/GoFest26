@@ -19,7 +19,6 @@ import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { CostStep } from "@/components/Dashboard/CostStep";
-import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ExportButton } from "@/components/ExportButton";
@@ -43,9 +42,16 @@ export default function Home() {
   const { weekend: blockPlan, road: roadPlan } = useBlockPlan(summary);
 
   // Progress signals for the step pills' completion ticks.
-  const priorityCount = usePlannerStore((s) => s.globalPriority.length);
   const anyPlayDay = usePlannerStore((s) => Object.values(s.playDays).some(Boolean));
   const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
+  // Step 3 is now optional add-ons (Road of Legends, remote raids, passes on
+  // hand), so it reads "done" once the user has engaged any of them.
+  const hasResources = usePlannerStore(
+    (s) =>
+      (s.settings.passesOwned ?? 0) > 0 ||
+      (s.settings.remoteRaidPassesPlanned ?? 0) > 0 ||
+      (s.settings.linkChargesOwned ?? 0) > 0,
+  );
 
   const step = useUiStore((s) => s.step);
   const setStep = useUiStore((s) => s.setStep);
@@ -85,7 +91,7 @@ export default function Home() {
   const steps: StepMeta[] = [
     { id: 1, label: "Pick targets", done: anySelected },
     { id: 2, label: "Enter what you have", done: anySelected && hasGoals },
-    { id: 3, label: "Prioritize", done: priorityCount > 0 || anyPlayDay || useRemote },
+    { id: 3, label: "Add-ons", done: anyPlayDay || useRemote || hasResources },
     { id: 4, label: "Results", done: hasGoals },
     { id: 5, label: "Cost", done: hasGoals },
   ];
@@ -217,9 +223,6 @@ function StepContent({
         </div>
         {anySelected ? (
           <>
-            {/* Your current resources — passes, remote passes, Link Charges — at
-                the very top of "what you have", above the search-string box. */}
-            <ResourcesOnHand />
 
             {/* Screenshot upload sits near the top of the step — auto-fills the
                 cards below, but is entirely optional (type by hand instead). */}
