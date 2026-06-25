@@ -3,9 +3,16 @@
 import type { ReactNode } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { perCopyNeeds } from "@/domain";
+import { GAME_CONFIG } from "@/data/config";
 import type { BossInput, RaidBoss, Variant } from "@/domain/types";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { formatNumber } from "@/lib/format";
+
+// Fully maxing all three Max Moves (Max Attack from Lv1 + Max Guard & Max Spirit
+// from locked) in Candy / XL — the constant the Dynamax toggle adds per copy.
+const MM = GAME_CONFIG.maxMoves;
+const MAX_MOVE_CANDY = MM.attackToMax.candy + 2 * MM.lockedMoveToMax.candy;
+const MAX_MOVE_XL = MM.attackToMax.xlCandy + 2 * MM.lockedMoveToMax.xlCandy;
 
 const VARIANTS: { id: Variant; label: string }[] = [
   { id: "standard", label: "Reg" },
@@ -102,6 +109,20 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
                   )}
                 </span>
               </div>
+              <label className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-300">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-gofest-accent2"
+                  checked={c.maxMoves ?? false}
+                  onChange={(e) => updateCopy(boss.id, c.id, { maxMoves: e.target.checked })}
+                />
+                <span>
+                  Max its Dynamax moves{" "}
+                  <span className="text-slate-500">
+                    (+{formatNumber(MAX_MOVE_CANDY)} Candy · +{formatNumber(MAX_MOVE_XL)} XL)
+                  </span>
+                </span>
+              </label>
             </div>
           );
         })}

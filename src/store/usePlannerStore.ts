@@ -22,6 +22,7 @@ type CurrentField = keyof BossInput["current"];
 export type CopyPatch = Partial<{
   variant: Variant;
   lucky: boolean;
+  maxMoves: boolean;
   level: number;
   megaLevel: number;
   megaLevelY: number;
@@ -52,6 +53,8 @@ const applyCopyPatch = (c: PokemonCopy, p: CopyPatch): PokemonCopy => ({
   ...c,
   variant: p.variant ?? c.variant,
   lucky: p.lucky ?? c.lucky,
+  // Booleans toggle both ways, so honour an explicit `false` (?? would ignore it).
+  maxMoves: p.maxMoves === undefined ? c.maxMoves : p.maxMoves,
   current: {
     level: p.level ?? c.current.level,
     megaLevel: p.megaLevel ?? c.current.megaLevel,
