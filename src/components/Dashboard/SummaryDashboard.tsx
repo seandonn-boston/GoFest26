@@ -135,7 +135,6 @@ export function SummaryDashboard({
       {hasGoals ? (
         <>
           <RareCandyPanel plan={blockPlan} />
-          <CapacityGauge utilization={summary.utilization} />
           {(() => {
             const ok = blockPlan.feasible;
             return (
@@ -152,6 +151,9 @@ export function SummaryDashboard({
           })()}
 
           <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
+
+          {/* Weekend capacity-used bar — below all the time blocks. */}
+          <CapacityGauge utilization={summary.utilization} />
         </>
       ) : (
         <p className="text-sm text-slate-400">
