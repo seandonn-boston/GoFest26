@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
@@ -52,6 +53,19 @@ export default function Home() {
   const prevStep = useUiStore((s) => s.prevStep);
   // Swipe left → next step, right → previous (touch only; clamped at the ends).
   const swipe = useSwipeNav({ onLeft: nextStep, onRight: prevStep });
+
+  // Changing step (pill, footer button, or swipe) jumps back to the top so each
+  // step starts at its heading, not wherever the previous step was scrolled to.
+  // Skip the first render so a refresh on a persisted step doesn't fight the
+  // browser's own scroll restoration.
+  const firstStepRender = useRef(true);
+  useEffect(() => {
+    if (firstStepRender.current) {
+      firstStepRender.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0 });
+  }, [step]);
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
