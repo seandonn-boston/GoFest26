@@ -8,21 +8,22 @@ export interface TitleSprite {
 }
 
 const dropShadow = "[filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.55))]";
-// The GO CDN icons are only 256×256, so rendering them large upscales (and
-// pixelates) on high-DPR phones. 200% (≈184px) was too soft; 150% reads cleaner.
-const SIZE = 138; // backdrop sprite — 150% of the 60px flank baseline
-const STACK_SIZE = 156; // fused formes (wide-short canvas) sized up to match
-const STACK_OFFSET = 11; // px each fused forme is nudged from centre (diagonal spread)
+const SIZE = 60; // backdrop sprite — 100% (the original flank baseline)
+// Fused formes: full SIZE (no shrink), spread 30% apart from the shared origin —
+// 15% up-and-right, 15% down-and-left. The %s are of each sprite's own size, so
+// they combine with the -50%/-50% centring: x = -50%±15%, y = -50%∓15%.
+const UP_RIGHT = "translate(-35%, -65%)";
+const DOWN_LEFT = "translate(-65%, -35%)";
 
 /**
  * The card's hero sprite(s) as a backdrop layer: anchored FLUSH to the top of the
- * card and sitting behind every bit of content (but above the card's background).
- * The card itself (overflow-hidden) does the clipping, so a collapsed card crops
- * only the BOTTOM of the sprite and an expanded card reveals the whole asset.
+ * card and behind every bit of content (but above the card background). The card
+ * (overflow-hidden) crops only the BOTTOM when collapsed; expanding reveals the
+ * whole asset.
  *
- * A lone boss centres one sprite behind the title; a two-forme species pins one
- * to the top-left and one to the top-right; `rightStack` stacks two fused formes
- * (Kyurem / Necrozma) at the top-right beside the base sprite on the left.
+ * Positions: a lone boss / left forme sits at left-25%; a second forme (or single
+ * fused/primal) at right-25%; the two fused formes (Kyurem / Necrozma) cluster at
+ * the same left-25% origin as the base, spread diagonally.
  */
 export function CardSpriteBackdrop({
   sprites,
@@ -34,34 +35,29 @@ export function CardSpriteBackdrop({
   const left = sprites[0];
   const right = sprites[1];
   const hasStack = !!(rightStack && rightStack.length >= 2);
-  const single = !!left?.src && !right?.src && !hasStack;
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-0">
-      {/* Left / single sprite — flush with the card top. */}
+      {/* Base / single / left forme — left 25%. */}
       {left?.src ? (
-        <span className={`absolute top-0 ${single ? "left-1/2 -translate-x-1/2" : "left-0"} ${dropShadow}`}>
+        <span className={`absolute left-1/4 top-0 -translate-x-1/2 ${dropShadow}`}>
           <Sprite src={left.src} alt="" size={SIZE} />
         </span>
       ) : null}
 
       {hasStack ? (
-        <span className="absolute right-0 top-0" style={{ width: STACK_SIZE, height: STACK_SIZE }}>
-          <span
-            className={`absolute left-1/2 top-1/2 ${dropShadow}`}
-            style={{ transform: `translate(calc(-50% + ${STACK_OFFSET}px), calc(-50% - ${STACK_OFFSET}px))` }}
-          >
-            <Sprite src={rightStack![0].src} alt="" size={STACK_SIZE} />
+        // Two fused formes — same left-25% origin as the base, diagonally spread.
+        <span className="absolute left-1/4 top-0 -translate-x-1/2" style={{ width: SIZE, height: SIZE }}>
+          <span className={`absolute left-1/2 top-1/2 ${dropShadow}`} style={{ transform: UP_RIGHT }}>
+            <Sprite src={rightStack![0].src} alt="" size={SIZE} />
           </span>
-          <span
-            className={`absolute left-1/2 top-1/2 ${dropShadow}`}
-            style={{ transform: `translate(calc(-50% - ${STACK_OFFSET}px), calc(-50% + ${STACK_OFFSET}px))` }}
-          >
-            <Sprite src={rightStack![1].src} alt="" size={STACK_SIZE} />
+          <span className={`absolute left-1/2 top-1/2 ${dropShadow}`} style={{ transform: DOWN_LEFT }}>
+            <Sprite src={rightStack![1].src} alt="" size={SIZE} />
           </span>
         </span>
       ) : right?.src ? (
-        <span className={`absolute right-0 top-0 ${dropShadow}`}>
+        // Second forme / single fused / primal — right 25%.
+        <span className={`absolute left-3/4 top-0 -translate-x-1/2 ${dropShadow}`}>
           <Sprite src={right.src} alt="" size={SIZE} />
         </span>
       ) : null}

@@ -163,7 +163,7 @@ export function BossInputCard({
       {/* Hero sprite(s) — flush with the card top, behind everything but the card
           background; the card's overflow-hidden crops only the bottom when collapsed. */}
       <CardSpriteBackdrop sprites={titleSprites} rightStack={rightStack} />
-      <div className="relative z-10 p-3">
+      <div className="card-text-legible relative z-10 p-3">
       {/* Header — always shown; tapping it expands/collapses the inputs below. */}
       <button
         type="button"
