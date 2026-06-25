@@ -97,7 +97,14 @@ export function BossInputCard({
   // forme group (Giratina, the genies) both show every forme's sprite on the
   // card so both are visible; a lone boss shows just itself. Card theming uses
   // the union of every forme's types.
-  const cardTypes = isGroup ? Array.from(new Set(formes.flatMap((f) => f.types ?? []))) : boss.types ?? [];
+  // An energy-fusion boss (Necrozma, Kyurem) folds its fused formes' extra types
+  // into the card styling + type-icon row — the same union treatment a multi-form
+  // group (Solgaleo & Lunala) gets — so Necrozma shows Psychic/Ghost/Steel and
+  // Kyurem Dragon/Ice/Fire/Electric.
+  const fusedTypes = energyGoalsFor(boss.id).flatMap((g) => g.addedTypes ?? []);
+  const cardTypes = isGroup
+    ? Array.from(new Set(formes.flatMap((f) => f.types ?? [])))
+    : Array.from(new Set([...(boss.types ?? []), ...fusedTypes]));
   const headerFormes = isGroup ? formes : [boss];
   // A same-species forme group titles with the species name, so its pre-title is
   // the formes (e.g. "Altered & Origin", "Incarnate & Therian"). A cross-species
