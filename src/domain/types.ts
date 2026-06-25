@@ -165,6 +165,10 @@ export interface PokemonCopy {
   variant: Variant;
   /** Lucky halves Stardust cost (informational — Stardust isn't a raid cost). */
   lucky?: boolean;
+  /** Account for the Candy + XL Candy to fully max this individual's three Max
+   *  Moves (Dynamax/Gigantamax). Max Attack starts unlocked at Lv1, Max Guard
+   *  and Max Spirit start locked — see GAME_CONFIG.maxMoves for the cost. */
+  maxMoves?: boolean;
   /** `megaLevel` is the sole mega for normal bosses; for Mewtwo it's the X
    *  branch and `megaLevelY` the (independent) Y branch — a caught Mewtwo has at
    *  most one branch pre-unlocked, so the other starts at 0. */

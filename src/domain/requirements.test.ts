@@ -22,6 +22,31 @@ describe("variant-aware XL requirement", () => {
   });
 });
 
+describe("Dynamax Max Move costs", () => {
+  const atLevel50 = (over: Partial<PokemonCopy> = {}): PokemonCopy => ({
+    id: "x", variant: "standard", current: { level: 50, megaLevel: 0 }, target: { level: 50, megaLevel: 0 }, ...over,
+  });
+
+  it("adds 400 Candy + 120 XL when maxMoves is on (all three moves)", () => {
+    // Level 50→50 so there's no leveling cost — the toggle is the whole bill.
+    const g = computeGrossRequirement(zekrom, base({ copies: [atLevel50({ maxMoves: true })] }));
+    expect(g.candy).toBe(400);
+    expect(g.xlCandy).toBe(120);
+  });
+
+  it("adds nothing when maxMoves is off or unset", () => {
+    const g = computeGrossRequirement(zekrom, base({ copies: [atLevel50()] }));
+    expect(g.candy ?? 0).toBe(0);
+    expect(g.xlCandy ?? 0).toBe(0);
+  });
+
+  it("stacks on top of the leveling requirement", () => {
+    const climb = atLevel50({ current: { level: 40, megaLevel: 0 }, maxMoves: true });
+    const g = computeGrossRequirement(zekrom, base({ copies: [climb] }));
+    expect(g.xlCandy).toBe(296 + 120); // 40→50 climb + the three maxed moves
+  });
+});
+
 describe("copiesOf", () => {
   it("falls back to a single copy ×quantity when no explicit copies", () => {
     expect(copiesOf(base())).toHaveLength(1);

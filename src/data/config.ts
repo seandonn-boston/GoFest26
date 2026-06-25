@@ -157,6 +157,22 @@ export const GAME_CONFIG = {
     },
   },
 
+  // Dynamax / Gigantamax "Max Move" training costs — Candy + XL Candy ONLY (the
+  // Max Particle cost isn't a raid resource, so it's deliberately out of the
+  // raid plan). Every Pokémon's three Max Moves level on the same cumulative
+  // schedule, read off the in-game training screen (Charmander, confirmed):
+  //   Lv1: 50 Candy · Lv2: 150 Candy · Lv3 (MAX): 150 Candy + 40 XL.
+  // Dynamax and Gigantamax share this schedule. Max Attack comes unlocked at
+  // Lv1, so maxing it spends only Lv1→3 (100 Candy + 40 XL); Max Guard and Max
+  // Spirit start locked at Lv0 and spend the full 0→3 (150 Candy + 40 XL each).
+  // One "max its Dynamax moves" toggle covers all three: 400 Candy + 120 XL.
+  maxMoves: {
+    /** A move that starts LOCKED (Max Guard, Max Spirit): full Lv0→3. */
+    lockedMoveToMax: { candy: 150, xlCandy: 40 } as { candy: number; xlCandy: number },
+    /** Max Attack starts unlocked at Lv1, so only Lv1→3. */
+    attackToMax: { candy: 100, xlCandy: 40 } as { candy: number; xlCandy: number },
+  },
+
   scheduler: {
     // How per-boss raid demand is sized from the raids-needed range:
     // "optimistic" = best-case rolls (min), "expected" = midpoint, "safe" = worst-case (max).

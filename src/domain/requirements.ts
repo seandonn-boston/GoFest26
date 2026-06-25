@@ -31,6 +31,15 @@ export function grossForCopy(boss: RaidBoss, copy: PokemonCopy): Partial<Record<
     if (energyNeed > 0) out.megaEnergy = energyNeed;
   }
 
+  // ---- Dynamax / Gigantamax Max Moves (Candy + XL only) ----
+  // Maxing all three: Max Attack (unlocked at Lv1) + Max Guard + Max Spirit
+  // (both start locked). Adds to the same Candy / XL pools the leveling uses.
+  if (copy.maxMoves) {
+    const mm = GAME_CONFIG.maxMoves;
+    out.candy = (out.candy ?? 0) + mm.attackToMax.candy + 2 * mm.lockedMoveToMax.candy;
+    out.xlCandy = (out.xlCandy ?? 0) + mm.attackToMax.xlCandy + 2 * mm.lockedMoveToMax.xlCandy;
+  }
+
   return out;
 }
 
