@@ -13,6 +13,7 @@ import type { BossInput, Variant, PokemonCopy, EnergyProgress } from "@/domain/t
 import type { ScanResult } from "@/lib/screenshotScan";
 import { idbGet, idbSet } from "@/lib/idbStore";
 import type { StateBackup } from "./stateBackup";
+import { sanitizeBackup } from "./sanitizeBackup";
 
 export { makeDefaultInput };
 
@@ -865,22 +866,28 @@ export const usePlannerStore = create<PlannerState>()(
           playDays: {},
         }),
 
-      loadState: (b) =>
-        set({
-          // Replace the planning state from an imported backup. Settings merge
-          // under DEFAULT_SETTINGS so a backup from an older version still picks
-          // up newly-added knobs. Screenshots/imports are left untouched.
-          inputs: b.inputs ?? {},
-          settings: { ...DEFAULT_SETTINGS, ...(b.settings ?? {}) },
-          research: b.research && Object.keys(b.research).length ? b.research : { ...DEFAULT_RESEARCH },
-          blockPriority: b.blockPriority ?? {},
-          globalPriority: b.globalPriority ?? [],
-          individualPriority: b.individualPriority ?? [],
-          quickCatchBlocks: b.quickCatchBlocks ?? {},
-          remoteAllocations: b.remoteAllocations ?? {},
-          remoteAuto: typeof b.remoteAuto === "boolean" ? b.remoteAuto : false,
-          raidsDone: b.raidsDone ?? {},
-          playDays: b.playDays ?? {},
+      loadState: (raw) =>
+        set(() => {
+          // An imported .json/.xlsx or a #plan= share link is attacker-reachable
+          // and only loosely shape-checked (isStateBackup), so coerce every field
+          // into a valid shape before it touches the engine — a malformed/crafted
+          // backup can't seed bad types, drop unknown boss ids, or crash a render.
+          // Settings are rebuilt over DEFAULT_SETTINGS so an older backup still
+          // picks up newly-added knobs. Screenshots/imports are left untouched.
+          const b = sanitizeBackup(raw);
+          return {
+            inputs: b.inputs,
+            settings: b.settings,
+            research: Object.keys(b.research).length ? b.research : { ...DEFAULT_RESEARCH },
+            blockPriority: b.blockPriority,
+            globalPriority: b.globalPriority ?? [],
+            individualPriority: b.individualPriority ?? [],
+            quickCatchBlocks: b.quickCatchBlocks,
+            remoteAllocations: b.remoteAllocations,
+            remoteAuto: b.remoteAuto,
+            raidsDone: b.raidsDone,
+            playDays: b.playDays ?? {},
+          };
         }),
     }),
     {
