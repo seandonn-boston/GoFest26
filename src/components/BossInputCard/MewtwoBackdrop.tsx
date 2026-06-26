@@ -23,14 +23,14 @@ export function MewtwoBackdrop({ spriteX, spriteY }: { spriteX?: string; spriteY
       {/* Middle — sprites at full closed-card height, 20% in from each edge. */}
       <div aria-hidden className="absolute inset-0 z-10">
         {spriteX ? (
-          // X flush to the left edge.
+          // X centered on the 10%-from-left mark.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={spriteX} alt="" className="absolute left-0 top-0 h-full w-auto object-contain" />
+          <img src={spriteX} alt="" className="absolute left-[10%] top-0 h-full w-auto -translate-x-1/2 object-contain" />
         ) : null}
         {spriteY ? (
-          // Y flush to the right edge.
+          // Y centered on the 10%-from-right mark.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={spriteY} alt="" className="absolute right-0 top-0 h-full w-auto object-contain" />
+          <img src={spriteY} alt="" className="absolute right-[10%] top-0 h-full w-auto translate-x-1/2 object-contain" />
         ) : null}
       </div>
     </>
