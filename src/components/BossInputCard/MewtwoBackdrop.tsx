@@ -1,11 +1,12 @@
 "use client";
 
 import { Sprite } from "@/components/ui/Sprite";
+import { CARD_SPRITE_SIZE } from "@/components/ui/CardSpriteBackdrop";
 
 // Matches MewtwoTitle: purple fill (#8E7CC3) + the CSS glitch.
 const PURPLE = "#8E7CC3";
 const XY = "7.7rem"; // big "X Y" letters — +40% over the old 5.5rem
-const SIZE = 97; // the original Mega Mewtwo X/Y sprite size
+const SIZE = CARD_SPRITE_SIZE; // same size as every other card
 
 /**
  * Mewtwo-only backdrop, in two z-layers behind the card text:
