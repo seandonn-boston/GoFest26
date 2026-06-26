@@ -7,7 +7,9 @@ export interface TitleSprite {
   alt: string;
 }
 
-const SIZE = 138; // one size for every sprite — no per-sprite fill/scale tricks
+/** One size for every card sprite — shared so the Mewtwo card matches exactly. */
+export const CARD_SPRITE_SIZE = 138;
+const SIZE = CARD_SPRITE_SIZE;
 
 /**
  * The card's sprite(s), behind the content. Nothing fancy: sprite #1's CENTER sits
