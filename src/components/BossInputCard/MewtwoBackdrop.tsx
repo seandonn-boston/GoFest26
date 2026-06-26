@@ -12,7 +12,7 @@ const SIZE = CARD_SPRITE_SIZE; // same size as every other card
  * Mewtwo-only backdrop, in two z-layers behind the card text:
  *  - z-0 (back): the big "X Y" glitch letters, centered.
  *  - z-10 (middle): the Mega Mewtwo X / Y sprites — same size + positioning as
- *    every other card (CardSpriteBackdrop): centers 10% in from each edge.
+ *    every other card (CardSpriteBackdrop): flush to each edge with a 4px buffer.
  * The card's "Mewtwo" wordmark / header text sits ABOVE both (z-20 in MewtwoCard).
  */
 export function MewtwoBackdrop({ spriteX, spriteY }: { spriteX?: string; spriteY?: string }) {
@@ -26,12 +26,12 @@ export function MewtwoBackdrop({ spriteX, spriteY }: { spriteX?: string; spriteY
       {/* Middle — the two sprites, centers 10% in from each edge. */}
       <div aria-hidden className="absolute inset-0 z-10">
         {spriteX ? (
-          <span className="absolute left-[10%] top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="absolute left-[4px] top-1/2 -translate-y-1/2">
             <Sprite src={spriteX} alt="" size={SIZE} />
           </span>
         ) : null}
         {spriteY ? (
-          <span className="absolute right-[10%] top-1/2 translate-x-1/2 -translate-y-1/2">
+          <span className="absolute right-[4px] top-1/2 -translate-y-1/2">
             <Sprite src={spriteY} alt="" size={SIZE} />
           </span>
         ) : null}
