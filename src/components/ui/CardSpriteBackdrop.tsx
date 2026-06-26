@@ -7,34 +7,13 @@ export interface TitleSprite {
   alt: string;
 }
 
-const dropShadow = "[filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.55))]";
-const SIZE = 138; // 150% — every card sprite renders in this same box, no per-source scaling
-
-/** One sprite, anchored at left-25% or right-25% and centered vertically. The
- *  span carries an EXPLICIT width/height so it isn't shrink-to-fit — otherwise the
- *  right sprite (less room to its right) collapses against `img { max-width:100% }`
- *  and renders ~half size no matter what `size` we pass. */
-function BackdropSprite({ sprite, side }: { sprite: TitleSprite; side: "left" | "right" }) {
-  return (
-    <span
-      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${side === "left" ? "left-1/4" : "left-3/4"} ${dropShadow}`}
-      style={{ width: SIZE, height: SIZE }}
-    >
-      <Sprite src={sprite.src} alt="" size={SIZE} />
-    </span>
-  );
-}
+const SIZE = 138; // one size for every sprite — no per-sprite fill/scale tricks
 
 /**
- * The card's hero sprite(s) as a backdrop layer that fills the (always-present)
- * card HEADER and is vertically CENTERED in it — i.e. centered in the collapsed
- * card height. Because the header never resizes, the sprite stays put when the
- * card opens/closes; the card's overflow-hidden crops any overflow while
- * collapsed, and expanding reveals more of the sprite's bottom.
- *
- * ONE shared system for every card: sprite #1 sits at left-25%, sprite #2 at
- * right-25% — identical sizing/positioning, mirrored only in alignment. A card
- * shows one or two sprites depending on the species.
+ * The card's sprite(s), behind the content. Nothing fancy: sprite #1 sits 20%
+ * in from the left, sprite #2 sits 20% in from the right, both at the same size.
+ * Anchoring the right sprite with `right` (not a left %) leaves it plenty of room,
+ * so it renders full-size with no width/clip/mask workarounds.
  */
 export function CardSpriteBackdrop({ sprites }: { sprites: TitleSprite[] }) {
   const left = sprites[0];
@@ -42,8 +21,16 @@ export function CardSpriteBackdrop({ sprites }: { sprites: TitleSprite[] }) {
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-      {left?.src ? <BackdropSprite sprite={left} side="left" /> : null}
-      {right?.src ? <BackdropSprite sprite={right} side="right" /> : null}
+      {left?.src ? (
+        <span className="absolute left-[20%] top-1/2 -translate-y-1/2">
+          <Sprite src={left.src} alt="" size={SIZE} />
+        </span>
+      ) : null}
+      {right?.src ? (
+        <span className="absolute right-[20%] top-1/2 -translate-y-1/2">
+          <Sprite src={right.src} alt="" size={SIZE} />
+        </span>
+      ) : null}
     </div>
   );
 }
