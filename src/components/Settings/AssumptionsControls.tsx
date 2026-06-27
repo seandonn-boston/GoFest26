@@ -1,6 +1,6 @@
 "use client";
 
-import { isDefaultSettings } from "@/domain/settings";
+import { isDefaultSettings, effectiveLobbyWaitSec } from "@/domain/settings";
 import { GAME_CONFIG } from "@/data/config";
 import { RESEARCH_LINES } from "@/data/research";
 import { formatNumber } from "@/lib/format";
@@ -47,12 +47,12 @@ export function AssumptionsControls() {
         />
         <NumberInput
           label="Lobby wait"
-          value={settings.lobbyWaitSec}
-          min={0}
+          value={effectiveLobbyWaitSec(settings)}
+          min={15}
           max={120}
           step={5}
           suffix="s"
-          onChange={(v) => setSettings({ lobbyWaitSec: Math.max(0, Math.min(120, v)) })}
+          onChange={(v) => setSettings({ lobbyWaitSec: Math.max(15, Math.min(120, v)) })}
         />
         <NumberInput
           label="Min downtime"
@@ -81,11 +81,11 @@ export function AssumptionsControls() {
         />
       </div>
       <p className="-mt-2 text-xs text-slate-500">
-        Each raid is a lobby wait (default 2 min — drop it for a coordinated group that starts fast) +
-        ~15s of transitions + battle + a ~100s catch + your downtime. Battle time scales with lobby
-        size: a full 20-trainer “red” lobby melts Megas in ~10–20s and 5★ in ~30–50s (Mewtwo ~60–75s),
-        while thin lobbies drag on for minutes. Green passes &amp; Link Charges are unlimited; Free
-        Orange passes are used first.
+        Each raid is a lobby wait + ~15–25s of transitions + battle + a ~100s catch + your downtime.
+        Lobby wait defaults to 2 min, or 60s once your lobby is a full 20 (it fills faster) — override it
+        anywhere from 15s to 2 min. Battle time scales with lobby size: a full 20-trainer “red” lobby
+        melts Megas in ~10–20s and 5★ in ~30–50s (Mewtwo ~60–75s), while thin lobbies drag on for
+        minutes. Green passes &amp; Link Charges are unlimited; Free Orange passes are used first.
       </p>
 
       {/* Party Play */}

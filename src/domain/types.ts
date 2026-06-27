@@ -254,8 +254,9 @@ export interface CapacityModel {
   catchSec: number;
   /** Raid-lobby wait before the battle starts (user-adjustable assumption). */
   lobbySec: number;
-  /** Fixed UI transitions per raid (lobby→battle + battle→catch, ≈15s). */
-  transitionSec: number;
+  /** UI transitions per raid: lobby→battle (~5s) + battle→catch (~10–20s),
+   *  a 15–25s spread that widens the fast/slow raid estimate. */
+  transitionSecRange: Range;
   downtimeSecRange: Range;
   raidsPerHour: Range;
   totalRaids: Range;

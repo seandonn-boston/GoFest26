@@ -24,12 +24,18 @@ export const GAME_CONFIG = {
     catchSec: { normal: 100, quick: 5 },
     downtimeSecRange: { min: 20, max: 60 } as Range,
     // Per-raid overhead that is NOT battle and NOT catch: the lobby countdown
-    // before the fight starts, plus the two fixed UI transitions (≈5s lobby→
-    // battle, ≈10s battle→catch). The lobby wait is the big, play-style-dependent
-    // one (coordinated groups start fast; a public lobby can run the full ~2 min),
-    // so it's a user-editable assumption; the 15s of transitions are fixed.
+    // before the fight starts, plus the two UI transitions (lobby→battle, battle
+    // →catch). The lobby wait is the big, play-style-dependent one (it can run
+    // from ~15s when a coordinated group starts immediately up to the full ~2 min
+    // public-lobby ceiling), so it's a user-editable assumption — defaulting to
+    // 120s, or 60s once the lobby is a full 20 trainers (which fills/starts
+    // faster). The transitions are quasi-fixed: lobby→battle is always ~5s, and
+    // battle→catch is ~10–20s depending how fast the user taps through, giving a
+    // 15–25s combined transition spread that feeds the fast/slow raid estimate.
+    lobbyWaitSecRange: { min: 15, max: 120 } as Range,
     lobbyWaitSecDefault: 120,
-    transitionSec: 15,
+    lobbyWaitSecFullLobby: 60,
+    transitionSecRange: { min: 15, max: 25 } as Range,
     // Battle length depends on how full the lobby is. Time interpolates linearly
     // between the tier's minimum viable lobby (slow) and a full 20-trainer lobby
     // (fast), with a hard floor for the best achievable case. Mewtwo needs ≥10

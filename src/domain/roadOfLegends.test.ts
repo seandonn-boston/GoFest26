@@ -11,7 +11,7 @@ const capacity: CapacityModel = {
   battleSecRange: { min: 60, max: 90 },
   catchSec: 100,
   lobbySec: 120,
-  transitionSec: 15,
+  transitionSecRange: { min: 15, max: 25 },
   downtimeSecRange: { min: 30, max: 60 },
   raidsPerHour: { min: 4, max: 6 },
   totalRaids: { min: 72, max: 108 },

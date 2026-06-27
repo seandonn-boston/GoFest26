@@ -164,8 +164,9 @@ export function SummaryDashboard({
           <p className="text-[11px] leading-snug text-slate-500">
             Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer
             lobby (~{capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s
-            catch per raid, plus a {capacity.lobbySec}s lobby wait, {capacity.transitionSec}s of transitions, and{" "}
-            {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
+            catch per raid, plus a {capacity.lobbySec}s lobby wait, {capacity.transitionSecRange.min}–
+            {capacity.transitionSecRange.max}s of transitions, and {capacity.downtimeSecRange.min}–
+            {capacity.downtimeSecRange.max}s between raids.
             {remotePool > 0 ? ` Plus ${remotePool} remote raid passes.` : ""}
           </p>
         </Disclosure>
