@@ -143,8 +143,8 @@ describe("capacity", () => {
   it("party play shaves battle time", () => {
     const noParty = computeCapacity({ ...DEFAULT_SETTINGS, partyPlay: false });
     const party = computeCapacity({ ...DEFAULT_SETTINGS, partyPlay: true, partySize: 4 });
-    // A full-lobby Mega is 30s; a party of 4 shaves 15s -> 15s (the floor).
-    expect(party.battleSecRange.min).toBe(15);
+    // A full-lobby Mega is 15s; a party of 4 shaves 15s -> 10s (the floor).
+    expect(party.battleSecRange.min).toBe(10);
     expect(party.battleSecRange.min).toBeLessThan(noParty.battleSecRange.min);
   });
 });
