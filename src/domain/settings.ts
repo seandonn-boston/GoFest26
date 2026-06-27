@@ -17,6 +17,10 @@ export interface PlannerSettings {
   partySize: number;
   /** Walking / setup time between raids. */
   downtimeSecRange: Range;
+  /** Raid-lobby wait before the battle starts, in seconds. Play-style dependent
+   *  (a coordinated group starts fast; a public lobby can run the full ~2 min),
+   *  so it's adjustable. The fixed ~15s of UI transitions live in GAME_CONFIG. */
+  lobbyWaitSec: number;
   /**
    * Which reward roll to plan around when sizing the schedule:
    * "optimistic" = best-case drops, "expected" = midpoint, "safe" = worst-case.
@@ -72,6 +76,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   partyPlay: false,
   partySize: 4,
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
+  lobbyWaitSec: GAME_CONFIG.capacity.lobbyWaitSecDefault,
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
   useRemoteRaids: false,
@@ -96,6 +101,7 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.partySize === DEFAULT_SETTINGS.partySize &&
     s.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
+    s.lobbyWaitSec === DEFAULT_SETTINGS.lobbyWaitSec &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     s.remoteRaidPassesPlanned === DEFAULT_SETTINGS.remoteRaidPassesPlanned &&

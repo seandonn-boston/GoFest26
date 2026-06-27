@@ -128,7 +128,8 @@ describe("capacity", () => {
     // Default plan: full 20-trainer lobby, normal catch.
     expect(cap.lobbySize).toBe(GAME_CONFIG.capacity.defaultLobbySize);
     expect(cap.catchSec).toBe(GAME_CONFIG.capacity.catchSec.normal);
-    const perRaidFast = cap.battleSecRange.min + cap.catchSec + cap.downtimeSecRange.min;
+    const overhead = cap.lobbySec + cap.transitionSec;
+    const perRaidFast = overhead + cap.battleSecRange.min + cap.catchSec + cap.downtimeSecRange.min;
     expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });
@@ -146,6 +147,14 @@ describe("capacity", () => {
     // A full-lobby Mega is 15s; a party of 4 shaves 15s -> 10s (the floor).
     expect(party.battleSecRange.min).toBe(10);
     expect(party.battleSecRange.min).toBeLessThan(noParty.battleSecRange.min);
+  });
+
+  it("a longer lobby wait means fewer raids per hour", () => {
+    const fast = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: 0 });
+    const slow = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: 120 });
+    expect(slow.lobbySec).toBe(120);
+    expect(slow.transitionSec).toBe(fast.transitionSec); // transitions are fixed
+    expect(slow.raidsPerHour.max).toBeLessThan(fast.raidsPerHour.max);
   });
 });
 
@@ -221,14 +230,15 @@ describe("scheduler", () => {
 
 describe("settings", () => {
   it("derives raids/hour from custom raid timing", () => {
-    // Full lobby (fastest tier battle) + a normal catch + no downtime.
+    // Full lobby (fastest tier battle) + a normal catch + no downtime, but the
+    // lobby wait + transition overhead still applies to every raid.
     const settings: PlannerSettings = {
       ...DEFAULT_SETTINGS,
       lobbySize: 20,
       downtimeSecRange: { min: 0, max: 0 },
     };
     const cap = computeCapacity(settings);
-    const perRaidFast = cap.battleSecRange.min + cap.catchSec;
+    const perRaidFast = cap.lobbySec + cap.transitionSec + cap.battleSecRange.min + cap.catchSec;
     expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });

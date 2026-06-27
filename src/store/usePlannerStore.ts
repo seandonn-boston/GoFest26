@@ -892,7 +892,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 20, // +rareCandy holdings (backfilled via DEFAULT_SETTINGS)
+      version: 21, // +lobbyWaitSec timing (backfilled via DEFAULT_SETTINGS)
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),

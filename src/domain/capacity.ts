@@ -47,9 +47,16 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
   // (it trades that catch Candy/XL for speed) and is modelled in the block plan.
   const catchSec = GAME_CONFIG.capacity.catchSec.normal;
 
+  // Fixed per-raid overhead that is neither battle nor catch: the lobby wait
+  // (user-adjustable) plus the ~15s of UI transitions (lobby→battle, battle→
+  // catch). Added to every raid regardless of tier or lobby fill.
+  const lobbySec = Math.max(0, Math.round(settings.lobbyWaitSec ?? GAME_CONFIG.capacity.lobbyWaitSecDefault));
+  const transitionSec = GAME_CONFIG.capacity.transitionSec;
+  const overheadSec = lobbySec + transitionSec;
+
   // Best case = fastest battle + least downtime; worst case = slowest + most.
-  const perRaidFast = battleSecRange.min + catchSec + downtimeSecRange.min;
-  const perRaidSlow = battleSecRange.max + catchSec + downtimeSecRange.max;
+  const perRaidFast = overheadSec + battleSecRange.min + catchSec + downtimeSecRange.min;
+  const perRaidSlow = overheadSec + battleSecRange.max + catchSec + downtimeSecRange.max;
 
   const raidsPerHour = {
     min: Math.floor(3600 / perRaidSlow),
@@ -66,8 +73,9 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
   // normal raid-slot, so a block set to quick-catch fits proportionally more.
   const battleMid = (battleSecRange.min + battleSecRange.max) / 2;
   const downtimeMid = (downtimeSecRange.min + downtimeSecRange.max) / 2;
-  const normalMid = battleMid + GAME_CONFIG.capacity.catchSec.normal + downtimeMid;
-  const quickMid = battleMid + GAME_CONFIG.capacity.catchSec.quick + downtimeMid;
+  // Overhead (lobby + transitions) is shared by normal and quick raids alike.
+  const normalMid = overheadSec + battleMid + GAME_CONFIG.capacity.catchSec.normal + downtimeMid;
+  const quickMid = overheadSec + battleMid + GAME_CONFIG.capacity.catchSec.quick + downtimeMid;
   const quickCatchSlotFactor = normalMid > 0 ? quickMid / normalMid : 1;
 
   // Remote raids (GO Fest 2026 lifts the daily limit) are unlimited in count;
@@ -82,6 +90,8 @@ export function computeCapacity(settings: PlannerSettings = DEFAULT_SETTINGS): C
     lobbySize,
     battleSecRange,
     catchSec,
+    lobbySec,
+    transitionSec,
     downtimeSecRange,
     raidsPerHour,
     totalRaids,

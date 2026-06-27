@@ -134,6 +134,7 @@ function sanitizeSettings(raw: unknown): PlannerSettings {
     partyPlay: bool(s.partyPlay, d.partyPlay),
     partySize: num(s.partySize, d.partySize),
     downtimeSecRange: { min: num(dt.min, d.downtimeSecRange.min), max: num(dt.max, d.downtimeSecRange.max) },
+    lobbyWaitSec: nonNeg(s.lobbyWaitSec, d.lobbyWaitSec),
     rewardCase,
     freeDailyPerDay: num(s.freeDailyPerDay, d.freeDailyPerDay),
     useRemoteRaids: bool(s.useRemoteRaids, d.useRemoteRaids),
