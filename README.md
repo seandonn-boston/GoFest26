@@ -70,8 +70,8 @@ Optional ways to refine the plan:
   use** (GO Fest 2026 lifts the daily limit, so it's a pass count, not a time cap).
   Allocate per species by hand or one‑tap **auto‑balance** by priority; single‑day and
   region‑locked bosses are capped to their reachable window.
-- **Passes & Rare Candy on hand** — tell the planner the Raid Passes, Remote Passes,
-  Link Charges, and Rare Candy you already hold so they're spent against your plan.
+- **Passes on hand** — tell the planner the Raid Passes, Remote Passes, and Link
+  Charges you already hold so they're spent against your plan.
 
 ### 4 · Results
 

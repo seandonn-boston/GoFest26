@@ -257,7 +257,7 @@ function StepContent({
   }
 
   if (step === 3) {
-    return <PlanSetup roadPlan={roadPlan} blockPlan={blockPlan} />;
+    return <PlanSetup roadPlan={roadPlan} />;
   }
 
   if (step === 4) {

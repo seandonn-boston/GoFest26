@@ -17,7 +17,7 @@ export { explainCurrency } from "./explain";
 export type { CurrencyExplanation, ExplainLine, Token, EditField } from "./explain";
 export { computeCapacity } from "./capacity";
 export { computeSchedule } from "./scheduler";
-export { computeBlockPlan, rareCandyForecast, goalProgress, autoRemoteAllocations, globalPriorityFromBlocks, RISK_BANDS } from "./blockPlan";
+export { computeBlockPlan, goalProgress, autoRemoteAllocations, globalPriorityFromBlocks, RISK_BANDS } from "./blockPlan";
 export type { BlockPlan, BlockSpeciesShare, GoalProgress, RemotePlan, RiskBand, WeekendBlockPlan } from "./blockPlan";
 export { computeRoadPlan } from "./roadOfLegends";
 export type { RoadPlan, RoadDayPlan } from "./roadOfLegends";
