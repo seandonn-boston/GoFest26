@@ -24,10 +24,10 @@ export function BulkImportSection() {
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
+        <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-gofest-acid">
           Bulk import from screenshots
           {count ? (
-            <span className="ml-2 rounded-sm border border-gofest-acid/40 px-1 text-[9px] tracking-normal text-gofest-acid">
+            <span className="ml-2 rounded-sm border border-gofest-acid/40 px-1 text-[11px] tracking-normal text-gofest-acid">
               {count} loaded
             </span>
           ) : null}

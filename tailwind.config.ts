@@ -22,6 +22,22 @@ const config: Config = {
         display: ["var(--font-display)"],
         mono: ["var(--font-mono)"],
       },
+      // Bump every text utility ~20% for legibility (users found the small type
+      // too small). Each [size, lineHeight] is the Tailwind default × 1.2.
+      // Intentionally NOT scaled, so they keep their designed size:
+      //   • text-7xl — only the masthead H1 uses it (the "main title" exemption)
+      //   • text-2xl — the card species name (CyberTitle) is pinned to text-[24px]
+      // Arbitrary text-[Npx] sizes are bumped in place; text-[2.6rem] (the H1's
+      // base size) and Mewtwo's inline 2.75rem wordmark are likewise left alone.
+      fontSize: {
+        xs: ["0.9rem", { lineHeight: "1.2rem" }],
+        sm: ["1.05rem", { lineHeight: "1.5rem" }],
+        base: ["1.2rem", { lineHeight: "1.8rem" }],
+        lg: ["1.35rem", { lineHeight: "2.1rem" }],
+        xl: ["1.5rem", { lineHeight: "2.1rem" }],
+        "2xl": ["1.8rem", { lineHeight: "2.4rem" }],
+        "3xl": ["2.25rem", { lineHeight: "2.7rem" }],
+      },
       boxShadow: {
         // Neo-brutalist hard offset shadows.
         brutal: "6px 6px 0 0 rgba(0,0,0,0.85)",

@@ -14,7 +14,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
   return (
     <main className="relative z-10 mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
-      <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-gofest-accent">▚ ERROR // RECOVERABLE</div>
+      <div className="font-mono text-[12px] uppercase tracking-[0.3em] text-gofest-accent">▚ ERROR // RECOVERABLE</div>
       <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-100">Something glitched</h1>
       <p className="mt-3 text-sm leading-relaxed text-slate-400">
         The planner hit an unexpected error while rendering.{" "}
@@ -37,7 +37,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           Reload page
         </button>
       </div>
-      {error.digest ? <p className="mt-6 font-mono text-[10px] text-slate-600">ref: {error.digest}</p> : null}
+      {error.digest ? <p className="mt-6 font-mono text-[12px] text-slate-600">ref: {error.digest}</p> : null}
     </main>
   );
 }

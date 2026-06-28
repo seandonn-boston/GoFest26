@@ -58,9 +58,9 @@ export function CopyableSearchString({
   return (
     <Copyable search={search} label={label} className="brutal rounded-xl bg-gofest-panel/80 p-3 transition hover:bg-gofest-panel">
       <div className="mb-1 pr-8">
-        <span className={`font-mono text-[11px] font-bold uppercase tracking-widest ${accent}`}>{label}</span>
+        <span className={`font-mono text-[13px] font-bold uppercase tracking-widest ${accent}`}>{label}</span>
       </div>
-      {caption ? <p className="mb-2 text-[11px] text-slate-400">{caption}</p> : null}
+      {caption ? <p className="mb-2 text-[13px] text-slate-400">{caption}</p> : null}
       {items.length > 0 ? (
         <p className="font-mono text-sm leading-relaxed">
           {items.map((it, i) => (
@@ -87,7 +87,7 @@ export function CopyableSearchString({
                 e.stopPropagation();
                 setExpanded(false);
               }}
-              className="mt-1 font-mono text-[10px] font-bold uppercase tracking-wider text-gofest-acid hover:underline"
+              className="mt-1 font-mono text-[12px] font-bold uppercase tracking-wider text-gofest-acid hover:underline"
             >
               Show less
             </button>

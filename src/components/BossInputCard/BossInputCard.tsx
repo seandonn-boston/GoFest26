@@ -184,7 +184,7 @@ export function BossInputCard({
         </div>
         <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
           <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-300/50" />
-          <span className="text-[10px] leading-none">✦</span>
+          <span className="text-[12px] leading-none">✦</span>
           <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-300/50" />
         </div>
 
@@ -201,16 +201,16 @@ export function BossInputCard({
             {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
           </div>
         ) : null}
-        <p className="mt-1.5 text-center text-[11px] text-slate-400">
+        <p className="mt-1.5 text-center text-[13px] text-slate-400">
           🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
         </p>
         {isGroup ? (
-          <p className="mt-0.5 text-center text-[11px] text-amber-200/80">
+          <p className="mt-0.5 text-center text-[13px] text-amber-200/80">
             Both formes share one Candy pool — pick which to battle each block; rewards stack together.
           </p>
         ) : null}
 
-        {boss.note ? <p className="mt-2 text-[11px] text-slate-400">💡 {boss.note}</p> : null}
+        {boss.note ? <p className="mt-2 text-[13px] text-slate-400">💡 {boss.note}</p> : null}
       </button>
       </div>
 
@@ -295,7 +295,7 @@ export function BossInputCard({
           <>
             <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
               <div>
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids needed</span>
+                <span className="text-[12px] uppercase tracking-wide text-slate-400">Raids needed</span>
                 <div className="text-xl font-bold text-gofest-accent2">
                   {(() => {
                     const bindExp = result.bindingCurrency
@@ -311,7 +311,7 @@ export function BossInputCard({
                   })()}
                 </div>
               </div>
-              <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-slate-400">
+              <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-slate-400">
                 {needEntries.map(([c, n], i) => {
                   const exp = explainFor(c, n);
                   const text = `${CURRENCY_LABELS[c]} ${formatNumber(n.needed)}`;
@@ -331,7 +331,7 @@ export function BossInputCard({
               </span>
             </div>
             {overWindow ? (
-              <p className="mt-1.5 text-[11px] text-rose-300">
+              <p className="mt-1.5 text-[13px] text-rose-300">
                 ⚠ More raids than its window allows (~{formatNumber(windowSlots)} max in {describeAvailability(boss)}) — and
                 bosses rotate hourly within a habitat, so you may get fewer. Trim the goal or spread across forms.
               </p>
@@ -353,7 +353,7 @@ export function BossInputCard({
             {isGroup ? (
               <div className="mb-1.5 flex items-center gap-1.5">
                 <Sprite src={f.sprite} alt={f.name} size={20} />
-                <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-amber-200/90">
+                <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-amber-200/90">
                   {f.formLabel} forme
                 </span>
               </div>
@@ -366,13 +366,13 @@ export function BossInputCard({
                 className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
               >
                 <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
-                  <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+                  <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
                     Mega-evolve for candy
                   </span>
                   <MegaBoostLegend />
                 </div>
                 <MegaBoostRow boosts={boosts} max={8} />
-                <p className="mt-1.5 text-[10px] text-slate-500">
+                <p className="mt-1.5 text-[12px] text-slate-500">
                   Evolve one (Mega Level 3-4) before battling — its type matches {f.name}, so every raid &amp;
                   wild catch drops bonus Candy XL. Only one mega counts at a time.
                 </p>

@@ -61,7 +61,7 @@ export function BossList() {
           </button>
         </div>
       </div>
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+      <p className="mb-3 font-mono text-[12px] uppercase tracking-wider text-slate-500">
         <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span>{" "}
         = not raidable in {region.label}; needs a Remote Raid Pass (capped per day).
       </p>
@@ -78,7 +78,7 @@ export function BossList() {
       <div className="space-y-4">
         {GROUPS.map(({ habitat, bosses }) => (
           <div key={`${habitat.day}-${habitat.startHour}`}>
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400">
               {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
               <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
               <span className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5" title={`Featured wild spawns: ${habitat.types.join(", ")}`}>

@@ -22,7 +22,7 @@ const VARIANTS: { id: Variant; label: string }[] = [
 const CUR_LABEL: Record<string, string> = { xlCandy: "XL", megaEnergy: "Energy", candy: "Candy" };
 
 const iconBtn =
-  "flex h-5 w-5 items-center justify-center rounded border border-white/15 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-30";
+  "flex h-5 w-5 items-center justify-center rounded border border-white/15 text-[13px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-30";
 
 /**
  * Editor for maxing several distinct individuals of one species. Each row is one
@@ -42,10 +42,10 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
 
   return (
     <div className="mt-3 rounded-lg border border-gofest-accent2/25 bg-gofest-accent2/[0.04] p-2.5">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gofest-accent2">
+      <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent2">
         Maxing {copies.length} {copies.length === 1 ? "individual" : "individuals"} · priority order
       </div>
-      <p className="mb-2 text-[10px] text-slate-500">
+      <p className="mb-2 text-[12px] text-slate-500">
         Your on-hand XL / Candy / Energy above is one shared pool — it fills the #1 individual first, then the next.
       </p>
       {scanSlot ? <div className="mb-2">{scanSlot}</div> : null}
@@ -56,7 +56,7 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
           return (
             <div key={c.id} className="rounded-md border border-white/10 bg-gofest-bg/40 p-2">
               <div className="mb-1.5 flex items-center gap-1.5">
-                <span className="rounded bg-gofest-accent2/20 px-1.5 py-0.5 text-[10px] font-bold text-gofest-accent2">
+                <span className="rounded bg-gofest-accent2/20 px-1.5 py-0.5 text-[12px] font-bold text-gofest-accent2">
                   #{i + 1}
                 </span>
                 <div className="ml-auto flex items-center gap-1">
@@ -94,14 +94,14 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
                     type="button"
                     onClick={() => updateCopy(boss.id, c.id, { variant: v.id })}
                     aria-pressed={c.variant === v.id}
-                    className={`rounded px-2 py-0.5 text-[10px] transition ${
+                    className={`rounded px-2 py-0.5 text-[12px] transition ${
                       c.variant === v.id ? "bg-gofest-accent2 font-semibold text-black" : "border border-white/15 text-slate-300 hover:border-white/30"
                     }`}
                   >
                     {v.label}
                   </button>
                 ))}
-                <span className="ml-auto text-[10px] text-slate-400">
+                <span className="ml-auto text-[12px] text-slate-400">
                   {netEntries.length ? (
                     <>still needs {netEntries.map(([k, v]) => `${CUR_LABEL[k] ?? k} ${formatNumber(v)}`).join(" · ")}</>
                   ) : (
@@ -109,7 +109,7 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
                   )}
                 </span>
               </div>
-              <label className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-300">
+              <label className="mt-1.5 flex items-center gap-2 text-[13px] text-slate-300">
                 <input
                   type="checkbox"
                   className="h-3.5 w-3.5 accent-gofest-accent2"
@@ -130,7 +130,7 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
       <button
         type="button"
         onClick={() => addCopy(boss.id)}
-        className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
+        className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[13px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
       >
         ＋ Add another individual
       </button>

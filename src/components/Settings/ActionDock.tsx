@@ -143,7 +143,7 @@ export function ActionDock() {
               }`}
               style={{ transitionDelay: `${open ? (items.length - 1 - i) * 40 : 0}ms` }}
             >
-              <span className="rounded-md bg-gofest-bone px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-black shadow">
+              <span className="rounded-md bg-gofest-bone px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-black shadow">
                 {a.label}
               </span>
               <button type="button" onClick={a.onClick} className={`relative ${miniFab} ${a.circle}`}>
@@ -163,7 +163,7 @@ export function ActionDock() {
                 open ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0"
               }`}
             >
-              <span className="rounded-md bg-rose-500 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-white shadow">
+              <span className="rounded-md bg-rose-500 px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-white shadow">
                 Hard reset
               </span>
               <button

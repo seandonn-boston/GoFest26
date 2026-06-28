@@ -51,7 +51,7 @@ function BlockChips({
     <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
       {counters.length > 0 ? (
         <CopyableInline search={counterSearch} label="counters for this block" className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">Counters</span>
           {counters.map((c) => (
             <span
               key={c.attacker.name}
@@ -66,7 +66,7 @@ function BlockChips({
       ) : null}
       {megas.length > 0 ? (
         <CopyableInline search={megaSearch} label="megas to evolve for this block" className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-purple-300">Megas</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">Megas</span>
           <MegaBoostRow boosts={megas} size={20} />
         </CopyableInline>
       ) : null}
@@ -149,7 +149,7 @@ function TargetCard({
         </div>
 
         {share.remaining > 0 ? (
-          <span className="shrink-0 text-[10px] text-rose-300" title={`${share.remaining} raids short`}>
+          <span className="shrink-0 text-[12px] text-rose-300" title={`${share.remaining} raids short`}>
             {goalPct}%
           </span>
         ) : null}
@@ -162,7 +162,7 @@ function TargetCard({
         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[36px]">
           {quickCatch ? (
             <label
-              className={`flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${
+              className={`flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide ${
                 quickCatch.on ? "text-amber-300" : "text-slate-500"
               }`}
               title="Quick-catch these raids — saves time, but no catch Candy/XL this block (only completion rewards like Mega Energy / Rare Candy)"
@@ -188,7 +188,7 @@ function TargetCard({
           label="counters"
           className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[36px]"
         >
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-gofest-acid">Counters</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">Counters</span>
           {counters.map((c) => (
             <span
               key={c.attacker.name}
@@ -210,7 +210,7 @@ function TargetCard({
           label="mega evolutions"
           className="mt-2.5 flex flex-wrap items-center gap-1.5 pl-[36px]"
         >
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-purple-300">Mega</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">Mega</span>
           <MegaBoostRow boosts={boosts} size={20} max={6} />
         </CopyableInline>
       ) : null}
@@ -314,7 +314,7 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         </div>
         <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
         {over ? (
-          <p className="mt-1 text-[11px] font-medium text-rose-300">
+          <p className="mt-1 text-[13px] font-medium text-rose-300">
             ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"}{" "}can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
           </p>
         ) : null}
@@ -322,7 +322,7 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
 
       {open ? (
         <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2" {...drag.containerProps}>
-          <p className="text-[10px] text-slate-500">Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).</p>
+          <p className="text-[12px] text-slate-500">Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).</p>
           {drag.list.map((id) => {
             const share = shareFor(id);
             // Two grips per row (left + right) so either thumb can drag — same
@@ -429,7 +429,7 @@ export function BlockAccordion({
           <MegaBoostLegend />
         </div>
       </div>
-      <p className="mb-2 text-[10px] leading-snug text-slate-500">
+      <p className="mb-2 text-[12px] leading-snug text-slate-500">
         Reward luck makes each target a range. The bars fill from{" "}
         <span className="text-sky-300">guaranteed</span> raids you&apos;ll always need, through the{" "}
         <span className="text-emerald-300">best</span> and <span className="text-amber-300">average</span> cases, out to
@@ -438,7 +438,7 @@ export function BlockAccordion({
       <div className="space-y-4">
         {byDay.map(({ day, blocks }) => (
           <div key={day}>
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gofest-accent2">{DAY_LABEL[day]}</div>
+            <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent2">{DAY_LABEL[day]}</div>
             <div className="space-y-2">
               {blocks.map((b) => (
                 <BlockItem key={blockKey(b)} block={b} open={open.has(blockKey(b))} onToggle={() => toggle(blockKey(b))} />
@@ -448,7 +448,7 @@ export function BlockAccordion({
         ))}
         {useRemote ? (
           <div>
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gofest-accent">Remote · either day</div>
+            <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent">Remote · either day</div>
             <RemoteSection remote={remote} />
           </div>
         ) : null}
@@ -461,7 +461,7 @@ export function BlockAccordion({
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-slate-400">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400">
       {RISK_BANDS.map((b) => (
         <span key={b} className="flex items-center gap-1">
           <span className={`inline-block h-2 w-2 rounded-sm ${BAND_COLOR[b]}`} />

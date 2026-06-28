@@ -14,12 +14,12 @@ function Info({ children }: { children: ReactNode }) {
       label="More info"
       hideIcon
       trigger={
-        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
+        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[11px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
           i
         </span>
       }
     >
-      <p className="text-[11px] leading-relaxed text-slate-300">{children}</p>
+      <p className="text-[13px] leading-relaxed text-slate-300">{children}</p>
     </MathTooltip>
   );
 }
@@ -48,7 +48,7 @@ export function ResourcesOnHand() {
   return (
     <div className="rounded-xl border border-white/10 bg-gofest-panel/40 p-3">
       <h3 className="text-sm font-semibold text-slate-100">Passes &amp; Link Charges on hand</h3>
-      <p className="mt-0.5 text-[11px] text-slate-400">
+      <p className="mt-0.5 text-[13px] text-slate-400">
         What you already hold — we spend it on your highest priorities first, so the cost step shows
         only what you&apos;d still buy. Free daily passes are auto-counted, so leave those out.
       </p>
@@ -112,7 +112,7 @@ export function ResourcesOnHand() {
       </div>
 
       {/* Standalone opt-in — NOT tied to remote raids. */}
-      <label className="mt-2.5 flex items-start gap-2 text-[11px] text-slate-300">
+      <label className="mt-2.5 flex items-start gap-2 text-[13px] text-slate-300">
         <input
           type="checkbox"
           className="mt-0.5 h-4 w-4 shrink-0 accent-purple-400"

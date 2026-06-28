@@ -240,7 +240,7 @@ export function ScreenshotImporter() {
           type="button"
           onClick={() => setShowGuide((v) => !v)}
           aria-expanded={showGuide}
-          className="flex items-center gap-1 text-[11px] font-medium text-sky-300 underline-offset-2 hover:underline"
+          className="flex items-center gap-1 text-[13px] font-medium text-sky-300 underline-offset-2 hover:underline"
         >
           <span aria-hidden>ⓘ</span> Which screenshots?
         </button>
@@ -251,20 +251,20 @@ export function ScreenshotImporter() {
               clearImports();
               setSummary(null);
             }}
-            className="rounded-md border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 text-[11px] font-semibold text-rose-200 transition hover:bg-rose-500/25"
+            className="rounded-md border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 text-[13px] font-semibold text-rose-200 transition hover:bg-rose-500/25"
           >
             Clear all
           </button>
         ) : null}
       </div>
 
-      <p className="text-[11px] text-amber-300">
+      <p className="text-[13px] text-amber-300">
         <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read yet.
       </p>
 
       {showGuide ? (
         <div className="rounded-sm border border-sky-400/30 bg-sky-500/[0.06] p-3">
-          <p className="mb-2 text-[11px] text-slate-300">
+          <p className="mb-2 text-[13px] text-slate-300">
             Upload a Pokémon&apos;s stats page — the one showing Candy / Candy XL / Mega Energy. Locate the{" "}
             <b>exact</b> Pokémon you want to max — not just any of the same species.
           </p>
@@ -275,20 +275,20 @@ export function ScreenshotImporter() {
               alt="Example Pokémon stats page showing Candy, Candy XL and Mega Energy"
               className="w-full rounded-sm border border-white/10"
             />
-            <figcaption className="mt-1 text-[10px] text-slate-400">
+            <figcaption className="mt-1 text-[12px] text-slate-400">
               <b className="text-emerald-300">Pokémon page</b> — reads Candy / XL / Mega Energy.
             </figcaption>
           </figure>
         </div>
       ) : null}
 
-      {busy ? <p className="text-[11px] text-slate-400">{progress}</p> : null}
+      {busy ? <p className="text-[13px] text-slate-400">{progress}</p> : null}
 
       {/* Grid of uploaded screenshots with per-shot status (above the pulls). */}
       {imports.length ? (
         <div className="space-y-1.5">
           <ScreenshotGrid shots={imports} statusOf={statusOf} onDelete={del} />
-          <p className="text-[10px] text-slate-500">
+          <p className="text-[12px] text-slate-500">
             <span className="text-amber-300">⚠</span> unreadable · <span className="text-sky-300">!</span> not in this
             event · <span className="text-rose-300">✕</span> duplicate (a newer one is used). Tap a tile to preview or
             delete it.
@@ -322,12 +322,12 @@ export function ScreenshotImporter() {
                         <ScanChips scan={s.scan} />
                       </div>
                       {!assignable && s.scan.detectedName ? (
-                        <p className="mb-1.5 text-[11px] text-sky-300">
+                        <p className="mb-1.5 text-[13px] text-sky-300">
                           ❗ {cap(s.scan.detectedName)} isn’t available for raids during this event — pick another below.
                         </p>
                       ) : null}
                       {superseded ? (
-                        <p className="mb-1.5 text-[11px] text-amber-300/80">
+                        <p className="mb-1.5 text-[13px] text-amber-300/80">
                           ↪ Duplicate {OPTION_BY_KEY.get(s.key)?.label ?? cap(s.key)} — a newer screenshot is used by
                           “Apply all”. You can still apply this one with ›.
                         </p>
@@ -349,12 +349,12 @@ export function ScreenshotImporter() {
                     </>
                   ) : (
                     <div>
-                      <p className="text-[11px] text-amber-200 break-words">
+                      <p className="text-[13px] text-amber-200 break-words">
                         ⚠ {s.error ? s.error : unreadableMessage(s.scan, s.fileName)}
                       </p>
                       {!s.error && s.scan.looksLikePogo && s.scan.rawText ? (
                         <>
-                          <p className="text-[10px] text-slate-500 break-words">OCR saw: “{previewOcr(s.scan.rawText)}”</p>
+                          <p className="text-[12px] text-slate-500 break-words">OCR saw: “{previewOcr(s.scan.rawText)}”</p>
                           <CopyOcrButton text={s.scan.rawText} />
                         </>
                       ) : null}
@@ -389,8 +389,8 @@ export function ScreenshotImporter() {
         </button>
       ) : null}
 
-      {summary ? <p className="text-[11px] text-emerald-300">✓ {summary}</p> : null}
-      {imports.length ? <p className="text-[10px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
+      {summary ? <p className="text-[13px] text-emerald-300">✓ {summary}</p> : null}
+      {imports.length ? <p className="text-[12px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
     </div>
   );
 }

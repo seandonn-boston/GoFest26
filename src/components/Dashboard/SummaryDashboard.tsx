@@ -81,18 +81,18 @@ export function SummaryDashboard({
       {/* Reward-luck case selector — centered; drives the single numbers above and
           on every priority tile (best = luckiest drops → fewest raids). */}
       <div className="mb-4 flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+        <div className="flex items-center gap-1.5 text-[13px] font-medium text-slate-400">
           <span>Plan for which reward luck?</span>
           <MathTooltip
             label="How reward luck works"
             hideIcon
             trigger={
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[9px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/25 text-[11px] font-bold leading-none text-slate-400 transition hover:border-white/50 hover:text-slate-200">
                 i
               </span>
             }
           >
-            <div className="space-y-1.5 text-[11px] leading-relaxed text-slate-300">
+            <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-300">
               <p>
                 Every raid&apos;s Candy / XL / Mega Energy drop is a range, so the raids you need are a range
                 too. This picks which end of that range <b>every number on this page</b> assumes:
@@ -161,7 +161,7 @@ export function SummaryDashboard({
 
       <div className="mt-3">
         <Disclosure title="How capacity is calculated">
-          <p className="text-[11px] leading-snug text-slate-500">
+          <p className="text-[13px] leading-snug text-slate-500">
             Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer
             lobby (~{capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s
             catch per raid, plus a {capacity.lobbySec}s lobby wait, {capacity.transitionSecRange.min}–
@@ -180,7 +180,7 @@ function Stat({ label, value, accent = "text-slate-100", sub }: { label: string;
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`text-xl font-bold ${accent}`}>{value}</div>
-      {sub ? <div className="text-[10px] text-gofest-accent">{sub}</div> : null}
+      {sub ? <div className="text-[12px] text-gofest-accent">{sub}</div> : null}
     </div>
   );
 }

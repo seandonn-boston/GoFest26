@@ -143,7 +143,7 @@ export function AssumptionsControls() {
               }`}
             >
               {b.label}
-              <span className="block text-[11px] text-slate-400">+{buddyXlPct(b.level)}% XL</span>
+              <span className="block text-[13px] text-slate-400">+{buddyXlPct(b.level)}% XL</span>
             </button>
           ))}
         </div>
@@ -207,14 +207,14 @@ export function AssumptionsControls() {
                       {line.rewards.map((r, i) => (
                         <span
                           key={i}
-                          className="rounded-full bg-black/40 px-2 py-0.5 text-[11px] text-emerald-200 ring-1 ring-white/10"
+                          className="rounded-full bg-black/40 px-2 py-0.5 text-[13px] text-emerald-200 ring-1 ring-white/10"
                         >
                           +{formatNumber(r.amount)} {r.label ?? RESEARCH_CURRENCY[r.currency]}
                         </span>
                       ))}
                     </div>
                   ) : null}
-                  {line.note ? <p className="mt-1 text-[11px] text-slate-500">💡 {line.note}</p> : null}
+                  {line.note ? <p className="mt-1 text-[13px] text-slate-500">💡 {line.note}</p> : null}
                 </div>
               </label>
             );

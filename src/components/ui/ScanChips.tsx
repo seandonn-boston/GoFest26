@@ -29,7 +29,7 @@ export function ScanChips({ scan }: { scan: ScanResult }) {
       {chips(scan).map((c, i) => (
         <span
           key={`${i}-${c.text}`}
-          className={`rounded-full bg-black/40 px-2 py-0.5 font-mono text-[11px] ring-1 ${TONE_CLASS[c.tone]}`}
+          className={`rounded-full bg-black/40 px-2 py-0.5 font-mono text-[13px] ring-1 ${TONE_CLASS[c.tone]}`}
         >
           {c.text}
         </span>

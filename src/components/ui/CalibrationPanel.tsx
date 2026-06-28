@@ -32,13 +32,13 @@ export function CalibrationPanel() {
     <Disclosure
       title="Calibrate to your luck"
       hint={
-        <span className="text-[10px] text-slate-500">
+        <span className="text-[12px] text-slate-500">
           {activeCount > 0 ? `${activeCount} logged` : "use observed drops"}
         </span>
       }
     >
       <div className="space-y-2">
-        <p className="text-[10px] leading-snug text-slate-500">
+        <p className="text-[12px] leading-snug text-slate-500">
           Enter what you&apos;re actually getting per raid and the plan uses your rate instead of the estimate. Leave blank
           to keep the assumed range. Energy is read off the bar after a raid; Candy XL from the catch reward.
         </p>
@@ -48,7 +48,7 @@ export function CalibrationPanel() {
             <div key={m.key} className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-slate-200">{m.label}</div>
-                <div className="text-[10px] text-slate-500">
+                <div className="text-[12px] text-slate-500">
                   {m.hint} · assumed {range(m.assumed)}
                 </div>
               </div>

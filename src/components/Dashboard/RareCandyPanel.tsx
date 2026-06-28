@@ -18,7 +18,7 @@ export function RareCandyPanel({ plan }: { plan: WeekendBlockPlan }) {
 
   return (
     <div className="mb-4 rounded-lg border border-amber-300/25 bg-amber-300/[0.05] p-2.5">
-      <div className="mb-2 text-[11px] uppercase tracking-wide text-amber-200/80">Rare Candy</div>
+      <div className="mb-2 text-[13px] uppercase tracking-wide text-amber-200/80">Rare Candy</div>
 
       <div className="grid grid-cols-2 gap-2">
         <NumberInput
@@ -47,7 +47,7 @@ export function RareCandyPanel({ plan }: { plan: WeekendBlockPlan }) {
         </span>
       </div>
 
-      <p className="mt-1 text-[10px] text-slate-500">
+      <p className="mt-1 text-[12px] text-slate-500">
         ~1 Rare Candy per raid, plus 1 Rare Candy XL per 5★ &amp; Mega Mewtwo raid (not regular Megas) — spend it on any
         species.
       </p>

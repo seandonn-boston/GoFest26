@@ -72,7 +72,7 @@ export function RoadOfLegendsPicker() {
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
+        <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-gofest-acid">
           Road of Legends raids · Jul 6–10
         </span>
         <PlusToggle open={open} size={16} className="shrink-0 text-gofest-acid" />
@@ -80,12 +80,12 @@ export function RoadOfLegendsPicker() {
 
       {open ? (
         <div className="mt-3 space-y-4">
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[13px] text-slate-400">
             Pre-farm these the week before. Tapping one selects that species below and marks the day on step 3.
           </p>
           {DAYS.map(({ day, entries }) => (
             <div key={day.id}>
-              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-slate-400">
                 {day.label} · <span className="text-gofest-accent2">{day.dateLabel}</span>{" "}
                 <span className="normal-case text-slate-500">{day.raidHourLabel}</span>
                 {playDays[day.id] ? <span className="ml-1.5 text-emerald-300" title="Playing this day">✓</span> : null}
@@ -99,7 +99,7 @@ export function RoadOfLegendsPicker() {
                       type="button"
                       onClick={() => pick(e.targetBossId, day.id)}
                       aria-pressed={selected}
-                      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-[11px] transition ${
+                      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-[13px] transition ${
                         selected
                           ? "border-gofest-accent2 bg-gofest-accent2/15 text-white"
                           : "border-white/15 bg-gofest-bg/40 text-slate-300 hover:border-white/35"

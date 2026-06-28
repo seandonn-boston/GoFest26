@@ -53,7 +53,7 @@ function RoadSpecies({ bossId, formeBossId, bossName, fitted }: { bossId: string
       <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{bossName.replace(/^Mega /, "")}</span>
       <div className="flex shrink-0 items-center gap-1">
         {rewards.map((c) => (
-          <span key={c} className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[9px] uppercase tracking-wide text-slate-400">
+          <span key={c} className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400">
             {CURRENCY_CHIP[c]}
           </span>
         ))}
@@ -74,7 +74,7 @@ function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
   if (goals.length === 0) return null;
   return (
     <div className="mt-2 border-t border-white/10 pt-2">
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-300">
+      <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-cyan-300">
         ⚡ Fusion / Primal raids today
       </div>
       <div className="space-y-1">
@@ -89,7 +89,7 @@ function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
           // The actual raid is the fused / crowned / primal forme, not the base.
           const sprite = def.sprite ? spriteUrl(def.sprite) : boss?.sprite;
           return (
-            <div key={`${bossId}-${def.key}`} className="flex items-center gap-2 text-[11px]">
+            <div key={`${bossId}-${def.key}`} className="flex items-center gap-2 text-[13px]">
               <Sprite src={sprite} alt={def.source} size={18} />
               <span className="min-w-0 flex-1 truncate text-slate-200">{def.source}</span>
               {on ? (
@@ -131,7 +131,7 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
         </span>
       </div>
       {day.focus ? (
-        <p className="mb-1 text-[10px] text-gofest-acid/90">
+        <p className="mb-1 text-[12px] text-gofest-acid/90">
           🎯 Targeting <b>{day.focus.blockName}</b> — the weekend block with the most raids that won&apos;t fit (
           {day.focus.overflow} over), worked down its priority order.
         </p>
@@ -144,7 +144,7 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
           ))}
         </div>
       ) : (
-        <p className="mt-1.5 text-[11px] text-slate-500">None of your selected targets are featured this day.</p>
+        <p className="mt-1.5 text-[13px] text-slate-500">None of your selected targets are featured this day.</p>
       )}
       <RoadDayEnergy roadDayId={day.id} />
     </div>
@@ -166,10 +166,10 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-gofest-acid">Road of Legends · raid week</h3>
         {road.totalFitted > 0 ? (
-          <span className="shrink-0 text-[11px] text-emerald-300">★ {road.totalFitted}-raid head start</span>
+          <span className="shrink-0 text-[13px] text-emerald-300">★ {road.totalFitted}-raid head start</span>
         ) : null}
       </div>
-      <p className="mb-2 text-[11px] text-slate-400">
+      <p className="mb-2 text-[13px] text-slate-400">
         Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local): <b>6–7</b> is 5★ raids (Monday&apos;s is the
         whole roster), <b>7–8</b> is a single featured Mega — except <b>Friday</b>, whose 7–8 is <b>Primal Kyogre &amp;
         Groudon</b>. Your selected targets are poured into each day&apos;s budget — what fits is a head start that reduces
@@ -178,7 +178,7 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
           that doesn't affect the head-start math but matters this week. */}
-      <div className="mb-2 space-y-1.5 rounded-md border border-cyan-400/20 bg-cyan-400/[0.05] p-2 text-[11px] leading-relaxed text-slate-300">
+      <div className="mb-2 space-y-1.5 rounded-md border border-cyan-400/20 bg-cyan-400/[0.05] p-2 text-[13px] leading-relaxed text-slate-300">
         <p>
           <span className="font-semibold text-cyan-300">⚡ Fusion / Primal energy:</span> raid week also brings the
           special raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
@@ -204,13 +204,13 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
               role="checkbox"
               aria-checked={on}
               onClick={() => togglePlayDay(d.id)}
-              className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left text-[11px] transition ${
+              className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left text-[13px] transition ${
                 on
                   ? "border-gofest-acid/60 bg-gofest-acid/15 text-white"
                   : "border-white/15 bg-gofest-bg/40 text-slate-300 hover:border-white/30"
               }`}
             >
-              <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[9px] ${on ? "border-gofest-acid bg-gofest-acid text-black" : "border-white/30"}`}>
+              <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[11px] ${on ? "border-gofest-acid bg-gofest-acid text-black" : "border-white/30"}`}>
                 {on ? "✓" : ""}
               </span>
               <span className="font-semibold">{d.label.slice(0, 3)}</span>
@@ -233,14 +233,14 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
           {road.days.map((day) => (
             <RoadDayCard key={day.id} day={day} />
           ))}
-          <p className="text-[10px] text-slate-500">
+          <p className="text-[12px] text-slate-500">
             During Road of Legends you get up to <b>{GAME_CONFIG.passEconomy.freePassesPerRoadDay} free Raid Passes</b>/day, and Remote Raid Passes are <b>unlimited</b>{" "}
             (Jul 6–12) — so a raid hour is capped by time (≈{road.days[0]?.capacity.min}–{road.days[0]?.capacity.max} raids/hour),
             not passes.
           </p>
         </div>
       ) : (
-        <p className="mt-2 text-[11px] text-slate-500">No weekdays selected — your whole plan stays on the weekend.</p>
+        <p className="mt-2 text-[13px] text-slate-500">No weekdays selected — your whole plan stays on the weekend.</p>
       )}
     </div>
   );

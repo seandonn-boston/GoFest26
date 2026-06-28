@@ -19,7 +19,7 @@ export function EstimateConfidence() {
     <Disclosure
       title="How accurate are these numbers?"
       hint={
-        <span className="flex items-center gap-2 text-[9px] text-slate-500">
+        <span className="flex items-center gap-2 text-[11px] text-slate-500">
           {ORDER.map((c) => (
             <span key={c} className="flex items-center gap-1">
               <Dot c={c} /> {CONFIDENCE_META[c].label}
@@ -38,14 +38,14 @@ export function EstimateConfidence() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <span className="font-medium text-slate-200">{n.label}</span>
-                  <span className="font-mono text-[11px] text-slate-400">{n.value}</span>
+                  <span className="font-mono text-[13px] text-slate-400">{n.value}</span>
                 </div>
-                <p className="text-[10px] leading-snug text-slate-500">{n.note}</p>
+                <p className="text-[12px] leading-snug text-slate-500">{n.note}</p>
               </div>
             </li>
           )),
         )}
-        <li className="pt-1 text-[10px] text-slate-500">
+        <li className="pt-1 text-[12px] text-slate-500">
           Reward amounts are shown as best→worst ranges because in-game drops vary. Values live in one editable config
           file and can be corrected the moment Niantic publishes finals.
         </li>

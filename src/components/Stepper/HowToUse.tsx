@@ -125,7 +125,7 @@ export function HowToUse() {
               type="button"
               onClick={() => setStep(s.id)}
               aria-label={`Go to step ${s.id}: ${s.title}`}
-              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gofest-acid/50 bg-gofest-acid/15 text-[11px] font-bold text-gofest-acid transition hover:bg-gofest-acid hover:text-black"
+              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gofest-acid/50 bg-gofest-acid/15 text-[13px] font-bold text-gofest-acid transition hover:bg-gofest-acid hover:text-black"
             >
               {s.id}
             </button>
@@ -136,7 +136,7 @@ export function HowToUse() {
                 className="mr-1 font-semibold text-slate-100 underline-offset-2 hover:underline"
               >
                 {s.title}
-                {s.optional ? <span className="ml-1 text-[10px] font-normal text-slate-500">(optional)</span> : null}
+                {s.optional ? <span className="ml-1 text-[12px] font-normal text-slate-500">(optional)</span> : null}
                 .
               </button>
               {s.body}
@@ -145,7 +145,7 @@ export function HowToUse() {
         ))}
       </ol>
 
-      <p className="mt-3 text-[11px] text-slate-400">
+      <p className="mt-3 text-[13px] text-slate-400">
         Your plan saves on your device automatically — close the app and come back whenever; it&apos;ll
         still be here.
       </p>

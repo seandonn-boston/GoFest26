@@ -107,7 +107,7 @@ export default function Home() {
         <SpriteScaleProvider>
           <SubstituteLoader>
             <header className="relative mb-8">
-              <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-gofest-accent2">
+              <div className="flex items-center justify-between font-mono text-[12px] uppercase tracking-[0.3em] text-gofest-accent2">
                 <span>▚ GO_FEST // 2026</span>
                 <span className="text-gofest-accent">GLOBAL // FREE</span>
               </div>
@@ -118,7 +118,7 @@ export default function Home() {
               </h1>
               <div className="hairline mt-4" />
               <div className="mt-3 overflow-hidden">
-                <div className="ticker font-mono text-[11px] uppercase tracking-widest text-slate-400">
+                <div className="ticker font-mono text-[13px] uppercase tracking-widest text-slate-400">
                   <span>
                     JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT ·
                     SUPER MEGA RAIDS · MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
