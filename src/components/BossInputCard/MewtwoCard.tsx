@@ -106,11 +106,13 @@ export function MewtwoCard({
             <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
           </div>
           <MewtwoTitle />
-          <p className="mb-3 mt-2 text-xs text-slate-400">
-            One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
-            appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
-            so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
-          </p>
+          <div className="liquid-glass text-halo mx-auto mb-3 mt-2 max-w-full rounded-2xl px-3 py-2">
+            <p className="text-center text-xs font-medium text-slate-50">
+              One Mewtwo, two Mega forms. X appears <span className="font-semibold text-white">Saturday</span>, Y
+              appears <span className="font-semibold text-white">Sunday</span>, and their Mega Energy is separate —
+              so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
+            </p>
+          </div>
         </button>
         </div>
 

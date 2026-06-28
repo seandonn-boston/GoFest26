@@ -201,16 +201,19 @@ export function BossInputCard({
             {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
           </div>
         ) : null}
-        <p className="mt-1.5 text-center text-[13px] text-slate-400">
-          🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
-        </p>
-        {isGroup ? (
-          <p className="mt-0.5 text-center text-[13px] text-amber-200/80">
-            Both formes share one Candy pool — pick which to battle each block; rewards stack together.
+        {/* Time-block times/names + notes float on a liquid-glass pane so they're
+            legible over any sprite behind them (bright fill + halo do the rest). */}
+        <div className="liquid-glass text-halo mx-auto mt-2 w-fit max-w-full rounded-2xl px-3 py-1.5">
+          <p className="text-center text-[13px] font-medium text-slate-50">
+            🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
           </p>
-        ) : null}
-
-        {boss.note ? <p className="mt-2 text-[13px] text-slate-400">💡 {boss.note}</p> : null}
+          {isGroup ? (
+            <p className="mt-0.5 text-center text-[13px] font-medium text-amber-100">
+              Both formes share one Candy pool — pick which to battle each block; rewards stack together.
+            </p>
+          ) : null}
+          {boss.note ? <p className="mt-1 text-center text-[13px] font-medium text-slate-50">💡 {boss.note}</p> : null}
+        </div>
       </button>
       </div>
 

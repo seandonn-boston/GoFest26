@@ -81,6 +81,72 @@ h1, h2, h3 {
     0 0 4px rgba(0, 0, 0, 0.7);
 }
 
+/* A true all-around glyph halo (vs. card-text-legible's soft drop shadow): a dark
+   stroke painted UNDER the fill (paint-order) gives every letter a crisp ring on
+   every side, so text survives over a bright sprite, not just a dark one. Pair
+   with a light fill color for the strongest contrast. */
+.text-halo {
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.72);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.9),
+    0 0 5px rgba(0, 0, 0, 0.55);
+}
+
+/* "Liquid glass" — a real refractive glass surface, not flat frosted blur. The
+   backdrop is blurred AND saturated/brightened so the sprite's color bends and
+   concentrates through the pane (the giveaway of real glass); a bright hairline
+   top edge + inner bottom bounce read as a lit bevel; a diagonal specular sheen
+   (::before, tucked under the text via the isolated stacking context) catches
+   the light; and an outer drop shadow floats the pane off the card. Set the
+   corner radius on the element (the sheen inherits it). */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0.04) 46%,
+    rgba(255, 255, 255, 0.1)
+  );
+  backdrop-filter: blur(16px) saturate(185%) brightness(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(185%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.6),
+    inset 0 -12px 26px -18px rgba(255, 255, 255, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 8px 22px -10px rgba(0, 0, 0, 0.55);
+}
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1; /* over the glass body, under the text (isolate keeps it contained) */
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.45),
+    rgba(255, 255, 255, 0.08) 24%,
+    transparent 46%
+  );
+}
+/* Fallbacks: where the backdrop can't be filtered, or the user asked for less
+   transparency, fall back to a near-solid dark pane so text stays legible. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass {
+    background-color: rgba(8, 7, 14, 0.8);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .liquid-glass {
+    background-color: rgba(8, 7, 14, 0.92);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 /* Marquee ticker for the masthead strip. */
 @keyframes ticker {
   from { transform: translateX(0); }
