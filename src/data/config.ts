@@ -23,14 +23,32 @@ export const GAME_CONFIG = {
     // animation (~5s); a normal catch with full animations averages ~100s.
     catchSec: { normal: 100, quick: 5 },
     downtimeSecRange: { min: 20, max: 60 } as Range,
+    // Per-raid overhead that is NOT battle and NOT catch: the lobby countdown
+    // before the fight starts, plus the two UI transitions (lobby→battle, battle
+    // →catch). The lobby wait is the big, play-style-dependent one (it can run
+    // from ~15s when a coordinated group starts immediately up to the full ~2 min
+    // public-lobby ceiling), so it's a user-editable assumption — defaulting to
+    // 120s, or 60s once the lobby is a full 20 trainers (which fills/starts
+    // faster). The transitions are quasi-fixed: lobby→battle is always ~5s, and
+    // battle→catch is ~10–20s depending how fast the user taps through, giving a
+    // 15–25s combined transition spread that feeds the fast/slow raid estimate.
+    lobbyWaitSecRange: { min: 15, max: 120 } as Range,
+    lobbyWaitSecDefault: 120,
+    lobbyWaitSecFullLobby: 60,
+    transitionSecRange: { min: 15, max: 25 } as Range,
     // Battle length depends on how full the lobby is. Time interpolates linearly
     // between the tier's minimum viable lobby (slow) and a full 20-trainer lobby
     // (fast), with a hard floor for the best achievable case. Mewtwo needs ≥10
     // trainers; other Megas can be duo'd (≥2); 5★ legendaries need ≥4.
+    // fullSec values are calibrated to observed full-20-lobby, strong-counter,
+    // no-party-play, boss-not-weather-boosted times: a regular Mega ~10–20s
+    // (mid 15), a 5★ ~30–50s (mid 40), and a super-mega Mewtwo ~60–75s (mid 68).
+    // The floors are the party-play best case — a full lobby cleared a super-mega
+    // Skarmory in ~52s, the superMega floor here.
     battle: {
-      superMega: { minRaiders: 10, fullSec: 60, minSec: 90, floorSec: 60 }, // Mega Mewtwo X/Y
-      mega: { minRaiders: 2, fullSec: 30, minSec: 270, floorSec: 15 },
-      fiveStar: { minRaiders: 4, fullSec: 30, minSec: 270, floorSec: 20 },
+      superMega: { minRaiders: 10, fullSec: 68, minSec: 90, floorSec: 52 }, // Mega Mewtwo X/Y
+      mega: { minRaiders: 2, fullSec: 15, minSec: 270, floorSec: 10 },
+      fiveStar: { minRaiders: 4, fullSec: 40, minSec: 270, floorSec: 25 },
     },
     // Party Play — a sub-group of 2–4 *within* the lobby (a party is not a
     // lobby) — hits harder, shaving extra seconds by party size.

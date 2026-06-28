@@ -252,6 +252,11 @@ export interface CapacityModel {
   battleSecRange: Range;
   /** Catch time per raid for the normal (Candy-earning) catch baseline (~100s). */
   catchSec: number;
+  /** Raid-lobby wait before the battle starts (user-adjustable assumption). */
+  lobbySec: number;
+  /** UI transitions per raid: lobby→battle (~5s) + battle→catch (~10–20s),
+   *  a 15–25s spread that widens the fast/slow raid estimate. */
+  transitionSecRange: Range;
   downtimeSecRange: Range;
   raidsPerHour: Range;
   totalRaids: Range;

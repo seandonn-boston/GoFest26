@@ -128,7 +128,8 @@ describe("capacity", () => {
     // Default plan: full 20-trainer lobby, normal catch.
     expect(cap.lobbySize).toBe(GAME_CONFIG.capacity.defaultLobbySize);
     expect(cap.catchSec).toBe(GAME_CONFIG.capacity.catchSec.normal);
-    const perRaidFast = cap.battleSecRange.min + cap.catchSec + cap.downtimeSecRange.min;
+    const overhead = cap.lobbySec + cap.transitionSecRange.min;
+    const perRaidFast = overhead + cap.battleSecRange.min + cap.catchSec + cap.downtimeSecRange.min;
     expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });
@@ -143,9 +144,28 @@ describe("capacity", () => {
   it("party play shaves battle time", () => {
     const noParty = computeCapacity({ ...DEFAULT_SETTINGS, partyPlay: false });
     const party = computeCapacity({ ...DEFAULT_SETTINGS, partyPlay: true, partySize: 4 });
-    // A full-lobby Mega is 30s; a party of 4 shaves 15s -> 15s (the floor).
-    expect(party.battleSecRange.min).toBe(15);
+    // A full-lobby Mega is 15s; a party of 4 shaves 15s -> 10s (the floor).
+    expect(party.battleSecRange.min).toBe(10);
     expect(party.battleSecRange.min).toBeLessThan(noParty.battleSecRange.min);
+  });
+
+  it("a longer lobby wait means fewer raids per hour", () => {
+    const fast = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: 15 });
+    const slow = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: 120 });
+    expect(fast.lobbySec).toBe(15);
+    expect(slow.lobbySec).toBe(120);
+    expect(slow.transitionSecRange).toEqual(fast.transitionSecRange); // transitions are fixed
+    expect(slow.raidsPerHour.max).toBeLessThan(fast.raidsPerHour.max);
+  });
+
+  it("auto lobby wait follows lobby size (60s at a full 20, else 120s)", () => {
+    const full = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: null, lobbySize: 20 });
+    const thin = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: null, lobbySize: 10 });
+    expect(full.lobbySec).toBe(60);
+    expect(thin.lobbySec).toBe(120);
+    // A manual override beats the auto default.
+    const override = computeCapacity({ ...DEFAULT_SETTINGS, lobbyWaitSec: 30, lobbySize: 20 });
+    expect(override.lobbySec).toBe(30);
   });
 });
 
@@ -221,14 +241,15 @@ describe("scheduler", () => {
 
 describe("settings", () => {
   it("derives raids/hour from custom raid timing", () => {
-    // Full lobby (fastest tier battle) + a normal catch + no downtime.
+    // Full lobby (fastest tier battle) + a normal catch + no downtime, but the
+    // lobby wait + transition overhead still applies to every raid.
     const settings: PlannerSettings = {
       ...DEFAULT_SETTINGS,
       lobbySize: 20,
       downtimeSecRange: { min: 0, max: 0 },
     };
     const cap = computeCapacity(settings);
-    const perRaidFast = cap.battleSecRange.min + cap.catchSec;
+    const perRaidFast = cap.lobbySec + cap.transitionSecRange.min + cap.battleSecRange.min + cap.catchSec;
     expect(cap.raidsPerHour.max).toBe(Math.floor(3600 / perRaidFast));
     expect(cap.totalRaids.max).toBe(cap.raidsPerHour.max * cap.hoursPerDay * cap.days);
   });

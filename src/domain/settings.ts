@@ -18,6 +18,14 @@ export interface PlannerSettings {
   /** Walking / setup time between raids. */
   downtimeSecRange: Range;
   /**
+   * Raid-lobby wait before the battle starts, in seconds (15–120). Play-style
+   * dependent — a coordinated group starts in ~15s; a public lobby can run the
+   * full ~2 min. `null` = auto: follow the lobby-size default (60s at a full 20,
+   * else 120s). A manual value overrides that. The 15–25s of UI transitions are
+   * added separately (see GAME_CONFIG.capacity.transitionSecRange).
+   */
+  lobbyWaitSec: number | null;
+  /**
    * Which reward roll to plan around when sizing the schedule:
    * "optimistic" = best-case drops, "expected" = midpoint, "safe" = worst-case.
    */
@@ -72,6 +80,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   partyPlay: false,
   partySize: 4,
   downtimeSecRange: { ...GAME_CONFIG.capacity.downtimeSecRange },
+  lobbyWaitSec: null, // auto: follow the lobby-size default
   rewardCase: GAME_CONFIG.scheduler.rewardCase,
   freeDailyPerDay: GAME_CONFIG.passes.freeDailyPerDay,
   useRemoteRaids: false,
@@ -88,6 +97,22 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   calibration: {},
 };
 
+/** The auto lobby-wait default for a lobby size: a full 20-trainer lobby fills/
+ *  starts faster (60s), everything thinner waits longer (120s). */
+export function defaultLobbyWaitSec(lobbySize: number): number {
+  return lobbySize >= 20
+    ? GAME_CONFIG.capacity.lobbyWaitSecFullLobby
+    : GAME_CONFIG.capacity.lobbyWaitSecDefault;
+}
+
+/** The effective per-raid lobby wait: the user's override if set, else the
+ *  lobby-size auto default, clamped to the allowed 15–120s range. */
+export function effectiveLobbyWaitSec(s: PlannerSettings): number {
+  const { min, max } = GAME_CONFIG.capacity.lobbyWaitSecRange;
+  const raw = s.lobbyWaitSec ?? defaultLobbyWaitSec(s.lobbySize);
+  return Math.max(min, Math.min(max, raw));
+}
+
 /** True when every planning knob is at its default (region is excluded). */
 export function isDefaultSettings(s: PlannerSettings): boolean {
   return (
@@ -96,6 +121,7 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.partySize === DEFAULT_SETTINGS.partySize &&
     s.downtimeSecRange.min === DEFAULT_SETTINGS.downtimeSecRange.min &&
     s.downtimeSecRange.max === DEFAULT_SETTINGS.downtimeSecRange.max &&
+    s.lobbyWaitSec === DEFAULT_SETTINGS.lobbyWaitSec &&
     s.rewardCase === DEFAULT_SETTINGS.rewardCase &&
     s.freeDailyPerDay === DEFAULT_SETTINGS.freeDailyPerDay &&
     s.remoteRaidPassesPlanned === DEFAULT_SETTINGS.remoteRaidPassesPlanned &&
