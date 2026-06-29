@@ -6,9 +6,10 @@ import type { StepId } from "@/store/useUiStore";
 const STEP_LABELS: Record<StepId, string> = {
   1: "Pick targets",
   2: "Enter what you have",
-  3: "Add-ons",
-  4: "Results",
-  5: "Cost",
+  3: "Road of Legends",
+  4: "GO Fest Prioritizer",
+  5: "Remote Prioritizer",
+  6: "Cost",
 };
 
 export interface MissingStep {

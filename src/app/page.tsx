@@ -19,6 +19,7 @@ import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { CostStep } from "@/components/Dashboard/CostStep";
+import { RemotePrioritizer } from "@/components/Dashboard/RemoteStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
 import { ExportButton } from "@/components/ExportButton";
@@ -45,14 +46,6 @@ export default function Home() {
   // Progress signals for the step pills' completion ticks.
   const anyPlayDay = usePlannerStore((s) => Object.values(s.playDays).some(Boolean));
   const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
-  // Step 3 is now optional add-ons (Road of Legends, remote raids, passes on
-  // hand), so it reads "done" once the user has engaged any of them.
-  const hasResources = usePlannerStore(
-    (s) =>
-      (s.settings.passesOwned ?? 0) > 0 ||
-      (s.settings.remoteRaidPassesPlanned ?? 0) > 0 ||
-      (s.settings.linkChargesOwned ?? 0) > 0,
-  );
 
   const step = useUiStore((s) => s.step);
   const setStep = useUiStore((s) => s.setStep);
@@ -92,9 +85,10 @@ export default function Home() {
   const steps: StepMeta[] = [
     { id: 1, label: "Pick targets", done: anySelected },
     { id: 2, label: "Enter what you have", done: anySelected && hasGoals },
-    { id: 3, label: "Add-ons", done: anyPlayDay || useRemote || hasResources },
-    { id: 4, label: "Results", done: hasGoals },
-    { id: 5, label: "Cost", done: hasGoals },
+    { id: 3, label: "Road of Legends", done: anyPlayDay },
+    { id: 4, label: "GO Fest Prioritizer", done: hasGoals },
+    { id: 5, label: "Remote Prioritizer", done: useRemote },
+    { id: 6, label: "Cost", done: hasGoals },
   ];
 
   if (!hydrated) {
@@ -157,7 +151,7 @@ export default function Home() {
                 step={step}
                 onPrev={prevStep}
                 onNext={nextStep}
-                nextLabel={step === 3 ? "See results" : step === 4 ? "See cost" : undefined}
+                nextLabel={step === 3 ? "See results" : step === 4 ? "See remote" : step === 5 ? "See cost" : undefined}
               />
             </div>
 
@@ -287,7 +281,16 @@ function StepContent({
     );
   }
 
-  // step === 5 — Cost
+  if (step === 5) {
+    return (
+      <>
+        {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
+        <RemotePrioritizer plan={blockPlan} />
+      </>
+    );
+  }
+
+  // step === 6 — Cost
   return (
     <>
       {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
