@@ -132,7 +132,7 @@ export const GAME_CONFIG = {
   // source: community-reported boost tiers; Mega Level 4 is 2026-only. Editable.
   megaCatchBoost: {
     xlByLevel: [0, 0, 0.1, 0.25, 0.3],
-    l4Types: ["Fighting", "Psychic", "Grass", "Poison", "Dark", "Flying", "Dragon"],
+    l4Types: ["Fighting", "Psychic", "Grass", "Poison", "Dark", "Flying", "Dragon", "Steel"],
   },
 
   // Approximate cumulative Mega Energy to reach Mega Level 0..3 for a typical

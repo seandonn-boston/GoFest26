@@ -149,9 +149,9 @@ export function AssumptionsControls() {
         </div>
         <p className="mt-2 text-xs text-slate-500">
           A same-type Mega/Primal buddy raises Candy XL on catches, scaling with its Mega Level — applied to
-          every boss whose “Mega buddy” toggle is on. Five 2026 species reach{" "}
+          every boss whose “Mega buddy” toggle is on. A handful of 2026 species reach{" "}
           <span className="text-white">Level 4 (+30%)</span>; enable it per boss on
-          Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon targets.
+          Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon/Steel targets.
         </p>
       </div>
 
