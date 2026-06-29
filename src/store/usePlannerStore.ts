@@ -256,6 +256,15 @@ interface PlannerState {
    * a head start that reduces the weekend demand. Absent/false = not playing.
    */
   playDays: Record<string, boolean>;
+  /**
+   * Per Road of Legends day, the ordered list of targets the player will pre-farm
+   * that day (primary boss ids; the order IS that day's priority). Independent of
+   * the weekend selection. A day absent from this map defaults to "all eligible
+   * featured targets" (so turning on a day just works); once edited it's explicit.
+   */
+  roadTargets: Record<string, string[]>;
+  /** Set one Road of Legends day's ordered target list (selection + order). */
+  setRoadTargets: (dayId: string, ids: string[]) => void;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   /** Select every roster boss at once. */
@@ -427,9 +436,13 @@ export const usePlannerStore = create<PlannerState>()(
       individualPriority: [],
       quickCatchBlocks: {},
       playDays: {},
+      roadTargets: {},
 
       togglePlayDay: (dayId) =>
         set((state) => ({ playDays: { ...state.playDays, [dayId]: !state.playDays[dayId] } })),
+
+      setRoadTargets: (dayId, ids) =>
+        set((state) => ({ roadTargets: { ...state.roadTargets, [dayId]: ids } })),
 
       setRaidsDone: (key, value) =>
         set((state) => {
@@ -871,6 +884,7 @@ export const usePlannerStore = create<PlannerState>()(
           individualPriority: [],
           quickCatchBlocks: {},
           playDays: {},
+          roadTargets: {},
         }),
 
       loadState: (raw) =>
@@ -894,6 +908,7 @@ export const usePlannerStore = create<PlannerState>()(
             remoteAuto: b.remoteAuto,
             raidsDone: b.raidsDone,
             playDays: b.playDays ?? {},
+            roadTargets: b.roadTargets ?? {},
           };
         }),
     }),
@@ -924,6 +939,7 @@ export const usePlannerStore = create<PlannerState>()(
         if (!state.remoteAllocations || typeof state.remoteAllocations !== "object") state.remoteAllocations = {};
         if (typeof state.remoteAuto !== "boolean") state.remoteAuto = false;
         if (!state.playDays || typeof state.playDays !== "object") state.playDays = {};
+        if (!state.roadTargets || typeof state.roadTargets !== "object") state.roadTargets = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },

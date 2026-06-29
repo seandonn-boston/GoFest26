@@ -1,15 +1,129 @@
 "use client";
 
+import { useMemo } from "react";
 import { getBoss, GAME_CONFIG } from "@/data";
 import { spriteUrl } from "@/data/bosses";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
 import { energyGoalsForDay } from "@/data/energyGoals";
 import { type RoadDayPlan, type RoadPlan, energyRaidsNeeded, energyRemaining } from "@/domain";
+import { bossIsLocal } from "@/domain/region";
+import { primaryFormId, groupDisplayName } from "@/domain/forms";
 import type { EnergyKind } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
+import { useDragList } from "./useDragList";
+
+/** Featured boss ids per Road of Legends day (for the per-day target picker). */
+const DAY_BOSSIDS: Record<string, string[]> = Object.fromEntries(ROAD_DAYS.map((d) => [d.id, d.bossIds]));
+
+/**
+ * Per-day target picker: silver selection tiles for the targets featured this day
+ * that you've picked for the weekend (and can raid locally), plus a drag list to
+ * order them. Selection + order are stored per day; a day you haven't touched
+ * defaults to all eligible targets in weekend-priority order.
+ */
+function RoadDaySelect({ dayId }: { dayId: string }) {
+  const inputs = usePlannerStore((s) => s.inputs);
+  const region = usePlannerStore((s) => s.settings.region);
+  const roadTargets = usePlannerStore((s) => s.roadTargets);
+  const setRoadTargets = usePlannerStore((s) => s.setRoadTargets);
+
+  // Eligible = featured this day (collapsed to the primary forme), selected for
+  // the weekend, and raidable in person (region-locked targets stay weekend/remote).
+  const eligible = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of DAY_BOSSIDS[dayId] ?? []) {
+      const boss = getBoss(id);
+      if (!boss) continue;
+      const primary = boss.formGroup ? primaryFormId(boss.formGroup) : id;
+      if (seen.has(primary)) continue;
+      seen.add(primary);
+      const pboss = getBoss(primary);
+      if (!pboss || !inputs[primary]?.selected || !bossIsLocal(pboss, region)) continue;
+      out.push(primary);
+    }
+    return out;
+  }, [dayId, inputs, region]);
+
+  const explicit = roadTargets[dayId];
+  // Effective selection: the user's explicit list (kept to still-eligible ids), or
+  // all eligible when they haven't touched this day.
+  const effective = (explicit ?? eligible).filter((id) => eligible.includes(id));
+  const selectedSet = new Set(effective);
+  const drag = useDragList(effective, (ids) => setRoadTargets(dayId, ids));
+
+  const toggle = (id: string) => {
+    const cur = explicit ?? eligible;
+    setRoadTargets(dayId, cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
+  };
+
+  if (eligible.length === 0) {
+    return (
+      <p className="mb-2 text-[13px] text-slate-500">
+        None of your picked targets are featured this day. Pick more on step 1 to pre-farm them here.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mb-2">
+      <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Targets to pre-farm</div>
+      <div className="flex flex-wrap gap-2">
+        {eligible.map((id) => {
+          const boss = getBoss(id);
+          const on = selectedSet.has(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => toggle(id)}
+              aria-pressed={on}
+              className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-[13px] transition ${
+                on
+                  ? "border-slate-300 bg-slate-300/15 text-white shadow-[0_0_0_1px_rgba(203,213,225,0.35)]"
+                  : "border-white/15 bg-gofest-bg/40 text-slate-400 hover:border-white/35"
+              }`}
+            >
+              <Sprite src={boss?.sprite} alt={boss?.name ?? id} size={26} />
+              <span className="whitespace-nowrap">{boss ? groupDisplayName(boss) : id}</span>
+            </button>
+          );
+        })}
+      </div>
+      {effective.length >= 2 ? (
+        <div className="mt-2" {...drag.containerProps}>
+          <p className="mb-1 text-[12px] text-slate-500">Drag to set this day&apos;s priority (top is raided first).</p>
+          <div className="space-y-1">
+            {drag.list.map((id) => {
+              const boss = getBoss(id);
+              return (
+                <div
+                  key={id}
+                  ref={(el) => drag.setRow(id, el)}
+                  className={`flex items-center gap-2 rounded-md border bg-gofest-bg/40 px-2 py-1 text-xs ${
+                    drag.dragId === id ? "border-slate-300 ring-1 ring-slate-300" : "border-white/10"
+                  }`}
+                >
+                  <span
+                    {...drag.gripProps(id, boss ? groupDisplayName(boss) : id)}
+                    className="flex h-6 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none active:cursor-grabbing"
+                  >
+                    ⠿
+                  </span>
+                  <Sprite src={boss?.sprite} alt={boss?.name ?? id} size={20} />
+                  <span className="truncate text-slate-200">{boss ? groupDisplayName(boss) : id}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const stripForme = (name: string) => name.replace(/^Mega /, "").replace(/\s*\(.*\)/, "");
 
@@ -130,6 +244,7 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
           {over ? ` · ${day.remaining} over` : ""}
         </span>
       </div>
+      <RoadDaySelect dayId={day.id} />
       {day.focus ? (
         <p className="mb-1 text-[12px] text-gofest-acid/90">
           🎯 Targeting <b>{day.focus.blockName}</b> — the weekend block with the most raids that won&apos;t fit (

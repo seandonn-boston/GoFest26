@@ -86,6 +86,9 @@ export function computeRoadPlan(
   blockPriority: Record<string, string[]> = {},
   remoteAllocations: Record<string, number> = {},
   quickCatchBlocks: Record<string, boolean> = {},
+  /** Per-day explicit pre-farm targets, in the user's order. A day not present
+   *  falls back to "all featured targets in weekend-priority order". */
+  roadTargets: Record<string, string[]> = {},
 ): RoadPlan {
   const rewardCase = settings.rewardCase;
   const rpH = capacity.raidsPerHour;
@@ -154,13 +157,21 @@ export function computeRoadPlan(
     // worst block has no Monday-raidable overflow, fall back to featured-this-day
     // targets in global weekend-priority order. `remaining` only holds local
     // targets, so region-locked/Mewtwo overflow is naturally skipped.
+    // The user's explicit per-day picks win (in their drag order). Otherwise:
+    // Monday auto-steers at the worst weekend block, other days use featured-in-
+    // priority order.
+    const explicit = roadTargets[day.id];
     const mondayOverflow =
-      day.id === "mon" && worstBlock
+      !explicit && day.id === "mon" && worstBlock
         ? worstBlock.species.filter((s) => s.remaining > 0 && featured.has(s.bossId) && (remaining.get(s.bossId) ?? 0) > 0)
         : [];
     let shares: RawShare[];
     let focus: RoadDayPlan["focus"];
-    if (mondayOverflow.length) {
+    if (explicit) {
+      shares = explicit
+        .filter((id) => featured.has(id) && (remaining.get(id) ?? 0) > 0)
+        .map(buildShare); // in the user's chosen order
+    } else if (mondayOverflow.length) {
       shares = mondayOverflow.map((s) => buildShare(s.bossId)); // already in block-priority order
       focus = { blockName: worstBlock!.name, overflow: worstBlock!.remaining };
     } else {

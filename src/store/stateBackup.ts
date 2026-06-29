@@ -22,6 +22,8 @@ export interface StateBackup {
   raidsDone: Record<string, number>;
   /** Road of Legends weekdays the player will raid (may be absent in old backups). */
   playDays?: Record<string, boolean>;
+  /** Per Road of Legends day, the ordered pre-farm targets (may be absent). */
+  roadTargets?: Record<string, string[]>;
 }
 
 export const BACKUP_APP = "gofest2026-raid-planner";
@@ -45,6 +47,7 @@ export function serializeState(): StateBackup {
     remoteAuto: s.remoteAuto,
     raidsDone: s.raidsDone,
     playDays: s.playDays,
+    roadTargets: s.roadTargets,
   };
 }
 
