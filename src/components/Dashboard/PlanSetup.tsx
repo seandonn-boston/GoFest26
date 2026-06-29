@@ -3,7 +3,6 @@
 import type { RoadPlan } from "@/domain";
 import { RoadOfLegends } from "./RoadOfLegends";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
-import { ResourcesOnHand } from "./ResourcesOnHand";
 
 /**
  * Step 3 — the OPTIONAL add-ons that refine the plan: the Road of Legends weekday
@@ -18,15 +17,13 @@ export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
       <div>
         <h2 className="mb-1 text-lg font-semibold">Optional add-ons</h2>
         <p className="text-sm text-slate-400">
-          All optional — pick any weekday head-start days, decide whether you&apos;ll do remote raids,
-          and tell us the passes you already hold. Priority is now set by ordering each time block on
-          the Results step.
+          All optional — pick any weekday head-start days and decide whether you&apos;ll do remote raids.
+          Priority is now set by ordering each time block on the Results step.
         </p>
       </div>
 
       <RoadOfLegends road={roadPlan} />
       <RemoteRaidToggle />
-      <ResourcesOnHand />
     </section>
   );
 }

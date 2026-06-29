@@ -16,6 +16,7 @@ import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
 import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
+import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
 import { CostStep } from "@/components/Dashboard/CostStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
@@ -224,6 +225,9 @@ function StepContent({
         </div>
         {anySelected ? (
           <>
+            {/* Passes / Link Charges on hand (collapsed by default) sits above the
+                screenshot importer so the cost step can show have / need / buy. */}
+            <ResourcesOnHand />
             {/* Screenshot upload sits near the top of the step — auto-fills the
                 cards below, but is entirely optional (type by hand instead). The
                 copyable search string now lives inside the bulk-import box. */}

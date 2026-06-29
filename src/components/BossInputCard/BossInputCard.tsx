@@ -89,6 +89,15 @@ export function BossInputCard({
   // but counters / megas / availability stay per forme.
   const formes = boss.formGroup ? formMembers(boss.formGroup) : [boss];
   const isGroup = formes.length > 1;
+  // Time-block availability line. When every forme shares the same time blocks
+  // there's nothing to tell apart, so show it once; only label per forme
+  // ("Altered: … · Origin: …") when the formes actually differ.
+  const formeAvails = formes.map((f) => ({ label: f.formLabel ?? "", avail: describeAvailability(f) }));
+  const sameAvail = new Set(formeAvails.map((a) => a.avail)).size === 1;
+  const availabilityText =
+    isGroup && !sameAvail
+      ? formeAvails.map((a) => `${a.label}: ${a.avail}`).join(" · ")
+      : describeAvailability(formes[0]);
   // Title with the bare species ("Zacian (Hero of Many Battles)" → "Zacian"); the
   // forme(s) ride in the pre-title.
   const displayName = isGroup ? groupDisplayName(boss) : boss.species ?? boss.name;
@@ -198,7 +207,7 @@ export function BossInputCard({
             Fixed line order: time block, then location (region), then tip. */}
         <div className="liquid-glass mx-auto mt-2 w-fit max-w-full rounded-2xl px-3 py-1.5">
           <p className="text-center text-[13px] font-medium text-slate-50">
-            🗓️ {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
+            🗓️ {availabilityText}
           </p>
           {regionLabel || remoteOnly ? (
             <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">

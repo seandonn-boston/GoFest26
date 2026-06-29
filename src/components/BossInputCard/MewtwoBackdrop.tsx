@@ -27,12 +27,12 @@ export function MewtwoBackdrop({ spriteX, spriteY }: { spriteX?: string; spriteY
       {/* Middle — the two sprites, centers 10% in from each edge. */}
       <div aria-hidden className="absolute inset-0 z-10">
         {spriteX ? (
-          <span className="absolute left-[10%] top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="absolute left-[10%] top-[8px] -translate-x-1/2">
             <Sprite src={spriteX} alt="" size={SIZE} />
           </span>
         ) : null}
         {spriteY ? (
-          <span className="absolute right-[10%] top-1/2 translate-x-1/2 -translate-y-1/2">
+          <span className="absolute right-[10%] top-[8px] translate-x-1/2">
             <Sprite src={spriteY} alt="" size={SIZE} />
           </span>
         ) : null}

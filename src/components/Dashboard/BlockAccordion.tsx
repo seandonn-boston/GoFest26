@@ -6,7 +6,7 @@ import { GAME_CONFIG } from "@/data/config";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
-import { TYPE_COLORS } from "@/data/typeVisuals";
+import { TYPE_COLORS, typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { RISK_BANDS, megaBoostsForBoss, topBlockMegas, megaBoostSpecies } from "@/domain";
 import { sized } from "@/domain/blockPlan";
 import type { BlockMegaRank, BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
@@ -285,7 +285,10 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   );
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02]">
+    // Themed by the block's three featured wild-spawn types — a colored enamel
+    // frame + dark veil, exactly like the boss cards.
+    <div className="overflow-hidden rounded-lg p-[2px]" style={typeBackgroundStyle(wildTypes)}>
+    <div className="rounded-[7px]" style={typePanelStyle(wildTypes)}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
           <span className="inline-flex items-center truncate">
@@ -363,24 +366,31 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
           block is expanded or collapsed (they vary block to block). */}
       <BlockChips counters={blockCounters} counterSearch={blockCounterSearch} megas={topMegas} megaSearch={megaSearch} />
     </div>
+    </div>
   );
 }
 
 /** Remote-raid section: the assigned passes as a bar (top), then the per-species
  *  allocation inputs (the user types how many of each to do remotely). */
 function RemoteSection({ remote }: { remote?: RemotePlan }) {
+  const [open, setOpen] = useState(true);
   const fitted = remote?.fitted ?? 0;
   const over = !!remote && remote.remaining > 0;
   return (
     <div className="rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.04] px-2.5 py-2">
-      <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-        <span className="font-medium text-gofest-accent">Remote raids</span>
-        <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
-        </span>
-      </div>
-      {remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
-      <RemoteAllocator />
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="w-full text-left">
+        <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+          <span className="inline-flex items-center font-medium text-gofest-accent">
+            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-gofest-accent" />
+            Remote raids
+          </span>
+          <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
+            {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
+          </span>
+        </div>
+        {remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
+      </button>
+      {open ? <RemoteAllocator /> : null}
     </div>
   );
 }
