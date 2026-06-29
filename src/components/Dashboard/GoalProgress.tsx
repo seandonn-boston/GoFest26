@@ -62,7 +62,7 @@ export function GoalProgress({
               {achievable}/{required}
             </span>
           </span>
-          <span className="shrink-0 text-[10px] text-slate-500">per-Pokémon ⌄</span>
+          <span className="shrink-0 text-[12px] text-slate-500">per-Pokémon ⌄</span>
         </div>
         <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
           <div className={`h-full rounded-full ${ratioBar(achievable, required)}`} style={{ width: `${pct}%` }} />

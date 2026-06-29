@@ -50,7 +50,7 @@ export function StepNav({
                 }`}
               >
                 <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[13px] font-bold ${
                     s.done
                       ? "border-emerald-400 bg-emerald-400 text-black"
                       : isActive
@@ -69,7 +69,7 @@ export function StepNav({
                     {s.label}
                   </span>
                   {s.optional ? (
-                    <span className="text-[9px] uppercase tracking-wide text-slate-500">Optional</span>
+                    <span className="text-[11px] uppercase tracking-wide text-slate-500">Optional</span>
                   ) : null}
                 </span>
               </button>

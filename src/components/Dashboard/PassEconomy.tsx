@@ -64,7 +64,7 @@ export function PassEconomy({ summary }: { summary: PlanSummary }) {
             <span className="font-mono text-2xl font-extrabold text-amber-200">
               {coins(cost.low.total)}–{coins(cost.high.total)}
             </span>
-            <span className="text-[11px] text-slate-400">coins to own the passes your goals need</span>
+            <span className="text-[13px] text-slate-400">coins to own the passes your goals need</span>
           </div>
 
           <div className="mt-2 divide-y divide-white/[0.04] rounded-md border border-white/10 bg-gofest-bg/30 px-2.5 py-1.5">
@@ -110,7 +110,7 @@ export function PassEconomy({ summary }: { summary: PlanSummary }) {
         </>
       )}
 
-      <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+      <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
         Singles excluded (3-pack+ only). A <b>remote</b> Super Mega (Mewtwo) raid needs a Remote Pass <b>and</b> 200 Link
         Charges; in person, Link Charges can stand in for a Mega (150) / Super Mega (200) pass when you opt in. Box prices
         are personalized &amp; vary — the “lowest” uses a best-case bulk box estimate (editable). Assumes a free daily pass
@@ -124,10 +124,10 @@ function Method({ title, tone, methods, total }: { title: string; tone: string; 
   return (
     <div className="rounded-md border border-white/10 bg-gofest-bg/30 p-2">
       <div className="mb-1 flex items-baseline justify-between">
-        <span className={`text-[11px] font-bold uppercase tracking-wide ${tone}`}>{title}</span>
+        <span className={`text-[13px] font-bold uppercase tracking-wide ${tone}`}>{title}</span>
         <span className="font-mono text-xs font-bold text-slate-200">{coins(total)}</span>
       </div>
-      <ul className="space-y-0.5 text-[11px] text-slate-400">
+      <ul className="space-y-0.5 text-[13px] text-slate-400">
         {methods.map((m, i) => (
           <li key={i}>• {m}</li>
         ))}

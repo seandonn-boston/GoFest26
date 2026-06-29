@@ -5,7 +5,7 @@ import { useCopied } from "@/hooks/useCopied";
 
 /** Clipboard glyph (or a check once copied). */
 export function ClipboardGlyph({ copied }: { copied?: boolean }) {
-  if (copied) return <span className="font-mono text-[11px] font-bold leading-none">✓</span>;
+  if (copied) return <span className="font-mono text-[13px] font-bold leading-none">✓</span>;
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
       <rect x="8" y="8" width="12" height="12" rx="2" />

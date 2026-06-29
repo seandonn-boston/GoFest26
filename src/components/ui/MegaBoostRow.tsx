@@ -76,7 +76,7 @@ const LEGEND: { kind: MegaKind; label: string }[] = [
 /** Compact key explaining the outline colours. */
 export function MegaBoostLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-slate-400">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400">
       {LEGEND.map((l) => (
         <span key={l.kind} className="inline-flex items-center gap-1">
           <Dot kind={l.kind} />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeBlockPlan, bandsForSpecies, rareCandyForecast, goalProgress, autoRemoteAllocations, RISK_BANDS } from "./blockPlan";
+import { computeBlockPlan, bandsForSpecies, goalProgress, autoRemoteAllocations, RISK_BANDS } from "./blockPlan";
 import { computeCapacity } from "./capacity";
 import { makeDefaultInput } from "./defaults";
 import { computeBossResult } from "./raidsNeeded";
@@ -303,28 +303,6 @@ describe("remote raids (manual per-species allocation)", () => {
     const plan = computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [MEWTWO_X_ID]: 10 });
     expect(plan.remote!.capacity).toBe(ROOMY_REMOTE);
     expect(plan.remote!.fitted).toBe(10);
-  });
-});
-
-describe("rareCandyForecast", () => {
-  it("gives 1 Rare Candy per raid and 1 Rare Candy XL per non-Mega raid", () => {
-    const { inputs, results } = buildFor([MEWTWO_X_ID, MEWTWO_Y_ID]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const totalRaids = plan.blocks.reduce((s, b) => s + b.fitted, 0);
-    const f = rareCandyForecast(plan);
-    expect(f.rareCandy).toBe(totalRaids);
-    // Mewtwo is super-mega (not "mega"), so every raid also yields Rare Candy XL.
-    expect(f.rareCandyXl).toBe(totalRaids);
-  });
-
-  it("excludes regular Mega raids from Rare Candy XL", () => {
-    const mega = SORTED_BOSSES.find((b) => b.tier === "mega" && !isMewtwo(b.id) && bossIsLocal(b, DEFAULT_SETTINGS.region));
-    if (!mega) return;
-    const { inputs, results } = buildFor([mega.id]);
-    const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const f = rareCandyForecast(plan);
-    expect(f.rareCandy).toBeGreaterThan(0);
-    expect(f.rareCandyXl).toBe(0); // a Mega raid gives Rare Candy but no Rare Candy XL
   });
 });
 

@@ -1,10 +1,9 @@
 "use client";
 
-import type { RoadPlan, WeekendBlockPlan } from "@/domain";
+import type { RoadPlan } from "@/domain";
 import { RoadOfLegends } from "./RoadOfLegends";
 import { RemoteRaidToggle } from "./RemoteRaidToggle";
 import { ResourcesOnHand } from "./ResourcesOnHand";
-import { RareCandyPanel } from "./RareCandyPanel";
 
 /**
  * Step 3 — the OPTIONAL add-ons that refine the plan: the Road of Legends weekday
@@ -13,7 +12,7 @@ import { RareCandyPanel } from "./RareCandyPanel";
  * priority is no longer set here; it's set by ordering each time block on the
  * Results step.
  */
-export function PlanSetup({ roadPlan, blockPlan }: { roadPlan: RoadPlan; blockPlan: WeekendBlockPlan }) {
+export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
   return (
     <section className="space-y-4">
       <div>
@@ -28,7 +27,6 @@ export function PlanSetup({ roadPlan, blockPlan }: { roadPlan: RoadPlan; blockPl
       <RoadOfLegends road={roadPlan} />
       <RemoteRaidToggle />
       <ResourcesOnHand />
-      <RareCandyPanel plan={blockPlan} />
     </section>
   );
 }

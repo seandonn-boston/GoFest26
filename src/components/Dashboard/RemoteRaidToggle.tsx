@@ -49,7 +49,7 @@ export function RemoteRaidToggle() {
 
       {on ? (
         <>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-slate-400">
             Remote passes are <b className="text-slate-200">unlimited</b> this event — the only limit is how many you
             have, which you enter on the resources step. You&apos;ve assigned{" "}
             <span className="font-mono text-slate-300">{assigned}</span> so far
@@ -58,16 +58,16 @@ export function RemoteRaidToggle() {
             <b className="text-slate-200">Super Mega</b> (Mewtwo) raid also needs 200 Link Charges per raid — set those on
             the resources step.
           </p>
-          <p className="mt-1.5 rounded-sm border border-gofest-acid/30 bg-gofest-acid/[0.06] p-2 text-[11px] leading-relaxed text-gofest-acid">
+          <p className="mt-1.5 rounded-sm border border-gofest-acid/30 bg-gofest-acid/[0.06] p-2 text-[13px] leading-relaxed text-gofest-acid">
             💤 Don&apos;t raid all night — play Pokémon Sleep instead <span className="not-italic">;)</span>
           </p>
         </>
       ) : hasRemoteOnly ? (
-        <p className="mt-1.5 text-[11px] text-gofest-accent">
+        <p className="mt-1.5 text-[13px] text-gofest-accent">
           ⚠ You&apos;ve picked region-locked targets — they can only be done remotely. Turn this on to plan them.
         </p>
       ) : (
-        <p className="mt-1.5 text-[11px] text-slate-500">
+        <p className="mt-1.5 text-[13px] text-slate-500">
           Unlimited this event. Each species you assign remotely drops out of its in-person time block.
         </p>
       )}

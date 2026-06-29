@@ -15,7 +15,7 @@ const VARIANTS: { id: Variant; label: string }[] = [
 ];
 
 const iconBtn =
-  "flex h-5 w-5 items-center justify-center rounded border border-white/15 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-30";
+  "flex h-5 w-5 items-center justify-center rounded border border-white/15 text-[13px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-30";
 
 /**
  * Editor for maxing several distinct Mewtwo — each with its own Pokémon level
@@ -37,10 +37,10 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
 
   return (
     <div className="mt-3 rounded-lg border border-gofest-accent2/25 bg-gofest-accent2/[0.04] p-2.5">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gofest-accent2">
+      <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent2">
         Maxing {copies.length} Mewtwo · priority order
       </div>
-      <p className="mb-2 text-[10px] text-slate-500">
+      <p className="mb-2 text-[12px] text-slate-500">
         Shared Candy / XL / X-Energy / Y-Energy (above) fill the #1 Mewtwo first. A caught Mewtwo only has one
         branch unlocked, so setting an X level clears Y (and vice-versa).
       </p>
@@ -60,7 +60,7 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
           return (
             <div key={c.id} className="rounded-md border border-white/10 bg-gofest-bg/40 p-2">
               <div className="mb-1.5 flex items-center gap-1.5">
-                <span className="rounded bg-gofest-accent2/20 px-1.5 py-0.5 text-[10px] font-bold text-gofest-accent2">#{i + 1}</span>
+                <span className="rounded bg-gofest-accent2/20 px-1.5 py-0.5 text-[12px] font-bold text-gofest-accent2">#{i + 1}</span>
                 <div className="ml-auto flex items-center gap-1">
                   <button type="button" disabled={i === 0} onClick={() => moveMewtwoCopy(c.id, -1)} className={iconBtn} aria-label="Raise priority">↑</button>
                   <button type="button" disabled={i === copies.length - 1} onClick={() => moveMewtwoCopy(c.id, 1)} className={iconBtn} aria-label="Lower priority">↓</button>
@@ -82,14 +82,14 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
                     type="button"
                     onClick={() => updateMewtwoCopy(c.id, { variant: v.id })}
                     aria-pressed={c.variant === v.id}
-                    className={`rounded px-2 py-0.5 text-[10px] transition ${
+                    className={`rounded px-2 py-0.5 text-[12px] transition ${
                       c.variant === v.id ? "bg-gofest-accent2 font-semibold text-black" : "border border-white/15 text-slate-300 hover:border-white/30"
                     }`}
                   >
                     {v.label}
                   </button>
                 ))}
-                <span className="ml-auto text-[10px] text-slate-400">
+                <span className="ml-auto text-[12px] text-slate-400">
                   {parts.length ? <>still needs {parts.join(" · ")}</> : <span className="text-emerald-300">✓ covered by on-hand</span>}
                 </span>
               </div>
@@ -100,7 +100,7 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
       <button
         type="button"
         onClick={addMewtwoCopy}
-        className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[11px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
+        className="mt-2 w-full rounded-md border border-dashed border-white/20 py-1.5 text-[13px] text-slate-300 transition hover:border-gofest-accent2/50 hover:text-white"
       >
         ＋ Add another Mewtwo
       </button>

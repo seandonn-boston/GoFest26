@@ -102,15 +102,17 @@ export function MewtwoCard({
           </div>
           <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
             <span className="h-px w-12 bg-gradient-to-r from-transparent to-amber-300/50" />
-            <span className="text-[10px] leading-none">✦</span>
+            <span className="text-[12px] leading-none">✦</span>
             <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
           </div>
           <MewtwoTitle />
-          <p className="mb-3 mt-2 text-xs text-slate-400">
-            One Mewtwo, two Mega forms. X appears <span className="text-slate-200">Saturday</span>, Y
-            appears <span className="text-slate-200">Sunday</span>, and their Mega Energy is separate —
-            so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
-          </p>
+          <div className="liquid-glass text-halo mx-auto mb-3 mt-2 max-w-full rounded-2xl px-3 py-2">
+            <p className="text-center text-xs font-medium text-slate-50">
+              One Mewtwo, two Mega forms. X appears <span className="font-semibold text-white">Saturday</span>, Y
+              appears <span className="font-semibold text-white">Sunday</span>, and their Mega Energy is separate —
+              so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
+            </p>
+          </div>
         </button>
         </div>
 
@@ -233,11 +235,11 @@ function FormColumn({
         <Sprite src={sprite} alt={title} size={32} />
         <div className="min-w-0">
           <div className="text-sm font-semibold">{title}</div>
-          <div className="text-[11px] text-slate-400">🗓 {subtitle}</div>
+          <div className="text-[13px] text-slate-400">🗓 {subtitle}</div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 text-[11px] text-slate-300">
+      <div className="flex flex-col gap-1 text-[13px] text-slate-300">
         <label className="flex items-center gap-1.5">
           <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={megaBuddy} onChange={(e) => onMegaBuddy(e.target.checked)} />
           Mega buddy bonus
@@ -263,11 +265,11 @@ function FormColumn({
           <>
             <div className="flex flex-wrap items-baseline gap-x-4">
               <div>
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids needed</span>
+                <span className="text-[12px] uppercase tracking-wide text-slate-400">Raids needed</span>
                 <div className="text-xl font-bold text-gofest-accent2">{formatRange(result!.raids)}</div>
               </div>
             </div>
-            <ul className="mt-1 space-y-0.5 text-[11px] text-slate-400">
+            <ul className="mt-1 space-y-0.5 text-[13px] text-slate-400">
               {needEntries.map(([c, n]) => (
                 <li key={c}>
                   {CURRENCY_LABELS[c]}: need <span className="text-slate-200">{formatNumber(n.needed)}</span> → {formatRange(n.raidsRange)} raids
@@ -277,7 +279,7 @@ function FormColumn({
           </>
         )}
         {preUnlocked ? (
-          <p className="mt-1.5 text-[11px] text-slate-500">
+          <p className="mt-1.5 text-[13px] text-slate-500">
             💡 Protip: GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500 first-evolution cost) —
             set Mega lvl to 0 if you&apos;re evolving one you already own.
           </p>
@@ -295,13 +297,13 @@ function FormColumn({
             className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
           >
             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
-              <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+              <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
                 Mega-evolve for candy
               </span>
               <MegaBoostLegend />
             </div>
             <MegaBoostRow boosts={boosts} max={8} />
-            <p className="mt-1.5 text-[10px] text-slate-500">
+            <p className="mt-1.5 text-[12px] text-slate-500">
               Same-type as {title} — evolve one (Mega Level 3) before battling for bonus Candy XL.
             </p>
           </Copyable>

@@ -14,7 +14,7 @@ export function AdvancedTools() {
   return (
     <Disclosure
       title={<span className="font-semibold text-slate-200">Advanced</span>}
-      hint={<span className="text-[10px] text-slate-500">calibration · sources</span>}
+      hint={<span className="text-[12px] text-slate-500">calibration · sources</span>}
     >
       <div className="space-y-3">
         <CalibrationPanel />

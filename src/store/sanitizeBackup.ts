@@ -146,8 +146,6 @@ function sanitizeSettings(raw: unknown): PlannerSettings {
     region: sanitizeRegion(s.region),
     passesOwned: nonNeg(s.passesOwned, d.passesOwned),
     linkChargesOwned: nonNeg(s.linkChargesOwned, d.linkChargesOwned),
-    rareCandyOwned: nonNeg(s.rareCandyOwned, d.rareCandyOwned),
-    rareCandyXlOwned: nonNeg(s.rareCandyXlOwned, d.rareCandyXlOwned),
     useLinkCharges: bool(s.useLinkCharges, d.useLinkCharges),
     megaBuddyLevel: num(s.megaBuddyLevel, d.megaBuddyLevel),
     calibration,

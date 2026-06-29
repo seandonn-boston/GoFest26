@@ -37,7 +37,7 @@ export function PassCoverageBar({ summary }: { summary: PlanSummary }) {
   const enough = cov.toBuy.max <= 0;
   return (
     <div className="mt-3">
-      <div className="mb-1 flex items-baseline justify-between text-[11px]">
+      <div className="mb-1 flex items-baseline justify-between text-[13px]">
         <span className="text-slate-400">
           Passes you have: <b className="text-emerald-300">{cov.owned}</b>
         </span>
@@ -52,7 +52,7 @@ export function PassCoverageBar({ summary }: { summary: PlanSummary }) {
         </span>
       </div>
       <CoverageBar cov={cov} />
-      <p className="mt-1 text-[10px] text-slate-500">
+      <p className="mt-1 text-[12px] text-slate-500">
         Owned passes go to your highest priorities first; the amber portion is what you&apos;d still buy to cover every goal.
       </p>
     </div>
@@ -80,12 +80,12 @@ export function PassCoverageSummary({ summary }: { summary: PlanSummary }) {
       {cov.owned > 0 ? <CoverageBar cov={cov} /> : null}
 
       <div className="mt-2 space-y-1">
-        <div className="text-[10px] uppercase tracking-wide text-slate-500">By priority — your passes first</div>
+        <div className="text-[12px] uppercase tracking-wide text-slate-500">By priority — your passes first</div>
         {cov.perSpecies.map((s) => {
           const boss = getBoss(s.bossId);
           const done = s.toBuy.max <= 0;
           return (
-            <div key={s.bossId} className="flex items-center gap-2 text-[11px]">
+            <div key={s.bossId} className="flex items-center gap-2 text-[13px]">
               <Sprite src={boss?.sprite} alt={s.bossName} size={18} />
               <span className="min-w-0 flex-1 truncate text-slate-200">{s.bossName.replace(/^Mega /, "")}</span>
               <span className="shrink-0 text-slate-500">{formatNumber(s.covered)}/{formatRange(s.raids)}</span>
@@ -98,7 +98,7 @@ export function PassCoverageSummary({ summary }: { summary: PlanSummary }) {
       </div>
 
       {cov.owned <= 0 ? (
-        <p className="mt-2 text-[10px] text-slate-500">
+        <p className="mt-2 text-[12px] text-slate-500">
           Tell us how many raid passes you already have on the <b>Enter what you have</b> step to see which goals they cover.
         </p>
       ) : null}
@@ -109,7 +109,7 @@ export function PassCoverageSummary({ summary }: { summary: PlanSummary }) {
 function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-[12px] uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`text-lg font-bold ${accent}`}>{value}</div>
     </div>
   );

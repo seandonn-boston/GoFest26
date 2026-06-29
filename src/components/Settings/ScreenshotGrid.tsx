@@ -65,7 +65,7 @@ export function ScreenshotGrid({
               {badge ? (
                 <span
                   title={badge.title}
-                  className={`absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl-sm text-[10px] font-black ${badge.cls}`}
+                  className={`absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl-sm text-[12px] font-black ${badge.cls}`}
                 >
                   {badge.icon}
                 </span>

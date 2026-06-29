@@ -41,16 +41,16 @@ export function CounterTable({ types, label }: { types?: string[]; label?: strin
       {allSearch ? <CopyButton search={allSearch} label="all counters" className="absolute right-2 top-2" /> : null}
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-8">
-        <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
+        <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-gofest-acid">
           Best counters{label ? ` · ${label}` : ""}
         </span>
         {weaknesses.length > 0 ? (
-          <span className="flex items-center gap-1 text-[10px] text-slate-400">
+          <span className="flex items-center gap-1 text-[12px] text-slate-400">
             weak to
             {weaknesses.map((w) => (
               <span key={w.type} className="inline-flex items-center" title={`${w.type} ×${w.mult.toFixed(2)}`}>
                 <TypeIcon type={w.type} size={15} />
-                {w.mult > 2 ? <sup className="ml-0.5 text-[8px] font-bold text-rose-300">2×</sup> : null}
+                {w.mult > 2 ? <sup className="ml-0.5 text-[10px] font-bold text-rose-300">2×</sup> : null}
               </span>
             ))}
           </span>
@@ -72,7 +72,7 @@ function CategoryRow({ cat, picks }: { cat: CounterCategory; picks: ScoredCounte
   const search = `${buildSearchString(picks.map((p) => p.attacker.name))} ${COUNTER_CATEGORY_FILTER[cat]}`;
   return (
     <CopyableInline search={search} label={`${COUNTER_CATEGORY_LABEL[cat]} counters`} className="flex items-center gap-2">
-      <span className="w-[58px] shrink-0 text-[9px] font-semibold uppercase leading-tight tracking-wide text-slate-400">
+      <span className="w-[58px] shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-400">
         {COUNTER_CATEGORY_LABEL[cat]}
       </span>
       <div className="flex flex-1 flex-wrap items-center gap-1.5">

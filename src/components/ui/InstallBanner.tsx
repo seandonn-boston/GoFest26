@@ -90,7 +90,7 @@ export function InstallBanner() {
 
   return (
     <>
-      <div className="flex items-center gap-2 border-b border-gofest-accent/30 bg-gofest-accent/10 px-3 py-2 text-[12px] text-slate-100">
+      <div className="flex items-center gap-2 border-b border-gofest-accent/30 bg-gofest-accent/10 px-3 py-2 text-[14px] text-slate-100">
         <span aria-hidden className="text-base leading-none">📲</span>
         <p className="min-w-0 flex-1 leading-tight">
           <b>Add to Home Screen</b> — launches full-screen and keeps your plan saved between sessions.
@@ -98,7 +98,7 @@ export function InstallBanner() {
         <button
           type="button"
           onClick={add}
-          className="shrink-0 rounded-sm border border-gofest-accent/60 bg-gofest-accent/20 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-gofest-accent transition hover:bg-gofest-accent/30"
+          className="shrink-0 rounded-sm border border-gofest-accent/60 bg-gofest-accent/20 px-2 py-1 font-mono text-[12px] font-bold uppercase tracking-wider text-gofest-accent transition hover:bg-gofest-accent/30"
         >
           Add
         </button>
@@ -130,10 +130,10 @@ export function InstallBanner() {
                 ✕
               </button>
             </div>
-            <p className="mb-3 text-[13px] text-slate-400">
+            <p className="mb-3 text-[16px] text-slate-400">
               It launches full-screen like an app and keeps your raid plan saved between sessions.
             </p>
-            <ol className="list-decimal space-y-1.5 pl-5 text-[13px] leading-relaxed">
+            <ol className="list-decimal space-y-1.5 pl-5 text-[16px] leading-relaxed">
               <Steps platform={platform} />
             </ol>
             <button

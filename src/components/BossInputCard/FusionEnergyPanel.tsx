@@ -57,7 +57,7 @@ function EnergyGoalRow({ bossId, def }: { bossId: string; def: EnergyGoalDef }) 
         <span>
           Work toward <b>{def.label}</b>
         </span>
-        <span className="ml-auto shrink-0 rounded-sm border border-white/10 px-1 text-[9px] uppercase tracking-wide text-slate-400">
+        <span className="ml-auto shrink-0 rounded-sm border border-white/10 px-1 text-[11px] uppercase tracking-wide text-slate-400">
           {KIND_NOUN[def.kind]}
         </span>
       </label>
@@ -83,9 +83,9 @@ function EnergyGoalRow({ bossId, def }: { bossId: string; def: EnergyGoalDef }) 
               <p className="text-xs text-emerald-300">✓ You already have enough to {KIND_VERB[def.kind]}.</p>
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-[10px] uppercase tracking-wide text-slate-400">Raids needed</span>
+                <span className="text-[12px] uppercase tracking-wide text-slate-400">Raids needed</span>
                 <span className="text-lg font-bold text-gofest-accent2">{formatRange(raids)}</span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[13px] text-slate-400">
                   of <b className="text-slate-200">{def.source}</b>
                   {dayLabel ? ` · ${dayLabel}` : ""} · {formatNumber(remaining)} energy to go
                 </span>
@@ -93,7 +93,7 @@ function EnergyGoalRow({ bossId, def }: { bossId: string; def: EnergyGoalDef }) 
             )}
           </div>
 
-          <p className="mt-1 text-[10px] leading-snug text-slate-500">
+          <p className="mt-1 text-[12px] leading-snug text-slate-500">
             ~{def.perRaid.min}–{def.perRaid.max} energy per raid (more for faster, higher-damage wins); raids
             also drop Candy and a chance at XL Candy.{def.note ? ` ${def.note}` : ""}
           </p>
@@ -116,11 +116,11 @@ export function FusionEnergyPanel({ bossId, bossName }: { bossId: string; bossNa
   return (
     <div className="mt-3 rounded-lg border border-gofest-acid/25 bg-gofest-acid/[0.04] p-2.5">
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-gofest-acid">
+        <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-gofest-acid">
           Fusion / Primal energy
         </span>
       </div>
-      <p className="mb-2 text-[11px] text-slate-400">
+      <p className="mb-2 text-[13px] text-slate-400">
         Optional — bank energy from {bossName}&apos;s special raids during <b>Road of Legends</b> week to build
         its alternate forme. Separate from your weekend maxing plan.
       </p>

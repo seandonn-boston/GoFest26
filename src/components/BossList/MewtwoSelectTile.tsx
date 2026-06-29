@@ -23,12 +23,12 @@ function MewtwoSelectTileImpl({ boss, dayLabel }: { boss: RaidBoss; dayLabel: st
     >
       <MegaRelief />
       <TileSprite src={boss.sprite} alt={boss.name} />
-      <span className="absolute left-2 top-2 z-20 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+      <span className="absolute left-2 top-2 z-20 rounded-full bg-black/40 px-2 py-0.5 text-[12px] font-semibold uppercase tracking-wide text-white">
         {dayLabel}
       </span>
       <span className="absolute inset-x-0 bottom-2 z-10 flex flex-col items-center gap-0.5 px-1 text-center">
         <span className="enamel-label text-base leading-tight">{boss.name}</span>
-        <span className="enamel-label text-[10px] tracking-widest opacity-90">Super Mega</span>
+        <span className="enamel-label text-[12px] tracking-widest opacity-90">Super Mega</span>
       </span>
     </EnamelBadge>
   );

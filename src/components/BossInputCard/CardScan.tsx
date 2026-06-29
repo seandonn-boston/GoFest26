@@ -85,14 +85,14 @@ export function CardScan({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={state === "scanning"}
-          className="flex items-center gap-1.5 rounded-sm border border-gofest-accent2/50 bg-gofest-accent2/15 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-gofest-accent2 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-sm border border-gofest-accent2/50 bg-gofest-accent2/15 px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-gofest-accent2 disabled:opacity-50"
         >
           📷 Scan screenshot
         </button>
       </div>
 
-      {state === "scanning" ? <p className="mt-1.5 text-[11px] text-slate-400">Scanning…</p> : null}
-      {state === "error" ? <p className="mt-1.5 text-[11px] text-rose-300 break-words">⚠ {error}</p> : null}
+      {state === "scanning" ? <p className="mt-1.5 text-[13px] text-slate-400">Scanning…</p> : null}
+      {state === "error" ? <p className="mt-1.5 text-[13px] text-rose-300 break-words">⚠ {error}</p> : null}
       {state === "done" ? (
         result?.readAnything ? (
           <div className="mt-1.5">
@@ -100,21 +100,21 @@ export function CardScan({
             <button
               type="button"
               onClick={apply}
-              className="mt-1.5 rounded-sm border-2 border-black/40 bg-gofest-acid px-2.5 py-1 font-mono text-[11px] font-extrabold uppercase tracking-wider text-black shadow-brutal active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="mt-1.5 rounded-sm border-2 border-black/40 bg-gofest-acid px-2.5 py-1 font-mono text-[13px] font-extrabold uppercase tracking-wider text-black shadow-brutal active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               Apply
             </button>
           </div>
         ) : (
           <div className="mt-1.5">
-            <p className="text-[11px] text-amber-200">
+            <p className="text-[13px] text-amber-200">
               {result && !result.looksLikePogo
                 ? "That doesn’t look like a Pokémon GO Pokémon screen."
                 : "Looks like Pokémon GO, but no stats are visible — include the Stardust/Candy section, or enter the values manually."}
             </p>
             {result?.looksLikePogo && result.rawText ? (
               <>
-                <p className="text-[10px] text-slate-500 break-words">OCR saw: “{previewOcr(result.rawText)}”</p>
+                <p className="text-[12px] text-slate-500 break-words">OCR saw: “{previewOcr(result.rawText)}”</p>
                 <CopyOcrButton text={result.rawText} />
               </>
             ) : null}

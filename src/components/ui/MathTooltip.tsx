@@ -74,7 +74,7 @@ export function MathTooltip({
       >
         {trigger}
         {hideIcon ? null : (
-          <span aria-hidden className="text-[10px] text-slate-500 transition group-hover:text-gofest-accent2">
+          <span aria-hidden className="text-[12px] text-slate-500 transition group-hover:text-gofest-accent2">
             ⓘ
           </span>
         )}
@@ -85,7 +85,7 @@ export function MathTooltip({
               ref={popRef}
               role="dialog"
               style={{ position: "fixed", top: pos.top, left: pos.left, maxWidth: "min(92vw, 360px)" }}
-              className="z-[100] rounded-lg border border-white/15 bg-gofest-bg/95 p-3 text-[11px] text-slate-300 shadow-xl backdrop-blur"
+              className="z-[100] rounded-lg border border-white/15 bg-gofest-bg/95 p-3 text-[13px] text-slate-300 shadow-xl backdrop-blur"
             >
               {children}
             </div>,

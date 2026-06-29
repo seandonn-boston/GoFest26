@@ -37,12 +37,12 @@ function BossSelectChipImpl({ boss, remoteOnly = false }: { boss: RaidBoss; remo
       {isMega ? <MegaRelief /> : null}
       <TileSprite src={boss.sprite} alt={boss.name} />
       {remoteOnly ? (
-        <span className="absolute left-1 top-1 z-20 rounded-sm border border-black/30 bg-gofest-accent px-1 py-[1px] font-mono text-[8px] font-extrabold uppercase leading-none tracking-wider text-black shadow">
+        <span className="absolute left-1 top-1 z-20 rounded-sm border border-black/30 bg-gofest-accent px-1 py-[1px] font-mono text-[10px] font-extrabold uppercase leading-none tracking-wider text-black shadow">
           Remote
         </span>
       ) : null}
       <span className="absolute inset-x-0 bottom-1.5 z-10 flex justify-center px-1">
-        <span className="enamel-label line-clamp-1 text-[10px] leading-tight">{short}</span>
+        <span className="enamel-label line-clamp-1 text-[12px] leading-tight">{short}</span>
       </span>
     </EnamelBadge>
   );

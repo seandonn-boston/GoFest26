@@ -50,7 +50,7 @@ export function BackupControls() {
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] text-slate-500">
+      <p className="text-[13px] text-slate-500">
         Lost your plan (cleared browser / new device)? Save a backup, then restore it here. JSON is the quickest;
         the exported <span className="font-mono">.xlsx</span> can also be re-imported. Or copy a share link to send the
         whole plan to a friend.
@@ -83,7 +83,7 @@ export function BackupControls() {
         className="hidden"
         onChange={(e) => restore(e.target.files?.[0], readXlsxBackup)}
       />
-      {msg ? <p className={`text-[11px] ${msg.ok ? "text-emerald-300" : "text-rose-300"}`}>{msg.text}</p> : null}
+      {msg ? <p className={`text-[13px] ${msg.ok ? "text-emerald-300" : "text-rose-300"}`}>{msg.text}</p> : null}
     </div>
   );
 }

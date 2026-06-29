@@ -44,12 +44,12 @@ export function MegaSearchBar() {
         className="brutal rounded-xl bg-gofest-panel/80 p-3 transition hover:bg-gofest-panel"
       >
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pr-8">
-          <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-purple-300">
+          <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
             {dayLabel} mega-evolve
           </span>
           <MegaBoostLegend />
         </div>
-        <p className="mb-2 text-[11px] text-slate-400">
+        <p className="mb-2 text-[13px] text-slate-400">
           Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL
           boost — the outline shows what each mega brings this day (see key). Only one counts at a time.
         </p>
