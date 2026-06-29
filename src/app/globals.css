@@ -203,24 +203,20 @@ input[type="number"] {
     glitchFont var(--glitch-dur, 0.45s) steps(1, end);
 }
 
-/* Mewtwo title glitch (shared by the X/Y backdrop and the MEWTWO word): the two
-   resting chromatic colors (--rest1/--rest2, one per side) flash to two shades of
-   shiny-Mewtwo green (--flash1/--flash2) only on the jitter frames. The fill and
-   the rest colors are intentionally inverse: MEWTWO is vivid purple filled with an
-   X-purple/Y-lavender echo, while X/Y are purple/lavender filled with a vivid echo. */
-@keyframes glitchMewtwoXY {
-  0%, 88%, 100% { transform: translate(0, 0); text-shadow: 0.05em 0 var(--rest2), -0.05em 0 var(--rest1); }
-  90% { transform: translate(-0.04em, 0.02em); text-shadow: 0.12em 0 var(--flash2), -0.12em 0 var(--flash1); }
-  93% { transform: translate(0.04em, -0.02em); text-shadow: -0.1em 0 var(--flash2), 0.1em 0 var(--flash1); }
-  96% { transform: translate(-0.02em, 0); text-shadow: 0.08em 0 var(--flash2), -0.08em 0 var(--flash1); }
-}
+/* Mewtwo title (the X/Y backdrop letters + the MEWTWO word) now glitches through
+   the shared GlitchText system, like every other title — independent random
+   timing, letter/word/whole patterns, font flicker. It keeps its identity: the
+   resting chromatic split is purple (--rest1/--rest2), and the glitch burst flashes
+   two shades of shiny-Mewtwo green by pointing the burst colors (--c1/--c2) at the
+   greens (--flash1/--flash2). */
 .mewtwo-xy,
 .mewtwo-word {
   --flash1: #6be7b2; /* shiny green — light */
   --flash2: #2fb98a; /* shiny green — deep */
+  --c1: var(--flash1); /* glitch burst flashes shiny green, not cyan/magenta */
+  --c2: var(--flash2);
   font-family: var(--font-display);
   text-shadow: 0.05em 0 var(--rest2), -0.05em 0 var(--rest1);
-  animation: glitchMewtwoXY 7s infinite steps(1, end);
 }
 .mewtwo-xy {
   --rest1: #b026ff; /* vivid purple echo (inverse of the fill) */
@@ -250,7 +246,7 @@ input[type="number"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .switch-in, .ticker, .glitching, .mewtwo-xy, .mewtwo-word { animation: none; }
+  .switch-in, .ticker, .glitching { animation: none; }
 }
 
 /* Avant-garde card treatment: a hard neo-brutalist offset shadow + crisp border

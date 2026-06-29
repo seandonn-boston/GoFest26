@@ -35,27 +35,33 @@ export function GlitchText({ text, as = "span", className = "", style, colorWord
 
     let timer: number | undefined;
 
-    const glitchOnce = (el: HTMLElement) => {
-      if (el.classList.contains("glitching")) return;
-      el.style.setProperty("--glitch-dur", `${Math.round(rand(260, 700))}ms`);
-      const done = () => {
-        el.classList.remove("glitching");
-        el.removeEventListener("animationend", done);
-      };
-      el.addEventListener("animationend", done);
-      el.classList.add("glitching");
-      window.setTimeout(done, 850); // safety net if animationend is missed
+    // Glitch a run of adjacent letters together: one shared duration so they
+    // jitter in sync and read as a single cluster.
+    const glitchRun = (els: HTMLElement[]) => {
+      const dur = Math.round(rand(260, 700));
+      for (const el of els) {
+        if (el.classList.contains("glitching")) continue;
+        el.style.setProperty("--glitch-dur", `${dur}ms`);
+        const done = () => {
+          el.classList.remove("glitching");
+          el.removeEventListener("animationend", done);
+        };
+        el.addEventListener("animationend", done);
+        el.classList.add("glitching");
+        window.setTimeout(done, dur + 200); // safety net if animationend is missed
+      }
     };
 
     const fire = () => {
-      const letters = Array.from(root.querySelectorAll<HTMLElement>(".glitch-letter"));
-      const words = Array.from(root.querySelectorAll<HTMLElement>(".glitch-word"));
-      const roll = Math.random();
-      let target: HTMLElement | undefined;
-      if (roll < 0.55) target = pick(letters); // a single letter
-      else if (roll < 0.85 && words.length > 1) target = pick(words); // a whole word
-      else target = root; // the whole title
-      if (target) glitchOnce(target);
+      // Each fire glitches 1–3 letters that sit next to each other within a single
+      // word — never a whole word or the whole title (that reads as too much).
+      const word = pick(Array.from(root.querySelectorAll<HTMLElement>(".glitch-word")));
+      const letters = word ? Array.from(word.querySelectorAll<HTMLElement>(".glitch-letter")) : [];
+      if (letters.length) {
+        const len = 1 + Math.floor(Math.random() * Math.min(3, letters.length)); // 1..3
+        const start = Math.floor(Math.random() * (letters.length - len + 1));
+        glitchRun(letters.slice(start, start + len));
+      }
       timer = window.setTimeout(fire, rand(1400, 5600));
     };
 
