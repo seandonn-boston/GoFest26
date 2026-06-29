@@ -14,10 +14,11 @@ export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="mb-1 text-lg font-semibold">Optional add-ons</h2>
+        <h2 className="mb-1 text-lg font-semibold">Road of Legends</h2>
         <p className="text-sm text-slate-400">
-          All optional — pick any weekday head-start days here. Remote raids and target priority are
-          now set on the Results step.
+          The weekday raid hours (Mon Jul 6 – Fri Jul 10) before the event. Pick the evenings
+          you&apos;ll raid and which targets to pre-farm each day — whatever you knock out here is a
+          head start that shrinks your GO Fest weekend.
         </p>
       </div>
 

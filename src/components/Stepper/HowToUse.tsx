@@ -37,36 +37,46 @@ const GUIDE: GuideStep[] = [
   },
   {
     id: 3,
-    title: "Optional add-ons",
+    title: "Road of Legends",
     body: (
       <>
-        All optional. Pick which <b>Road of Legends</b> weekday evenings you&apos;ll raid for a head
-        start, say whether you&apos;ll do <b>remote raids</b>, and enter the <b>passes, remote passes
-        and Link Charges</b> you already hold. Target priority is set later, by ordering each time
-        block on the Results step.
+        Optional pre-event head start. The <b>Road of Legends</b> weekday raid hours (Mon Jul 6 – Fri
+        Jul 10) run before GO Fest. Pick the evenings you&apos;ll raid and which targets to pre-farm
+        each day — whatever you knock out here shrinks your weekend demand.
       </>
     ),
   },
   {
     id: 4,
-    title: "See your results",
+    title: "GO Fest Prioritizer",
     body: (
       <>
-        Here&apos;s your payoff: how many raids each target needs, a block-by-block weekend schedule, the
-        top counters and the best <b>Mega to evolve</b> each hour, and a spreadsheet export. This is also
-        where you <b>set priority</b> — drag your targets to rank them inside each time block; if a block
-        is over capacity, the ones at the bottom get cut first.
+        Your weekend payoff: how many raids each target needs, a block-by-block schedule, the top
+        counters and the best <b>Mega to evolve</b> each hour, and a spreadsheet export. This is where
+        you <b>set priority</b> — drag your targets to rank them inside each time block; if a block is
+        over capacity, the ones at the bottom get cut first.
       </>
     ),
   },
   {
     id: 5,
+    title: "Remote Prioritizer",
+    body: (
+      <>
+        Optional. Opt into <b>remote raids</b> and assign how many of each species you&apos;ll do
+        remotely — region-locked targets first, then your priority. Those raids drop out of the
+        in-person time blocks.
+      </>
+    ),
+  },
+  {
+    id: 6,
     title: "Check the cost",
     body: (
       <>
-        Last, the money. Using the <b>passes you entered</b> on the add-ons step, the app spends them on
-        your top priorities first, then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to
-        own them after your free daily passes.
+        Last, the money. Using the <b>passes you entered</b> in step 2, the app spends them on your top
+        priorities first, then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to own
+        them after your free daily passes.
       </>
     ),
   },
@@ -104,7 +114,7 @@ export function HowToUse() {
             How to use this app
           </h2>
           <p className="mt-1 text-xs text-slate-300">
-            New here? The whole thing is just five steps. You only need to pick a target and enter your
+            New here? The whole thing is just six steps. You only need to pick a target and enter your
             numbers — everything else is optional. Here&apos;s the flow, using Mega Mewtwo as the example.
           </p>
         </div>
