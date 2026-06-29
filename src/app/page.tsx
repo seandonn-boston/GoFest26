@@ -162,8 +162,6 @@ export default function Home() {
             </div>
 
             <Disclaimer />
-            {/* Plain text, deliberately not a mailto link (harder to scrape). */}
-            <p className="pb-8 text-center text-xs text-slate-500">sean@seandonn.io, duh</p>
           </SubstituteLoader>
         </SpriteScaleProvider>
       </main>

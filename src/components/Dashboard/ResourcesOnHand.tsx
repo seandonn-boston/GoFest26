@@ -49,15 +49,17 @@ export function ResourcesOnHand() {
     };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-gofest-panel/40 p-3">
+    <div className="brutal rounded-xl bg-gofest-panel/80 p-3">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <h3 className="text-sm font-semibold text-slate-100">Passes &amp; Link Charges on hand</h3>
-        <PlusToggle open={open} size={16} className="shrink-0 text-slate-400" />
+        <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-gofest-acid">
+          Raid Passes &amp; Link Charges on hand
+        </span>
+        <PlusToggle open={open} size={16} className="shrink-0 text-gofest-acid" />
       </button>
       {open ? (
         <>
