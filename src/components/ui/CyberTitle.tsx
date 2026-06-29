@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { TYPE_COLORS } from "@/data/typeVisuals";
+import { GlitchText } from "@/components/ui/GlitchText";
 
 /**
  * Avant-garde cyberpunk card title: the species name in the display font with a
@@ -12,9 +13,5 @@ export function CyberTitle({ name, types, className = "" }: { name: string; type
     "--c1": cols[0] ?? "var(--neon-magenta)",
     "--c2": cols[1] ?? cols[0] ?? "var(--neon-cyan)",
   } as CSSProperties;
-  return (
-    <h3 className={`cyber-title ${className}`} style={style}>
-      {name}
-    </h3>
-  );
+  return <GlitchText as="h3" text={name} className={`cyber-title ${className}`} style={style} />;
 }

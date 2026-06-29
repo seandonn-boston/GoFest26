@@ -25,6 +25,7 @@ import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
 import { InstallBanner } from "@/components/ui/InstallBanner";
+import { GlitchText } from "@/components/ui/GlitchText";
 import { SharedPlanBanner } from "@/components/Settings/SharedPlanBanner";
 import { LocationPrompt } from "@/components/Settings/LocationPrompt";
 import { AdvancedTools } from "@/components/Settings/AdvancedTools";
@@ -111,11 +112,12 @@ export default function Home() {
                 <span>▚ GO_FEST // 2026</span>
                 <span className="text-gofest-accent">GLOBAL // FREE</span>
               </div>
-              <h1 className="glitch-title mt-3 text-[2.6rem] font-extrabold leading-[0.82] tracking-tighter sm:text-7xl">
-                GO FEST
-                <br />
-                <span className="text-gofest-mewtwo">RAID</span> PLANNER
-              </h1>
+              <GlitchText
+                as="h1"
+                className="glitch-title mt-3 text-[2.6rem] font-extrabold leading-[0.82] tracking-tighter sm:text-7xl"
+                text={"GO FEST\nRAID PLANNER"}
+                colorWords={{ RAID: "text-gofest-mewtwo" }}
+              />
               <div className="hairline mt-4" />
               <div className="mt-3 overflow-hidden">
                 <div className="ticker font-mono text-[13px] uppercase tracking-widest text-slate-400">

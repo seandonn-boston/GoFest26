@@ -106,7 +106,7 @@ export function MewtwoCard({
             <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
           </div>
           <MewtwoTitle />
-          <div className="liquid-glass text-halo mx-auto mb-3 mt-2 max-w-full rounded-2xl px-3 py-2">
+          <div className="liquid-glass mx-auto mb-3 mt-2 max-w-full rounded-2xl px-3 py-2">
             <p className="text-center text-xs font-medium text-slate-50">
               One Mewtwo, two Mega forms. X appears <span className="font-semibold text-white">Saturday</span>, Y
               appears <span className="font-semibold text-white">Sunday</span>, and their Mega Energy is separate —

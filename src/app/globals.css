@@ -81,56 +81,28 @@ h1, h2, h3 {
     0 0 4px rgba(0, 0, 0, 0.7);
 }
 
-/* A true all-around glyph halo (vs. card-text-legible's soft drop shadow): a dark
-   stroke painted UNDER the fill (paint-order) gives every letter a crisp ring on
-   every side, so text survives over a bright sprite, not just a dark one. Pair
-   with a light fill color for the strongest contrast. */
-.text-halo {
-  paint-order: stroke fill;
-  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.72);
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.9),
-    0 0 5px rgba(0, 0, 0, 0.55);
-}
-
 /* "Liquid glass" — a real refractive glass surface, not flat frosted blur. The
-   backdrop is blurred AND saturated/brightened so the sprite's color bends and
-   concentrates through the pane (the giveaway of real glass); a bright hairline
-   top edge + inner bottom bounce read as a lit bevel; a diagonal specular sheen
-   (::before, tucked under the text via the isolated stacking context) catches
-   the light; and an outer drop shadow floats the pane off the card. Set the
-   corner radius on the element (the sheen inherits it). */
+   backdrop is only lightly blurred but saturated/brightened so the sprite's color
+   bends and concentrates through the pane (the giveaway of real glass, kept clear
+   rather than frosted); a bright hairline top edge + inner bottom bounce read as a
+   lit bevel; and an outer drop shadow floats the pane off the card. The specular
+   sheen is off — the refraction + lit edges carry the glass look on their own. */
 .liquid-glass {
   position: relative;
-  isolation: isolate;
   background-image: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.16),
     rgba(255, 255, 255, 0.04) 46%,
     rgba(255, 255, 255, 0.1)
   );
-  backdrop-filter: blur(16px) saturate(185%) brightness(1.08);
-  -webkit-backdrop-filter: blur(16px) saturate(185%) brightness(1.08);
+  backdrop-filter: blur(2px) saturate(185%) brightness(1.08);
+  -webkit-backdrop-filter: blur(2px) saturate(185%) brightness(1.08);
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
     inset 0 1px 0.5px rgba(255, 255, 255, 0.6),
     inset 0 -12px 26px -18px rgba(255, 255, 255, 0.3),
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
     0 8px 22px -10px rgba(0, 0, 0, 0.55);
-}
-.liquid-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1; /* over the glass body, under the text (isolate keeps it contained) */
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
-    150deg,
-    rgba(255, 255, 255, 0.45),
-    rgba(255, 255, 255, 0.08) 24%,
-    transparent 46%
-  );
 }
 /* Fallbacks: where the backdrop can't be filtered, or the user asked for less
    transparency, fall back to a near-solid dark pane so text stays legible. */
@@ -179,24 +151,16 @@ input[type="number"] {
 }
 
 /* The big chromatic-split glitch masthead. */
-@keyframes glitchTitle {
-  0%, 90%, 100% { transform: translate(0, 0); text-shadow: 3px 0 var(--neon-cyan), -3px 0 var(--neon-magenta); }
-  91% { transform: translate(-2px, 1px); text-shadow: 6px 0 var(--neon-cyan), -6px 0 var(--neon-magenta); }
-  94% { transform: translate(2px, -1px); text-shadow: -5px 0 var(--neon-cyan), 5px 0 var(--neon-magenta); }
-  97% { transform: translate(-1px, 0); text-shadow: 4px 0 var(--neon-cyan), -4px 0 var(--neon-magenta); }
-}
+/* Glitch titles (the masthead + every card species name) are driven by JS
+   (GlitchText): each instance fires independently at random intervals and
+   randomly targets a single letter, a word, or the whole title. The rules below
+   are just the RESTING look (chromatic split, current font); the per-fire
+   `.glitching` burst adds the jitter + a font flicker to mono and then removes
+   itself, leaving the resting state. */
 .glitch-title {
-  animation: glitchTitle 6s infinite steps(1, end);
-}
-
-/* Per-card chromatic-split title in the species' TYPE colors (--c1 / --c2 set
-   inline). em-based offsets so it scales with the title size. The resting state
-   keeps the split so reduced-motion users still get the cyberpunk look. */
-@keyframes glitchType {
-  0%, 88%, 100% { transform: translate(0, 0); text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1); }
-  90% { transform: translate(-0.04em, 0.02em); text-shadow: 0.11em 0 var(--c2), -0.11em 0 var(--c1); }
-  93% { transform: translate(0.04em, -0.02em); text-shadow: -0.09em 0 var(--c2), 0.09em 0 var(--c1); }
-  96% { transform: translate(-0.02em, 0); text-shadow: 0.07em 0 var(--c2), -0.07em 0 var(--c1); }
+  --c1: var(--neon-magenta);
+  --c2: var(--neon-cyan);
+  text-shadow: 3px 0 var(--neon-cyan), -3px 0 var(--neon-magenta);
 }
 .cyber-title {
   --c1: var(--neon-magenta);
@@ -207,7 +171,36 @@ input[type="number"] {
   font-weight: 800;
   color: #f4f6fb;
   text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1);
-  animation: glitchType 7s infinite steps(1, end);
+}
+
+/* Glitchable units: inline-block so a single letter or word can jitter on its
+   own (a transform needs a non-inline box). */
+.glitch-word,
+.glitch-letter {
+  display: inline-block;
+}
+
+/* One glitch burst: a quick chromatic jitter in the title's --c1/--c2 colors
+   (falling back to neon cyan/magenta), plus a font flicker between the display
+   font and a robotic mono. Both stop when the burst ends, leaving the resting
+   font/look. Per-fire duration comes in via --glitch-dur. */
+@keyframes glitchBurst {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-0.05em, 0.02em); text-shadow: 0.12em 0 var(--c2, var(--neon-cyan)), -0.12em 0 var(--c1, var(--neon-magenta)); }
+  40% { transform: translate(0.05em, -0.02em); text-shadow: -0.1em 0 var(--c2, var(--neon-cyan)), 0.1em 0 var(--c1, var(--neon-magenta)); }
+  60% { transform: translate(-0.03em, 0.01em); text-shadow: 0.08em 0 var(--c2, var(--neon-cyan)), -0.08em 0 var(--c1, var(--neon-magenta)); }
+  80% { transform: translate(0.02em, 0); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes glitchFont {
+  0%, 100% { font-family: var(--font-display); }
+  15%, 45%, 75% { font-family: var(--font-mono); }
+  30%, 60%, 90% { font-family: var(--font-display); }
+}
+.glitching {
+  animation:
+    glitchBurst var(--glitch-dur, 0.45s) steps(1, end),
+    glitchFont var(--glitch-dur, 0.45s) steps(1, end);
 }
 
 /* Mewtwo title glitch (shared by the X/Y backdrop and the MEWTWO word): the two
@@ -257,7 +250,7 @@ input[type="number"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .switch-in, .glitch-title, .ticker, .cyber-title, .mewtwo-xy, .mewtwo-word { animation: none; }
+  .switch-in, .ticker, .glitching, .mewtwo-xy, .mewtwo-word { animation: none; }
 }
 
 /* Avant-garde card treatment: a hard neo-brutalist offset shadow + crisp border
