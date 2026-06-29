@@ -13,7 +13,6 @@ import { ExplainEquation } from "@/components/ui/ExplainEquation";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { Badge } from "@/components/ui/Badge";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CardTitle } from "@/components/ui/CardTitle";
 import { CardSpriteBackdrop } from "@/components/ui/CardSpriteBackdrop";
@@ -195,24 +194,26 @@ export function BossInputCard({
           pretitle={formePretitle}
         />
 
-        {regionLabel || remoteOnly ? (
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-            {regionLabel ? <Badge>{regionLabel}</Badge> : null}
-            {remoteOnly ? <Badge className="border-gofest-accent/50 bg-gofest-accent/15 text-gofest-accent">Remote</Badge> : null}
-          </div>
-        ) : null}
-        {/* Time-block times/names + notes float on a liquid-glass pane so they're
-            legible over any sprite behind them (bright fill + halo do the rest). */}
-        <div className="liquid-glass text-halo mx-auto mt-2 w-fit max-w-full rounded-2xl px-3 py-1.5">
+        {/* Sub-info on a liquid-glass pane, legible over any sprite behind it.
+            Fixed line order: time block, then location (region), then tip. */}
+        <div className="liquid-glass mx-auto mt-2 w-fit max-w-full rounded-2xl px-3 py-1.5">
           <p className="text-center text-[13px] font-medium text-slate-50">
-            🗓 {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
+            🗓️ {formes.map((f) => `${isGroup ? `${f.formLabel}: ` : ""}${describeAvailability(f)}`).join(" · ")}
           </p>
+          {regionLabel || remoteOnly ? (
+            <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">
+              📍 {regionLabel ?? "Region-locked"}
+              {remoteOnly ? <span className="text-gofest-accent"> · Remote</span> : null}
+            </p>
+          ) : null}
           {isGroup ? (
             <p className="mt-0.5 text-center text-[13px] font-medium text-amber-100">
               Both formes share one Candy pool — pick which to battle each block; rewards stack together.
             </p>
           ) : null}
-          {boss.note ? <p className="mt-1 text-center text-[13px] font-medium text-slate-50">💡 {boss.note}</p> : null}
+          {boss.note ? (
+            <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">💡 {boss.note}</p>
+          ) : null}
         </div>
       </button>
       </div>
