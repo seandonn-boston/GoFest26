@@ -6,7 +6,7 @@ import { GAME_CONFIG } from "@/data/config";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
 import { attackerIconUrl } from "@/data/pokemonSprites";
-import { TYPE_COLORS } from "@/data/typeVisuals";
+import { TYPE_COLORS, typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { RISK_BANDS, megaBoostsForBoss, topBlockMegas, megaBoostSpecies } from "@/domain";
 import { sized } from "@/domain/blockPlan";
 import type { BlockMegaRank, BlockPlan, BlockSpeciesShare, RemotePlan, RiskBand, WeekendBlockPlan } from "@/domain";
@@ -285,7 +285,10 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   );
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02]">
+    // Themed by the block's three featured wild-spawn types — a colored enamel
+    // frame + dark veil, exactly like the boss cards.
+    <div className="overflow-hidden rounded-lg p-[2px]" style={typeBackgroundStyle(wildTypes)}>
+    <div className="rounded-[7px]" style={typePanelStyle(wildTypes)}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
           <span className="inline-flex items-center truncate">
@@ -363,24 +366,71 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
           block is expanded or collapsed (they vary block to block). */}
       <BlockChips counters={blockCounters} counterSearch={blockCounterSearch} megas={topMegas} megaSearch={megaSearch} />
     </div>
+    </div>
   );
 }
 
 /** Remote-raid section: the assigned passes as a bar (top), then the per-species
  *  allocation inputs (the user types how many of each to do remotely). */
 function RemoteSection({ remote }: { remote?: RemotePlan }) {
+  const [open, setOpen] = useState(true);
+  const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
+  const setSettings = usePlannerStore((s) => s.setSettings);
+  const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
+  // Remote raids assigned across selected species — drives the disabled state.
+  const assigned = usePlannerStore((s) => {
+    let n = 0;
+    for (const id in s.remoteAllocations) if (s.inputs[id]?.selected) n += Math.max(0, s.remoteAllocations[id] || 0);
+    return n;
+  });
+  const hasAllocations = assigned > 0;
+  const on = useRemote && hasAllocations;
   const fitted = remote?.fitted ?? 0;
   const over = !!remote && remote.remaining > 0;
+
+  const toggle = (checked: boolean) => {
+    setSettings({ useRemoteRaids: checked });
+    if (checked) setRemoteAuto(false);
+  };
+
   return (
     <div className="rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.04] px-2.5 py-2">
-      <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-        <span className="font-medium text-gofest-accent">Remote raids</span>
-        <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-          {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
-        </span>
-      </div>
-      {remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
-      <RemoteAllocator />
+      {/* Opt-in at the very top. Disabled until a remote value is entered in the
+          allocator below — entering one auto-enables and checks this (see
+          setRemoteAllocation). */}
+      <label
+        className={`flex items-center gap-2 text-xs font-medium ${
+          hasAllocations ? "cursor-pointer text-slate-200" : "cursor-not-allowed text-slate-500"
+        }`}
+      >
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-gofest-accent disabled:opacity-40"
+          checked={on}
+          disabled={!hasAllocations}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+        I&apos;ll do remote raids
+        {!hasAllocations ? (
+          <span className="text-[11px] font-normal text-slate-500">— enter a number below to turn on</span>
+        ) : null}
+      </label>
+
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-2 w-full text-left">
+        <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+          <span className="inline-flex items-center font-medium text-gofest-accent">
+            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-gofest-accent" />
+            Assign per species
+          </span>
+          {on ? (
+            <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
+              {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
+            </span>
+          ) : null}
+        </div>
+        {on && remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
+      </button>
+      {open ? <RemoteAllocator /> : null}
     </div>
   );
 }
@@ -402,7 +452,9 @@ export function BlockAccordion({
   headStart?: Record<string, number>;
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
-  const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
+  // The remote section now always shows (it carries the opt-in checkbox), as long
+  // as there's at least one selected target to assign remotely.
+  const anySelected = usePlannerStore((s) => Object.values(s.inputs).some((i) => i.selected));
   const toggle = (k: string) =>
     setOpen((cur) => {
       const next = new Set(cur);
@@ -416,7 +468,7 @@ export function BlockAccordion({
     if (blocks.length) byDay.push({ day, blocks });
   }
   const remote = plan.remote && plan.remote.species.length > 0 ? plan.remote : undefined;
-  if (!byDay.length && !useRemote) return null;
+  if (!byDay.length && !anySelected) return null;
 
   return (
     <div className="mt-4">
@@ -446,7 +498,7 @@ export function BlockAccordion({
             </div>
           </div>
         ))}
-        {useRemote ? (
+        {anySelected ? (
           <div>
             <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent">Remote · either day</div>
             <RemoteSection remote={remote} />

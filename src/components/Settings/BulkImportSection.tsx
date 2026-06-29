@@ -13,7 +13,7 @@ import { ScreenshotImporter } from "./ScreenshotImporter";
  * rebuilds the view from that data. A count badge shows how many are held.
  */
 export function BulkImportSection() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const count = usePlannerStore((s) => s.imports.length);
 
   return (

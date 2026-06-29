@@ -1,3 +1,5 @@
+import { GlitchText } from "@/components/ui/GlitchText";
+
 const XY = "5.5rem"; // reserved height (the "X Y" letters live in MewtwoBackdrop now)
 const MEWTWO = "2.75rem"; // 50% of the X/Y height
 
@@ -16,9 +18,7 @@ export function MewtwoTitle() {
       <div className="relative flex items-center justify-center" style={{ height: XY }}>
         {/* Offset via `left`, NOT a transform: the glitch animation animates
             `transform`, which clobbers any translate-x utility put here. */}
-        <span className="mewtwo-word relative left-[6px]" style={{ fontSize: MEWTWO }}>
-          Mewtwo
-        </span>
+        <GlitchText as="span" text="Mewtwo" className="mewtwo-word relative left-[6px]" style={{ fontSize: MEWTWO }} />
       </div>
     </div>
   );

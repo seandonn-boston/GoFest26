@@ -2,6 +2,7 @@
 
 import { Sprite } from "@/components/ui/Sprite";
 import { CARD_SPRITE_SIZE } from "@/components/ui/CardSpriteBackdrop";
+import { GlitchText } from "@/components/ui/GlitchText";
 
 // Matches MewtwoTitle: purple fill (#8E7CC3) + the CSS glitch.
 const PURPLE = "#8E7CC3";
@@ -20,18 +21,18 @@ export function MewtwoBackdrop({ spriteX, spriteY }: { spriteX?: string; spriteY
     <>
       {/* Back — the X Y letters. */}
       <div aria-hidden className="absolute inset-0 z-0 flex items-center justify-center gap-[2px]">
-        <span className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }}>X</span>
-        <span className="mewtwo-xy relative left-[2px]" style={{ color: PURPLE, fontSize: XY }}>Y</span>
+        <GlitchText as="span" text="X" className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }} />
+        <GlitchText as="span" text="Y" className="mewtwo-xy relative left-[2px]" style={{ color: PURPLE, fontSize: XY }} />
       </div>
       {/* Middle — the two sprites, centers 10% in from each edge. */}
       <div aria-hidden className="absolute inset-0 z-10">
         {spriteX ? (
-          <span className="absolute left-[10%] top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="absolute left-[10%] top-[8px] -translate-x-1/2">
             <Sprite src={spriteX} alt="" size={SIZE} />
           </span>
         ) : null}
         {spriteY ? (
-          <span className="absolute right-[10%] top-1/2 translate-x-1/2 -translate-y-1/2">
+          <span className="absolute right-[10%] top-[8px] translate-x-1/2">
             <Sprite src={spriteY} alt="" size={SIZE} />
           </span>
         ) : null}

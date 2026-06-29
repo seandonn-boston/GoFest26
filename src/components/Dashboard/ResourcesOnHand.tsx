@@ -1,8 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { MathTooltip } from "@/components/ui/MathTooltip";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 
 const numField =
   "w-16 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent2";
@@ -39,6 +40,8 @@ export function ResourcesOnHand() {
   const useLinkCharges = usePlannerStore((s) => s.settings.useLinkCharges);
   const setSettings = usePlannerStore((s) => s.setSettings);
 
+  const [open, setOpen] = useState(false);
+
   const setNum =
     (key: "passesOwned" | "remoteRaidPassesPlanned" | "linkChargesOwned") => (raw: string) => {
       const n = Math.round(Number(raw.replace(/[^\d]/g, "")) || 0);
@@ -47,8 +50,18 @@ export function ResourcesOnHand() {
 
   return (
     <div className="rounded-xl border border-white/10 bg-gofest-panel/40 p-3">
-      <h3 className="text-sm font-semibold text-slate-100">Passes &amp; Link Charges on hand</h3>
-      <p className="mt-0.5 text-[13px] text-slate-400">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <h3 className="text-sm font-semibold text-slate-100">Passes &amp; Link Charges on hand</h3>
+        <PlusToggle open={open} size={16} className="shrink-0 text-slate-400" />
+      </button>
+      {open ? (
+        <>
+      <p className="mt-1.5 text-[13px] text-slate-400">
         What you already hold — we spend it on your highest priorities first, so the cost step shows
         only what you&apos;d still buy. Free daily passes are auto-counted, so leave those out.
       </p>
@@ -86,7 +99,7 @@ export function ResourcesOnHand() {
           />
           <Info>
             Remote Raid Passes are <b className="text-slate-200">unlimited</b> this event — this is just how many you
-            hold. They&apos;re only used if you opt into remote raids on the Prioritize step.
+            plan on using through the week. They&apos;re only used if you opt into remote raids on the Prioritize step.
           </Info>
         </label>
 
@@ -124,6 +137,8 @@ export function ResourcesOnHand() {
           way to free up passes. {linkChargesOwned <= 0 ? <span className="text-slate-500">(Add some above first.)</span> : null}
         </span>
       </label>
+        </>
+      ) : null}
     </div>
   );
 }
