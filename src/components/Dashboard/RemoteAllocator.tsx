@@ -21,6 +21,7 @@ export function RemoteAllocator() {
   const setRemoteAllocation = usePlannerStore((s) => s.setRemoteAllocation);
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
+  const setSettings = usePlannerStore((s) => s.setSettings);
   const region = usePlannerStore((s) => s.settings.region);
 
   const order = useMemo(() => selectedInGlobalOrder({ inputs, blockPriority }), [inputs, blockPriority]);
@@ -44,7 +45,11 @@ export function RemoteAllocator() {
         ) : (
           <button
             type="button"
-            onClick={() => setRemoteAuto(true)}
+            onClick={() => {
+              // Auto-balancing also opts into remote raids (and checks the box).
+              setSettings({ useRemoteRaids: true });
+              setRemoteAuto(true);
+            }}
             title="Re-fill region-locked first, then by priority"
             className="shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1.5 py-[1px] font-mono text-[11px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-gofest-accent2/50 hover:text-gofest-accent2"
           >

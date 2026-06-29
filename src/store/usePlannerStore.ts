@@ -439,8 +439,15 @@ export const usePlannerStore = create<PlannerState>()(
 
       setRemoteAllocation: (bossId, value) =>
         set((state) => {
+          const v = clampRemote(value);
           // A manual edit takes over from auto-balance so the user's tweaks stick.
-          return { remoteAllocations: { ...state.remoteAllocations, [bossId]: clampRemote(value) }, remoteAuto: false };
+          const next = { remoteAllocations: { ...state.remoteAllocations, [bossId]: v }, remoteAuto: false };
+          // Entering a remote count opts the user into remote raids: the step-4
+          // checkbox is disabled until then, and this preselects it.
+          if (v > 0 && !state.settings.useRemoteRaids) {
+            return { ...next, settings: { ...state.settings, useRemoteRaids: true } };
+          }
+          return next;
         }),
 
       setRemoteAllocations: (map) =>
