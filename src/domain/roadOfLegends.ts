@@ -10,7 +10,9 @@
 
 import { getBoss, RAID_BOSSES } from "@/data";
 import { ROAD_DAYS, type RoadDay } from "@/data/roadOfLegends";
+import { energyGoalsFor } from "@/data/energyGoals";
 import { collapseForms, primaryFormId } from "./forms";
+import { energyRaidsNeeded } from "./fusionEnergy";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import {
@@ -124,6 +126,37 @@ export function computeRoadPlan(
   const headStart: Record<string, number> = {};
   const days: RoadDayPlan[] = [];
   let totalFitted = 0;
+
+  // Day-locked energy raids pull double duty. The fused / crowned / primal raids
+  // (White Kyurem on Tue, Black Kyurem on Wed, …) are the ONLY source of their
+  // energy and run on one specific Road of Legends day — but they're still raids
+  // of the BASE species, so they also bank its Candy/XL. Reserve that candy credit
+  // up front as a head start, capped at the species' candy need (extra energy
+  // raids beyond the candy goal don't reduce it). Reserving it before the day loop
+  // means the flexible candy days below only fill whatever candy the energy raids
+  // don't already cover — so a goal of "15 Kyurem candy + 5 White + 5 Black" plans
+  // as 15 total raids (10 day-locked, 5 anywhere), not 25.
+  for (const input of collapsed) {
+    if (!input.selected) continue;
+    const goals = energyGoalsFor(input.bossId);
+    if (!goals.length) continue;
+    let energyRaids = 0;
+    for (const def of goals) {
+      // The energy is only earnable on its day, and only if the player raids that day.
+      if (!def.roadDayId || !playDays[def.roadDayId]) continue;
+      const prog = input.energy?.[def.key];
+      if (!prog?.on) continue;
+      const goal = prog.goal > 0 ? prog.goal : def.cost;
+      energyRaids += sized(energyRaidsNeeded(prog.have ?? 0, goal, def.perRaid), rewardCase);
+    }
+    if (energyRaids <= 0) continue;
+    const candyNeed = remaining.get(input.bossId) ?? 0;
+    const credit = Math.min(candyNeed, energyRaids);
+    if (credit <= 0) continue;
+    remaining.set(input.bossId, candyNeed - credit);
+    headStart[input.bossId] = (headStart[input.bossId] ?? 0) + credit;
+    totalFitted += credit;
+  }
 
   for (const day of ROAD_DAYS) {
     if (!playDays[day.id]) continue;

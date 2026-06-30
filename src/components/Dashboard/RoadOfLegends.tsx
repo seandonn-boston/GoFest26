@@ -191,6 +191,10 @@ function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
       <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-cyan-300">
         ⚡ Fusion / Primal raids today
       </div>
+      <p className="mb-1 text-[11px] text-slate-500">
+        Day-locked — only earnable today. These raids also bank the base Pokémon&apos;s Candy, so they count toward its
+        goal too.
+      </p>
       <div className="space-y-1">
         {goals.map(({ bossId, def }) => {
           const progress = inputs[bossId]?.energy?.[def.key];
