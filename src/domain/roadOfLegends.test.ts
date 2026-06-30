@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeRoadPlan } from "./roadOfLegends";
-import { computeBlockPlan, mostOverflowingBlock, type BlockPlan } from "./blockPlan";
+import { computeBlockPlan, mostOverflowingBlock, sized, type BlockPlan } from "./blockPlan";
+import { energyRaidsNeeded } from "./fusionEnergy";
 import { DEFAULT_SETTINGS } from "./settings";
 import type { BossInput, BossResult, CapacityModel } from "./types";
 
@@ -113,6 +114,62 @@ describe("computeRoadPlan", () => {
     });
     expect(mostOverflowingBlock({ blocks: [mk("A", 3), mk("B", 9), mk("C", 0)], feasible: false })!.name).toBe("B");
     expect(mostOverflowingBlock({ blocks: [mk("A", 0)], feasible: true })).toBeNull();
+  });
+
+  describe("day-locked fusion energy raids count toward the base candy goal", () => {
+    const FUSION = { min: 80, max: 140 };
+    const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
+    // White Kyurem (blaze) is featured Tuesday, Black Kyurem (volt) Wednesday.
+    const withGoals = (candyRaids: number): { inputs: BossInput[]; results: BossResult[] } => ({
+      inputs: [
+        {
+          ...input("kyurem"),
+          energy: {
+            blaze: { have: 0, goal: 500, on: true },
+            volt: { have: 0, goal: 500, on: true },
+          },
+        },
+      ],
+      results: [result("kyurem", candyRaids)],
+    });
+    // Raids each fusion goal needs at the safe (worst-luck) reward case.
+    const perGoal = sized(energyRaidsNeeded(0, 500, FUSION), "safe");
+
+    it("credits the fusion raids toward the head start even though Kyurem isn't featured Tue/Wed", () => {
+      const { inputs, results } = withGoals(15);
+      const road = computeRoadPlan(inputs, results, capacity, safe, { tue: true, wed: true });
+      // Kyurem isn't in Tue/Wed bossIds, so without the fusion credit the head
+      // start would be 0; the two fusion goals supply 2 × perGoal candy-effective raids.
+      expect(road.headStart.kyurem).toBe(perGoal * 2);
+      expect(road.totalFitted).toBe(perGoal * 2);
+    });
+
+    it("caps the credit at the species' candy need (extra energy raids don't over-reduce)", () => {
+      const candyNeed = perGoal; // less than the 2 × perGoal fusion raids
+      const { inputs, results } = withGoals(candyNeed);
+      const road = computeRoadPlan(inputs, results, capacity, safe, { tue: true, wed: true });
+      expect(road.headStart.kyurem).toBe(candyNeed);
+    });
+
+    it("does nothing when the goals are off or their day isn't played", () => {
+      const { inputs, results } = withGoals(15);
+      const off = computeRoadPlan([input("kyurem")], results, capacity, safe, { tue: true, wed: true });
+      expect(off.headStart.kyurem ?? 0).toBe(0);
+      // Goals on, but neither Tuesday nor Wednesday is selected → nothing earnable.
+      const noDays = computeRoadPlan(inputs, results, capacity, safe, { thu: true });
+      expect(noDays.headStart.kyurem ?? 0).toBe(0);
+    });
+
+    it("reduces the weekend block demand by the fusion credit", () => {
+      const { inputs, results } = withGoals(15);
+      const road = computeRoadPlan(inputs, results, capacity, safe, { tue: true, wed: true });
+      const weekend = computeBlockPlan(inputs, results, capacity, safe, {}, {}, {}, road.headStart);
+      const demanded = weekend.blocks.reduce(
+        (sum, b) => sum + b.species.filter((s) => s.bossId === "kyurem").reduce((a, s) => a + s.raids, 0),
+        0,
+      );
+      expect(demanded).toBe(15 - road.headStart.kyurem);
+    });
   });
 
   it("the head start reduces the weekend block demand", () => {
