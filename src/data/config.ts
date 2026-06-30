@@ -20,8 +20,9 @@ export const GAME_CONFIG = {
 
   capacity: {
     // Catch time (encounter + throw + catch). Quick-catching backs out of the
-    // animation (~5s); a normal catch with full animations averages ~100s.
-    catchSec: { normal: 100, quick: 5 },
+    // animation (~5s). source: confirmed — GO Fest 2026 boosts Premier Ball catch
+    // odds significantly, so a normal catch lands in 1–2 balls; assume ~10s.
+    catchSec: { normal: 10, quick: 5 },
     downtimeSecRange: { min: 20, max: 60 } as Range,
     // Per-raid overhead that is NOT battle and NOT catch: the lobby countdown
     // before the fight starts, plus the two UI transitions (lobby→battle, battle
