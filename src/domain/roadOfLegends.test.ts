@@ -257,3 +257,60 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
     expect(demanded).toBe(18); // 30 − 12 head start (overlap credited)
   });
 });
+
+describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () => {
+  const FUSION = { min: 80, max: 140 };
+  const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
+  // White Kyurem (blaze) is a Tuesday raid; energy raids at the safe reward case:
+  const eRaids = sized(energyRaidsNeeded(0, 500, FUSION), "safe"); // ceil(500/80) = 7
+  const kyuremWith = (goal: number): BossInput => ({
+    ...input("kyurem"),
+    energy: { blaze: { have: 0, goal, on: true } },
+  });
+
+  it("energy raids consume the day's capacity, sit in species, and default to the top", () => {
+    // Tuesday cap = 12. Energy (White Kyurem, 7) fills first; Zekrom candy gets the rest.
+    const inputs = [kyuremWith(500), input("zekrom")];
+    const results = [result("kyurem", 30), result("zekrom", 30)];
+    const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }).days[0];
+    const energyRow = tue.species.find((s) => s.energyKey === "blaze");
+    expect(energyRow?.bossId).toBe("kyurem");
+    expect(energyRow?.fitted).toBe(eRaids); // 7
+    expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted).toBe(12 - eRaids); // 5
+    expect(tue.fitted).toBe(12); // energy + candy, counted once
+  });
+
+  it("dragging a candy target above the energy item changes what fills the hour", () => {
+    const inputs = [kyuremWith(500), input("zekrom")];
+    const results = [result("kyurem", 30), result("zekrom", 30)];
+    // Explicit order: Zekrom first, then the energy pseudo-id.
+    const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }, {}, {}, {}, {
+      tue: ["zekrom", "energy:kyurem:blaze"],
+    }).days[0];
+    expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted).toBe(12); // Zekrom eats the hour
+    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted ?? 0).toBe(0); // energy squeezed out
+  });
+
+  it("counts energy once in totalFitted (no double vs. the candy pre-credit)", () => {
+    const road = computeRoadPlan([kyuremWith(500)], [result("kyurem", 30)], capacity, safe, { tue: true });
+    // Only the White Kyurem energy raids happen Tuesday (Kyurem isn't candy-featured Tue).
+    expect(road.totalFitted).toBe(eRaids);
+    expect(road.headStart.kyurem).toBe(eRaids); // candy credit from the pre-credit
+  });
+
+  it("Thursday yields the Crowned energy raid, not a Hero-forme candy target", () => {
+    const zacian: BossInput = { ...input("zacian"), energy: { sword: { have: 0, goal: 500, on: true } } };
+    const thu = computeRoadPlan([zacian], [result("zacian", 30)], capacity, safe, { thu: true }).days[0];
+    expect(thu.species.some((s) => s.bossId === "zacian" && !s.energyKey)).toBe(false); // no Hero pre-farm
+    const crowned = thu.species.find((s) => s.energyKey === "sword");
+    expect(crowned?.bossId).toBe("zacian");
+    expect(crowned?.fitted).toBe(eRaids);
+    // Crowned raids still bank Zacian candy toward the weekend.
+    const weekend = computeBlockPlan([zacian], [result("zacian", 30)], capacity, safe, {}, {}, {}, computeRoadPlan([zacian], [result("zacian", 30)], capacity, safe, { thu: true }).headStart);
+    const demanded = weekend.blocks.reduce(
+      (sum, b) => sum + b.species.filter((s) => s.bossId === "zacian").reduce((a, s) => a + s.raids, 0),
+      0,
+    );
+    expect(demanded).toBe(30 - eRaids); // credited
+  });
+});

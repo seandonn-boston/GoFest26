@@ -69,9 +69,12 @@ export const ROAD_DAYS: RoadDay[] = [
     dateLabel: "Jul 9",
     raidHourHours: 2,
     raidHourLabel: "6–8 PM",
-    // 5★: Crowned Sword Zacian, Crowned Shield Zamazenta (share each Hero form's
-    // Candy) · Mega: Gengar
-    bossIds: ["zacian", "zamazenta", "mega-gengar"],
+    // 5★: Crowned Sword Zacian, Crowned Shield Zamazenta — the ONLY Zacian/Zamazenta
+    // forme raiding today (the Crowned raid, which banks Hero-form Candy too). They
+    // come in as fusion/primal energy targets (ENERGY_GOALS), not roster bosses, so
+    // only the Mega is a plain roster pre-farm here. The Hero forme is a Sunday boss.
+    // · Mega: Gengar
+    bossIds: ["mega-gengar"],
   },
   {
     id: "fri",

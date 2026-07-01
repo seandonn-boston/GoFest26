@@ -47,6 +47,12 @@ export interface BlockSpeciesShare {
   bands: Record<RiskBand, number>;
   /** True for a Mewtwo balancing fill (vs. a fixed-window species). */
   mewtwo: boolean;
+  /** Set on a Road-of-Legends fusion/primal energy raid (e.g. White Kyurem): the
+   *  energy goal's key. `bossId` stays the base species so it links to results. */
+  energyKey?: string;
+  /** Sprite filename for a non-roster forme (the fusion/primal source), rendered
+   *  via spriteUrl — the roster `bossId` has no icon for these. */
+  sprite?: string;
 }
 
 export interface BlockPlan {
@@ -183,6 +189,10 @@ export interface RawShare {
   mewtwo: boolean;
   /** This species' block is set to quick-catch → its raids take less time. */
   quick?: boolean;
+  /** Road-of-Legends fusion/primal energy raid: the energy goal's key. */
+  energyKey?: string;
+  /** Sprite filename for a non-roster forme (fusion/primal source). */
+  sprite?: string;
 }
 
 /** Order shares by a priority-rank function (highest first); ties → fixed
@@ -265,6 +275,8 @@ export function fillShares(
       remaining: sh.raids - fit,
       bands,
       mewtwo: sh.mewtwo,
+      energyKey: sh.energyKey,
+      sprite: sh.sprite,
     };
   });
   return { species, demand, fitted, remaining, bands: agg };
