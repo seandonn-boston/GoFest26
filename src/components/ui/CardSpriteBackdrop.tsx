@@ -12,26 +12,31 @@ export const CARD_SPRITE_SIZE = 138;
 const SIZE = CARD_SPRITE_SIZE;
 
 /**
- * The card's sprite(s), behind the content. Nothing fancy: sprite #1's box sits
- * flush to the left edge, sprite #2's box flush to the right edge, each with a 4px
- * buffer; both same size, aligned to the top of the card with an 8px gap.
+ * The card's sprite(s), behind the content. Up to three, same size, aligned to the
+ * top of the card with an 8px gap: the first sits flush to the left edge, the last
+ * flush to the right edge (4px buffer each), and a middle one (a 3-forme species
+ * like Kyurem or Necrozma) is centered between them.
  */
 export function CardSpriteBackdrop({ sprites }: { sprites: TitleSprite[] }) {
-  const left = sprites[0];
-  const right = sprites[1];
+  const list = sprites.filter((s) => s.src).slice(0, 3);
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-      {left?.src ? (
-        <span className="absolute left-[4px] top-[8px]">
-          <Sprite src={left.src} alt="" size={SIZE} />
-        </span>
-      ) : null}
-      {right?.src ? (
-        <span className="absolute right-[4px] top-[8px]">
-          <Sprite src={right.src} alt="" size={SIZE} />
-        </span>
-      ) : null}
+      {list.map((s, i) => {
+        const pos =
+          list.length === 1
+            ? "left-[4px]"
+            : i === 0
+              ? "left-[4px]"
+              : i === list.length - 1
+                ? "right-[4px]"
+                : "left-1/2 -translate-x-1/2";
+        return (
+          <span key={i} className={`absolute top-[8px] ${pos}`}>
+            <Sprite src={s.src} alt="" size={SIZE} />
+          </span>
+        );
+      })}
     </div>
   );
 }
