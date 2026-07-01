@@ -24,6 +24,12 @@ export interface StateBackup {
   playDays?: Record<string, boolean>;
   /** Per Road of Legends day, the ordered pre-farm targets (may be absent). */
   roadTargets?: Record<string, string[]>;
+  /** Whether RoL selection mirrors the weekend targets (default true; may be absent). */
+  roadCoupled?: boolean;
+  /** Decoupled RoL roster targets (may be absent). */
+  roadSelected?: Record<string, boolean>;
+  /** Decoupled RoL fusion/primal energy goals, base boss id → keys (may be absent). */
+  roadEnergy?: Record<string, string[]>;
 }
 
 export const BACKUP_APP = "gofest2026-raid-planner";
@@ -48,6 +54,9 @@ export function serializeState(): StateBackup {
     raidsDone: s.raidsDone,
     playDays: s.playDays,
     roadTargets: s.roadTargets,
+    roadCoupled: s.roadCoupled,
+    roadSelected: s.roadSelected,
+    roadEnergy: s.roadEnergy,
   };
 }
 

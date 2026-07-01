@@ -195,3 +195,65 @@ describe("computeRoadPlan", () => {
     expect(demanded).toBe(18);
   });
 });
+
+describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
+  const FUSION = { min: 80, max: 140 };
+
+  it("coupled with explicit args equals the default-arg behavior", () => {
+    const inputs = [input("zekrom")];
+    const results = [result("zekrom", 30)];
+    const a = computeRoadPlan(inputs, results, capacity, DEFAULT_SETTINGS, { mon: true });
+    const b = computeRoadPlan(inputs, results, capacity, DEFAULT_SETTINGS, { mon: true }, {}, {}, {}, {}, true, {}, {});
+    expect(b).toEqual(a);
+  });
+
+  it("builds a plan from roadSelected with NO weekend results (no crash) and fills the raid hour", () => {
+    // Empty weekend inputs/results — zekrom is only a decoupled RoL pick. Tuesday's
+    // 2h hour at 6 raids/hr = 12; the lone target fills it.
+    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, { zekrom: true }, {});
+    expect(road.days).toHaveLength(1);
+    expect(road.days[0].fitted).toBe(12);
+    expect(road.headStart.zekrom).toBe(12);
+  });
+
+  it("splits the raid hour across multiple decoupled targets (no phantom overflow)", () => {
+    // Tuesday features zekrom + mega-tyranitar; both picked → even split of the 12.
+    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, {
+      zekrom: true,
+      "mega-tyranitar": true,
+    }, {});
+    expect(road.days[0].fitted).toBe(12);
+    expect(road.days[0].remaining).toBe(0);
+    expect(road.headStart.zekrom + road.headStart["mega-tyranitar"]).toBe(12);
+  });
+
+  it("schedules decoupled fusion energy on its locked day and credits the base species", () => {
+    // White Kyurem (blaze) is a Tuesday raid; roadEnergy drives it when decoupled.
+    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, {}, {
+      kyurem: ["blaze"],
+    });
+    const eRaids = sized(energyRaidsNeeded(0, 1000, FUSION), DEFAULT_SETTINGS.rewardCase);
+    expect(road.headStart.kyurem).toBe(eRaids);
+    // Off its day (only Wednesday played), nothing is earnable.
+    const off = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { wed: true }, {}, {}, {}, {}, false, {}, {
+      kyurem: ["blaze"],
+    });
+    expect(off.headStart.kyurem ?? 0).toBe(0);
+  });
+
+  it("credits the weekend only for a target that's in BOTH lists", () => {
+    // zekrom is a weekend target (30 raids) AND a decoupled RoL pick.
+    const inputs = [input("zekrom")];
+    const results = [result("zekrom", 30)];
+    const road = computeRoadPlan(inputs, results, capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, {
+      zekrom: true,
+    }, {});
+    expect(road.headStart.zekrom).toBe(12);
+    const weekend = computeBlockPlan(inputs, results, capacity, DEFAULT_SETTINGS, {}, {}, {}, road.headStart);
+    const demanded = weekend.blocks.reduce(
+      (sum, b) => sum + b.species.filter((s) => s.bossId === "zekrom").reduce((a, s) => a + s.raids, 0),
+      0,
+    );
+    expect(demanded).toBe(18); // 30 − 12 head start (overlap credited)
+  });
+});

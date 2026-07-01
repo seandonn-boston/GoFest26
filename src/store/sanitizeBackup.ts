@@ -186,5 +186,8 @@ export function sanitizeBackup(b: StateBackup): StateBackup {
     raidsDone: numRecord(b.raidsDone),
     playDays: boolRecord(b.playDays),
     roadTargets: strArrayRecord(b.roadTargets),
+    roadCoupled: bool(b.roadCoupled, true),
+    roadSelected: boolRecord(b.roadSelected),
+    roadEnergy: strArrayRecord(b.roadEnergy),
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tileTitle } from "./tileTitle";
+import { tileTitle, tileTitleForSource } from "./tileTitle";
 
 describe("tileTitle", () => {
   const t = (id: string, name: string) => tileTitle({ id, name });
@@ -43,5 +43,25 @@ describe("tileTitle", () => {
   it("leaves plain names untouched", () => {
     expect(t("dialga", "Dialga")).toBe("Dialga");
     expect(t("reshiram", "Reshiram")).toBe("Reshiram");
+  });
+});
+
+describe("tileTitleForSource", () => {
+  it("abbreviates a single-word forme prefix to its first letter", () => {
+    expect(tileTitleForSource("Primal Kyogre")).toBe("P Kyogre");
+    expect(tileTitleForSource("Primal Groudon")).toBe("P Groudon");
+    expect(tileTitleForSource("White Kyurem")).toBe("W Kyurem");
+    expect(tileTitleForSource("Black Kyurem")).toBe("B Kyurem");
+  });
+
+  it("keeps a single initial where the base species makes it unambiguous", () => {
+    expect(tileTitleForSource("Crowned Sword Zacian")).toBe("C Zacian");
+    expect(tileTitleForSource("Crowned Shield Zamazenta")).toBe("C Zamazenta");
+  });
+
+  it("disambiguates colliding Necrozma formes with two initials", () => {
+    // "Dawn Wings" and "Dusk Mane" would both collapse to "D Necrozma".
+    expect(tileTitleForSource("Dawn Wings Necrozma")).toBe("DW Necrozma");
+    expect(tileTitleForSource("Dusk Mane Necrozma")).toBe("DM Necrozma");
   });
 });

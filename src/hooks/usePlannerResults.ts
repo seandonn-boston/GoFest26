@@ -60,6 +60,9 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
   const quickCatchBlocks = useDeferredValue(usePlannerStore((s) => s.quickCatchBlocks));
   const playDays = useDeferredValue(usePlannerStore((s) => s.playDays));
   const roadTargets = useDeferredValue(usePlannerStore((s) => s.roadTargets));
+  const roadCoupled = useDeferredValue(usePlannerStore((s) => s.roadCoupled));
+  const roadSelected = useDeferredValue(usePlannerStore((s) => s.roadSelected));
+  const roadEnergy = useDeferredValue(usePlannerStore((s) => s.roadEnergy));
   return useMemo(() => {
     const list = Object.values(inputs);
     const road = computeRoadPlan(
@@ -72,6 +75,9 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
       remoteAllocations,
       quickCatchBlocks,
       roadTargets,
+      roadCoupled,
+      roadSelected,
+      roadEnergy,
     );
     const weekend = computeBlockPlan(
       list,
@@ -84,7 +90,7 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
       road.headStart,
     );
     return { weekend, road };
-  }, [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks, playDays, roadTargets]);
+  }, [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks, playDays, roadTargets, roadCoupled, roadSelected, roadEnergy]);
 }
 
 /**
@@ -134,6 +140,9 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   const playDays = usePlannerStore((s) => s.playDays);
+  const roadCoupled = usePlannerStore((s) => s.roadCoupled);
+  const roadSelected = usePlannerStore((s) => s.roadSelected);
+  const roadEnergy = usePlannerStore((s) => s.roadEnergy);
   const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
 
   useEffect(() => {
@@ -144,7 +153,20 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
     const globalOrder = globalPriorityFromBlocks(blockPriority);
     // The Road of Legends head start already covers some demand — net it out so
     // remote isn't assigned to raids the player will do on a weekday.
-    const road = computeRoadPlan(inputList, summary.results, summary.capacity, settings, playDays, blockPriority);
+    const road = computeRoadPlan(
+      inputList,
+      summary.results,
+      summary.capacity,
+      settings,
+      playDays,
+      blockPriority,
+      {},
+      {},
+      {},
+      roadCoupled,
+      roadSelected,
+      roadEnergy,
+    );
     // Shortfalls must be measured with remote OFF, otherwise goals already
     // covered by the current allocation read as "met" and the budget unwinds.
     const offPlan = computeBlockPlan(
@@ -166,5 +188,5 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       midpoint(summary.capacity.remoteCapacity),
     );
     if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
-  }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, playDays, summary, setRemoteAllocations]);
+  }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, playDays, roadCoupled, roadSelected, roadEnergy, summary, setRemoteAllocations]);
 }

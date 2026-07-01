@@ -8,6 +8,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
+import { RoadOfLegendsSection } from "./RoadOfLegendsSection";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
@@ -70,6 +71,8 @@ export function BossList() {
         <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
         <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
       </div>
+
+      <RoadOfLegendsSection />
 
       <div className="space-y-4">
         {GROUPS.map(({ habitat, bosses }) => (

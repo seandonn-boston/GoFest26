@@ -45,3 +45,31 @@ export function tileTitle(boss: { id: string; name: string }): string {
 
   return name;
 }
+
+/**
+ * Short tile title for a fusion / crowned / primal SOURCE raid (e.g. the
+ * `source` on an EnergyGoalDef — "White Kyurem", "Primal Kyogre"). The forme
+ * prefix collapses to its first letter ("Primal Kyogre" → "P Kyogre"), with a
+ * two-letter fallback where a single initial would collide within the same base
+ * species (Necrozma's "Dawn Wings" vs "Dusk Mane" both start "D"). The set of
+ * sources is small and fixed, so a lookup keeps it unambiguous and testable.
+ */
+const SOURCE_ABBR: Record<string, string> = {
+  "White Kyurem": "W Kyurem",
+  "Black Kyurem": "B Kyurem",
+  "Dawn Wings Necrozma": "DW Necrozma",
+  "Dusk Mane Necrozma": "DM Necrozma",
+  "Crowned Sword Zacian": "C Zacian",
+  "Crowned Shield Zamazenta": "C Zamazenta",
+  "Primal Groudon": "P Groudon",
+  "Primal Kyogre": "P Kyogre",
+};
+
+export function tileTitleForSource(source: string): string {
+  if (SOURCE_ABBR[source]) return SOURCE_ABBR[source];
+  // Generic fallback: first letter of the prefix + the trailing base species word.
+  const parts = source.trim().split(/\s+/);
+  if (parts.length < 2) return source;
+  const base = parts[parts.length - 1];
+  return `${parts[0].charAt(0).toUpperCase()} ${base}`;
+}
