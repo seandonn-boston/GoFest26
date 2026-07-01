@@ -37,8 +37,9 @@ const SOURCE_SPRITE = {
 
 export const ENERGY_GOALS: Record<string, EnergyGoalDef[]> = {
   kyurem: [
-    { key: "blaze", kind: "fusion", label: "Blaze · White Kyurem", flavor: "blaze", cost: 1000, perRaid: FUSION_PER_RAID, source: "White Kyurem", forme: "White", addedTypes: ["Fire"], sprite: SOURCE_SPRITE.whiteKyurem, roadDayId: "tue" },
-    { key: "volt", kind: "fusion", label: "Volt · Black Kyurem", flavor: "volt", cost: 1000, perRaid: FUSION_PER_RAID, source: "Black Kyurem", forme: "Black", addedTypes: ["Electric"], sprite: SOURCE_SPRITE.blackKyurem, roadDayId: "wed" },
+    // White & Black Kyurem are Dragon/Ice in GO (same as base Kyurem) — no added type.
+    { key: "blaze", kind: "fusion", label: "Blaze · White Kyurem", flavor: "blaze", cost: 1000, perRaid: FUSION_PER_RAID, source: "White Kyurem", forme: "White", sprite: SOURCE_SPRITE.whiteKyurem, roadDayId: "tue" },
+    { key: "volt", kind: "fusion", label: "Volt · Black Kyurem", flavor: "volt", cost: 1000, perRaid: FUSION_PER_RAID, source: "Black Kyurem", forme: "Black", sprite: SOURCE_SPRITE.blackKyurem, roadDayId: "wed" },
   ],
   necrozma: [
     { key: "lunar", kind: "fusion", label: "Lunar · Dawn Wings", flavor: "lunar", cost: 1000, perRaid: FUSION_PER_RAID, source: "Dawn Wings Necrozma", forme: "Dawn Wings", addedTypes: ["Ghost"], sprite: SOURCE_SPRITE.dawnWings, roadDayId: "tue" },

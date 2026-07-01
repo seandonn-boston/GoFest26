@@ -42,7 +42,7 @@ function BossSelectChipImpl({ boss, remoteOnly = false }: { boss: RaidBoss; remo
         </span>
       ) : null}
       <span className="absolute inset-x-0 bottom-1.5 z-10 flex justify-center px-1">
-        <span className="enamel-label line-clamp-1 text-[12px] leading-tight">{short}</span>
+        <span className="enamel-label min-w-0 max-w-full overflow-hidden whitespace-nowrap text-[12px] leading-tight">{short}</span>
       </span>
     </EnamelBadge>
   );
