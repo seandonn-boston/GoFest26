@@ -144,6 +144,47 @@ export function computeRoadPlan(
     return out;
   };
 
+  // A share belongs to the 7–8 PM window (Mega Raid Hour, or Friday's Primal Raid
+  // Hour) rather than the 6–7 PM 5★ window: Mega roster bosses, and Primal energy.
+  const isMegaWindow = (s: RawShare): boolean => {
+    if (s.energyKey) return energyGoalsFor(s.bossId).find((d) => d.key === s.energyKey)?.kind === "primal";
+    const t = getBoss(s.bossId)?.tier;
+    return t === "mega" || t === "super-mega";
+  };
+  const mergeBands = (a: Record<RiskBand, number>, b: Record<RiskBand, number>): Record<RiskBand, number> => ({
+    blue: a.blue + b.blue,
+    green: a.green + b.green,
+    yellow: a.yellow + b.yellow,
+    red: a.red + b.red,
+  });
+
+  /**
+   * Fit a day's ordered shares into its Raid-Hour windows: 6–7 PM (5★ + fusion/
+   * crowned energy) and 7–8 PM (Mega, or Friday Primal). Each window is capped
+   * independently so a Mega/Primal target can't spill into the 5★ hour and vice
+   * versa. Monday (megaHours = 0) is one 5★ marathon pool, so everything shares it.
+   */
+  const fitDay = (ordered: RawShare[], day: RoadDay) => {
+    const fiveHours = day.raidHourHours - day.megaHours;
+    const fiveCap: Range = { min: rpH.min * fiveHours, max: rpH.max * fiveHours };
+    if (day.megaHours <= 0) {
+      return { filled: fillShares(ordered, fiveCap), capacity: fiveCap };
+    }
+    const megaCap: Range = { min: rpH.min * day.megaHours, max: rpH.max * day.megaHours };
+    const f5 = fillShares(ordered.filter((s) => !isMegaWindow(s)), fiveCap);
+    const fm = fillShares(ordered.filter(isMegaWindow), megaCap);
+    return {
+      filled: {
+        species: [...f5.species, ...fm.species],
+        demand: f5.demand + fm.demand,
+        fitted: f5.fitted + fm.fitted,
+        remaining: f5.remaining + fm.remaining,
+        bands: mergeBands(f5.bands, fm.bands),
+      },
+      capacity: { min: fiveCap.min + megaCap.min, max: fiveCap.max + megaCap.max },
+    };
+  };
+
   // ── DECOUPLED: the player's independent Road-of-Legends agenda ──────────────
   // Build the plan straight from `roadSelected` / `roadEnergy` instead of the
   // weekend picks. Demand is "fill the raid hour": each played day's fusion/primal
@@ -156,37 +197,61 @@ export function computeRoadPlan(
     const days: RoadDayPlan[] = [];
     let totalFitted = 0;
 
+    // Even-split a set of roster ids over a window's capacity (after that window's
+    // day-locked energy raids), as "fill the raid hour" demand.
+    const isMegaTier = (id: string) => {
+      const t = getBoss(id)?.tier;
+      return t === "mega" || t === "super-mega";
+    };
+    const evenSplitRoster = (ids: string[], cap: Range, energyDemand: number, day: RoadDay): RawShare[] => {
+      const out: RawShare[] = [];
+      const budget = Math.max(0, cap.max - energyDemand);
+      const n = ids.length;
+      if (n <= 0 || budget <= 0) return out;
+      const per = Math.floor(budget / n);
+      const extra = budget % n;
+      ids.forEach((id, i) => {
+        const raids = per + (i < extra ? 1 : 0);
+        if (raids <= 0) return;
+        const formeId = featuredFormeId(day, id);
+        const forme = getBoss(formeId);
+        out.push({
+          bossId: id,
+          bossName: forme?.name ?? getBoss(id)!.name,
+          formeBossId: formeId !== id ? formeId : undefined,
+          raids,
+          range: { min: raids, max: raids },
+          mewtwo: false,
+        });
+      });
+      return out;
+    };
+
     for (const day of ROAD_DAYS) {
       if (!playDays[day.id]) continue;
-      const fullCap: Range = { min: rpH.min * day.raidHourHours, max: rpH.max * day.raidHourHours };
-      // Day-locked energy raids sit at the top of the list and reserve their slots;
-      // the picked roster targets split whatever raid-hour capacity is left.
+      const fiveHours = day.raidHourHours - day.megaHours;
+      const fiveCap: Range = { min: rpH.min * fiveHours, max: rpH.max * fiveHours };
+      const megaCap: Range = { min: rpH.min * day.megaHours, max: rpH.max * day.megaHours };
       const energyShares = energySharesForDay(day.id);
-      const energyDemand = energyShares.reduce((s, e) => s + e.raids, 0);
       const rosterIds = Array.from(new Set(day.bossIds.map(toPrimary)))
         .filter((id) => roadSelected[id] && isLocal(id))
         .sort((a, z) => (rosterRank.get(a) ?? 0) - (rosterRank.get(z) ?? 0));
-      const rosterCap = Math.max(0, fullCap.max - energyDemand);
-      const rosterShares: RawShare[] = [];
-      const n = rosterIds.length;
-      if (n > 0 && rosterCap > 0) {
-        const per = Math.floor(rosterCap / n);
-        const extra = rosterCap % n;
-        rosterIds.forEach((id, i) => {
-          const raids = per + (i < extra ? 1 : 0);
-          if (raids <= 0) return;
-          const formeId = featuredFormeId(day, id);
-          const forme = getBoss(formeId);
-          rosterShares.push({
-            bossId: id,
-            bossName: forme?.name ?? getBoss(id)!.name,
-            formeBossId: formeId !== id ? formeId : undefined,
-            raids,
-            range: { min: raids, max: raids },
-            mewtwo: false,
-          });
-        });
+
+      // Split roster + energy demand across the two Raid-Hour windows so each is
+      // filled independently (Monday's single 5★ pool keeps everything together).
+      let rosterShares: RawShare[];
+      if (day.megaHours <= 0) {
+        const energyDemand = energyShares.reduce((s, e) => s + e.raids, 0);
+        rosterShares = evenSplitRoster(rosterIds, fiveCap, energyDemand, day);
+      } else {
+        const fiveEnergy = energyShares.filter((s) => !isMegaWindow(s)).reduce((s, e) => s + e.raids, 0);
+        const megaEnergy = energyShares.filter(isMegaWindow).reduce((s, e) => s + e.raids, 0);
+        rosterShares = [
+          ...evenSplitRoster(rosterIds.filter((id) => !isMegaTier(id)), fiveCap, fiveEnergy, day),
+          ...evenSplitRoster(rosterIds.filter(isMegaTier), megaCap, megaEnergy, day),
+        ];
       }
+
       // Respect the user's drag order when set; otherwise energy first, then roster.
       const explicit = roadTargets[day.id];
       const byTarget = new Map<string, RawShare>([
@@ -197,7 +262,7 @@ export function computeRoadPlan(
         ? explicit.map((tid) => byTarget.get(tid)).filter((s): s is RawShare => s !== undefined)
         : [...energyShares, ...rosterShares];
 
-      const filled = fillShares(ordered, fullCap);
+      const { filled, capacity } = fitDay(ordered, day);
       for (const s of filled.species) {
         if (s.fitted > 0) headStart[s.bossId] = (headStart[s.bossId] ?? 0) + s.fitted;
       }
@@ -208,7 +273,7 @@ export function computeRoadPlan(
         dateLabel: day.dateLabel,
         raidHourLabel: day.raidHourLabel,
         raidHourHours: day.raidHourHours,
-        capacity: fullCap,
+        capacity,
         ...filled,
       });
     }
@@ -270,7 +335,12 @@ export function computeRoadPlan(
       const prog = input.energy?.[def.key];
       if (!prog?.on) continue;
       const goal = prog.goal > 0 ? prog.goal : def.cost;
-      energyRaids += sized(energyRaidsNeeded(prog.have ?? 0, goal, def.perRaid), rewardCase);
+      const day = ROAD_DAYS.find((d) => d.id === def.roadDayId);
+      // Cap at the raids the goal's Raid-Hour window can hold (5★ 6–7 PM, or Mega/
+      // Primal 7–8 PM) — you can't bank more energy than fits that one hour.
+      const windowHours = day ? (def.kind === "primal" ? day.megaHours : day.raidHourHours - day.megaHours) : 1;
+      const need = sized(energyRaidsNeeded(prog.have ?? 0, goal, def.perRaid), rewardCase);
+      energyRaids += Math.min(need, rpH.max * windowHours);
     }
     if (energyRaids <= 0) continue;
     const candyNeed = remaining.get(input.bossId) ?? 0;
@@ -282,7 +352,6 @@ export function computeRoadPlan(
 
   for (const day of ROAD_DAYS) {
     if (!playDays[day.id]) continue;
-    const cap: Range = { min: rpH.min * day.raidHourHours, max: rpH.max * day.raidHourHours };
 
     const featured = new Set(day.bossIds.map(toPrimary));
     const buildShare = (id: string): RawShare => {
@@ -350,7 +419,8 @@ export function computeRoadPlan(
       shares = [...energyShares, ...candy]; // energy defaults to the top
     }
 
-    const filled = fillShares(shares, cap);
+    // Fit the day's two Raid-Hour windows (6–7 PM 5★, 7–8 PM Mega/Primal).
+    const { filled, capacity } = fitDay(shares, day);
     for (const s of filled.species) {
       // Energy shares just consume capacity + count as raids done; their candy
       // effect was already reserved by the pre-credit above.
@@ -366,7 +436,7 @@ export function computeRoadPlan(
       dateLabel: day.dateLabel,
       raidHourLabel: day.raidHourLabel,
       raidHourHours: day.raidHourHours,
-      capacity: cap,
+      capacity,
       focus,
       ...filled,
     });

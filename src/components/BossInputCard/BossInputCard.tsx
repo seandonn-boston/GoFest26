@@ -106,10 +106,10 @@ export function BossInputCard({
   // forme group (Giratina, the genies) both show every forme's sprite on the
   // card so both are visible; a lone boss shows just itself. Card theming uses
   // the union of every forme's types.
-  // An energy-fusion boss (Necrozma, Kyurem) folds its fused formes' extra types
-  // into the card styling + type-icon row — the same union treatment a multi-form
-  // group (Solgaleo & Lunala) gets — so Necrozma shows Psychic/Ghost/Steel and
-  // Kyurem Dragon/Ice/Fire/Electric.
+  // An energy-fusion boss folds its fused formes' extra types into the card styling
+  // + type-icon row — the same union treatment a multi-form group (Solgaleo & Lunala)
+  // gets — so Necrozma shows Psychic/Ghost/Steel. Kyurem's White/Black are Dragon/Ice
+  // in GO (no added type), so it stays Dragon/Ice.
   const fusedTypes = energyGoalsFor(boss.id).flatMap((g) => g.addedTypes ?? []);
   const cardTypes = isGroup
     ? Array.from(new Set(formes.flatMap((f) => f.types ?? [])))
@@ -120,9 +120,9 @@ export function BossInputCard({
   // group already names both in the title, so it keeps none.
   // Fused formes from Road of Legends: a boss with ONE fused forme (Groudon /
   // Kyogre → Primal, the Crowned genie-dogs) shows base on the left + fused on the
-  // right. A boss with TWO fused formes (Kyurem, Necrozma) shows only its base for
-  // now — its two fused sprites are deferred. Megas / plain 5★ have none; dual-forme
-  // groups (Giratina, Solgaleo & Lunala, …) already fill both slots.
+  // right. A boss with TWO fused formes (Kyurem → White/Black, Necrozma → Dawn
+  // Wings/Dusk Mane) shows all three: base, then both fused sprites. Megas / plain
+  // 5★ have none; dual-forme groups (Giratina, Solgaleo & Lunala, …) fill two slots.
   const energyGoals = energyGoalsFor(boss.id);
   const fusedSprites = energyGoals
     .filter((g) => g.sprite)
@@ -143,8 +143,8 @@ export function BossInputCard({
       fusedFormes.length >= 2 ? `${fusedFormes.join(", ")}, ${baseForme}` : `${baseForme} & ${fusedFormes[0]}`;
   }
   const titleSprites =
-    !isGroup && fusedSprites.length === 1
-      ? [{ src: boss.sprite, alt: boss.name }, fusedSprites[0]]
+    !isGroup && fusedSprites.length >= 1
+      ? [{ src: boss.sprite, alt: boss.name }, ...fusedSprites]
       : headerFormes.map((f) => ({ src: f.sprite, alt: f.name }));
   // De-duplicate the union windows (same-day formes share a block) before counting
   // capacity, so a dual-day species (Dialga) counts both days but Giratina once.

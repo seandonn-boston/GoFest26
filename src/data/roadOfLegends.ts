@@ -26,6 +26,11 @@ export interface RoadDay {
    *  6–8 PM window (2h): 6–7 is the day's 5★ raids, 7–8 the featured Mega (or
    *  Friday's Primal Kyogre / Groudon). */
   raidHourHours: number;
+  /** Hours of the 7–8 PM window, where the featured Mega (or Friday's Primal) is
+   *  the ONLY thing raidable — so Mega/Primal targets can't spill into the 6–7 PM
+   *  5★ hour. 1 for Tue–Fri; 0 on Monday, whose 6–8 PM block is one 5★ marathon
+   *  (its Mega Salamence shares that pool). The 5★ window is `raidHourHours - megaHours`. */
+  megaHours: number;
   /** Human Raid-Hour window, e.g. "6–8 PM". */
   raidHourLabel: string;
   /** Roster boss ids featured in raids that day (5★ + Mega, per the roster). */
@@ -41,6 +46,7 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Monday",
     dateLabel: "Jul 6",
     raidHourHours: 2,
+    megaHours: 0,
     raidHourLabel: "6–8 PM",
     // The full 5★ roster, plus the day's only featured Mega (Salamence).
     bossIds: [...MONDAY_FIVE_STAR, "mega-salamence"],
@@ -50,6 +56,7 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Tuesday",
     dateLabel: "Jul 7",
     raidHourHours: 2,
+    megaHours: 1,
     raidHourLabel: "6–8 PM",
     // 5★: White Kyurem*, Zekrom, Dawn Wings Necrozma* · Mega: Tyranitar
     bossIds: ["zekrom", "mega-tyranitar"],
@@ -59,6 +66,7 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Wednesday",
     dateLabel: "Jul 8",
     raidHourHours: 2,
+    megaHours: 1,
     raidHourLabel: "6–8 PM",
     // 5★: Black Kyurem*, Reshiram, Dusk Mane Necrozma* · Mega: Gardevoir
     bossIds: ["reshiram", "mega-gardevoir"],
@@ -68,6 +76,7 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Thursday",
     dateLabel: "Jul 9",
     raidHourHours: 2,
+    megaHours: 1,
     raidHourLabel: "6–8 PM",
     // 5★: Crowned Sword Zacian, Crowned Shield Zamazenta — the ONLY Zacian/Zamazenta
     // forme raiding today (the Crowned raid, which banks Hero-form Candy too). They
@@ -81,6 +90,7 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Friday",
     dateLabel: "Jul 10",
     raidHourHours: 2,
+    megaHours: 1,
     raidHourLabel: "6–8 PM",
     // 5★: Origin Forme Dialga, Origin Forme Palkia · Primal: Kyogre*, Groudon* (off-roster)
     bossIds: ["dialga-origin", "palkia-origin"],
