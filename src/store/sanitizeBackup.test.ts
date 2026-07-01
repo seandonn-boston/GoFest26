@@ -49,6 +49,21 @@ describe("sanitizeBackup", () => {
     expect(out.playDays?.mon).toBe(true);
   });
 
+  it("round-trips the Road of Legends coupling fields and defaults them when missing", () => {
+    const on = sanitizeBackup(
+      backup({ roadCoupled: false, roadSelected: { zekrom: true, bad: "x" }, roadEnergy: { kyurem: ["blaze"] } }),
+    );
+    expect(on.roadCoupled).toBe(false);
+    expect(on.roadSelected).toEqual({ zekrom: true }); // non-boolean stripped
+    expect(on.roadEnergy).toEqual({ kyurem: ["blaze"] });
+
+    // Absent in an older backup → coupled by default, empty sets.
+    const missing = sanitizeBackup(backup({}));
+    expect(missing.roadCoupled).toBe(true);
+    expect(missing.roadSelected).toEqual({});
+    expect(missing.roadEnergy).toEqual({});
+  });
+
   it("drops unknown boss ids, including __proto__", () => {
     const b = backup({
       inputs: {

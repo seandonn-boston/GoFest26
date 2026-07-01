@@ -184,6 +184,8 @@ function RoadSpecies({ bossId, formeBossId, bossName, fitted }: { bossId: string
  *  enable it on the base Pokémon's card. */
 function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
   const inputs = usePlannerStore((s) => s.inputs);
+  const roadCoupled = usePlannerStore((s) => s.roadCoupled);
+  const roadEnergy = usePlannerStore((s) => s.roadEnergy);
   const goals = energyGoalsForDay(roadDayId);
   if (goals.length === 0) return null;
   return (
@@ -197,10 +199,12 @@ function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
       </p>
       <div className="space-y-1">
         {goals.map(({ bossId, def }) => {
+          // Coupled: read the weekend energy goal (have/goal editable on the card).
+          // Decoupled: read the independent roadEnergy set — a fixed fuse-cost intent.
           const progress = inputs[bossId]?.energy?.[def.key];
-          const on = progress?.on ?? false;
-          const have = progress?.have ?? 0;
-          const goal = progress && progress.goal > 0 ? progress.goal : def.cost;
+          const on = roadCoupled ? progress?.on ?? false : (roadEnergy[bossId] ?? []).includes(def.key);
+          const have = roadCoupled ? progress?.have ?? 0 : 0;
+          const goal = roadCoupled ? (progress && progress.goal > 0 ? progress.goal : def.cost) : def.cost;
           const remaining = energyRemaining(have, goal);
           const raids = energyRaidsNeeded(have, goal, def.perRaid);
           const boss = getBoss(bossId);
@@ -220,7 +224,7 @@ function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
                 )
               ) : (
                 <span className="shrink-0 text-slate-500">
-                  {def.label} — enable on {stripForme(boss?.name ?? bossId)}&apos;s card
+                  {def.label} — enable on {roadCoupled ? `${stripForme(boss?.name ?? bossId)}'s card` : "the Road of Legends tiles"}
                 </span>
               )}
             </div>

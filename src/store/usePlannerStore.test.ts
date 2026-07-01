@@ -187,4 +187,27 @@ describe("planner store interactive actions", () => {
     expect(store().settings.calibration.megaEnergy).toBe(200);
     expect(store().raidsDone["zekrom-standard"]).toBe(5);
   });
+
+  it("Road of Legends coupling + independent targets", () => {
+    expect(store().roadCoupled).toBe(true); // default
+    store().toggleRoadCoupled();
+    expect(store().roadCoupled).toBe(false);
+
+    store().toggleRoadTarget("zekrom");
+    expect(store().roadSelected.zekrom).toBe(true);
+    store().toggleRoadTarget("zekrom");
+    expect(store().roadSelected.zekrom).toBe(false);
+
+    store().toggleRoadEnergy("kyurem", "blaze");
+    expect(store().roadEnergy.kyurem).toEqual(["blaze"]);
+    store().toggleRoadEnergy("kyurem", "volt");
+    expect(store().roadEnergy.kyurem).toEqual(["blaze", "volt"]);
+    store().toggleRoadEnergy("kyurem", "blaze");
+    expect(store().roadEnergy.kyurem).toEqual(["volt"]);
+
+    store().resetAll();
+    expect(store().roadCoupled).toBe(true);
+    expect(store().roadSelected).toEqual({});
+    expect(store().roadEnergy).toEqual({});
+  });
 });

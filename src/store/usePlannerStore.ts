@@ -265,6 +265,25 @@ interface PlannerState {
   roadTargets: Record<string, string[]>;
   /** Set one Road of Legends day's ordered target list (selection + order). */
   setRoadTargets: (dayId: string, ids: string[]) => void;
+  /**
+   * Whether the Road of Legends selection tiles mirror the weekend (GO Fest)
+   * targets (true, default) or a separate, independent RoL agenda (false). When
+   * coupled, the RoL tiles drive `inputs[].selected` / `inputs[].energy`; when
+   * decoupled, they drive `roadSelected` / `roadEnergy` below and the RoL plan is
+   * built from those instead of the weekend picks.
+   */
+  roadCoupled: boolean;
+  /** Decoupled RoL roster targets (boss id → picked). Only read when !roadCoupled. */
+  roadSelected: Record<string, boolean>;
+  /** Decoupled RoL fusion/primal goals (base boss id → energy keys turned on).
+   *  Presence = on; no have/goal (decoupled energy is a fixed fuse-cost intent). */
+  roadEnergy: Record<string, string[]>;
+  /** Flip Road-of-Legends coupling (mirror weekend targets ⇄ independent agenda). */
+  toggleRoadCoupled: () => void;
+  /** Toggle a decoupled RoL roster target. */
+  toggleRoadTarget: (bossId: string) => void;
+  /** Toggle a decoupled RoL fusion/primal energy goal. */
+  toggleRoadEnergy: (bossId: string, key: string) => void;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   /** Select every roster boss at once. */
@@ -437,12 +456,27 @@ export const usePlannerStore = create<PlannerState>()(
       quickCatchBlocks: {},
       playDays: {},
       roadTargets: {},
+      roadCoupled: true,
+      roadSelected: {},
+      roadEnergy: {},
 
       togglePlayDay: (dayId) =>
         set((state) => ({ playDays: { ...state.playDays, [dayId]: !state.playDays[dayId] } })),
 
       setRoadTargets: (dayId, ids) =>
         set((state) => ({ roadTargets: { ...state.roadTargets, [dayId]: ids } })),
+
+      toggleRoadCoupled: () => set((state) => ({ roadCoupled: !state.roadCoupled })),
+
+      toggleRoadTarget: (bossId) =>
+        set((state) => ({ roadSelected: { ...state.roadSelected, [bossId]: !state.roadSelected[bossId] } })),
+
+      toggleRoadEnergy: (bossId, key) =>
+        set((state) => {
+          const cur = state.roadEnergy[bossId] ?? [];
+          const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
+          return { roadEnergy: { ...state.roadEnergy, [bossId]: next } };
+        }),
 
       setRaidsDone: (key, value) =>
         set((state) => {
@@ -885,6 +919,9 @@ export const usePlannerStore = create<PlannerState>()(
           quickCatchBlocks: {},
           playDays: {},
           roadTargets: {},
+          roadCoupled: true,
+          roadSelected: {},
+          roadEnergy: {},
         }),
 
       loadState: (raw) =>
@@ -909,12 +946,15 @@ export const usePlannerStore = create<PlannerState>()(
             raidsDone: b.raidsDone,
             playDays: b.playDays ?? {},
             roadTargets: b.roadTargets ?? {},
+            roadCoupled: b.roadCoupled ?? true,
+            roadSelected: b.roadSelected ?? {},
+            roadEnergy: b.roadEnergy ?? {},
           };
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 22, // +lobbyWaitSec override (auto by lobby size; backfilled via DEFAULT_SETTINGS)
+      version: 23, // +roadCoupled / roadSelected / roadEnergy (Road of Legends selection tiles)
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),
@@ -940,6 +980,9 @@ export const usePlannerStore = create<PlannerState>()(
         if (typeof state.remoteAuto !== "boolean") state.remoteAuto = false;
         if (!state.playDays || typeof state.playDays !== "object") state.playDays = {};
         if (!state.roadTargets || typeof state.roadTargets !== "object") state.roadTargets = {};
+        if (typeof state.roadCoupled !== "boolean") state.roadCoupled = true;
+        if (!state.roadSelected || typeof state.roadSelected !== "object") state.roadSelected = {};
+        if (!state.roadEnergy || typeof state.roadEnergy !== "object") state.roadEnergy = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },
