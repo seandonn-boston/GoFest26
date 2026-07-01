@@ -4,12 +4,12 @@ import { useMemo } from "react";
 import { getBoss, GAME_CONFIG } from "@/data";
 import { spriteUrl } from "@/data/bosses";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
-import { energyGoalsForDay } from "@/data/energyGoals";
-import { type RoadDayPlan, type RoadPlan, energyRaidsNeeded, energyRemaining } from "@/domain";
+import { energyGoalsFor, energyGoalsForDay } from "@/data/energyGoals";
+import { type BlockSpeciesShare, type RoadDayPlan, type RoadPlan, energyRemaining } from "@/domain";
 import { bossIsLocal } from "@/domain/region";
 import { primaryFormId, groupDisplayName } from "@/domain/forms";
 import type { EnergyKind } from "@/domain/types";
-import { formatNumber, formatRange } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
@@ -29,12 +29,27 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
   const region = usePlannerStore((s) => s.settings.region);
   const roadTargets = usePlannerStore((s) => s.roadTargets);
   const setRoadTargets = usePlannerStore((s) => s.setRoadTargets);
+  const roadCoupled = usePlannerStore((s) => s.roadCoupled);
+  const roadSelected = usePlannerStore((s) => s.roadSelected);
+  const roadEnergy = usePlannerStore((s) => s.roadEnergy);
 
-  // Eligible = featured this day (collapsed to the primary forme), selected for
-  // the weekend, and raidable in person (region-locked targets stay weekend/remote).
-  const eligible = useMemo(() => {
-    const seen = new Set<string>();
+  // The day's reorderable targets, top-first: active fusion/primal raids (a goal
+  // is toggled on) FIRST — they default above the rest — then the featured roster
+  // targets you've picked and can raid locally. Membership follows the coupling
+  // mode (coupled = weekend picks / card energy goals; decoupled = the RoL sets).
+  const { eligible, meta } = useMemo(() => {
+    const meta = new Map<string, { name: string; sprite?: string; energy: boolean }>();
     const out: string[] = [];
+    for (const { bossId, def } of energyGoalsForDay(dayId)) {
+      const active = roadCoupled
+        ? inputs[bossId]?.energy?.[def.key]?.on ?? false
+        : (roadEnergy[bossId] ?? []).includes(def.key);
+      if (!active) continue;
+      const id = `energy:${bossId}:${def.key}`;
+      out.push(id);
+      meta.set(id, { name: def.source, sprite: def.sprite ? spriteUrl(def.sprite) : getBoss(bossId)?.sprite, energy: true });
+    }
+    const seen = new Set<string>();
     for (const id of DAY_BOSSIDS[dayId] ?? []) {
       const boss = getBoss(id);
       if (!boss) continue;
@@ -42,11 +57,14 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
       if (seen.has(primary)) continue;
       seen.add(primary);
       const pboss = getBoss(primary);
-      if (!pboss || !inputs[primary]?.selected || !bossIsLocal(pboss, region)) continue;
+      if (!pboss || !bossIsLocal(pboss, region)) continue;
+      const picked = roadCoupled ? !!inputs[primary]?.selected : !!roadSelected[primary];
+      if (!picked) continue;
       out.push(primary);
+      meta.set(primary, { name: groupDisplayName(pboss), sprite: pboss.sprite, energy: false });
     }
-    return out;
-  }, [dayId, inputs, region]);
+    return { eligible: out, meta };
+  }, [dayId, inputs, region, roadCoupled, roadSelected, roadEnergy]);
 
   const explicit = roadTargets[dayId];
   // Effective selection: the user's explicit list (kept to still-eligible ids), or
@@ -73,7 +91,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
       <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-slate-400">Targets to pre-farm</div>
       <div className="flex flex-wrap gap-2">
         {eligible.map((id) => {
-          const boss = getBoss(id);
+          const m = meta.get(id)!;
           const on = selectedSet.has(id);
           return (
             <button
@@ -83,12 +101,17 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
               aria-pressed={on}
               className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-[13px] transition ${
                 on
-                  ? "border-slate-300 bg-slate-300/15 text-white shadow-[0_0_0_1px_rgba(203,213,225,0.35)]"
+                  ? m.energy
+                    ? "border-cyan-300/60 bg-cyan-400/15 text-white shadow-[0_0_0_1px_rgba(103,232,249,0.3)]"
+                    : "border-slate-300 bg-slate-300/15 text-white shadow-[0_0_0_1px_rgba(203,213,225,0.35)]"
                   : "border-white/15 bg-gofest-bg/40 text-slate-400 hover:border-white/35"
               }`}
             >
-              <Sprite src={boss?.sprite} alt={boss?.name ?? id} size={26} />
-              <span className="whitespace-nowrap">{boss ? groupDisplayName(boss) : id}</span>
+              <Sprite src={m.sprite} alt={m.name} size={26} />
+              <span className="whitespace-nowrap">
+                {m.energy ? <span aria-hidden className="mr-0.5 text-cyan-300">⚡</span> : null}
+                {m.name}
+              </span>
             </button>
           );
         })}
@@ -98,7 +121,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
           <p className="mb-1 text-[12px] text-slate-500">Drag to set this day&apos;s priority (top is raided first).</p>
           <div className="space-y-1">
             {drag.list.map((id) => {
-              const boss = getBoss(id);
+              const m = meta.get(id)!;
               return (
                 <div
                   key={id}
@@ -108,13 +131,16 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
                   }`}
                 >
                   <span
-                    {...drag.gripProps(id, boss ? groupDisplayName(boss) : id)}
+                    {...drag.gripProps(id, m.name)}
                     className="flex h-6 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none active:cursor-grabbing"
                   >
                     ⠿
                   </span>
-                  <Sprite src={boss?.sprite} alt={boss?.name ?? id} size={20} />
-                  <span className="truncate text-slate-200">{boss ? groupDisplayName(boss) : id}</span>
+                  <Sprite src={m.sprite} alt={m.name} size={20} />
+                  <span className="truncate text-slate-200">
+                    {m.energy ? <span aria-hidden className="mr-0.5 text-cyan-300">⚡</span> : null}
+                    {m.name}
+                  </span>
                 </div>
               );
             })}
@@ -124,8 +150,6 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
     </div>
   );
 }
-
-const stripForme = (name: string) => name.replace(/^Mega /, "").replace(/\s*\(.*\)/, "");
 
 // Per-resource chip badge for the day-picker, so each day's icons reflect the
 // raid bosses + rewards on offer: Fusion ⚡, Crowned 👑, Primal 🌋, plus a 🔷 for
@@ -157,14 +181,48 @@ const CURRENCY_CHIP: Record<string, string> = {
   megaEnergy: "Energy",
 };
 
-/** A featured target this day: sprite, name, raids fitted, and which rewards it gives. */
-function RoadSpecies({ bossId, formeBossId, bossName, fitted }: { bossId: string; formeBossId?: string; bossName: string; fitted: number }) {
-  const boss = getBoss(formeBossId ?? bossId);
+/** A fusion/primal energy raid row: the source forme, an Energy+Candy badge (it
+ *  banks the base species' Candy too), and the raids you'd do this day. */
+function EnergySpeciesRow({ share }: { share: BlockSpeciesShare }) {
+  const roadCoupled = usePlannerStore((s) => s.roadCoupled);
+  const progress = usePlannerStore((s) => s.inputs[share.bossId]?.energy?.[share.energyKey ?? ""]);
+  const def = energyGoalsFor(share.bossId).find((d) => d.key === share.energyKey);
+  const cost = def?.cost ?? 0;
+  const have = roadCoupled ? progress?.have ?? 0 : 0;
+  const goal = roadCoupled ? (progress && progress.goal > 0 ? progress.goal : cost) : cost;
+  const remaining = energyRemaining(have, goal);
+  const sprite = share.sprite ? spriteUrl(share.sprite) : getBoss(share.bossId)?.sprite;
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <Sprite src={sprite} alt={share.bossName} size={22} />
+      <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName}</span>
+      <div className="flex shrink-0 items-center gap-1">
+        <span className="rounded-sm border border-cyan-400/25 bg-cyan-400/[0.08] px-1 text-[11px] uppercase tracking-wide text-cyan-200">
+          Energy
+        </span>
+        <span className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400">
+          Candy
+        </span>
+      </div>
+      <span
+        className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2"
+        title={remaining > 0 ? `${formatNumber(remaining)} energy to go` : "enough energy banked"}
+      >
+        {share.fitted}
+      </span>
+    </div>
+  );
+}
+
+/** A per-day plan row: a fusion/primal energy raid, or a featured candy target. */
+function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
+  if (share.energyKey) return <EnergySpeciesRow share={share} />;
+  const boss = getBoss(share.formeBossId ?? share.bossId);
   const rewards = boss?.rewardsCurrencies ?? ["candy", "xlCandy"];
   return (
     <div className="flex items-center gap-2 py-0.5">
-      <Sprite src={boss?.sprite} alt={bossName} size={22} />
-      <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{bossName.replace(/^Mega /, "")}</span>
+      <Sprite src={boss?.sprite} alt={share.bossName} size={22} />
+      <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
       <div className="flex shrink-0 items-center gap-1">
         {rewards.map((c) => (
           <span key={c} className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400">
@@ -173,64 +231,8 @@ function RoadSpecies({ bossId, formeBossId, bossName, fitted }: { bossId: string
         ))}
       </div>
       <span className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2" title="Raids you'd do this day">
-        {fitted}
+        {share.fitted}
       </span>
-    </div>
-  );
-}
-
-/** Fusion / Crowned / Primal raids featured this day, tied to the user's energy
- *  goals — shows the raids still needed when a goal is active, else a hint to
- *  enable it on the base Pokémon's card. */
-function RoadDayEnergy({ roadDayId }: { roadDayId: string }) {
-  const inputs = usePlannerStore((s) => s.inputs);
-  const roadCoupled = usePlannerStore((s) => s.roadCoupled);
-  const roadEnergy = usePlannerStore((s) => s.roadEnergy);
-  const goals = energyGoalsForDay(roadDayId);
-  if (goals.length === 0) return null;
-  return (
-    <div className="mt-2 border-t border-white/10 pt-2">
-      <div className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-cyan-300">
-        ⚡ Fusion / Primal raids today
-      </div>
-      <p className="mb-1 text-[11px] text-slate-500">
-        Day-locked — only earnable today. These raids also bank the base Pokémon&apos;s Candy, so they count toward its
-        goal too.
-      </p>
-      <div className="space-y-1">
-        {goals.map(({ bossId, def }) => {
-          // Coupled: read the weekend energy goal (have/goal editable on the card).
-          // Decoupled: read the independent roadEnergy set — a fixed fuse-cost intent.
-          const progress = inputs[bossId]?.energy?.[def.key];
-          const on = roadCoupled ? progress?.on ?? false : (roadEnergy[bossId] ?? []).includes(def.key);
-          const have = roadCoupled ? progress?.have ?? 0 : 0;
-          const goal = roadCoupled ? (progress && progress.goal > 0 ? progress.goal : def.cost) : def.cost;
-          const remaining = energyRemaining(have, goal);
-          const raids = energyRaidsNeeded(have, goal, def.perRaid);
-          const boss = getBoss(bossId);
-          // The actual raid is the fused / crowned / primal forme, not the base.
-          const sprite = def.sprite ? spriteUrl(def.sprite) : boss?.sprite;
-          return (
-            <div key={`${bossId}-${def.key}`} className="flex items-center gap-2 text-[13px]">
-              <Sprite src={sprite} alt={def.source} size={18} />
-              <span className="min-w-0 flex-1 truncate text-slate-200">{def.source}</span>
-              {on ? (
-                remaining > 0 ? (
-                  <span className="shrink-0 text-cyan-200">
-                    ≈<b>{formatRange(raids)}</b> raids · {formatNumber(remaining)} to go
-                  </span>
-                ) : (
-                  <span className="shrink-0 text-emerald-300">✓ enough banked</span>
-                )
-              ) : (
-                <span className="shrink-0 text-slate-500">
-                  {def.label} — enable on {roadCoupled ? `${stripForme(boss?.name ?? bossId)}'s card` : "the Road of Legends tiles"}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -263,13 +265,12 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       {used.length > 0 ? (
         <div className="mt-1.5 divide-y divide-white/[0.04]">
           {used.map((s) => (
-            <RoadSpecies key={s.bossId} bossId={s.bossId} formeBossId={s.formeBossId} bossName={s.bossName} fitted={s.fitted} />
+            <RoadSpecies key={s.energyKey ? `${s.bossId}-${s.energyKey}` : s.bossId} share={s} />
           ))}
         </div>
       ) : (
         <p className="mt-1.5 text-[13px] text-slate-500">None of your selected targets are featured this day.</p>
       )}
-      <RoadDayEnergy roadDayId={day.id} />
     </div>
   );
 }
