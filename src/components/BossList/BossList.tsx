@@ -10,6 +10,7 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
 import { RoadOfLegendsSection } from "./RoadOfLegendsSection";
+import { RemoteRaidsSection } from "./RemoteRaidsSection";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
@@ -69,11 +70,6 @@ export function BossList() {
           </button>
         </div>
       </div>
-      <p className="mb-3 font-mono text-[12px] uppercase tracking-wider text-slate-500">
-        <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span> = not raidable in{" "}
-        {region.label}; needs a Remote Raid Pass (capped per day).
-      </p>
-
       <div className="relative mb-4">
         <input
           type="search"
@@ -113,13 +109,17 @@ export function BossList() {
         </div>
       ) : (
         <>
+          <RoadOfLegendsSection />
+
+          {/* Region-locked targets — their tiles live ONLY here, with the times
+              their home-region windows hit the player's own clock. */}
+          <RemoteRaidsSection />
+
           {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
           <div className="mb-5 grid grid-cols-2 gap-3">
             <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
             <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
           </div>
-
-          <RoadOfLegendsSection />
         </>
       )}
 
@@ -142,9 +142,13 @@ export function BossList() {
               </span>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
-              {bosses.map((boss) => (
-                <BossSelectChip key={boss.id} boss={boss} remoteOnly={!bossIsLocal(boss, region)} />
-              ))}
+              {/* Remote-only targets are hidden here — they live in the Remote
+                  raids section above, alongside their availability windows. */}
+              {bosses
+                .filter((boss) => bossIsLocal(boss, region))
+                .map((boss) => (
+                  <BossSelectChip key={boss.id} boss={boss} />
+                ))}
             </div>
           </div>
         ))}

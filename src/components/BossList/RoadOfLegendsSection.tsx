@@ -4,16 +4,23 @@ import { useState } from "react";
 import { getBoss } from "@/data";
 import { ROAD_DAYS, type RoadDay } from "@/data/roadOfLegends";
 import { energyGoalsForDay } from "@/data/energyGoals";
+import { bossIsLocal } from "@/domain/region";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { PlusToggle } from "@/components/ui/PlusToggle";
 import { RoadTile } from "./RoadTile";
 
 /** The day's tiles: its fusion/primal special-forme goals first (the headline),
- *  then the day's featured roster bosses. */
+ *  then the day's featured roster bosses. Remote-only bosses (Monday's marathon
+ *  includes the region-locked Ultra Beasts) are hidden — their tiles live in the
+ *  Remote raids section, alongside their availability windows. */
 function DayTiles({ day }: { day: RoadDay }) {
+  const region = usePlannerStore((s) => s.settings.region);
   const energy = energyGoalsForDay(day.id);
-  const bosses = day.bossIds.map((id) => getBoss(id)).filter((b): b is NonNullable<typeof b> => !!b);
+  const bosses = day.bossIds
+    .map((id) => getBoss(id))
+    .filter((b): b is NonNullable<typeof b> => !!b)
+    .filter((b) => bossIsLocal(b, region));
   return (
     <div className="flex flex-wrap justify-center gap-2">
       {energy.map(({ bossId, def }) => (
@@ -41,8 +48,9 @@ function DayRow({ day }: { day: RoadDay }) {
 }
 
 /**
- * Road of Legends selection section (Step 1). Sits between the Mega Mewtwo
- * headliners and the weekend habitat blocks. Lets the player pick the weekday
+ * Road of Legends selection section (Step 1). Leads the page — the raid week
+ * comes first chronologically — above the Remote raids section and the Mega
+ * Mewtwo headliners. Lets the player pick the weekday
  * raid-week targets — including the fusion/primal special raids as their own
  * tiles. A coupling toggle (on by default) mirrors the weekend targets; off lets
  * the player build an independent Road of Legends agenda.
