@@ -19,7 +19,9 @@ export function CardJumpNav({ bosses, mewtwoSelected }: { bosses: RaidBoss[]; me
   return (
     <nav
       aria-label="Jump to a Pokémon's card"
-      className="flex gap-1 overflow-x-auto rounded-lg border border-white/10 bg-gofest-bg/40 px-2 py-1.5"
+      // Docks just below the sticky step nav (top-0, ~60px tall) and follows the
+      // scroll for the whole card stack — the map stays in reach from anywhere.
+      className="sticky top-[60px] z-20 flex gap-1 overflow-x-auto rounded-lg border border-white/10 bg-gofest-bg/90 px-2 py-1.5 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {mewtwoSelected ? (
         <button
