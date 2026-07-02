@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useUiStore, type StepId } from "@/store/useUiStore";
 
 interface GuideStep {
@@ -90,12 +91,24 @@ export function HowToUse() {
   const dismiss = useUiStore((s) => s.dismissHowTo);
   const reopen = useUiStore((s) => s.reopenHowTo);
   const setStep = useUiStore((s) => s.setStep);
+  const step = useUiStore((s) => s.step);
+  // Tapping the reopener on steps 2–6 shows the guide right there, this once;
+  // navigating away collapses it again.
+  const [forcedOpen, setForcedOpen] = useState(false);
+  useEffect(() => setForcedOpen(false), [step]);
 
-  if (dismissed) {
+  // The full six-step wall belongs on step 1, where a newcomer starts. On every
+  // other step it was pushing the actual content a full screen down — so past
+  // step 1 it collapses to the one-line reopener even before being dismissed.
+  const showFull = forcedOpen || (!dismissed && step === 1);
+  if (!showFull) {
     return (
       <button
         type="button"
-        onClick={reopen}
+        onClick={() => {
+          reopen();
+          setForcedOpen(true);
+        }}
         className="mb-6 inline-flex items-center gap-2 rounded-md border border-gofest-acid/40 bg-gofest-acid/[0.06] px-3 py-1.5 text-xs font-semibold text-gofest-acid transition hover:bg-gofest-acid/15"
       >
         <span aria-hidden>ⓘ</span> How to use this app

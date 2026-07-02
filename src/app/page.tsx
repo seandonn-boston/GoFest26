@@ -13,8 +13,10 @@ import type { PlanSummary, BossResult, RaidBoss } from "@/domain/types";
 import { BossList } from "@/components/BossList/BossList";
 import { BossInputCard } from "@/components/BossInputCard/BossInputCard";
 import { MewtwoCard } from "@/components/BossInputCard/MewtwoCard";
+import { CardJumpNav } from "@/components/BossInputCard/CardJumpNav";
 import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
@@ -32,6 +34,7 @@ import { SharedPlanBanner } from "@/components/Settings/SharedPlanBanner";
 import { LocationPrompt } from "@/components/Settings/LocationPrompt";
 import { AdvancedTools } from "@/components/Settings/AdvancedTools";
 import { HowToUse } from "@/components/Stepper/HowToUse";
+import { WeekOverview } from "@/components/Dashboard/WeekOverview";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
 import { StepFooter } from "@/components/Stepper/StepFooter";
 import { StepNudge, missingStep } from "@/components/Stepper/StepNudge";
@@ -130,6 +133,12 @@ export default function Home() {
             <StepNav steps={steps} active={step} onSelect={setStep} />
 
             <div className="space-y-6" {...swipe}>
+              {/* The 7-day path frames every plan step (RoL → Prioritizer →
+                  Remote → Cost) — the whole event at a glance, one tap to the
+                  step that edits each piece. */}
+              {step >= 3 ? (
+                <WeekOverview summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} onJump={setStep} />
+              ) : null}
               <StepContent
                 step={step}
                 anySelected={anySelected}
@@ -221,6 +230,8 @@ function StepContent({
                 copyable search string now lives inside the bulk-import box. */}
             <BulkImportSection />
 
+            <CardJumpNav bosses={otherSelectedBosses} mewtwoSelected={mewtwoSelected} />
+
             {mewtwoSelected ? (
               <MewtwoCard
                 bossX={getBoss(MEWTWO_X_ID)!}
@@ -240,8 +251,18 @@ function StepContent({
                 />
               ) : null;
             })}
-            <CounterSearchBar />
-            <MegaSearchBar />
+            {/* Day-of copy-paste lists are long (dozens of species per day) and
+                only matter DURING the event — collapsed so entering numbers, the
+                actual job of this step, isn't buried under four screens of text. */}
+            <Disclosure
+              title={<span className="font-semibold text-slate-200">Day-of prep — counter &amp; mega-evolve lists</span>}
+              hint={<span className="text-slate-500">copy-paste for Sat / Sun</span>}
+            >
+              <div className="space-y-3 py-1">
+                <CounterSearchBar />
+                <MegaSearchBar />
+              </div>
+            </Disclosure>
           </>
         ) : blocking ? (
           <StepNudge missing={blocking} onJump={onJump} />
