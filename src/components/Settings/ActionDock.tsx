@@ -117,10 +117,29 @@ export function ActionDock() {
     });
   }
   items.push(
-    { id: "feedback", label: "Feedback", icon: "✎", circle: "bg-gofest-accent text-black", onClick: () => openPanel("feedback") },
+    {
+      id: "feedback",
+      label: "Feedback",
+      icon: "✎",
+      circle: "bg-gofest-accent text-black",
+      onClick: () => openPanel("feedback"),
+    },
     { id: "backup", label: "Backup", icon: "💾", circle: "bg-gofest-bone text-black", onClick: () => openPanel("backup") },
-    { id: "location", label: "Location", icon: "📍", circle: "bg-gofest-accent2 text-black", onClick: () => openPanel("location") },
-    { id: "assumptions", label: "Assumptions", icon: "⚙", circle: "bg-gofest-mewtwo text-white", onClick: () => openPanel("assumptions"), badge: customized },
+    {
+      id: "location",
+      label: "Location",
+      icon: "📍",
+      circle: "bg-gofest-accent2 text-black",
+      onClick: () => openPanel("location"),
+    },
+    {
+      id: "assumptions",
+      label: "Assumptions",
+      icon: "⚙",
+      circle: "bg-gofest-mewtwo text-white",
+      onClick: () => openPanel("assumptions"),
+      badge: customized,
+    },
   );
 
   return (
@@ -176,37 +195,37 @@ export function ActionDock() {
               </button>
             </div>
 
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-          >
-            {/* Two-line hamburger → X. Each line spins 225° (top left, bottom
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+            >
+              {/* Two-line hamburger → X. Each line spins 225° (top left, bottom
                 right) while sliding to the exact vertical center; closing
                 plays the same transition in reverse. */}
-            <span className="relative block h-6 w-6" aria-hidden="true">
-              <span
-                className="absolute left-1/2 top-1/2 block rounded-full bg-current"
-                style={{
-                  width: 22,
-                  height: 2.5,
-                  transform: `translate(-50%, -50%) translateY(${open ? 0 : -4}px) rotate(${open ? -225 : 0}deg)`,
-                  transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-              />
-              <span
-                className="absolute left-1/2 top-1/2 block rounded-full bg-current"
-                style={{
-                  width: 22,
-                  height: 2.5,
-                  transform: `translate(-50%, -50%) translateY(${open ? 0 : 4}px) rotate(${open ? 225 : 0}deg)`,
-                  transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-              />
-            </span>
-          </button>
+              <span className="relative block h-6 w-6" aria-hidden="true">
+                <span
+                  className="absolute left-1/2 top-1/2 block rounded-full bg-current"
+                  style={{
+                    width: 22,
+                    height: 2.5,
+                    transform: `translate(-50%, -50%) translateY(${open ? 0 : -4}px) rotate(${open ? -225 : 0}deg)`,
+                    transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                />
+                <span
+                  className="absolute left-1/2 top-1/2 block rounded-full bg-current"
+                  style={{
+                    width: 22,
+                    height: 2.5,
+                    transform: `translate(-50%, -50%) translateY(${open ? 0 : 4}px) rotate(${open ? 225 : 0}deg)`,
+                    transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                />
+              </span>
+            </button>
           </div>
         </div>
       ) : null}
@@ -227,7 +246,10 @@ export function ActionDock() {
             className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-3xl rounded-t-2xl border-2 border-b-0 border-white/15 bg-gofest-panel shadow-brutal"
           >
             <div className="flex items-center justify-between border-b-2 border-white/10 px-4 py-3">
-              <h2 id="action-dock-title" className="font-mono text-sm font-extrabold uppercase tracking-widest text-gofest-acid">
+              <h2
+                id="action-dock-title"
+                className="font-mono text-sm font-extrabold uppercase tracking-widest text-gofest-acid"
+              >
                 {TITLES[panel]}
               </h2>
               <button

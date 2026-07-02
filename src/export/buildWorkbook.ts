@@ -3,13 +3,7 @@ import { GAME_CONFIG } from "@/data/config";
 import { getBoss } from "@/data";
 import { formatRange } from "@/lib/format";
 import { hourLabel } from "@/lib/format";
-import type {
-  BossInput,
-  Currency,
-  PassType,
-  PlanSummary,
-  RaidTier,
-} from "@/domain/types";
+import type { BossInput, Currency, PassType, PlanSummary, RaidTier } from "@/domain/types";
 
 const DAY_LABEL: Record<string, string> = {
   sat: "Sat (Jul 11)",
@@ -46,11 +40,7 @@ function styleHeader(row: ExcelJS.Row): void {
 }
 
 /** Populates a workbook with the Schedule, Goals, and Capacity sheets. */
-export function buildWorkbook(
-  workbook: ExcelJS.Workbook,
-  summary: PlanSummary,
-  inputs: BossInput[],
-): void {
+export function buildWorkbook(workbook: ExcelJS.Workbook, summary: PlanSummary, inputs: BossInput[]): void {
   workbook.creator = "GO Fest 2026 Raid Planner";
   workbook.created = new Date();
 
@@ -148,7 +138,10 @@ export function buildWorkbook(
     ["Hours per day", c.hoursPerDay],
     ["Days", c.days],
     ["Trainers in lobby", c.lobbySize],
-    ["Seconds per raid (battle + catch + downtime)", `${c.battleSecRange.min}–${c.battleSecRange.max}s + ${c.catchSec}s + ${c.downtimeSecRange.min}–${c.downtimeSecRange.max}s`],
+    [
+      "Seconds per raid (battle + catch + downtime)",
+      `${c.battleSecRange.min}–${c.battleSecRange.max}s + ${c.catchSec}s + ${c.downtimeSecRange.min}–${c.downtimeSecRange.max}s`,
+    ],
     ["Raids per hour", formatRange(c.raidsPerHour)],
     ["Max weekend raids", formatRange(c.totalRaids)],
     ["Total raids needed", formatRange(summary.totalRaids)],

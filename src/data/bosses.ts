@@ -1,9 +1,4 @@
-import type {
-  EventDay,
-  HabitatWindow,
-  RaidBoss,
-  RegionScope,
-} from "@/domain/types";
+import type { EventDay, HabitatWindow, RaidBoss, RegionScope } from "@/domain/types";
 import { GAME_CONFIG } from "./config";
 import { FORM_META } from "./formGroups";
 import { pokemonSearchName } from "@/lib/pokemonSearch";
@@ -242,29 +237,33 @@ const ROSTER: RaidBoss[] = [
     counters: ["Mega Sceptile", "Kartana", "Mega Venusaur"],
     note: "2nd-best Water attacker — prioritize if you don't have Primal Kyogre.",
   }),
+  // The Lake trio is NOT region-locked: the official event notes say they
+  // "appear more frequently in raids in their respective regions" (Uxie APAC,
+  // Mesprit EMEA, Azelf Americas) — a frequency boost, not availability. A hard
+  // `region` here would wrongly force them remote-only for 2/3 of players.
   legendary({
     id: "uxie",
     name: "Uxie",
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
-    region: { continent: "apac" },
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
+    note: "Appears more frequently in Asia-Pacific, but raidable everywhere.",
   }),
   legendary({
     id: "mesprit",
     name: "Mesprit",
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
-    region: { continent: "emea" },
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
+    note: "Appears more frequently in Europe, the Middle East, Africa & India, but raidable everywhere.",
   }),
   legendary({
     id: "azelf",
     name: "Azelf",
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
-    region: { continent: "americas" },
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
+    note: "Appears more frequently in the Americas, but raidable everywhere.",
   }),
   legendary({
     id: "dialga",

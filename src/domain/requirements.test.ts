@@ -24,7 +24,11 @@ describe("variant-aware XL requirement", () => {
 
 describe("Dynamax Max Move costs", () => {
   const atLevel50 = (over: Partial<PokemonCopy> = {}): PokemonCopy => ({
-    id: "x", variant: "standard", current: { level: 50, megaLevel: 0 }, target: { level: 50, megaLevel: 0 }, ...over,
+    id: "x",
+    variant: "standard",
+    current: { level: 50, megaLevel: 0 },
+    target: { level: 50, megaLevel: 0 },
+    ...over,
   });
 
   it("adds 400 Candy + 120 XL when maxMoves is on (all three moves)", () => {

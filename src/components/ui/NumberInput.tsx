@@ -13,15 +13,7 @@ interface NumberInputProps {
   suffix?: string;
 }
 
-export function NumberInput({
-  label,
-  value,
-  onChange,
-  min = 0,
-  max,
-  step = 1,
-  suffix,
-}: NumberInputProps) {
+export function NumberInput({ label, value, onChange, min = 0, max, step = 1, suffix }: NumberInputProps) {
   const upper = max ?? Number.MAX_SAFE_INTEGER;
   // Local text state lets the user clear the field and type freely without it
   // snapping to 0 mid-edit. We re-sync only when `value` changes externally

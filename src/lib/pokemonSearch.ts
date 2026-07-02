@@ -23,7 +23,9 @@ export function pokemonSearchName(name: string): string {
  * boss (e.g. "Mega Tyranitar" -> "tyranitar", "Ho-Oh" -> "hooh").
  */
 export function speciesKey(name: string): string {
-  return pokemonSearchName(name).toLowerCase().replace(/[^a-z]/g, "");
+  return pokemonSearchName(name)
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
 }
 
 /** Deduped, comma-joined Pokémon GO search string for a set of names. */

@@ -46,9 +46,10 @@ export function SummaryDashboard({
   const hasGoals = summary.totalRaids.max > 0;
   // Max raids the gauge measures against = in-person weekend capacity + the
   // opted-in remote-pass pool, so the headline number matches the bar.
-  const maxRaids = remotePool > 0
-    ? { min: capacity.totalRaids.min + remotePool, max: capacity.totalRaids.max + remotePool }
-    : capacity.totalRaids;
+  const maxRaids =
+    remotePool > 0
+      ? { min: capacity.totalRaids.min + remotePool, max: capacity.totalRaids.max + remotePool }
+      : capacity.totalRaids;
 
   // Which goals still don't fit, derived from the block plan — so the warning
   // tracks the priority order (lowest is cut first) and remote-pass offloading,
@@ -69,7 +70,11 @@ export function SummaryDashboard({
       <h2 className="mb-3 text-lg font-semibold">Your weekend plan</h2>
 
       <div className="mb-3 grid grid-cols-3 gap-4">
-        <Stat label="Total raids needed" value={String(caseValue(summary.totalRaids, rewardCase, false))} accent="text-gofest-accent2" />
+        <Stat
+          label="Total raids needed"
+          value={String(caseValue(summary.totalRaids, rewardCase, false))}
+          accent="text-gofest-accent2"
+        />
         <Stat label="Raids / hour" value={String(caseValue(capacity.raidsPerHour, rewardCase, true))} />
         <Stat
           label="Max raids"
@@ -94,8 +99,8 @@ export function SummaryDashboard({
           >
             <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-300">
               <p>
-                Every raid&apos;s Candy / XL / Mega Energy drop is a range, so the raids you need are a range
-                too. This picks which end of that range <b>every number on this page</b> assumes:
+                Every raid&apos;s Candy / XL / Mega Energy drop is a range, so the raids you need are a range too. This picks
+                which end of that range <b>every number on this page</b> assumes:
               </p>
               <p>
                 <b className="text-emerald-300">Best case</b> — luckiest drops, so the <b>fewest</b> raids.
@@ -104,12 +109,12 @@ export function SummaryDashboard({
                 <b className="text-amber-300">Expected</b> — the middle, a realistic average.
               </p>
               <p>
-                <b className="text-rose-300">Worst case</b> — coldest drops, so the <b>most</b> raids (won&apos;t
-                leave you short).
+                <b className="text-rose-300">Worst case</b> — coldest drops, so the <b>most</b> raids (won&apos;t leave you
+                short).
               </p>
               <p className="text-slate-400">
-                It sets the totals above and the <span className="font-mono">done / needed</span> target on every
-                priority tile below.
+                It sets the totals above and the <span className="font-mono">done / needed</span> target on every priority
+                tile below.
               </p>
             </div>
           </MathTooltip>
@@ -162,11 +167,10 @@ export function SummaryDashboard({
       <div className="mt-3">
         <Disclosure title="How capacity is calculated">
           <p className="text-[13px] leading-snug text-slate-500">
-            Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer
-            lobby (~{capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s
-            catch per raid, plus a {capacity.lobbySec}s lobby wait, {capacity.transitionSecRange.min}–
-            {capacity.transitionSecRange.max}s of transitions, and {capacity.downtimeSecRange.min}–
-            {capacity.downtimeSecRange.max}s between raids.
+            Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer lobby (~
+            {capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s catch per
+            raid, plus a {capacity.lobbySec}s lobby wait, {capacity.transitionSecRange.min}–{capacity.transitionSecRange.max}
+            s of transitions, and {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
             {remotePool > 0 ? ` Plus ${remotePool} remote raid passes.` : ""}
           </p>
         </Disclosure>
@@ -175,7 +179,17 @@ export function SummaryDashboard({
   );
 }
 
-function Stat({ label, value, accent = "text-slate-100", sub }: { label: string; value: string; accent?: string; sub?: string }) {
+function Stat({
+  label,
+  value,
+  accent = "text-slate-100",
+  sub,
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+  sub?: string;
+}) {
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>

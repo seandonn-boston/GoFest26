@@ -42,7 +42,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
     const out: string[] = [];
     for (const { bossId, def } of energyGoalsForDay(dayId)) {
       const active = roadCoupled
-        ? inputs[bossId]?.energy?.[def.key]?.on ?? false
+        ? (inputs[bossId]?.energy?.[def.key]?.on ?? false)
         : (roadEnergy[bossId] ?? []).includes(def.key);
       if (!active) continue;
       const id = `energy:${bossId}:${def.key}`;
@@ -109,7 +109,11 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
             >
               <Sprite src={m.sprite} alt={m.name} size={26} />
               <span className="whitespace-nowrap">
-                {m.energy ? <span aria-hidden className="mr-0.5 text-cyan-300">⚡</span> : null}
+                {m.energy ? (
+                  <span aria-hidden className="mr-0.5 text-cyan-300">
+                    ⚡
+                  </span>
+                ) : null}
                 {m.name}
               </span>
             </button>
@@ -118,6 +122,9 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
       </div>
       {effective.length >= 2 ? (
         <div className="mt-2" {...drag.containerProps}>
+          <span aria-live="polite" role="status" className="sr-only">
+            {drag.announcement}
+          </span>
           <p className="mb-1 text-[12px] text-slate-500">Drag to set this day&apos;s priority (top is raided first).</p>
           <div className="space-y-1">
             {drag.list.map((id) => {
@@ -138,7 +145,11 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
                   </span>
                   <Sprite src={m.sprite} alt={m.name} size={20} />
                   <span className="truncate text-slate-200">
-                    {m.energy ? <span aria-hidden className="mr-0.5 text-cyan-300">⚡</span> : null}
+                    {m.energy ? (
+                      <span aria-hidden className="mr-0.5 text-cyan-300">
+                        ⚡
+                      </span>
+                    ) : null}
                     {m.name}
                   </span>
                 </div>
@@ -188,7 +199,7 @@ function EnergySpeciesRow({ share }: { share: BlockSpeciesShare }) {
   const progress = usePlannerStore((s) => s.inputs[share.bossId]?.energy?.[share.energyKey ?? ""]);
   const def = energyGoalsFor(share.bossId).find((d) => d.key === share.energyKey);
   const cost = def?.cost ?? 0;
-  const have = roadCoupled ? progress?.have ?? 0 : 0;
+  const have = roadCoupled ? (progress?.have ?? 0) : 0;
   const goal = roadCoupled ? (progress && progress.goal > 0 ? progress.goal : cost) : cost;
   const remaining = energyRemaining(have, goal);
   const sprite = share.sprite ? spriteUrl(share.sprite) : getBoss(share.bossId)?.sprite;
@@ -225,12 +236,18 @@ function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
       <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
       <div className="flex shrink-0 items-center gap-1">
         {rewards.map((c) => (
-          <span key={c} className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400">
+          <span
+            key={c}
+            className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400"
+          >
             {CURRENCY_CHIP[c]}
           </span>
         ))}
       </div>
-      <span className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2" title="Raids you'd do this day">
+      <span
+        className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2"
+        title="Raids you'd do this day"
+      >
         {share.fitted}
       </span>
     </div>
@@ -295,20 +312,20 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
       </div>
       <p className="mb-2 text-[13px] text-slate-400">
         Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local): <b>6–7</b> is 5★ raids (Monday&apos;s is the
-        whole roster), <b>7–8</b> is a single featured Mega — except <b>Friday</b>, whose 7–8 is <b>Primal Kyogre &amp;
-        Groudon</b>. Your selected targets are poured into each day&apos;s budget — what fits is a head start that reduces
-        your weekend below.
+        whole roster), <b>7–8</b> is a single featured Mega — except <b>Friday</b>, whose 7–8 is{" "}
+        <b>Primal Kyogre &amp; Groudon</b>. Your selected targets are poured into each day&apos;s budget — what fits is a
+        head start that reduces your weekend below.
       </p>
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
           that doesn't affect the head-start math but matters this week. */}
       <div className="mb-2 space-y-1.5 rounded-md border border-cyan-400/20 bg-cyan-400/[0.05] p-2 text-[13px] leading-relaxed text-slate-300">
         <p>
-          <span className="font-semibold text-cyan-300">⚡ Fusion / Primal energy:</span> raid week also brings the
-          special raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
-          <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the
-          fusion / crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta,
-          Groudon, Kyogre). Each energy comes from one specific raid on one day.
+          <span className="font-semibold text-cyan-300">⚡ Fusion / Primal energy:</span> raid week also brings the special
+          raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
+          <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the fusion /
+          crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon, Kyogre).
+          Each energy comes from one specific raid on one day.
         </p>
         <p>
           <span className="font-semibold text-cyan-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
@@ -325,8 +342,7 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
             <button
               key={d.id}
               type="button"
-              role="checkbox"
-              aria-checked={on}
+              aria-pressed={on}
               onClick={() => togglePlayDay(d.id)}
               className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left text-[13px] transition ${
                 on
@@ -334,7 +350,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
                   : "border-white/15 bg-gofest-bg/40 text-slate-300 hover:border-white/30"
               }`}
             >
-              <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[11px] ${on ? "border-gofest-acid bg-gofest-acid text-black" : "border-white/30"}`}>
+              <span
+                className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[11px] ${on ? "border-gofest-acid bg-gofest-acid text-black" : "border-white/30"}`}
+              >
                 {on ? "✓" : ""}
               </span>
               <span className="font-semibold">{d.label.slice(0, 3)}</span>
@@ -358,9 +376,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
             <RoadDayCard key={day.id} day={day} />
           ))}
           <p className="text-[12px] text-slate-500">
-            During Road of Legends you get up to <b>{GAME_CONFIG.passEconomy.freePassesPerRoadDay} free Raid Passes</b>/day, and Remote Raid Passes are <b>unlimited</b>{" "}
-            (Jul 6–12) — so a raid hour is capped by time (≈{road.days[0]?.capacity.min}–{road.days[0]?.capacity.max} raids/hour),
-            not passes.
+            During Road of Legends you get up to <b>{GAME_CONFIG.passEconomy.freePassesPerRoadDay} free Raid Passes</b>/day,
+            and Remote Raid Passes are <b>unlimited</b> (Jul 6–12) — so a raid hour is capped by time (≈
+            {road.days[0]?.capacity.min}–{road.days[0]?.capacity.max} raids/hour), not passes.
           </p>
         </div>
       ) : (

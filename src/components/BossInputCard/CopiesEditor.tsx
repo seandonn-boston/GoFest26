@@ -60,7 +60,13 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
                   #{i + 1}
                 </span>
                 <div className="ml-auto flex items-center gap-1">
-                  <button type="button" disabled={i === 0} onClick={() => moveCopy(boss.id, c.id, -1)} className={iconBtn} aria-label="Raise priority">
+                  <button
+                    type="button"
+                    disabled={i === 0}
+                    onClick={() => moveCopy(boss.id, c.id, -1)}
+                    className={iconBtn}
+                    aria-label="Raise priority"
+                  >
                     ↑
                   </button>
                   <button
@@ -72,18 +78,50 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
                   >
                     ↓
                   </button>
-                  <button type="button" disabled={copies.length === 1} onClick={() => removeCopy(boss.id, c.id)} className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`} aria-label="Remove individual">
+                  <button
+                    type="button"
+                    disabled={copies.length === 1}
+                    onClick={() => removeCopy(boss.id, c.id)}
+                    className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`}
+                    aria-label="Remove individual"
+                  >
                     ✕
                   </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <NumberInput label="Level" value={c.current.level} min={1} max={50} step={0.5} onChange={(v) => updateCopy(boss.id, c.id, { level: v })} />
-                <NumberInput label="→ Target" value={c.target.level} min={1} max={50} step={0.5} onChange={(v) => updateCopy(boss.id, c.id, { targetLevel: v })} />
+                <NumberInput
+                  label="Level"
+                  value={c.current.level}
+                  min={1}
+                  max={50}
+                  step={0.5}
+                  onChange={(v) => updateCopy(boss.id, c.id, { level: v })}
+                />
+                <NumberInput
+                  label="→ Target"
+                  value={c.target.level}
+                  min={1}
+                  max={50}
+                  step={0.5}
+                  onChange={(v) => updateCopy(boss.id, c.id, { targetLevel: v })}
+                />
                 {isMega ? (
                   <>
-                    <NumberInput label="Mega lvl" value={c.current.megaLevel} min={0} max={4} onChange={(v) => updateCopy(boss.id, c.id, { megaLevel: v })} />
-                    <NumberInput label="→ Tgt mega" value={c.target.megaLevel} min={0} max={4} onChange={(v) => updateCopy(boss.id, c.id, { targetMegaLevel: v })} />
+                    <NumberInput
+                      label="Mega lvl"
+                      value={c.current.megaLevel}
+                      min={0}
+                      max={4}
+                      onChange={(v) => updateCopy(boss.id, c.id, { megaLevel: v })}
+                    />
+                    <NumberInput
+                      label="→ Tgt mega"
+                      value={c.target.megaLevel}
+                      min={0}
+                      max={4}
+                      onChange={(v) => updateCopy(boss.id, c.id, { targetMegaLevel: v })}
+                    />
                   </>
                 ) : null}
               </div>
@@ -95,7 +133,9 @@ export function CopiesEditor({ boss, input, scanSlot }: { boss: RaidBoss; input:
                     onClick={() => updateCopy(boss.id, c.id, { variant: v.id })}
                     aria-pressed={c.variant === v.id}
                     className={`rounded px-2 py-0.5 text-[12px] transition ${
-                      c.variant === v.id ? "bg-gofest-accent2 font-semibold text-black" : "border border-white/15 text-slate-300 hover:border-white/30"
+                      c.variant === v.id
+                        ? "bg-gofest-accent2 font-semibold text-black"
+                        : "border border-white/15 text-slate-300 hover:border-white/30"
                     }`}
                   >
                     {v.label}

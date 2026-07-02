@@ -41,8 +41,7 @@ export function MegaRelief() {
         maskRepeat: "no-repeat",
         WebkitMaskPosition: "center",
         maskPosition: "center",
-        backgroundImage:
-          "linear-gradient(155deg, rgba(255,255,255,0.65), rgba(255,255,255,0) 40%, rgba(0,0,0,0.55))",
+        backgroundImage: "linear-gradient(155deg, rgba(255,255,255,0.65), rgba(255,255,255,0) 40%, rgba(0,0,0,0.55))",
         mixBlendMode: "overlay",
         filter: "drop-shadow(0 1px 0 rgba(0,0,0,0.35)) drop-shadow(0 -1px 0 rgba(255,255,255,0.3))",
       }}

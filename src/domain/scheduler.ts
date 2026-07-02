@@ -73,9 +73,7 @@ export function computeSchedule(
     .map((i) => getBoss(i.bossId))
     .filter((b): b is RaidBoss => !!b);
 
-  const selectedMegas = selectedBosses.filter(
-    (b) => b.tier === "mega" || b.tier === "super-mega",
-  );
+  const selectedMegas = selectedBosses.filter((b) => b.tier === "mega" || b.tier === "super-mega");
 
   // 1. Build the slot grid and annotate availability.
   const slots: Slot[] = [];

@@ -6,8 +6,24 @@ import { ATTACKERS, type Attacker, type PType } from "@/data/attackers";
 
 /** All 18 types, used to scan every attacking type against a boss. */
 const ALL_TYPES: PType[] = [
-  "Normal", "Fire", "Water", "Grass", "Electric", "Ice", "Fighting", "Poison",
-  "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy",
+  "Normal",
+  "Fire",
+  "Water",
+  "Grass",
+  "Electric",
+  "Ice",
+  "Fighting",
+  "Poison",
+  "Ground",
+  "Flying",
+  "Psychic",
+  "Bug",
+  "Rock",
+  "Ghost",
+  "Dragon",
+  "Dark",
+  "Steel",
+  "Fairy",
 ];
 
 // Pokémon GO type chart, from the attacker's perspective. SUPER = defender
@@ -73,7 +89,16 @@ const IMMUNE: Record<PType, PType[]> = {
   Ghost: ["Normal"],
   Dragon: ["Fairy"],
   Poison: ["Steel"],
-  Fire: [], Water: [], Grass: [], Ice: [], Flying: [], Bug: [], Rock: [], Dark: [], Steel: [], Fairy: [],
+  Fire: [],
+  Water: [],
+  Grass: [],
+  Ice: [],
+  Flying: [],
+  Bug: [],
+  Rock: [],
+  Dark: [],
+  Steel: [],
+  Fairy: [],
 };
 
 /** Effectiveness of one attacking type against one defending type (Pokémon GO). */
@@ -118,13 +143,7 @@ export interface CounterBreakdown {
   groups: Record<CounterCategory, ScoredCounter[]>;
 }
 
-export const COUNTER_CATEGORIES: CounterCategory[] = [
-  "budget",
-  "shadow",
-  "legendary",
-  "shadowLegendary",
-  "mega",
-];
+export const COUNTER_CATEGORIES: CounterCategory[] = ["budget", "shadow", "legendary", "shadowLegendary", "mega"];
 
 export const COUNTER_CATEGORY_LABEL: Record<CounterCategory, string> = {
   shadow: "Shadow",
@@ -151,9 +170,7 @@ export const COUNTER_CATEGORY_FILTER: Record<CounterCategory, string> = {
 
 // Species that count as Legendary / Mythical / Ultra Beast — derived from the
 // pool's legendary entries, so a Shadow form of one routes to "Shadow Legendary".
-const LEGENDARY_SPECIES = new Set(
-  ATTACKERS.filter((a) => a.category === "legendary").map((a) => a.species.toLowerCase()),
-);
+const LEGENDARY_SPECIES = new Set(ATTACKERS.filter((a) => a.category === "legendary").map((a) => a.species.toLowerCase()));
 
 function counterCategoryOf(a: Attacker): CounterCategory {
   if (a.category === "mega") return "mega";
@@ -173,9 +190,7 @@ const TOP_N = 5;
  * cannon on a double weakness can edge out a bulkier neutral-ish pick.
  */
 export function counterBreakdown(types: string[]): CounterBreakdown {
-  const defTypes = (types ?? []).filter((t): t is PType =>
-    (ALL_TYPES as string[]).includes(t),
-  );
+  const defTypes = (types ?? []).filter((t): t is PType => (ALL_TYPES as string[]).includes(t));
 
   const weaknessMult = new Map<PType, number>();
   for (const atk of ALL_TYPES) {

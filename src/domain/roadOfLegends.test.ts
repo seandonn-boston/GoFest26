@@ -177,16 +177,7 @@ describe("computeRoadPlan", () => {
     const inputs = [input("zekrom")];
     const results = [result("zekrom", 30)];
     const road = computeRoadPlan(inputs, results, capacity, DEFAULT_SETTINGS, { mon: true });
-    const weekend = computeBlockPlan(
-      inputs,
-      results,
-      capacity,
-      DEFAULT_SETTINGS,
-      {},
-      {},
-      {},
-      road.headStart,
-    );
+    const weekend = computeBlockPlan(inputs, results, capacity, DEFAULT_SETTINGS, {}, {}, {}, road.headStart);
     // Zekrom is a Saturday Dragonflight Summit boss; its weekend demand should be
     // 30 − 12 (head start) = 18 across the block(s).
     const demanded = weekend.blocks.reduce(
@@ -211,7 +202,20 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
   it("builds a plan from roadSelected with NO weekend results (no crash) and fills the 5★ hour", () => {
     // Empty weekend inputs/results — zekrom is only a decoupled RoL pick. Tuesday's
     // 5★ window is 1h at 6 raids/hr = 6; the lone 5★ target fills it.
-    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, { zekrom: true }, {});
+    const road = computeRoadPlan(
+      [],
+      [],
+      capacity,
+      DEFAULT_SETTINGS,
+      { tue: true },
+      {},
+      {},
+      {},
+      {},
+      false,
+      { zekrom: true },
+      {},
+    );
     expect(road.days).toHaveLength(1);
     expect(road.days[0].fitted).toBe(6);
     expect(road.headStart.zekrom).toBe(6);
@@ -220,10 +224,23 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
   it("fills the 5★ and Mega windows independently (Tue–Thu Mega is 7–8 PM only)", () => {
     // zekrom is a 5★ (6–7 PM window), mega-tyranitar a Mega (7–8 PM) — each fills its
     // own 1h window (6), neither spilling into the other. Day total = 12.
-    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, {
-      zekrom: true,
-      "mega-tyranitar": true,
-    }, {});
+    const road = computeRoadPlan(
+      [],
+      [],
+      capacity,
+      DEFAULT_SETTINGS,
+      { tue: true },
+      {},
+      {},
+      {},
+      {},
+      false,
+      {
+        zekrom: true,
+        "mega-tyranitar": true,
+      },
+      {},
+    );
     expect(road.headStart.zekrom).toBe(6);
     expect(road.headStart["mega-tyranitar"]).toBe(6);
     expect(road.days[0].fitted).toBe(12);
@@ -233,15 +250,41 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
   it("schedules decoupled fusion energy on its locked day, capped by the 5★ hour", () => {
     // White Kyurem (blaze) is a Tuesday 5★ raid; roadEnergy drives it when decoupled,
     // but only the 6-raid 6–7 PM hour can bank it.
-    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, {}, {
-      kyurem: ["blaze"],
-    });
+    const road = computeRoadPlan(
+      [],
+      [],
+      capacity,
+      DEFAULT_SETTINGS,
+      { tue: true },
+      {},
+      {},
+      {},
+      {},
+      false,
+      {},
+      {
+        kyurem: ["blaze"],
+      },
+    );
     const eRaids = sized(energyRaidsNeeded(0, 1000, FUSION), DEFAULT_SETTINGS.rewardCase);
     expect(road.headStart.kyurem).toBe(Math.min(eRaids, 6));
     // Off its day (only Wednesday played), nothing is earnable.
-    const off = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { wed: true }, {}, {}, {}, {}, false, {}, {
-      kyurem: ["blaze"],
-    });
+    const off = computeRoadPlan(
+      [],
+      [],
+      capacity,
+      DEFAULT_SETTINGS,
+      { wed: true },
+      {},
+      {},
+      {},
+      {},
+      false,
+      {},
+      {
+        kyurem: ["blaze"],
+      },
+    );
     expect(off.headStart.kyurem ?? 0).toBe(0);
   });
 
@@ -249,9 +292,22 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
     // zekrom is a weekend target (30 raids) AND a decoupled RoL pick.
     const inputs = [input("zekrom")];
     const results = [result("zekrom", 30)];
-    const road = computeRoadPlan(inputs, results, capacity, DEFAULT_SETTINGS, { tue: true }, {}, {}, {}, {}, false, {
-      zekrom: true,
-    }, {});
+    const road = computeRoadPlan(
+      inputs,
+      results,
+      capacity,
+      DEFAULT_SETTINGS,
+      { tue: true },
+      {},
+      {},
+      {},
+      {},
+      false,
+      {
+        zekrom: true,
+      },
+      {},
+    );
     expect(road.headStart.zekrom).toBe(6);
     const weekend = computeBlockPlan(inputs, results, capacity, DEFAULT_SETTINGS, {}, {}, {}, road.headStart);
     const demanded = weekend.blocks.reduce(
@@ -289,9 +345,19 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
     const inputs = [kyuremWith(400), input("zekrom")];
     const results = [result("kyurem", 30), result("zekrom", 30)];
     // Explicit order: Zekrom first, then the energy pseudo-id.
-    const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }, {}, {}, {}, {
-      tue: ["zekrom", "energy:kyurem:blaze"],
-    }).days[0];
+    const tue = computeRoadPlan(
+      inputs,
+      results,
+      capacity,
+      safe,
+      { tue: true },
+      {},
+      {},
+      {},
+      {
+        tue: ["zekrom", "energy:kyurem:blaze"],
+      },
+    ).days[0];
     expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted).toBe(6); // Zekrom eats the 5★ hour
     expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted ?? 0).toBe(0); // energy squeezed out
   });
@@ -318,11 +384,93 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
     expect(crowned?.bossId).toBe("zacian");
     expect(crowned?.fitted).toBe(eRaids);
     // Crowned raids still bank Zacian candy toward the weekend.
-    const weekend = computeBlockPlan([zacian], [result("zacian", 30)], capacity, safe, {}, {}, {}, computeRoadPlan([zacian], [result("zacian", 30)], capacity, safe, { thu: true }).headStart);
+    const weekend = computeBlockPlan(
+      [zacian],
+      [result("zacian", 30)],
+      capacity,
+      safe,
+      {},
+      {},
+      {},
+      computeRoadPlan([zacian], [result("zacian", 30)], capacity, safe, { thu: true }).headStart,
+    );
     const demanded = weekend.blocks.reduce(
       (sum, b) => sum + b.species.filter((s) => s.bossId === "zacian").reduce((a, s) => a + s.raids, 0),
       0,
     );
     expect(demanded).toBe(30 - eRaids); // credited
+  });
+});
+
+describe("computeRoadPlan — pre-credit reconciliation and demand netting (review fixes)", () => {
+  const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
+  const withGoal = (bossId: string, key: string, goal: number): BossInput => ({
+    ...input(bossId),
+    energy: { [key]: { have: 0, goal, on: true } },
+  });
+
+  it("claws back phantom credit when two goals compete for one window (Thursday Crowned pair)", () => {
+    // Both Crowned goals want 1000 energy (13 raids each, window-capped to 6), but
+    // Thursday's 5★ hour holds 6 TOTAL. Zacian (first in order) banks all 6;
+    // Zamazenta's assumed credit must be clawed back — no phantom weekend head start.
+    const inputs = [withGoal("zacian", "sword", 1000), withGoal("zamazenta", "shield", 1000)];
+    const results = [result("zacian", 30), result("zamazenta", 30)];
+    const road = computeRoadPlan(inputs, results, capacity, safe, { thu: true });
+    expect(road.headStart.zacian).toBe(6);
+    expect(road.headStart.zamazenta ?? 0).toBe(0); // was 6 before the fix
+    expect(road.totalFitted).toBe(6);
+  });
+
+  it("claws back the credit when the user drags candy above the energy item and squeezes it out", () => {
+    const inputs = [withGoal("kyurem", "blaze", 400), input("zekrom")];
+    const results = [result("kyurem", 30), result("zekrom", 30)];
+    const road = computeRoadPlan(
+      inputs,
+      results,
+      capacity,
+      safe,
+      { tue: true },
+      {},
+      {},
+      {},
+      {
+        tue: ["zekrom", "energy:kyurem:blaze"],
+      },
+    );
+    expect(road.headStart.kyurem ?? 0).toBe(0); // energy fit 0 → credit removed
+    expect(road.headStart.zekrom).toBe(6);
+  });
+
+  it("nets remote allocations out of the weekday demand", () => {
+    // 30 Zekrom raids, 25 assigned to remote passes → only 5 need weekday slots.
+    const road = computeRoadPlan(
+      [input("zekrom")],
+      [result("zekrom", 30)],
+      capacity,
+      { ...safe, useRemoteRaids: true },
+      { mon: true },
+      {},
+      { zekrom: 25 },
+    );
+    expect(road.headStart.zekrom).toBe(5); // was 12 (full Monday) before the fix
+  });
+
+  it("ignores an energy goal left on after its boss was deselected", () => {
+    const stale: BossInput = { ...withGoal("kyurem", "blaze", 400), selected: false };
+    const road = computeRoadPlan([stale], [result("kyurem", 30)], capacity, safe, { tue: true });
+    expect(road.days[0].species.some((s) => s.energyKey === "blaze")).toBe(false);
+    expect(road.totalFitted).toBe(0);
+  });
+
+  it("decoupled: a per-day deselection re-splits the whole budget to the remaining targets", () => {
+    // Both picked overall, but Monday's explicit list keeps only Zekrom → Zekrom
+    // gets Monday's whole 12-raid budget instead of a ghost 6/6 split.
+    const road = computeRoadPlan([], [], capacity, DEFAULT_SETTINGS, { mon: true }, {}, {}, {}, { mon: ["zekrom"] }, false, {
+      zekrom: true,
+      reshiram: true,
+    });
+    expect(road.headStart.zekrom).toBe(12); // was 6 before the fix
+    expect(road.headStart.reshiram ?? 0).toBe(0);
+    expect(road.days[0].remaining).toBe(0);
   });
 });

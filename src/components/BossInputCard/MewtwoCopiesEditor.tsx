@@ -41,8 +41,8 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
         Maxing {copies.length} Mewtwo · priority order
       </div>
       <p className="mb-2 text-[12px] text-slate-500">
-        Shared Candy / XL / X-Energy / Y-Energy (above) fill the #1 Mewtwo first. A caught Mewtwo only has one
-        branch unlocked, so setting an X level clears Y (and vice-versa).
+        Shared Candy / XL / X-Energy / Y-Energy (above) fill the #1 Mewtwo first. A caught Mewtwo only has one branch
+        unlocked, so setting an X level clears Y (and vice-versa).
       </p>
       {scanSlot ? <div className="mb-2">{scanSlot}</div> : null}
       <div className="space-y-2">
@@ -60,20 +60,72 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
           return (
             <div key={c.id} className="rounded-md border border-white/10 bg-gofest-bg/40 p-2">
               <div className="mb-1.5 flex items-center gap-1.5">
-                <span className="rounded bg-gofest-accent2/20 px-1.5 py-0.5 text-[12px] font-bold text-gofest-accent2">#{i + 1}</span>
+                <span className="rounded bg-gofest-accent2/20 px-1.5 py-0.5 text-[12px] font-bold text-gofest-accent2">
+                  #{i + 1}
+                </span>
                 <div className="ml-auto flex items-center gap-1">
-                  <button type="button" disabled={i === 0} onClick={() => moveMewtwoCopy(c.id, -1)} className={iconBtn} aria-label="Raise priority">↑</button>
-                  <button type="button" disabled={i === copies.length - 1} onClick={() => moveMewtwoCopy(c.id, 1)} className={iconBtn} aria-label="Lower priority">↓</button>
-                  <button type="button" disabled={copies.length === 1} onClick={() => removeMewtwoCopy(c.id)} className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`} aria-label="Remove Mewtwo">✕</button>
+                  <button
+                    type="button"
+                    disabled={i === 0}
+                    onClick={() => moveMewtwoCopy(c.id, -1)}
+                    className={iconBtn}
+                    aria-label="Raise priority"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    disabled={i === copies.length - 1}
+                    onClick={() => moveMewtwoCopy(c.id, 1)}
+                    className={iconBtn}
+                    aria-label="Lower priority"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    disabled={copies.length === 1}
+                    onClick={() => removeMewtwoCopy(c.id)}
+                    className={`${iconBtn} hover:border-rose-400/50 hover:text-rose-300`}
+                    aria-label="Remove Mewtwo"
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                <NumberInput label="Level" value={c.current.level} min={1} max={50} step={0.5} onChange={(v) => updateMewtwoCopy(c.id, { level: v })} />
-                <NumberInput label="→ Target" value={c.target.level} min={1} max={50} step={0.5} onChange={(v) => updateMewtwoCopy(c.id, { targetLevel: v })} />
+                <NumberInput
+                  label="Level"
+                  value={c.current.level}
+                  min={1}
+                  max={50}
+                  step={0.5}
+                  onChange={(v) => updateMewtwoCopy(c.id, { level: v })}
+                />
+                <NumberInput
+                  label="→ Target"
+                  value={c.target.level}
+                  min={1}
+                  max={50}
+                  step={0.5}
+                  onChange={(v) => updateMewtwoCopy(c.id, { targetLevel: v })}
+                />
                 <NumberInput label="X mega" value={c.current.megaLevel} min={0} max={4} onChange={setXcur} />
-                <NumberInput label="→ Tgt X" value={c.target.megaLevel} min={0} max={4} onChange={(v) => updateMewtwoCopy(c.id, { targetMegaLevel: v })} />
+                <NumberInput
+                  label="→ Tgt X"
+                  value={c.target.megaLevel}
+                  min={0}
+                  max={4}
+                  onChange={(v) => updateMewtwoCopy(c.id, { targetMegaLevel: v })}
+                />
                 <NumberInput label="Y mega" value={c.current.megaLevelY ?? 0} min={0} max={4} onChange={setYcur} />
-                <NumberInput label="→ Tgt Y" value={c.target.megaLevelY ?? 4} min={0} max={4} onChange={(v) => updateMewtwoCopy(c.id, { targetMegaLevelY: v })} />
+                <NumberInput
+                  label="→ Tgt Y"
+                  value={c.target.megaLevelY ?? 4}
+                  min={0}
+                  max={4}
+                  onChange={(v) => updateMewtwoCopy(c.id, { targetMegaLevelY: v })}
+                />
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {VARIANTS.map((v) => (
@@ -83,14 +135,20 @@ export function MewtwoCopiesEditor({ scanSlot }: { scanSlot?: ReactNode }) {
                     onClick={() => updateMewtwoCopy(c.id, { variant: v.id })}
                     aria-pressed={c.variant === v.id}
                     className={`rounded px-2 py-0.5 text-[12px] transition ${
-                      c.variant === v.id ? "bg-gofest-accent2 font-semibold text-black" : "border border-white/15 text-slate-300 hover:border-white/30"
+                      c.variant === v.id
+                        ? "bg-gofest-accent2 font-semibold text-black"
+                        : "border border-white/15 text-slate-300 hover:border-white/30"
                     }`}
                   >
                     {v.label}
                   </button>
                 ))}
                 <span className="ml-auto text-[12px] text-slate-400">
-                  {parts.length ? <>still needs {parts.join(" · ")}</> : <span className="text-emerald-300">✓ covered by on-hand</span>}
+                  {parts.length ? (
+                    <>still needs {parts.join(" · ")}</>
+                  ) : (
+                    <span className="text-emerald-300">✓ covered by on-hand</span>
+                  )}
                 </span>
               </div>
             </div>

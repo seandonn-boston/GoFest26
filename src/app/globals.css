@@ -13,12 +13,19 @@
 
 body {
   min-height: 100vh;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   background:
     radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.16), transparent 60%),
     radial-gradient(60% 50% at 100% 0%, rgba(0, 240, 255, 0.12), transparent 55%),
-    radial-gradient(55% 45% at 50% 115%, rgba(176, 38, 255, 0.14), transparent 60%),
-    #050507;
+    radial-gradient(55% 45% at 50% 115%, rgba(176, 38, 255, 0.14), transparent 60%), #050507;
   background-attachment: fixed;
 }
 
@@ -48,7 +55,9 @@ body::after {
 }
 
 /* Editorial / brutalist headings — oversized, uppercase, tight tracking. */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--font-display);
   text-transform: uppercase;
   letter-spacing: -0.02em;
@@ -56,7 +65,10 @@ h1, h2, h3 {
 }
 
 /* Mono for data, labels, tags. */
-.font-mono, code, kbd, samp {
+.font-mono,
+code,
+kbd,
+samp {
   font-family: var(--font-mono);
 }
 
@@ -121,8 +133,12 @@ h1, h2, h3 {
 
 /* Marquee ticker for the masthead strip. */
 @keyframes ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 .ticker {
   display: inline-block;
@@ -142,9 +158,18 @@ input[type="number"] {
 
 /* Content "switch-in" once the Substitute faints (Pokémon mainline style). */
 @keyframes switchIn {
-  0% { opacity: 0; transform: translateY(48px) scale(0.55); }
-  55% { opacity: 1; transform: translateY(-8px) scale(1.04); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(48px) scale(0.55);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .switch-in {
   animation: switchIn 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -160,7 +185,9 @@ input[type="number"] {
 .glitch-title {
   --c1: var(--neon-magenta);
   --c2: var(--neon-cyan);
-  text-shadow: 3px 0 var(--neon-cyan), -3px 0 var(--neon-magenta);
+  text-shadow:
+    3px 0 var(--neon-cyan),
+    -3px 0 var(--neon-magenta);
 }
 .cyber-title {
   --c1: var(--neon-magenta);
@@ -170,7 +197,9 @@ input[type="number"] {
   letter-spacing: -0.01em;
   font-weight: 800;
   color: #f4f6fb;
-  text-shadow: 0.05em 0 var(--c2), -0.05em 0 var(--c1);
+  text-shadow:
+    0.05em 0 var(--c2),
+    -0.05em 0 var(--c1);
 }
 
 /* Glitchable units: inline-block so a single letter or word can jitter on its
@@ -185,17 +214,49 @@ input[type="number"] {
    font and a robotic mono. Both stop when the burst ends, leaving the resting
    font/look. Per-fire duration comes in via --glitch-dur. */
 @keyframes glitchBurst {
-  0% { transform: translate(0, 0); }
-  20% { transform: translate(-0.05em, 0.02em); text-shadow: 0.12em 0 var(--c2, var(--neon-cyan)), -0.12em 0 var(--c1, var(--neon-magenta)); }
-  40% { transform: translate(0.05em, -0.02em); text-shadow: -0.1em 0 var(--c2, var(--neon-cyan)), 0.1em 0 var(--c1, var(--neon-magenta)); }
-  60% { transform: translate(-0.03em, 0.01em); text-shadow: 0.08em 0 var(--c2, var(--neon-cyan)), -0.08em 0 var(--c1, var(--neon-magenta)); }
-  80% { transform: translate(0.02em, 0); }
-  100% { transform: translate(0, 0); }
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-0.05em, 0.02em);
+    text-shadow:
+      0.12em 0 var(--c2, var(--neon-cyan)),
+      -0.12em 0 var(--c1, var(--neon-magenta));
+  }
+  40% {
+    transform: translate(0.05em, -0.02em);
+    text-shadow:
+      -0.1em 0 var(--c2, var(--neon-cyan)),
+      0.1em 0 var(--c1, var(--neon-magenta));
+  }
+  60% {
+    transform: translate(-0.03em, 0.01em);
+    text-shadow:
+      0.08em 0 var(--c2, var(--neon-cyan)),
+      -0.08em 0 var(--c1, var(--neon-magenta));
+  }
+  80% {
+    transform: translate(0.02em, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }
 @keyframes glitchFont {
-  0%, 100% { font-family: var(--font-display); }
-  15%, 45%, 75% { font-family: var(--font-mono); }
-  30%, 60%, 90% { font-family: var(--font-display); }
+  0%,
+  100% {
+    font-family: var(--font-display);
+  }
+  15%,
+  45%,
+  75% {
+    font-family: var(--font-mono);
+  }
+  30%,
+  60%,
+  90% {
+    font-family: var(--font-display);
+  }
 }
 .glitching {
   animation:
@@ -216,7 +277,9 @@ input[type="number"] {
   --c1: var(--flash1); /* glitch burst flashes shiny green, not cyan/magenta */
   --c2: var(--flash2);
   font-family: var(--font-display);
-  text-shadow: 0.05em 0 var(--rest2), -0.05em 0 var(--rest1);
+  text-shadow:
+    0.05em 0 var(--rest2),
+    -0.05em 0 var(--rest1);
 }
 .mewtwo-xy {
   --rest1: #b026ff; /* vivid purple echo (inverse of the fill) */
@@ -242,11 +305,18 @@ input[type="number"] {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #fbfaf6;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.85), 0 -1px 0 rgba(255, 255, 255, 0.16);
+  text-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.95),
+    0 0 2px rgba(0, 0, 0, 0.85),
+    0 -1px 0 rgba(255, 255, 255, 0.16);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .switch-in, .ticker, .glitching { animation: none; }
+  .switch-in,
+  .ticker,
+  .glitching {
+    animation: none;
+  }
 }
 
 /* Avant-garde card treatment: a hard neo-brutalist offset shadow + crisp border
@@ -276,11 +346,10 @@ input[type="number"] {
   height: 100%;
   border-radius: 16px;
   padding: 3px; /* metal rim width */
-  background: conic-gradient(
-    from 210deg,
-    #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5
-  );
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.55);
+  background: conic-gradient(from 210deg, #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55);
 }
 /* The gyro tilt — and its preserve-3d/perspective subtree — exists ONLY while
    active. An idle page (and all of desktop) stays flat 2D, which is visually
@@ -342,17 +411,7 @@ input[type="number"] {
   inset: 0;
   border-radius: 9999px;
   padding: 2px;
-  background: conic-gradient(
-    from 0deg,
-    #ff0040,
-    #ff8a00,
-    #ffe600,
-    #14e07a,
-    #00b3ff,
-    #7a5cff,
-    #ff00c8,
-    #ff0040
-  );
+  background: conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14e07a, #00b3ff, #7a5cff, #ff00c8, #ff0040);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);

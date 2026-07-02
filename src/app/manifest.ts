@@ -9,8 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "GO Fest 2026 Raid Planner",
     short_name: "GO Fest Planner",
-    description:
-      "Plan your Pokémon GO Fest 2026 raids — how many you need to max XL Candy and Mega Energy.",
+    description: "Plan your Pokémon GO Fest 2026 raids — how many you need to max XL Candy and Mega Energy.",
     start_url: base || "/",
     scope: base ? `${base}/` : "/",
     display: "standalone",

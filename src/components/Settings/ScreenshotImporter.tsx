@@ -20,7 +20,9 @@ import { SearchStringBar } from "@/components/BossInputCard/SearchStringBar";
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
 const uid = () =>
-  typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 // One option per species group. Most groups already share a species key
 // (Giratina A/O, the genie formes); a shared-candy group across DISTINCT species
@@ -29,7 +31,7 @@ const uid = () =>
 const SPECIES_OPTIONS = (() => {
   const byKey = new Map<string, RaidBoss[]>();
   for (const b of RAID_BOSSES) {
-    const primary = b.formGroup ? getBoss(primaryFormId(b.formGroup)) ?? b : b;
+    const primary = b.formGroup ? (getBoss(primaryFormId(b.formGroup)) ?? b) : b;
     const k = speciesKey(primary.name);
     const arr = byKey.get(k) ?? [];
     arr.push(b);
@@ -55,8 +57,8 @@ function unreadableMessage(scan: ScanResult, fileName: string): React.ReactNode 
   }
   return (
     <>
-      Looks like Pokémon GO, but the stats aren’t visible in {fileName} — include the Stardust/Candy
-      section of the Pokémon’s page.
+      Looks like Pokémon GO, but the stats aren’t visible in {fileName} — include the Stardust/Candy section of the Pokémon’s
+      page.
     </>
   );
 }
@@ -218,8 +220,8 @@ export function ScreenshotImporter() {
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-400">
-        Upload one or more Pokémon screenshots. We read the Candy / XL / Mega Energy from each — then you
-        tap which Pokémon it is and apply it. Same species → only the most-recent is kept.
+        Upload one or more Pokémon screenshots. We read the Candy / XL / Mega Energy from each — then you tap which Pokémon
+        it is and apply it. Same species → only the most-recent is kept.
       </p>
 
       {/* Copyable PoGo search string for every selected target — directly above
@@ -259,14 +261,15 @@ export function ScreenshotImporter() {
       </div>
 
       <p className="text-[13px] text-amber-300">
-        <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read yet.
+        <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read
+        yet.
       </p>
 
       {showGuide ? (
         <div className="rounded-sm border border-sky-400/30 bg-sky-500/[0.06] p-3">
           <p className="mb-2 text-[13px] text-slate-300">
-            Upload a Pokémon&apos;s stats page — the one showing Candy / Candy XL / Mega Energy. Locate the{" "}
-            <b>exact</b> Pokémon you want to max — not just any of the same species.
+            Upload a Pokémon&apos;s stats page — the one showing Candy / Candy XL / Mega Energy. Locate the <b>exact</b>{" "}
+            Pokémon you want to max — not just any of the same species.
           </p>
           <figure className="m-0 max-w-[50%]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -289,9 +292,8 @@ export function ScreenshotImporter() {
         <div className="space-y-1.5">
           <ScreenshotGrid shots={imports} statusOf={statusOf} onDelete={del} />
           <p className="text-[12px] text-slate-500">
-            <span className="text-amber-300">⚠</span> unreadable · <span className="text-sky-300">!</span> not in this
-            event · <span className="text-rose-300">✕</span> duplicate (a newer one is used). Tap a tile to preview or
-            delete it.
+            <span className="text-amber-300">⚠</span> unreadable · <span className="text-sky-300">!</span> not in this event
+            · <span className="text-rose-300">✕</span> duplicate (a newer one is used). Tap a tile to preview or delete it.
           </p>
         </div>
       ) : null}
@@ -328,8 +330,8 @@ export function ScreenshotImporter() {
                       ) : null}
                       {superseded ? (
                         <p className="mb-1.5 text-[13px] text-amber-300/80">
-                          ↪ Duplicate {OPTION_BY_KEY.get(s.key)?.label ?? cap(s.key)} — a newer screenshot is used by
-                          “Apply all”. You can still apply this one with ›.
+                          ↪ Duplicate {OPTION_BY_KEY.get(s.key)?.label ?? cap(s.key)} — a newer screenshot is used by “Apply
+                          all”. You can still apply this one with ›.
                         </p>
                       ) : null}
                       <select
@@ -390,7 +392,9 @@ export function ScreenshotImporter() {
       ) : null}
 
       {summary ? <p className="text-[13px] text-emerald-300">✓ {summary}</p> : null}
-      {imports.length ? <p className="text-[12px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p> : null}
+      {imports.length ? (
+        <p className="text-[12px] text-slate-500">OCR is best-effort — double-check the filled numbers.</p>
+      ) : null}
     </div>
   );
 }

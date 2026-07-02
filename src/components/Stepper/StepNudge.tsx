@@ -30,10 +30,7 @@ export function missingStep(anySelected: boolean, hasGoals: boolean): MissingSte
       step: 1,
       title: "Pick a target to get started",
       message: (
-        <>
-          Choose at least one Pokémon you want to power up — the Mega Mewtwo X &amp; Y tiles are a
-          great place to start.
-        </>
+        <>Choose at least one Pokémon you want to power up — the Mega Mewtwo X &amp; Y tiles are a great place to start.</>
       ),
     };
   }
@@ -43,8 +40,8 @@ export function missingStep(anySelected: boolean, hasGoals: boolean): MissingSte
       title: "Set a goal to see your raid counts",
       message: (
         <>
-          Your targets don&apos;t need any raids yet. In <b>Enter what you have</b>, set a level or Mega
-          Level higher than what you already have.
+          Your targets don&apos;t need any raids yet. In <b>Enter what you have</b>, set a level or Mega Level higher than
+          what you already have.
         </>
       ),
     };

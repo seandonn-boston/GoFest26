@@ -46,8 +46,8 @@ export function EstimateConfidence() {
           )),
         )}
         <li className="pt-1 text-[12px] text-slate-500">
-          Reward amounts are shown as best→worst ranges because in-game drops vary. Values live in one editable config
-          file and can be corrected the moment Niantic publishes finals.
+          Reward amounts are shown as best→worst ranges because in-game drops vary. Values live in one editable config file
+          and can be corrected the moment Niantic publishes finals.
         </li>
       </ul>
     </Disclosure>

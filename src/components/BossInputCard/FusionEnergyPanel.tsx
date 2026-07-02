@@ -65,11 +65,7 @@ function EnergyGoalRow({ bossId, def }: { bossId: string; def: EnergyGoalDef }) 
       {on ? (
         <>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <NumberInput
-              label="Energy on hand"
-              value={have}
-              onChange={(v) => setEnergy(bossId, def.key, { have: v })}
-            />
+            <NumberInput label="Energy on hand" value={have} onChange={(v) => setEnergy(bossId, def.key, { have: v })} />
             <NumberInput
               label={`Goal (to ${KIND_VERB[def.kind]})`}
               value={goal}
@@ -94,8 +90,8 @@ function EnergyGoalRow({ bossId, def }: { bossId: string; def: EnergyGoalDef }) 
           </div>
 
           <p className="mt-1 text-[12px] leading-snug text-slate-500">
-            ~{def.perRaid.min}–{def.perRaid.max} energy per raid (more for faster, higher-damage wins); raids
-            also drop Candy and a chance at XL Candy.{def.note ? ` ${def.note}` : ""}
+            ~{def.perRaid.min}–{def.perRaid.max} energy per raid (more for faster, higher-damage wins); raids also drop Candy
+            and a chance at XL Candy.{def.note ? ` ${def.note}` : ""}
           </p>
         </>
       ) : null}
@@ -121,8 +117,8 @@ export function FusionEnergyPanel({ bossId, bossName }: { bossId: string; bossNa
         </span>
       </div>
       <p className="mb-2 text-[13px] text-slate-400">
-        Optional — bank energy from {bossName}&apos;s special raids during <b>Road of Legends</b> week to build
-        its alternate forme. Separate from your weekend maxing plan.
+        Optional — bank energy from {bossName}&apos;s special raids during <b>Road of Legends</b> week to build its alternate
+        forme. Separate from your weekend maxing plan.
       </p>
       <div className="space-y-2">
         {goals.map((def) => (

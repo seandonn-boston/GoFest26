@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  counterBreakdown,
-  counterSearchSpecies,
-  topBlockCounters,
-  effectiveness,
-  COUNTER_CATEGORIES,
-} from "./counters";
+import { counterBreakdown, counterSearchSpecies, topBlockCounters, effectiveness, COUNTER_CATEGORIES } from "./counters";
 
 describe("effectiveness (dual-type product)", () => {
   it("stacks to a double weakness", () => {

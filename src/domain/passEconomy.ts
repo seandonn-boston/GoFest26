@@ -102,7 +102,9 @@ function buildMethods(kind: "low" | "high", d: MethodCtx): string[] {
     );
   }
   if (d.totalRemote > 0) {
-    out.push(`${d.remoteBundles}× 3-Remote-Pass bundle (${PE.remote.bundleCoins} ea) = ${d.remoteBundles * PE.remote.bundleCoins} coins`);
+    out.push(
+      `${d.remoteBundles}× 3-Remote-Pass bundle (${PE.remote.bundleCoins} ea) = ${d.remoteBundles * PE.remote.bundleCoins} coins`,
+    );
   }
   if (d.linkChargesToBuy > 0 && d.lc.counts.length) {
     const packs = d.lc.counts.map((c) => `${c.n}× ${c.lc} LC (${c.coins})`).join(" + ");
@@ -131,9 +133,12 @@ export function computePassCost(
 
   // Split by tier — only Mega (150 LC) and Super Mega (200 LC) raids can use Link
   // Charges — and by in-person vs remote.
-  let megaInPerson = 0, megaRemote = 0;
-  let superInPerson = 0, superRemote = 0;
-  let otherInPerson = 0, otherRemote = 0;
+  let megaInPerson = 0,
+    megaRemote = 0;
+  let superInPerson = 0,
+    superRemote = 0;
+  let otherInPerson = 0,
+    otherRemote = 0;
   for (const input of collapsed) {
     if (!input.selected) continue;
     const boss = getBoss(input.bossId);
@@ -180,7 +185,8 @@ export function computePassCost(
   const paidTotal = Math.max(0, totalInPerson - freePassesUsed);
   const paidOther = Math.min(otherInPerson, paidTotal);
   let rem = paidTotal - paidOther;
-  const paidMega = Math.min(megaInPerson, rem); rem -= paidMega;
+  const paidMega = Math.min(megaInPerson, rem);
+  rem -= paidMega;
   const paidSuper = Math.min(superInPerson, rem);
 
   // Optionally spend remaining owned Link Charges on paid in-person Mega (150)

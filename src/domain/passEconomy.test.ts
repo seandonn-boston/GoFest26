@@ -54,20 +54,16 @@ describe("computePassCost", () => {
   });
 
   it("adds free passes for each Road of Legends weekday played (lowering cost)", () => {
-    // 30 in-person, 2 weekdays played → 18 + 2×3 = 24 free → 6 paid.
+    // 30 in-person, 2 weekdays played → 18 + 2×2 = 22 free → 8 paid.
+    // (RoL grants "up to 2 free Raid Passes" per day, per the official blog.)
     const cost = computePassCost([input("zekrom")], [result("zekrom", 30)], DEFAULT_SETTINGS, {}, { mon: true, tue: true });
-    expect(cost.freePasses).toBe(24);
-    expect(cost.paidInPerson).toBe(6);
+    expect(cost.freePasses).toBe(22);
+    expect(cost.paidInPerson).toBe(8);
   });
 
   it("requires a remote pass AND 200 Link Charges per remote Super Mega raid", () => {
     const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
-    const cost = computePassCost(
-      [input("mega-mewtwo-x")],
-      [result("mega-mewtwo-x", 10)],
-      settings,
-      { "mega-mewtwo-x": 2 },
-    );
+    const cost = computePassCost([input("mega-mewtwo-x")], [result("mega-mewtwo-x", 10)], settings, { "mega-mewtwo-x": 2 });
     expect(cost.remoteSuperMegaRaids).toBe(2);
     expect(cost.superMegaInPersonRaids).toBe(8); // covered by free passes
     expect(cost.linkChargesNeeded).toBe(400); // 2 × 200 LC

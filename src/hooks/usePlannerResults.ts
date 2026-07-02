@@ -90,7 +90,19 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
       road.headStart,
     );
     return { weekend, road };
-  }, [inputs, summary, settings, blockPriority, remoteAllocations, quickCatchBlocks, playDays, roadTargets, roadCoupled, roadSelected, roadEnergy]);
+  }, [
+    inputs,
+    summary,
+    settings,
+    blockPriority,
+    remoteAllocations,
+    quickCatchBlocks,
+    playDays,
+    roadTargets,
+    roadCoupled,
+    roadSelected,
+    roadEnergy,
+  ]);
 }
 
 /**
@@ -140,6 +152,8 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);
   const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   const playDays = usePlannerStore((s) => s.playDays);
+  const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
+  const roadTargets = usePlannerStore((s) => s.roadTargets);
   const roadCoupled = usePlannerStore((s) => s.roadCoupled);
   const roadSelected = usePlannerStore((s) => s.roadSelected);
   const roadEnergy = usePlannerStore((s) => s.roadEnergy);
@@ -152,7 +166,10 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
     // derived from the per-block orders.
     const globalOrder = globalPriorityFromBlocks(blockPriority);
     // The Road of Legends head start already covers some demand — net it out so
-    // remote isn't assigned to raids the player will do on a weekday.
+    // remote isn't assigned to raids the player will do on a weekday. The live
+    // per-day drag orders and quick-catch flags must feed this road plan too, or
+    // the head start diverges from the one useBlockPlan shows (remote allocations
+    // stay {} on purpose: shortfalls are measured with remote off).
     const road = computeRoadPlan(
       inputList,
       summary.results,
@@ -161,8 +178,8 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       playDays,
       blockPriority,
       {},
-      {},
-      {},
+      quickCatchBlocks,
+      roadTargets,
       roadCoupled,
       roadSelected,
       roadEnergy,
@@ -188,5 +205,19 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       midpoint(summary.capacity.remoteCapacity),
     );
     if (!sameAllocation(desired, remoteAllocations)) setRemoteAllocations(desired);
-  }, [inputs, settings, blockPriority, remoteAuto, remoteAllocations, playDays, roadCoupled, roadSelected, roadEnergy, summary, setRemoteAllocations]);
+  }, [
+    inputs,
+    settings,
+    blockPriority,
+    remoteAuto,
+    remoteAllocations,
+    playDays,
+    quickCatchBlocks,
+    roadTargets,
+    roadCoupled,
+    roadSelected,
+    roadEnergy,
+    summary,
+    setRemoteAllocations,
+  ]);
 }

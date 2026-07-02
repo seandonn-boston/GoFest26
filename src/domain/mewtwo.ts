@@ -93,11 +93,7 @@ const needsFor = (energy: number, xl: number, candy: number): Partial<Record<Cur
  * and split across both days when both forms are raided. Replaces the generic
  * per-boss computeBossResult for Mewtwo so XL is never double-counted.
  */
-export function computeMewtwoResults(
-  inputs: BossInput[],
-  calibration: Calibration = {},
-  megaBuddyLevel = 1,
-): BossResult[] {
+export function computeMewtwoResults(inputs: BossInput[], calibration: Calibration = {}, megaBuddyLevel = 1): BossResult[] {
   const xi = inputs.find((i) => i.bossId === MEWTWO_X_ID && i.selected);
   const yi = inputs.find((i) => i.bossId === MEWTWO_Y_ID && i.selected);
   if (!xi && !yi) return [];
@@ -158,7 +154,12 @@ export function perMewtwoCopyNeeds(xi: BossInput | undefined, yi: BossInput | un
   if (!owner) return [];
   const bossX = getBoss(MEWTWO_X_ID)!;
   const bossY = getBoss(MEWTWO_Y_ID)!;
-  const rem = { xl: owner.current.xlCandy, candy: owner.current.candy, x: xi?.current.megaEnergy ?? 0, y: yi?.current.megaEnergy ?? 0 };
+  const rem = {
+    xl: owner.current.xlCandy,
+    candy: owner.current.candy,
+    x: xi?.current.megaEnergy ?? 0,
+    y: yi?.current.megaEnergy ?? 0,
+  };
   const take = (need: number, key: "xl" | "candy" | "x" | "y") => {
     const use = Math.min(rem[key], need);
     rem[key] -= use;

@@ -61,8 +61,8 @@ export function ExplainEquation({ bossId, explanation }: { bossId: string; expla
       </div>
       {explanation.note ? <p className="mt-1.5 text-[12px] text-amber-300/80">{explanation.note}</p> : null}
       <p className="mt-1.5 text-[12px] text-slate-500">
-        Click a <span className="text-gofest-accent2">dotted value</span> to edit it — overwrites the card and
-        recalculates. Scan results aren’t changed.
+        Click a <span className="text-gofest-accent2">dotted value</span> to edit it — overwrites the card and recalculates.
+        Scan results aren’t changed.
       </p>
     </div>
   );

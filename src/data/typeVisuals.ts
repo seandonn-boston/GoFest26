@@ -48,8 +48,7 @@ export const TYPE_ICONS: Record<string, string> = {
 // a soft-light highlight (domed sheen) + a multiplied bottom shade.
 const ENAMEL_HILITE =
   "radial-gradient(95% 62% at 32% 0%, rgba(255,255,255,0.92), rgba(255,255,255,0.18) 34%, rgba(255,255,255,0) 62%)";
-const ENAMEL_SHADE =
-  "radial-gradient(150% 125% at 50% 130%, rgba(0,0,0,0.78), rgba(0,0,0,0) 60%)";
+const ENAMEL_SHADE = "radial-gradient(150% 125% at 50% 130%, rgba(0,0,0,0.78), rgba(0,0,0,0) 60%)";
 
 /** Diagonal (top-left → bottom-right) split of N colors into equal bands. Two
  *  types give the classic 50/50 split; a cross-species group's union (e.g.

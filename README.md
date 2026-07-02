@@ -165,10 +165,11 @@ unit‑tested with Vitest. `computePlanSummary()` is the entry point; the pipeli
    passes, and splits owned passes into have / need / buy by priority.
 
 Supporting modules: `counters.ts` (type effectiveness + best attackers), `megaBoosts.ts`
-+ `buddyBoost.ts` (same‑type Candy‑boost Mega engine), `region.ts` (hemisphere/continent
-availability → local vs. remote), `research.ts` (GO Fest research credits), `explain.ts`
-(editable math‑tooltip equations), and `settings.ts` / `defaults.ts` (planning knobs and
-starting inputs).
+
+- `buddyBoost.ts` (same‑type Candy‑boost Mega engine), `region.ts` (hemisphere/continent
+  availability → local vs. remote), `research.ts` (GO Fest research credits), `explain.ts`
+  (editable math‑tooltip equations), and `settings.ts` / `defaults.ts` (planning knobs and
+  starting inputs).
 
 ## Tech
 

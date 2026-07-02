@@ -47,8 +47,8 @@ export function CounterSearchBar() {
         }))}
         caption={
           <>
-            Best counters across {dayLabel}’s targets — {picks.length} species (commas = “or”). Paste
-            into Pokémon GO to spot which attackers you have and which to power up.
+            Best counters across {dayLabel}’s targets — {picks.length} species (commas = “or”). Paste into Pokémon GO to spot
+            which attackers you have and which to power up.
           </>
         }
       />

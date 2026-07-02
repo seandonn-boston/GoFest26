@@ -44,8 +44,8 @@ export function FeedbackForm({ onDone }: { onDone?: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-slate-400">
-        Found a bug, have an idea, or spotted wrong data? This opens a pre-filled GitHub issue you can
-        review and submit (needs a free GitHub account).
+        Found a bug, have an idea, or spotted wrong data? This opens a pre-filled GitHub issue you can review and submit
+        (needs a free GitHub account).
       </p>
 
       <div className="flex flex-wrap gap-2">

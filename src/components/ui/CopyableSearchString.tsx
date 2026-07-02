@@ -56,7 +56,11 @@ export function CopyableSearchString({
   if (!search) return null;
 
   return (
-    <Copyable search={search} label={label} className="brutal rounded-xl bg-gofest-panel/80 p-3 transition hover:bg-gofest-panel">
+    <Copyable
+      search={search}
+      label={label}
+      className="brutal rounded-xl bg-gofest-panel/80 p-3 transition hover:bg-gofest-panel"
+    >
       <div className="mb-1 pr-8">
         <span className={`font-mono text-[13px] font-bold uppercase tracking-widest ${accent}`}>{label}</span>
       </div>
@@ -74,10 +78,7 @@ export function CopyableSearchString({
         </p>
       ) : collapsible ? (
         <div className="relative">
-          <p
-            ref={textRef}
-            className={`break-words font-mono text-sm text-slate-200 ${expanded ? "" : "line-clamp-2"}`}
-          >
+          <p ref={textRef} className={`break-words font-mono text-sm text-slate-200 ${expanded ? "" : "line-clamp-2"}`}>
             {search}
           </p>
           {expanded ? (

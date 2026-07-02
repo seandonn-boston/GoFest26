@@ -35,8 +35,8 @@ export function SearchStringBar() {
       collapsible
       caption={
         <>
-          Paste into Pokémon GO’s search bar (commas = “or”) to surface all {count} species at once and
-          check your Candy, XL &amp; Mega Energy.
+          Paste into Pokémon GO’s search bar (commas = “or”) to surface all {count} species at once and check your Candy, XL
+          &amp; Mega Energy.
         </>
       }
     />

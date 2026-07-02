@@ -81,11 +81,11 @@ export function AssumptionsControls() {
         />
       </div>
       <p className="-mt-2 text-xs text-slate-500">
-        Each raid is a lobby wait + ~15–25s of transitions + battle + a ~100s catch + your downtime.
-        Lobby wait defaults to 2 min, or 60s once your lobby is a full 20 (it fills faster) — override it
-        anywhere from 15s to 2 min. Battle time scales with lobby size: a full 20-trainer “red” lobby
-        melts Megas in ~10–20s and 5★ in ~30–50s (Mewtwo ~60–75s), while thin lobbies drag on for
-        minutes. Green passes &amp; Link Charges are unlimited; Free Orange passes are used first.
+        Each raid is a lobby wait + ~15–25s of transitions + battle + a ~100s catch + your downtime. Lobby wait defaults to 2
+        min, or 60s once your lobby is a full 20 (it fills faster) — override it anywhere from 15s to 2 min. Battle time
+        scales with lobby size: a full 20-trainer “red” lobby melts Megas in ~10–20s and 5★ in ~30–50s (Mewtwo ~60–75s),
+        while thin lobbies drag on for minutes. Green passes &amp; Link Charges are unlimited; Free Orange passes are used
+        first.
       </p>
 
       {/* Party Play */}
@@ -100,8 +100,7 @@ export function AssumptionsControls() {
           <span className="text-slate-300">
             Party Play
             <span className="block text-xs text-slate-500">
-              A 2–4 sub-group inside the lobby (a party isn’t a lobby) hits harder, shaving 5/10/15s
-              for a party of 2/3/4.
+              A 2–4 sub-group inside the lobby (a party isn’t a lobby) hits harder, shaving 5/10/15s for a party of 2/3/4.
             </span>
           </span>
         </label>
@@ -148,10 +147,9 @@ export function AssumptionsControls() {
           ))}
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          A same-type Mega/Primal buddy raises Candy XL on catches, scaling with its Mega Level — applied to
-          every boss whose “Mega buddy” toggle is on. A handful of 2026 species reach{" "}
-          <span className="text-white">Level 4 (+30%)</span>; enable it per boss on
-          Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon/Steel targets.
+          A same-type Mega/Primal buddy raises Candy XL on catches, scaling with its Mega Level — applied to every boss whose
+          “Mega buddy” toggle is on. A handful of 2026 species reach <span className="text-white">Level 4 (+30%)</span>;
+          enable it per boss on Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon/Steel targets.
         </p>
       </div>
 
@@ -159,13 +157,12 @@ export function AssumptionsControls() {
       <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-relaxed">
         <div className="mb-1 font-semibold text-slate-200">What the Candy-XL numbers count</div>
         <p className="text-slate-400">
-          <span className="text-emerald-300">Counted:</span> in-person 5★/Legendary catch (guaranteed 3 +
-          completion bonus), Mega-tier catch (0–3), the same-type Mega buddy boost above, and GO Fest research
-          XL when enabled.
+          <span className="text-emerald-300">Counted:</span> in-person 5★/Legendary catch (guaranteed 3 + completion bonus),
+          Mega-tier catch (0–3), the same-type Mega buddy boost above, and GO Fest research XL when enabled.
         </p>
         <p className="mt-1 text-slate-400">
-          <span className="text-rose-300">Not counted:</span> XL from transferring or trading, egg hatches, or
-          buddy walking. Running from the encounter yields Mega Energy only — no catch XL.
+          <span className="text-rose-300">Not counted:</span> XL from transferring or trading, egg hatches, or buddy walking.
+          Running from the encounter yields Mega Energy only — no catch XL.
         </p>
       </div>
 
@@ -177,8 +174,8 @@ export function AssumptionsControls() {
         <div className="mb-1.5 text-sm text-slate-300">GO Fest research</div>
         <p className="mb-2 text-xs text-slate-500">
           Counts each line’s Candy / XL toward your goals (fewer raids needed). An{" "}
-          <span className="text-amber-300/90">estimate</span> from the Chicago in-person research (via
-          Serebii) — the free Global event hasn’t published its tasks yet.
+          <span className="text-amber-300/90">estimate</span> from the Chicago in-person research (via Serebii) — the free
+          Global event hasn’t published its tasks yet.
         </p>
         <div className="space-y-2">
           {RESEARCH_LINES.map((line) => {

@@ -9,15 +9,7 @@ import { useEffect, useMemo, useState } from "react";
  * before giving up. Falls back to a typed-looking lettered chip if every
  * candidate fails (or there's no src).
  */
-export function Sprite({
-  src,
-  alt,
-  size = 48,
-}: {
-  src?: string;
-  alt: string;
-  size?: number;
-}) {
+export function Sprite({ src, alt, size = 48 }: { src?: string; alt: string; size?: number }) {
   // Candidate URLs to try in order: the given one, then the alternate CDN naming.
   const candidates = useMemo(() => {
     if (!src) return [];

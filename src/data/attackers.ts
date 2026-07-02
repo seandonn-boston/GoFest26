@@ -23,9 +23,24 @@
  */
 
 export type PType =
-  | "Normal" | "Fire" | "Water" | "Grass" | "Electric" | "Ice"
-  | "Fighting" | "Poison" | "Ground" | "Flying" | "Psychic" | "Bug"
-  | "Rock" | "Ghost" | "Dragon" | "Dark" | "Steel" | "Fairy";
+  | "Normal"
+  | "Fire"
+  | "Water"
+  | "Grass"
+  | "Electric"
+  | "Ice"
+  | "Fighting"
+  | "Poison"
+  | "Ground"
+  | "Flying"
+  | "Psychic"
+  | "Bug"
+  | "Rock"
+  | "Ghost"
+  | "Dragon"
+  | "Dark"
+  | "Steel"
+  | "Fairy";
 
 export type AttackerCategory = "mega" | "shadow" | "legendary" | "regular";
 

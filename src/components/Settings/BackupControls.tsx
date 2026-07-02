@@ -51,9 +51,9 @@ export function BackupControls() {
   return (
     <div className="space-y-2">
       <p className="text-[13px] text-slate-500">
-        Lost your plan (cleared browser / new device)? Save a backup, then restore it here. JSON is the quickest;
-        the exported <span className="font-mono">.xlsx</span> can also be re-imported. Or copy a share link to send the
-        whole plan to a friend.
+        Lost your plan (cleared browser / new device)? Save a backup, then restore it here. JSON is the quickest; the
+        exported <span className="font-mono">.xlsx</span> can also be re-imported. Or copy a share link to send the whole
+        plan to a friend.
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={copyShareLink} disabled={!hasState} className={btn}>

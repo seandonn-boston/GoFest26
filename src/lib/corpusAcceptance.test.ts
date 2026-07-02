@@ -26,7 +26,15 @@ interface Truth {
 
 // User-verified control values (Dragonite's candy is 1,427 per the pixels).
 const TRUTH: Record<string, Truth> = {
-  mewtwo: { stardust: 999113, candy: 26, xlCandy: 27, energies: [[0, "mewtwo", "x"], [0, "mewtwo", "y"]] },
+  mewtwo: {
+    stardust: 999113,
+    candy: 26,
+    xlCandy: 27,
+    energies: [
+      [0, "mewtwo", "x"],
+      [0, "mewtwo", "y"],
+    ],
+  },
   groudon: { stardust: 1001623, candy: 181, xlCandy: 82, energies: [[485, "groudon"]] },
   necrozma: { stardust: 1001623, candy: 100, xlCandy: 44, energies: [] }, // fused Dusk Mane: no energy cells
   rayquaza: { stardust: 1001623, candy: 67, xlCandy: 12, energies: [[9475, "rayquaza"]] },
