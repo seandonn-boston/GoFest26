@@ -6,6 +6,7 @@ import type { RemotePlan, WeekendBlockPlan } from "@/domain";
 import { PlusToggle } from "@/components/ui/PlusToggle";
 import { BandBar } from "@/components/ui/BandBar";
 import { RemoteAllocator } from "./RemoteAllocator";
+import { RemoteWindows } from "./RemoteWindows";
 
 /**
  * Remote-raid section: the opt-in checkbox (disabled until a value is entered),
@@ -94,6 +95,7 @@ export function RemotePrioritizer({ plan }: { plan: WeekendBlockPlan }) {
         </p>
       </div>
       <RemoteSection remote={remote} />
+      <RemoteWindows />
     </section>
   );
 }

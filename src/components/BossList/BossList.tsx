@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { RAID_BOSSES, HABITATS, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss, GAME_CONFIG } from "@/data";
 import type { EventDay } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
@@ -39,6 +40,13 @@ export function BossList() {
   const selectAll = usePlannerStore((s) => s.selectAll);
   const start = GAME_CONFIG.event.hourStartLocal;
 
+  // Type-to-find across the whole roster — with ~50 bosses over six habitat
+  // sections, scrolling is not a search strategy. A non-empty query swaps the
+  // sections for one flat row of matches (same tiles, same toggle behavior).
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const matches = q ? RAID_BOSSES.filter((b) => b.name.toLowerCase().includes(q)) : [];
+
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -66,15 +74,56 @@ export function BossList() {
         {region.label}; needs a Remote Raid Pass (capped per day).
       </p>
 
-      {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
-        <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
+      <div className="relative mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔎 Find a boss — try “kyu”…"
+          aria-label="Search the raid roster by name"
+          className="w-full rounded-lg border border-white/15 bg-gofest-bg/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-gofest-accent2/60 focus:outline-none"
+        />
+        {q ? (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm px-1.5 text-slate-400 hover:text-white"
+          >
+            ✕
+          </button>
+        ) : null}
       </div>
 
-      <RoadOfLegendsSection />
+      {q ? (
+        <div className="mb-5">
+          <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400">
+            {matches.length} match{matches.length === 1 ? "" : "es"}
+            <span className="ml-2 normal-case text-slate-500">tap to select · clear to see the full schedule</span>
+          </div>
+          {matches.length ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              {matches.map((boss) => (
+                <BossSelectChip key={boss.id} boss={boss} remoteOnly={!bossIsLocal(boss, region)} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-slate-500">Nothing in the roster matches “{query.trim()}”.</p>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
+          <div className="mb-5 grid grid-cols-2 gap-3">
+            <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
+            <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
+          </div>
 
-      <div className="space-y-4">
+          <RoadOfLegendsSection />
+        </>
+      )}
+
+      <div className={q ? "hidden" : "space-y-4"}>
         {GROUPS.map(({ habitat, bosses }) => (
           <div key={`${habitat.day}-${habitat.startHour}`}>
             <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400">

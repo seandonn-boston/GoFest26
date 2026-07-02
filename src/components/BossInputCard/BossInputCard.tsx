@@ -178,7 +178,11 @@ export function BossInputCard({
   };
 
   return (
-    <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(cardTypes)}>
+    <div
+      id={`card-${boss.id}`}
+      className="enamel relative scroll-mt-16 rounded-2xl p-2"
+      style={typeBackgroundStyle(cardTypes)}
+    >
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(cardTypes)}>
         <div className="card-text-legible relative z-10 p-3">
           {/* Header — always shown; tapping it expands/collapses the inputs below.
