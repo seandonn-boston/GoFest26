@@ -16,8 +16,8 @@ export function CostStep({ summary }: { summary: PlanSummary }) {
     <section>
       <h2 className="mb-1 text-lg font-semibold">What it&apos;ll cost</h2>
       <p className="mb-3 text-sm text-slate-400">
-        Passes you already hold are spent on your highest priorities first; everything below is the
-        remainder you&apos;d buy and what it runs in PokéCoins.
+        Passes you already hold are spent on your highest priorities first; everything below is the remainder you&apos;d buy
+        and what it runs in PokéCoins.
       </p>
 
       {hasGoals ? (

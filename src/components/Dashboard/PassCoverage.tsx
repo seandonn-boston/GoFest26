@@ -88,7 +88,9 @@ export function PassCoverageSummary({ summary }: { summary: PlanSummary }) {
             <div key={s.bossId} className="flex items-center gap-2 text-[13px]">
               <Sprite src={boss?.sprite} alt={s.bossName} size={18} />
               <span className="min-w-0 flex-1 truncate text-slate-200">{s.bossName.replace(/^Mega /, "")}</span>
-              <span className="shrink-0 text-slate-500">{formatNumber(s.covered)}/{formatRange(s.raids)}</span>
+              <span className="shrink-0 text-slate-500">
+                {formatNumber(s.covered)}/{formatRange(s.raids)}
+              </span>
               <span className={`w-20 shrink-0 text-right ${done ? "text-emerald-300" : "text-amber-300"}`}>
                 {done ? "✓ covered" : `buy ${formatRange(s.toBuy)}`}
               </span>

@@ -41,8 +41,7 @@ export const MEGA_KIND_LABEL: Record<MegaKind, string> = {
   attacker: "attacker only (no type match)",
 };
 
-const RAINBOW_GRADIENT =
-  "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14e07a, #00b3ff, #7a5cff, #ff00c8, #ff0040)";
+const RAINBOW_GRADIENT = "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14e07a, #00b3ff, #7a5cff, #ff00c8, #ff0040)";
 
 /** A rank-ordered row of mega-evolution candy-boost sprites with kind outlines. */
 export function MegaBoostRow({ boosts, size = 26, max }: { boosts: MegaBoost[]; size?: number; max?: number }) {
@@ -89,13 +88,7 @@ export function MegaBoostLegend() {
 
 function Dot({ kind }: { kind: MegaKind }) {
   if (kind === "rainbow") {
-    return (
-      <span
-        className="inline-block h-2.5 w-2.5 rounded-full"
-        style={{ background: RAINBOW_GRADIENT }}
-        aria-hidden
-      />
-    );
+    return <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: RAINBOW_GRADIENT }} aria-hidden />;
   }
   return (
     <span

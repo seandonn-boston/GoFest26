@@ -95,8 +95,7 @@ const SINGLE_BLOCK = SORTED_BOSSES.filter(
 );
 
 describe("multi-form species (shared resources)", () => {
-  const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
-    plan.blocks.reduce((s, b) => s + b.demand, 0);
+  const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) => plan.blocks.reduce((s, b) => s + b.demand, 0);
 
   it("collapses a form group to one primary target, selected if any forme is", () => {
     const altered = { ...makeDefaultInput(getBoss("giratina-altered")!), selected: false };
@@ -129,9 +128,9 @@ describe("multi-form species (shared resources)", () => {
     const { inputs, results } = buildFor(["dialga"]);
     const plan = computeBlockPlan(inputs, results, ROOMY);
     const shareOn = (day: string) =>
-      plan.blocks.find((b) => b.day === day && b.species.some((s) => s.bossId === "dialga"))?.species.find(
-        (s) => s.bossId === "dialga",
-      );
+      plan.blocks
+        .find((b) => b.day === day && b.species.some((s) => s.bossId === "dialga"))
+        ?.species.find((s) => s.bossId === "dialga");
     expect(shareOn("sat")?.formeBossId).toBe("dialga");
     expect(shareOn("sun")?.formeBossId).toBe("dialga-origin");
   });
@@ -291,7 +290,10 @@ describe("remote raids (manual per-species allocation)", () => {
   it("a remote allocation reduces that species' in-person block demand", () => {
     const { inputs, results } = buildFor([localSat.id]);
     const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
-      plan.blocks.reduce((s, b) => s + b.species.filter((x) => x.bossId === localSat.id).reduce((a, x) => a + x.raids, 0), 0);
+      plan.blocks.reduce(
+        (s, b) => s + b.species.filter((x) => x.bossId === localSat.id).reduce((a, x) => a + x.raids, 0),
+        0,
+      );
     const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}));
     const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [localSat.id]: 5 }));
     expect(before).toBeGreaterThan(5);
@@ -333,7 +335,14 @@ describe("autoRemoteAllocations", () => {
     const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
     const results = inputs.map((i) => computeBossResult(boss, i));
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, [], ROOMY_REMOTE);
+    const auto = autoRemoteAllocations(
+      plan,
+      inputs,
+      results,
+      { ...DEFAULT_SETTINGS, useRemoteRaids: true },
+      [],
+      ROOMY_REMOTE,
+    );
     const total = Object.values(auto).reduce((s, n) => s + n, 0);
     expect(total).toBeGreaterThan(0);
     expect(total).toBeLessThanOrEqual(ROOMY_REMOTE);
@@ -343,7 +352,14 @@ describe("autoRemoteAllocations", () => {
     const sat0 = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
     const { inputs, results } = buildFor([sat0.id]);
     const plan = computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {});
-    const auto = autoRemoteAllocations(plan, inputs, results, { ...DEFAULT_SETTINGS, useRemoteRaids: true }, [], ROOMY_REMOTE);
+    const auto = autoRemoteAllocations(
+      plan,
+      inputs,
+      results,
+      { ...DEFAULT_SETTINGS, useRemoteRaids: true },
+      [],
+      ROOMY_REMOTE,
+    );
     expect(Object.keys(auto)).toHaveLength(0);
   });
 
@@ -398,10 +414,7 @@ describe("Mewtwo Y-only leveling", () => {
     const mewtwoRaids = (inp: BossInput) => {
       const res = computeBossResult(y, inp);
       const plan = computeBlockPlan([inp], [res], ROOMY, DEFAULT_SETTINGS, {});
-      return plan.blocks.reduce(
-        (sum, b) => sum + b.species.filter((s) => s.mewtwo).reduce((t, s) => t + s.raids, 0),
-        0,
-      );
+      return plan.blocks.reduce((sum, b) => sum + b.species.filter((s) => s.mewtwo).reduce((t, s) => t + s.raids, 0), 0);
     };
     // The leveling goal must add raids beyond the energy-only baseline (it didn't
     // before the fix — Y-only leveling demand was dropped entirely).

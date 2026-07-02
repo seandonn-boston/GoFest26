@@ -54,9 +54,7 @@ export function wildTypesForBoss(boss: RaidBoss): string[] {
   if (boss.allWeekend) return [];
   const out = new Set<string>();
   for (const wd of boss.windows) {
-    const hab = HABITATS.find(
-      (h) => h.day === wd.day && h.startHour === wd.startHour && h.endHour === wd.endHour,
-    );
+    const hab = HABITATS.find((h) => h.day === wd.day && h.startHour === wd.startHour && h.endHour === wd.endHour);
     if (hab) for (const t of hab.types) out.add(t);
   }
   return [...out];
@@ -71,9 +69,7 @@ export function describeWindow(wd: HabitatWindow): string {
   if (wd.startHour === 0 && wd.endHour === GAME_CONFIG.event.hoursPerDay) {
     return `${DAY_LONG[wd.day]} · all day`;
   }
-  const hab = HABITATS.find(
-    (h) => h.day === wd.day && h.startHour === wd.startHour && h.endHour === wd.endHour,
-  );
+  const hab = HABITATS.find((h) => h.day === wd.day && h.startHour === wd.startHour && h.endHour === wd.endHour);
   const span = `${DAY_SHORT[wd.day]} ${hourLabel(wd.startHour, start)}–${hourLabel(wd.endHour, start)}`;
   return hab ? `${span} · ${hab.name}` : span;
 }

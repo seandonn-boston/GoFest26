@@ -6,15 +6,12 @@ import type { NextConfig } from "next";
 // so a base path is applied in every mode except local dev (override BASE_PATH="").
 // GitHub Pages additionally needs a fully static export.
 const isPages = process.env.GITHUB_PAGES === "true";
-const basePath = isPages
-  ? process.env.PAGES_BASE_PATH || ""
-  : process.env.BASE_PATH ?? "/go-fest-raid-planner";
+const basePath = isPages ? process.env.PAGES_BASE_PATH || "" : (process.env.BASE_PATH ?? "/go-fest-raid-planner");
 
 // The page's own origin, used to build ABSOLUTE social-share URLs (og:image
 // etc.) — these must point at the host actually serving the page, or scrapers
 // (Reddit/Discord/Facebook/…) can't fetch the card image. Per host, overridable.
-const siteOrigin =
-  process.env.SITE_ORIGIN || (isPages ? "https://seandonn-boston.github.io" : "https://seandonn.io");
+const siteOrigin = process.env.SITE_ORIGIN || (isPages ? "https://seandonn-boston.github.io" : "https://seandonn.io");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

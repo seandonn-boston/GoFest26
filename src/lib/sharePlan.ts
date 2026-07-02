@@ -29,10 +29,15 @@ export function buildShareUrl(): string {
   return `${origin}${pathname}#${HASH_KEY}=${encodePlanPayload(serializeState())}`;
 }
 
+// A real plan payload is a few KB; anything approaching this is not a plan.
+// Rejecting before atob/JSON.parse keeps a crafted multi-MB hash from janking
+// the main thread on page load (the hash is attacker-reachable via any link).
+const MAX_PAYLOAD_CHARS = 262_144; // 256 KiB of base64url
+
 /** Decode a shared plan from a location hash, or null if absent/invalid. */
 export function decodeSharedPlan(hash: string): StateBackup | null {
   const match = hash.match(new RegExp(`[#&]${HASH_KEY}=([^&]+)`));
-  if (!match) return null;
+  if (!match || match[1].length > MAX_PAYLOAD_CHARS) return null;
   try {
     const obj = JSON.parse(decode(match[1]));
     return isStateBackup(obj) ? obj : null;

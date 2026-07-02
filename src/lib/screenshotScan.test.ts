@@ -411,13 +411,8 @@ describe("parseScreen — real screenshot layouts", () => {
   });
 
   it("drops a formless energy duplicating a formed sibling (dual-pass artifact)", () => {
-    const merged = mergeParsed(
-      parseScreenText("0\nMEWTWO MEGA ENERGY"),
-      parseScreenText("0\nMEWTWO MEGA ENERGY\nX"),
-    );
-    expect(assembleScan(merged, 0).megaEnergies).toEqual([
-      { value: 0, species: "mewtwo", kind: "mega", form: "x" },
-    ]);
+    const merged = mergeParsed(parseScreenText("0\nMEWTWO MEGA ENERGY"), parseScreenText("0\nMEWTWO MEGA ENERGY\nX"));
+    expect(assembleScan(merged, 0).megaEnergies).toEqual([{ value: 0, species: "mewtwo", kind: "mega", form: "x" }]);
   });
 
   // Charizard with the radial menu covering the Y-energy label: the species
@@ -458,9 +453,7 @@ describe("parseScreen — real screenshot layouts", () => {
   });
 
   it("refuses sibling completion for a number sitting on a UI button row", () => {
-    const r = scanWords(
-      occludedCharizard([b("POWER", 60, 1195, 70), b("UP", 140, 1195, 30)], b("2,500", 300, 1200, 60)),
-    );
+    const r = scanWords(occludedCharizard([b("POWER", 60, 1195, 70), b("UP", 140, 1195, 30)], b("2,500", 300, 1200, 60)));
     expect(r.megaEnergies).toEqual([{ value: 209, species: "charizard", kind: "mega", form: "x" }]);
   });
 
@@ -669,7 +662,9 @@ describe("parseScreenText (no word boxes)", () => {
 
   it("attaches lone wrapped X / Y lines to the energy above", () => {
     const r = scanText(
-      ["26", "MEWTWO CANDY", "27", "MEWTWO CANDY XL", "0", "MEWTWO MEGA ENERGY", "X", "0", "MEWTWO MEGA ENERGY", "Y"].join("\n"),
+      ["26", "MEWTWO CANDY", "27", "MEWTWO CANDY XL", "0", "MEWTWO MEGA ENERGY", "X", "0", "MEWTWO MEGA ENERGY", "Y"].join(
+        "\n",
+      ),
     );
     expect(r.candy).toBe(26);
     expect(r.xlCandy).toBe(27);
@@ -706,11 +701,7 @@ describe("mergeParsed", () => {
   // Flapple's wrapped XL: sparse mode reads col3 as a second plain candy cell,
   // auto mode sees "APPLIN CANDY XL" — the merge recovers the XL value.
   it("recovers a cell the primary pass missed (live Flapple XL bug)", () => {
-    const sparse = parseScreen([
-      b("236", 310, 940, 40),
-      b("APPLIN", 255, 980, 70),
-      b("CANDY", 333, 980, 65),
-    ]);
+    const sparse = parseScreen([b("236", 310, 940, 40), b("APPLIN", 255, 980, 70), b("CANDY", 333, 980, 65)]);
     const auto = parseScreen([
       b("236", 310, 940, 40),
       b("119", 530, 940, 40),

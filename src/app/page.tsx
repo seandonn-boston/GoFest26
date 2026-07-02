@@ -73,11 +73,7 @@ export default function Home() {
   // …) collapse to their primary forme's card (shared resource pool); other
   // selected bosses get their own.
   const otherSelectedBosses = SORTED_BOSSES.filter(
-    (b) =>
-      inputs[b.id]?.selected &&
-      b.id !== MEWTWO_X_ID &&
-      b.id !== MEWTWO_Y_ID &&
-      !isSecondaryForm(b),
+    (b) => inputs[b.id]?.selected && b.id !== MEWTWO_X_ID && b.id !== MEWTWO_Y_ID && !isSecondaryForm(b),
   );
   const anySelected = mewtwoSelected || otherSelectedBosses.length > 0;
   const hasGoals = summary.totalRaids.max > 0;
@@ -117,12 +113,12 @@ export default function Home() {
               <div className="mt-3 overflow-hidden">
                 <div className="ticker font-mono text-[13px] uppercase tracking-widest text-slate-400">
                   <span>
-                    JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT ·
-                    SUPER MEGA RAIDS · MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
+                    JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT · SUPER MEGA RAIDS ·
+                    MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
                   </span>
                   <span aria-hidden="true">
-                    JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT ·
-                    SUPER MEGA RAIDS · MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
+                    JUL 11–12 2026 · 10AM–7PM LOCAL · FREE GLOBAL EVENT · MEGA MEWTWO X &amp; Y DEBUT · SUPER MEGA RAIDS ·
+                    MAX YOUR XL CANDY &amp; MEGA ENERGY ·&nbsp;&nbsp;&nbsp;
                   </span>
                 </div>
               </div>
@@ -211,8 +207,8 @@ function StepContent({
             </button>
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal
-            above what you already have.
+            Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal above what you already
+            have.
           </p>
         </div>
         {anySelected ? (
@@ -269,8 +265,8 @@ function StepContent({
           <section className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold">Export</h2>
             <p className="text-sm text-slate-400">
-              Download your full chronological plan — every raid with its pass type, the Mega buddy to
-              evolve, and top counters — as an Excel workbook.
+              Download your full chronological plan — every raid with its pass type, the Mega buddy to evolve, and top
+              counters — as an Excel workbook.
             </p>
             <ExportButton summary={summary} />
           </section>
@@ -303,16 +299,14 @@ function Disclaimer() {
   return (
     <footer className="mt-10 space-y-2 border-t border-white/10 px-1 pb-8 pt-6 text-xs text-slate-500">
       <p>
-        Reward amounts vary per raid, so raid counts are shown as ranges (best-case to worst-case
-        rolls). The “with mega buddy” figure assumes a matching Mega-Evolved buddy is boosting your
-        Candy/XL gains.
+        Reward amounts vary per raid, so raid counts are shown as ranges (best-case to worst-case rolls). The “with mega
+        buddy” figure assumes a matching Mega-Evolved buddy is boosting your Candy/XL gains.
       </p>
       <p>
-        Game values (Mega Energy rewards, Mewtwo mega-level costs, the boss roster) are based on
-        public GO Fest 2026 info and may change — they live in one editable config file. This is an
-        unofficial, fan-made planning tool and is not affiliated with Niantic, Nintendo, or The
-        Pokémon Company. Pokémon and all related names and sprites are property of their respective
-        owners.
+        Game values (Mega Energy rewards, Mewtwo mega-level costs, the boss roster) are based on public GO Fest 2026 info and
+        may change — they live in one editable config file. This is an unofficial, fan-made planning tool and is not
+        affiliated with Niantic, Nintendo, or The Pokémon Company. Pokémon and all related names and sprites are property of
+        their respective owners.
       </p>
     </footer>
   );

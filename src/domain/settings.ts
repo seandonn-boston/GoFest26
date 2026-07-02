@@ -94,9 +94,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
 /** The auto lobby-wait default for a lobby size: a full 20-trainer lobby fills/
  *  starts faster (60s), everything thinner waits longer (120s). */
 export function defaultLobbyWaitSec(lobbySize: number): number {
-  return lobbySize >= 20
-    ? GAME_CONFIG.capacity.lobbyWaitSecFullLobby
-    : GAME_CONFIG.capacity.lobbyWaitSecDefault;
+  return lobbySize >= 20 ? GAME_CONFIG.capacity.lobbyWaitSecFullLobby : GAME_CONFIG.capacity.lobbyWaitSecDefault;
 }
 
 /** The effective per-raid lobby wait: the user's override if set, else the

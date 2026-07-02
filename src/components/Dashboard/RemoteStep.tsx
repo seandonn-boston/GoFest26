@@ -88,9 +88,9 @@ export function RemotePrioritizer({ plan }: { plan: WeekendBlockPlan }) {
       <div>
         <h2 className="text-lg font-semibold">Remote raids</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Remote Raid Passes are unlimited this event. Assign how many of each species you&apos;ll do
-          remotely — region-locked targets first, then your priority — and they drop out of the
-          in-person time blocks on the GO Fest step.
+          Remote Raid Passes are unlimited this event. Assign how many of each species you&apos;ll do remotely —
+          region-locked targets first, then your priority — and they drop out of the in-person time blocks on the GO Fest
+          step.
         </p>
       </div>
       <RemoteSection remote={remote} />

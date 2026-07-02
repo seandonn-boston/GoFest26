@@ -29,7 +29,11 @@ const blockKey = (b: BlockPlan) => `${b.day}${b.startHour}`;
 
 /** Final-evolution species term from a boss name (e.g. "Mega Mewtwo X" → "Mewtwo"),
  *  so a block's priority order can be matched to mega species for tie-breaking. */
-const speciesTerm = (name: string) => name.replace(/^(Mega|Primal)\s+/, "").replace(/\s+[XY]$/, "").trim();
+const speciesTerm = (name: string) =>
+  name
+    .replace(/^(Mega|Primal)\s+/, "")
+    .replace(/\s+[XY]$/, "")
+    .trim();
 
 /** Block-level best counters + megas to evolve, each as a horizontal row of sprite
  *  chips (matching the per-target tile rows). Counters are ringed by their best
@@ -49,8 +53,14 @@ function BlockChips({
   return (
     <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
       {counters.length > 0 ? (
-        <CopyableInline search={counterSearch} label="counters for this block" className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">Counters</span>
+        <CopyableInline
+          search={counterSearch}
+          label="counters for this block"
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">
+            Counters
+          </span>
           {counters.map((c) => (
             <span
               key={c.attacker.name}
@@ -64,8 +74,14 @@ function BlockChips({
         </CopyableInline>
       ) : null}
       {megas.length > 0 ? (
-        <CopyableInline search={megaSearch} label="megas to evolve for this block" className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">Megas</span>
+        <CopyableInline
+          search={megaSearch}
+          label="megas to evolve for this block"
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">
+            Megas
+          </span>
           <MegaBoostRow boosts={megas} size={20} />
         </CopyableInline>
       ) : null}
@@ -102,7 +118,8 @@ function TargetCard({
   // For a multi-form species, show the forme available in THIS block (name/sprite/
   // counters); share.bossId stays the shared primary for result/progress linkage.
   const boss = getBoss(share.formeBossId ?? share.bossId);
-  const types = boss?.types ?? [];
+  // Referentially stable per boss, so the memos below don't recompute every render.
+  const types = useMemo(() => boss?.types ?? [], [boss]);
   const counters = useMemo(() => topCounters(types), [types]);
   const boosts = useMemo(() => megaBoostsForBoss(types, wildTypes), [types, wildTypes]);
   const counterSearch = useMemo(() => buildSearchString(counters.map((c) => c.attacker.name)), [counters]);
@@ -144,7 +161,9 @@ function TargetCard({
             className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
           />
           <span className="text-slate-500">/</span>
-          <span className="text-gofest-accent2" title="Raids needed (selected reward case)">{need}</span>
+          <span className="text-gofest-accent2" title="Raids needed (selected reward case)">
+            {need}
+          </span>
         </div>
 
         {share.remaining > 0 ? (
@@ -187,7 +206,9 @@ function TargetCard({
           label="counters"
           className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-[36px]"
         >
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">Counters</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">
+            Counters
+          </span>
           {counters.map((c) => (
             <span
               key={c.attacker.name}
@@ -209,7 +230,9 @@ function TargetCard({
           label="mega evolutions"
           className="mt-2.5 flex flex-wrap items-center gap-1.5 pl-[36px]"
         >
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">Mega</span>
+          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">
+            Mega
+          </span>
           <MegaBoostRow boosts={boosts} size={20} max={6} />
         </CopyableInline>
       ) : null}
@@ -278,93 +301,96 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
     return topBlockCounters(bossTypes, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- memoKey encodes the inputs
   }, [memoKey]);
-  const blockCounterSearch = useMemo(
-    () => buildSearchString(blockCounters.map((c) => c.attacker.name)),
-    [blockCounters],
-  );
+  const blockCounterSearch = useMemo(() => buildSearchString(blockCounters.map((c) => c.attacker.name)), [blockCounters]);
 
   return (
     // Themed by the block's three featured wild-spawn types — a colored enamel
     // frame + dark veil, exactly like the boss cards.
     <div className="overflow-hidden rounded-lg p-[2px]" style={typeBackgroundStyle(wildTypes)}>
-    <div className="rounded-[7px]" style={typePanelStyle(wildTypes)}>
-      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
-        <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-          <span className="inline-flex items-center truncate">
-            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
-            <span className="truncate font-medium text-slate-200">{block.name}</span>
-            {wildTypes.length ? (
-              <span
-                className="ml-1.5 inline-flex shrink-0 items-center gap-0.5"
-                title={`Featured wild spawns: ${wildTypes.join(", ")}`}
-              >
-                {wildTypes.map((t) => (
-                  <span key={t} className="inline-flex rounded-full bg-black/40 ring-1 ring-white/15">
-                    <TypeIcon type={t} size={13} />
-                  </span>
-                ))}
+      <div className="rounded-[7px]" style={typePanelStyle(wildTypes)}>
+        <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
+          <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+            <span className="inline-flex items-center truncate">
+              <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
+              <span className="truncate font-medium text-slate-200">{block.name}</span>
+              {wildTypes.length ? (
+                <span
+                  className="ml-1.5 inline-flex shrink-0 items-center gap-0.5"
+                  title={`Featured wild spawns: ${wildTypes.join(", ")}`}
+                >
+                  {wildTypes.map((t) => (
+                    <span key={t} className="inline-flex rounded-full bg-black/40 ring-1 ring-white/15">
+                      <TypeIcon type={t} size={13} />
+                    </span>
+                  ))}
+                </span>
+              ) : null}
+              <span className="ml-1.5 shrink-0 text-slate-500">
+                {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}
               </span>
-            ) : null}
-            <span className="ml-1.5 shrink-0 text-slate-500">
-              {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}
             </span>
-          </span>
-          <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-            {block.fitted} raid{block.fitted === 1 ? "" : "s"}
-            {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
-          </span>
-        </div>
-        <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
-        {over ? (
-          <p className="mt-1 text-[13px] font-medium text-rose-300">
-            ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"}{" "}can&apos;t fit this 3-hour block — tap for the per-Pokémon breakdown.
-          </p>
+            <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
+              {block.fitted} raid{block.fitted === 1 ? "" : "s"}
+              {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
+            </span>
+          </div>
+          <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
+          {over ? (
+            <p className="mt-1 text-[13px] font-medium text-rose-300">
+              ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"} can&apos;t fit this 3-hour block — tap for the
+              per-Pokémon breakdown.
+            </p>
+          ) : null}
+        </button>
+
+        {open ? (
+          <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2" {...drag.containerProps}>
+            <span aria-live="polite" role="status" className="sr-only">
+              {drag.announcement}
+            </span>
+            <p className="text-[12px] text-slate-500">
+              Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).
+            </p>
+            {drag.list.map((id) => {
+              const share = shareFor(id);
+              // Two grips per row (left + right) so either thumb can drag — same
+              // drag id, so either handle reorders the same target.
+              const gripEl = (
+                <span
+                  {...drag.gripProps(id, share.bossName)}
+                  className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
+                >
+                  ⠿
+                </span>
+              );
+              return (
+                <TargetCard
+                  key={id}
+                  share={share}
+                  dkey={`${id}@${key}`}
+                  wildTypes={wildTypes}
+                  grip={gripEl}
+                  gripRight={
+                    <span
+                      {...drag.gripProps(id, share.bossName)}
+                      className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
+                    >
+                      ⠿
+                    </span>
+                  }
+                  rowRef={(el) => drag.setRow(id, el)}
+                  dragging={drag.dragId === id}
+                  quickCatch={{ on: !!quickCatchBlocks[`${id}@${key}`], onToggle: () => toggleQuickCatch(id, key) }}
+                />
+              );
+            })}
+          </div>
         ) : null}
-      </button>
 
-      {open ? (
-        <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2" {...drag.containerProps}>
-          <p className="text-[12px] text-slate-500">Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).</p>
-          {drag.list.map((id) => {
-            const share = shareFor(id);
-            // Two grips per row (left + right) so either thumb can drag — same
-            // drag id, so either handle reorders the same target.
-            const gripEl = (
-              <span
-                {...drag.gripProps(id, share.bossName)}
-                className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
-              >
-                ⠿
-              </span>
-            );
-            return (
-              <TargetCard
-                key={id}
-                share={share}
-                dkey={`${id}@${key}`}
-                wildTypes={wildTypes}
-                grip={gripEl}
-                gripRight={
-                  <span
-                    {...drag.gripProps(id, share.bossName)}
-                    className="flex h-7 w-5 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-slate-500 outline-none focus-visible:ring-2 focus-visible:ring-gofest-accent2 active:cursor-grabbing"
-                  >
-                    ⠿
-                  </span>
-                }
-                rowRef={(el) => drag.setRow(id, el)}
-                dragging={drag.dragId === id}
-                quickCatch={{ on: !!quickCatchBlocks[`${id}@${key}`], onToggle: () => toggleQuickCatch(id, key) }}
-              />
-            );
-          })}
-        </div>
-      ) : null}
-
-      {/* Block-wide best counters + megas to evolve — kept visible whether the
+        {/* Block-wide best counters + megas to evolve — kept visible whether the
           block is expanded or collapsed (they vary block to block). */}
-      <BlockChips counters={blockCounters} counterSearch={blockCounterSearch} megas={topMegas} megaSearch={megaSearch} />
-    </div>
+        <BlockChips counters={blockCounters} counterSearch={blockCounterSearch} megas={topMegas} megaSearch={megaSearch} />
+      </div>
     </div>
   );
 }
@@ -389,7 +415,8 @@ export function BlockAccordion({
   const toggle = (k: string) =>
     setOpen((cur) => {
       const next = new Set(cur);
-      next.has(k) ? next.delete(k) : next.add(k);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
       return next;
     });
 
@@ -412,15 +439,17 @@ export function BlockAccordion({
         </div>
       </div>
       <p className="mb-2 text-[12px] leading-snug text-slate-500">
-        Reward luck makes each target a range. The bars fill from{" "}
-        <span className="text-sky-300">guaranteed</span> raids you&apos;ll always need, through the{" "}
-        <span className="text-emerald-300">best</span> and <span className="text-amber-300">average</span> cases, out to
-        the <span className="text-rose-300">worst</span> case if your drops run cold.
+        Reward luck makes each target a range. The bars fill from <span className="text-sky-300">guaranteed</span> raids
+        you&apos;ll always need, through the <span className="text-emerald-300">best</span> and{" "}
+        <span className="text-amber-300">average</span> cases, out to the <span className="text-rose-300">worst</span> case
+        if your drops run cold.
       </p>
       <div className="space-y-4">
         {byDay.map(({ day, blocks }) => (
           <div key={day}>
-            <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent2">{DAY_LABEL[day]}</div>
+            <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-wide text-gofest-accent2">
+              {DAY_LABEL[day]}
+            </div>
             <div className="space-y-2">
               {blocks.map((b) => (
                 <BlockItem key={blockKey(b)} block={b} open={open.has(blockKey(b))} onToggle={() => toggle(blockKey(b))} />

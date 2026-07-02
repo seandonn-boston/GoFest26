@@ -203,8 +203,24 @@ const UI_MARKERS = new Set([
 /** Pokémon TYPE words. They appear on every Pokémon page ("ROCK / POISON") but
  *  are never a resource label nor part of a species name, so they're pure noise. */
 const TYPE_WORDS = new Set([
-  "normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison", "ground",
-  "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy",
+  "normal",
+  "fire",
+  "water",
+  "grass",
+  "electric",
+  "ice",
+  "fighting",
+  "poison",
+  "ground",
+  "flying",
+  "psychic",
+  "bug",
+  "rock",
+  "ghost",
+  "dragon",
+  "dark",
+  "steel",
+  "fairy",
 ]);
 
 /** UI words (and their OCR near-misses) never belong in a species name —
@@ -377,8 +393,7 @@ function toLine(words: Word[]): Line {
 
 /** A wrapped-label continuation line: the XL of "APPLIN CANDY / XL" or the
  *  form letter of "MEWTWO MEGA ENERGY / X". */
-const isContinuation = (toks: string[]) =>
-  toks.length > 0 && toks.every((t) => isXlTok(t) || t === "x" || t === "y");
+const isContinuation = (toks: string[]) => toks.length > 0 && toks.every((t) => isXlTok(t) || t === "x" || t === "y");
 
 /** Merge vertically-adjacent, horizontally-overlapping lines into label blocks
  *  — this is what reassembles wrapped labels ("GARDEVOIR MEGA / ENERGY",
@@ -414,8 +429,7 @@ export function buildBlocks(words: Word[]): Block[] {
       // A wrapped "XL" often OCRs as a lone "X". Form letters never follow
       // CANDY, so a continuation "x" under a candy block IS the XL.
       const hostCls = classifyLabel(host.tokens);
-      const toks =
-        hostCls?.type === "candy" ? lineToks.map((t) => (t === "x" ? "xl" : t)) : lineToks;
+      const toks = hostCls?.type === "candy" ? lineToks.map((t) => (t === "x" ? "xl" : t)) : lineToks;
       host.tokens.push(...toks);
     } else if (lineToks.join("").length > 2) {
       blocks.push({
@@ -574,9 +588,7 @@ export function parseScreen(words: Word[]): ParsedScreen {
       pitch: gaps.length ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : valuedBlocks[0].h * 3.5,
     };
   }
-  const spare = numbers
-    .filter((n, ni) => !takenNum.has(ni) && !n.soft)
-    .map((n) => ({ value: n.value, x: n.x, y: n.y }));
+  const spare = numbers.filter((n, ni) => !takenNum.has(ni) && !n.soft).map((n) => ({ value: n.value, x: n.x, y: n.y }));
 
   return {
     resources: ordered.map(({ cls, value }, i) => ({ ...toResource(cls, i), value })),
@@ -593,7 +605,10 @@ export function parseScreen(words: Word[]): ParsedScreen {
  * a lone species line before "MEGA ENERGY") are stitched onto their label.
  */
 export function parseScreenText(text: string): ParsedScreen {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const resources: ParsedResource[] = [];
   let markers = 0;
   let pending: number | null = null;
@@ -679,7 +694,12 @@ const ROSTER_VOCAB: SpeciesVocab[] = (() => {
     const key = speciesKey(b.name);
     if (seen.has(key)) continue;
     seen.add(key);
-    list.push({ key, name: pokemonSearchName(b.name).toUpperCase().replace(/[^A-Z]/g, "") });
+    list.push({
+      key,
+      name: pokemonSearchName(b.name)
+        .toUpperCase()
+        .replace(/[^A-Z]/g, ""),
+    });
   }
   return list;
 })();
@@ -720,7 +740,13 @@ export function chooseSpecies(
   vocab: SpeciesVocab[],
 ): { key: string | null; name: string | null } {
   const candidates = [...energySpecies, ...candySpecies]
-    .map((s) => s.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim())
+    .map((s) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z ]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
     .filter(Boolean)
     // A base-evolution candy (Cosmog) stands in for its raid target (Solgaleo).
     .map((c) => CANDY_SPECIES_ALIASES[c] ?? c);
@@ -827,9 +853,7 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
   // A formless energy that duplicates a formed sibling (same species & value)
   // is a dual-pass merge artifact of a wrapped X/Y line — drop it.
   const megaEnergies = allEnergies.filter(
-    (e, i) =>
-      e.form ||
-      !allEnergies.some((f, j) => j !== i && f.form && f.species === e.species && f.value === e.value),
+    (e, i) => e.form || !allEnergies.some((f, j) => j !== i && f.form && f.species === e.species && f.value === e.value),
   );
   completeSiblingEnergy(megaEnergies, parsed);
   const items: ItemHit[] = valued
@@ -839,9 +863,7 @@ export function assembleScan(parsed: ParsedScreen, capturedAt: number, rawText =
   // Species comes from ALL candy/energy labels, valued or not — a crop can show
   // a label whose number is cut off and we still want to preselect the Pokémon.
   const energySpecies = res.filter((r) => r.kind === "energy" && r.species).map((r) => r.species!);
-  const candySpecies = res
-    .filter((r) => (r.kind === "candy" || r.kind === "xlCandy") && r.species)
-    .map((r) => r.species!);
+  const candySpecies = res.filter((r) => (r.kind === "candy" || r.kind === "xlCandy") && r.species).map((r) => r.species!);
   const resolved = chooseSpecies(energySpecies, candySpecies, ROSTER_VOCAB);
 
   return {
@@ -981,7 +1003,10 @@ export function energyForBosses(energies: EnergyHit[], bosses: { name: string }[
   // name ("Mega Mewtwo X" ↔ energy tagged form "x") when the labels carried one,
   // else fall back to top-to-bottom reading order.
   const bossForm = (name: string): "x" | "y" | null => {
-    const m = name.trim().toLowerCase().match(/\b([xy])$/);
+    const m = name
+      .trim()
+      .toLowerCase()
+      .match(/\b([xy])$/);
     return (m?.[1] as "x" | "y") ?? null;
   };
   return bosses

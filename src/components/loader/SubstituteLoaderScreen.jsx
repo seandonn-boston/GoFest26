@@ -101,9 +101,15 @@ function drawPixelText(ctx, text, x, y, px, color) {
   ctx.fillStyle = color;
   let cx = x;
   for (const ch of text) {
-    if (ch === " ") { cx += 6 * px; continue; }
+    if (ch === " ") {
+      cx += 6 * px;
+      continue;
+    }
     const rows = PIXFONT[ch];
-    if (!rows) { cx += 6 * px; continue; }
+    if (!rows) {
+      cx += 6 * px;
+      continue;
+    }
     for (let r = 0; r < rows.length; r++) {
       const bits = rows[r];
       for (let c = 0; c < 5; c++) {
@@ -134,9 +140,12 @@ const UI = {
   lv: "#ffdf86",
   white: "#f8f8f8",
   txtShadow: "#1f2227",
-  green: "#55c23f", greenHi: "#a0e878",
-  yellow: "#f5bd33", yellowHi: "#fbe27e",
-  red: "#ef4f48", redHi: "#fa9078",
+  green: "#55c23f",
+  greenHi: "#a0e878",
+  yellow: "#f5bd33",
+  yellowHi: "#fbe27e",
+  red: "#ef4f48",
+  redHi: "#fa9078",
 };
 
 function pixelPanel(ctx, x, y, w, h, fill, edge) {
@@ -164,7 +173,10 @@ function drawCapsuleBar(ctx, x, y, w, pct, now) {
   ctx.fillStyle = UI.capsule;
   ctx.fillRect(x, y, w, 9);
   shadowText(ctx, "HP", x + 3, y + 1, 1, UI.hpLabel, "#5e3c08");
-  const bx = x + 17, bw = w - 21, by = y + 2, bh = 5;
+  const bx = x + 17,
+    bw = w - 21,
+    by = y + 2,
+    bh = 5;
   ctx.fillStyle = "#000000";
   ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
   const clamped = Math.max(0, Math.min(1, pct));
@@ -180,11 +192,14 @@ function drawCapsuleBar(ctx, x, y, w, pct, now) {
 }
 
 function drawPlayerBox(ctx, name, lv, cur, max, now) {
-  const W = 132, H = 40;
+  const W = 132,
+    H = 40;
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   pixelPanel(ctx, 0, 0, W, H, UI.panel, UI.edge);
-  ctx.fillStyle = UI.panelHi; ctx.fillRect(4, 1, W - 8, 1);
-  ctx.fillStyle = UI.panelLo; ctx.fillRect(4, H - 2, W - 8, 1);
+  ctx.fillStyle = UI.panelHi;
+  ctx.fillRect(4, 1, W - 8, 1);
+  ctx.fillStyle = UI.panelLo;
+  ctx.fillRect(4, H - 2, W - 8, 1);
   shadowText(ctx, name, 7, 5, 1, UI.white, UI.txtShadow);
   const lvT = "Lv." + lv;
   shadowText(ctx, lvT, W - 7 - textW(lvT), 5, 1, UI.lv, UI.txtShadow);
@@ -198,26 +213,32 @@ function wrapWords(text, maxChars) {
   let line = "";
   for (const w of text.split(" ")) {
     const next = line ? line + " " + w : w;
-    if (next.length > maxChars && line) { out.push(line); line = w; }
-    else line = next;
+    if (next.length > maxChars && line) {
+      out.push(line);
+      line = w;
+    } else line = next;
   }
   if (line) out.push(line);
   return out.slice(0, 2);
 }
 
 function drawMessageBox(ctx, text, typedChars, now) {
-  const W = 260, H = 46;
+  const W = 260,
+    H = 46;
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   pixelPanel(ctx, 0, 0, W, H, "#2e333a", UI.edge);
   ctx.fillStyle = "#5a626d";
-  ctx.fillRect(4, 2, W - 8, 1); ctx.fillRect(4, H - 3, W - 8, 1);
-  ctx.fillRect(2, 4, 1, H - 8); ctx.fillRect(W - 3, 4, 1, H - 8);
+  ctx.fillRect(4, 2, W - 8, 1);
+  ctx.fillRect(4, H - 3, W - 8, 1);
+  ctx.fillRect(2, 4, 1, H - 8);
+  ctx.fillRect(W - 3, 4, 1, H - 8);
   const shown = text.slice(0, typedChars);
   const lines = wrapWords(shown, 39);
   lines.forEach((ln, i) => shadowText(ctx, ln, 10, 9 + i * 15, 1, UI.white, UI.txtShadow));
   if (typedChars >= text.length && Math.floor(now / 450) % 2 === 0) {
     ctx.fillStyle = "#e2453f";
-    const ax = W - 16, ay = H - 13;
+    const ax = W - 16,
+      ay = H - 13;
     ctx.fillRect(ax, ay, 7, 2);
     ctx.fillRect(ax + 1, ay + 2, 5, 2);
     ctx.fillRect(ax + 2, ay + 4, 3, 1);
@@ -248,36 +269,50 @@ const hash3 = (x, y, z) => {
 };
 
 function buildSubstituteGeometry() {
-  const NX = 59, NY = 50, NZ = 54;
+  const NX = 59,
+    NY = 50,
+    NZ = 54;
   const N = NX * NY * NZ;
   const mat = new Uint8Array(N);
   const part = new Uint8Array(N);
   const id = (x, y, z) => x + NX * (y + NY * z);
   const inG = (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < NX && y < NY && z < NZ;
 
-  const CX = 29.5, CZ = 30; // geometric center: on a column center now
-  const CC = 29;             // the true center column (odd-width grid)
+  const CX = 29.5,
+    CZ = 30; // geometric center: on a column center now
+  const CC = 29; // the true center column (odd-width grid)
   const ellN = (p, c, r) => {
-    const dx = (p[0] - c[0]) / r[0], dy = (p[1] - c[1]) / r[1], dz = (p[2] - c[2]) / r[2];
+    const dx = (p[0] - c[0]) / r[0],
+      dy = (p[1] - c[1]) / r[1],
+      dz = (p[2] - c[2]) / r[2];
     return dx * dx + dy * dy + dz * dz;
   };
   const inEll = (p, c, r) => ellN(p, c, r) <= 1;
   const inCone = (p, b, d, len, r0, hMax, sx, round) => {
-    const vx = p[0] - b[0], vy = p[1] - b[1], vz = p[2] - b[2];
+    const vx = p[0] - b[0],
+      vy = p[1] - b[1],
+      vz = p[2] - b[2];
     const h = vx * d[0] + vy * d[1] + vz * d[2];
     if (h < -0.6 || h > (hMax === undefined ? len : hMax)) return false;
-    const px = (vx - d[0] * h) / (sx === undefined ? 1 : sx), py = vy - d[1] * h, pz = vz - d[2] * h;
+    const px = (vx - d[0] * h) / (sx === undefined ? 1 : sx),
+      py = vy - d[1] * h,
+      pz = vz - d[2] * h;
     const u = Math.max(h, 0) / len;
     const rr = r0 * (round ? Math.sqrt(Math.max(0, 1 - u * u)) : 1 - u) + 0.3;
     return px * px + py * py + pz * pz <= rr * rr;
   };
-  const nrm = (v) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
+  const nrm = (v) => {
+    const l = Math.hypot(v[0], v[1], v[2]);
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
 
   // HEAD — one continuous lofted skull: cranium dome flowing into the snout.
   // Elliptical cross-sections (rx, ry) centered (CX, yc) sweep along z; the
   // bridge tapers convexly to a nose-level tip while the jaw stays flat beneath.
   const inHead = (p) => {
-    const zb = CZ - 11, zm = CZ + 3, zf = CZ + 19.5;
+    const zb = CZ - 11,
+      zm = CZ + 3,
+      zf = CZ + 19.5;
     const z = p[2];
     if (z < zb || z > zf) return false;
     let rx, ry, yc;
@@ -294,69 +329,88 @@ function buildSubstituteGeometry() {
       ry = 10.2 * (0.26 + 0.74 * e);
       yc = 31 - 2.2 * t * t;
     }
-    const dx = (p[0] - CX) / rx, dy = (p[1] - yc) / ry;
+    const dx = (p[0] - CX) / rx,
+      dy = (p[1] - yc) / ry;
     return dx * dx + dy * dy <= 1;
   };
-  const bodyC = [CX, 14, CZ - 1], bodyR = [12.8, 12.5, 11.5];
-  const bellyC = [CX, 11, CZ + 7.5], bellyR = [9, 8.5, 4];
-  const hipsC = [CX, 6, CZ - 0.5], hipsR = [14.2, 7, 11.5];
+  const bodyC = [CX, 14, CZ - 1],
+    bodyR = [12.8, 12.5, 11.5];
+  const bellyC = [CX, 11, CZ + 7.5],
+    bellyR = [9, 8.5, 4];
+  const hipsC = [CX, 6, CZ - 0.5],
+    hipsR = [14.2, 7, 11.5];
   const earL = { b: [CX - 7.4, 35.7, CZ - 2.4], d: nrm([-0.5, 0.82, -0.28]), len: 10, r: 4.6 };
   const earR = { b: [CX + 7.4, 35.7, CZ - 2.4], d: nrm([0.5, 0.82, -0.28]), len: 10, r: 4.6 };
-  const armLB = [CX - 10.8, 20.5, CZ + 5], armRB = [CX + 10.8, 20.5, CZ + 5];
-  const armLD = nrm([0.096, -0.27, 0.958]), armRD = nrm([-0.096, -0.27, 0.958]);
+  const armLB = [CX - 10.8, 20.5, CZ + 5],
+    armRB = [CX + 10.8, 20.5, CZ + 5];
+  const armLD = nrm([0.096, -0.27, 0.958]),
+    armRD = nrm([-0.096, -0.27, 0.958]);
   const tail = { b: [CX, 7.5, CZ - 9.5], d: nrm([0, -0.28, -0.96]), len: 18, r: 6.2 };
   const spike1 = { b: [CX, 27.5, CZ - 9.5], d: nrm([0, 0.35, -0.94]), len: 9.5, r: 3.8 };
   const spike2 = { b: [CX, 18, CZ - 10.5], d: nrm([0, 0.22, -0.975]), len: 10, r: 4 };
 
-  for (let z = 0; z < NZ; z++) for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
-    const p = [x + 0.5, y + 0.5, z + 0.5];
-    let pt = 0;
-    if (inHead(p)) pt = PART.HEAD;
-    else if (inEll(p, bodyC, bodyR) || inEll(p, bellyC, bellyR) || inEll(p, hipsC, hipsR)) pt = PART.BODY;
-    else if (inCone(p, earL.b, earL.d, earL.len, earL.r, 8.5) || inCone(p, earR.b, earR.d, earR.len, earR.r, 8.5)) pt = PART.EAR;
-    else if (
-      inCone(p, armLB, armLD, 32, 4.2, 10) || inEll(p, [CX - 10.8, 20.5, CZ + 5], [3.8, 4.2, 4.5]) ||
-      inCone(p, armRB, armRD, 32, 4.2, 10) || inEll(p, [CX + 10.8, 20.5, CZ + 5], [3.8, 4.2, 4.5])
-    ) pt = PART.ARM;
-    else if (inEll(p, [CX - 10, 5.5, CZ + 8.5], [6.2, 5.5, 8]) || inEll(p, [CX + 10, 5.5, CZ + 8.5], [6.2, 5.5, 8])) pt = PART.FOOT;
-    else if (inCone(p, tail.b, tail.d, tail.len, tail.r, undefined, 1)) pt = PART.TAIL;
-    else if (inCone(p, spike1.b, spike1.d, spike1.len, spike1.r, undefined, 0.6) || inCone(p, spike2.b, spike2.d, spike2.len, spike2.r, undefined, 0.6)) pt = PART.SPIKE;
-    if (!pt) continue;
+  for (let z = 0; z < NZ; z++)
+    for (let y = 0; y < NY; y++)
+      for (let x = 0; x < NX; x++) {
+        const p = [x + 0.5, y + 0.5, z + 0.5];
+        let pt = 0;
+        if (inHead(p)) pt = PART.HEAD;
+        else if (inEll(p, bodyC, bodyR) || inEll(p, bellyC, bellyR) || inEll(p, hipsC, hipsR)) pt = PART.BODY;
+        else if (inCone(p, earL.b, earL.d, earL.len, earL.r, 8.5) || inCone(p, earR.b, earR.d, earR.len, earR.r, 8.5))
+          pt = PART.EAR;
+        else if (
+          inCone(p, armLB, armLD, 32, 4.2, 10) ||
+          inEll(p, [CX - 10.8, 20.5, CZ + 5], [3.8, 4.2, 4.5]) ||
+          inCone(p, armRB, armRD, 32, 4.2, 10) ||
+          inEll(p, [CX + 10.8, 20.5, CZ + 5], [3.8, 4.2, 4.5])
+        )
+          pt = PART.ARM;
+        else if (inEll(p, [CX - 10, 5.5, CZ + 8.5], [6.2, 5.5, 8]) || inEll(p, [CX + 10, 5.5, CZ + 8.5], [6.2, 5.5, 8]))
+          pt = PART.FOOT;
+        else if (inCone(p, tail.b, tail.d, tail.len, tail.r, undefined, 1)) pt = PART.TAIL;
+        else if (
+          inCone(p, spike1.b, spike1.d, spike1.len, spike1.r, undefined, 0.6) ||
+          inCone(p, spike2.b, spike2.d, spike2.len, spike2.r, undefined, 0.6)
+        )
+          pt = PART.SPIKE;
+        if (!pt) continue;
 
-    let m = MATID.GREEN;
-    if (pt === PART.BODY && ellN(p, bellyC, bellyR) <= 1) m = MATID.WHITE;
-    const i = id(x, y, z);
-    mat[i] = m; part[i] = pt;
-  }
+        let m = MATID.GREEN;
+        if (pt === PART.BODY && ellN(p, bellyC, bellyR) <= 1) m = MATID.WHITE;
+        const i = id(x, y, z);
+        mat[i] = m;
+        part[i] = pt;
+      }
 
   // belly stitching: dashed seam exactly where the white patch meets green fabric
-  const NBR = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
-  for (let z = 0; z < NZ; z++) for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
-    const i = id(x, y, z);
-    if (mat[i] !== MATID.WHITE || part[i] !== PART.BODY) continue;
-    let onEdge = false;
-    for (const o of NBR) {
-      const nx2 = x + o[0], ny2 = y + o[1], nz2 = z + o[2];
-      if (inG(nx2, ny2, nz2) && mat[id(nx2, ny2, nz2)] === MATID.GREEN) { onEdge = true; break; }
-    }
-    if (!onEdge) continue;
-    const a = Math.atan2(Math.abs(x + 0.5 - CX), y - bellyC[1]);
-    if (Math.floor(a / 0.5) % 2 === 0) mat[i] = MATID.SEAM;
-  }
-
-  const paintFront = (x, y, m, depth) => {
-    const dmax = depth === undefined ? 3 : depth;
-    for (let z = NZ - 1; z >= 0; z--) {
-      const i = id(x, y, z);
-      if (mat[i] && part[i] === PART.HEAD) {
-        for (let k = 0; k < dmax && z - k >= 0; k++) {
-          const j = id(x, y, z - k);
-          if (mat[j] && part[j] === PART.HEAD) mat[j] = m;
+  const NBR = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+  ];
+  for (let z = 0; z < NZ; z++)
+    for (let y = 0; y < NY; y++)
+      for (let x = 0; x < NX; x++) {
+        const i = id(x, y, z);
+        if (mat[i] !== MATID.WHITE || part[i] !== PART.BODY) continue;
+        let onEdge = false;
+        for (const o of NBR) {
+          const nx2 = x + o[0],
+            ny2 = y + o[1],
+            nz2 = z + o[2];
+          if (inG(nx2, ny2, nz2) && mat[id(nx2, ny2, nz2)] === MATID.GREEN) {
+            onEdge = true;
+            break;
+          }
         }
-        return;
+        if (!onEdge) continue;
+        const a = Math.atan2(Math.abs(x + 0.5 - CX), y - bellyC[1]);
+        if (Math.floor(a / 0.5) % 2 === 0) mat[i] = MATID.SEAM;
       }
-    }
-  };
+
   const paintTop = (x, z, m) => {
     for (let y = NY - 1; y >= 0; y--) {
       const i = id(x, y, z);
@@ -414,16 +468,42 @@ function buildSubstituteGeometry() {
     }
   };
   // cheek: a five-block circle in profile, set back and below the eye
-  for (let z = 31; z <= 37; z++) for (let y = 25; y <= 31; y++) {
-    const dzc = (z - 34) / 2.5, dyc = (y - 28) / 2.5;
-    if (dzc * dzc + dyc * dyc <= 1) paintSide(z, y, MATID.WHITE, 2);
-  }
+  for (let z = 31; z <= 37; z++)
+    for (let y = 25; y <= 31; y++) {
+      const dzc = (z - 34) / 2.5,
+        dyc = (y - 28) / 2.5;
+      if (dzc * dzc + dyc * dyc <= 1) paintSide(z, y, MATID.WHITE, 2);
+    }
   // mouth: from the snout tip back along the jowl, curling up into the hook
-  const MOUTH = [[49, 28], [48, 27], [47, 27], [46, 26], [45, 26], [44, 25], [43, 25], [42, 25], [41, 26], [40, 26], [39, 27]];
+  const MOUTH = [
+    [49, 28],
+    [48, 27],
+    [47, 27],
+    [46, 26],
+    [45, 26],
+    [44, 25],
+    [43, 25],
+    [42, 25],
+    [41, 26],
+    [40, 26],
+    [39, 27],
+  ];
   for (const [z, y] of MOUTH) paintSide(z, y, MATID.LINE, 3);
   // eye: one third (120°) of a radius-4 circle — rising from the back,
   // over the crown of the arc, descending lower toward the snout
-  const EYE = [[34, 33], [35, 33], [36, 34], [37, 34], [38, 34], [38, 35], [39, 35], [40, 35], [41, 34], [42, 33], [43, 32]];
+  const EYE = [
+    [34, 33],
+    [35, 33],
+    [36, 34],
+    [37, 34],
+    [38, 34],
+    [38, 35],
+    [39, 35],
+    [40, 35],
+    [41, 34],
+    [42, 33],
+    [43, 32],
+  ];
   for (const [z, y] of EYE) paintSide(z, y, MATID.LINE, 2);
   // crown + forehead seams, dashed
   for (let z = CZ - 11; z <= CZ + 19; z++) paintTop(CC, z, MATID.SEAM);
@@ -458,49 +538,124 @@ function buildSubstituteGeometry() {
 
   /* meshing */
   const DIRS = [
-    { k: "px", o: [1, 0, 0], q: [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]] },
-    { k: "nx", o: [-1, 0, 0], q: [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]] },
-    { k: "py", o: [0, 1, 0], q: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]] },
-    { k: "ny", o: [0, -1, 0], q: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
-    { k: "pz", o: [0, 0, 1], q: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]] },
-    { k: "nz", o: [0, 0, -1], q: [[1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]] },
+    {
+      k: "px",
+      o: [1, 0, 0],
+      q: [
+        [1, 0, 1],
+        [1, 0, 0],
+        [1, 1, 0],
+        [1, 1, 1],
+      ],
+    },
+    {
+      k: "nx",
+      o: [-1, 0, 0],
+      q: [
+        [0, 0, 0],
+        [0, 0, 1],
+        [0, 1, 1],
+        [0, 1, 0],
+      ],
+    },
+    {
+      k: "py",
+      o: [0, 1, 0],
+      q: [
+        [0, 1, 1],
+        [1, 1, 1],
+        [1, 1, 0],
+        [0, 1, 0],
+      ],
+    },
+    {
+      k: "ny",
+      o: [0, -1, 0],
+      q: [
+        [0, 0, 0],
+        [1, 0, 0],
+        [1, 0, 1],
+        [0, 0, 1],
+      ],
+    },
+    {
+      k: "pz",
+      o: [0, 0, 1],
+      q: [
+        [0, 0, 1],
+        [1, 0, 1],
+        [1, 1, 1],
+        [0, 1, 1],
+      ],
+    },
+    {
+      k: "nz",
+      o: [0, 0, -1],
+      q: [
+        [1, 0, 0],
+        [0, 0, 0],
+        [0, 1, 0],
+        [1, 1, 0],
+      ],
+    },
   ];
   const solidAt = (x, y, z) => inG(x, y, z) && mat[id(x, y, z)] !== 0;
 
-  const pos = [], col = [], idxArr = [];
+  const pos = [],
+    col = [],
+    idxArr = [];
   let vCount = 0;
-  let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9, minZ = 1e9, maxZ = -1e9;
+  let minX = 1e9,
+    maxX = -1e9,
+    minY = 1e9,
+    maxY = -1e9,
+    minZ = 1e9,
+    maxZ = -1e9;
 
-  for (let z = 0; z < NZ; z++) for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
-    const i = id(x, y, z);
-    if (!mat[i]) continue;
-    minX = Math.min(minX, x); maxX = Math.max(maxX, x + 1);
-    minY = Math.min(minY, y); maxY = Math.max(maxY, y + 1);
-    minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z + 1);
-    const base = PALETTE[mat[i]];
-    const grain = 1 + hash3(x, y, z) * 0.07;
-    for (const d of DIRS) {
-      const ex = x + d.o[0], ey = y + d.o[1], ez = z + d.o[2];
-      if (solidAt(ex, ey, ez)) continue;
-      let occ = 0;
-      for (const dd of DIRS) {
-        if (dd === d) continue;
-        if (dd.o[0] === -d.o[0] && dd.o[1] === -d.o[1] && dd.o[2] === -d.o[2]) continue;
-        if (solidAt(ex + dd.o[0], ey + dd.o[1], ez + dd.o[2])) occ++;
+  for (let z = 0; z < NZ; z++)
+    for (let y = 0; y < NY; y++)
+      for (let x = 0; x < NX; x++) {
+        const i = id(x, y, z);
+        if (!mat[i]) continue;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x + 1);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y + 1);
+        minZ = Math.min(minZ, z);
+        maxZ = Math.max(maxZ, z + 1);
+        const base = PALETTE[mat[i]];
+        const grain = 1 + hash3(x, y, z) * 0.07;
+        for (const d of DIRS) {
+          const ex = x + d.o[0],
+            ey = y + d.o[1],
+            ez = z + d.o[2];
+          if (solidAt(ex, ey, ez)) continue;
+          let occ = 0;
+          for (const dd of DIRS) {
+            if (dd === d) continue;
+            if (dd.o[0] === -d.o[0] && dd.o[1] === -d.o[1] && dd.o[2] === -d.o[2]) continue;
+            if (solidAt(ex + dd.o[0], ey + dd.o[1], ez + dd.o[2])) occ++;
+          }
+          const shade = FACE_SHADE[d.k] * grain * (1 - 0.065 * occ);
+          const r = Math.min(1, base[0] * shade),
+            g = Math.min(1, base[1] * shade),
+            b = Math.min(1, base[2] * shade);
+          for (const v of d.q) {
+            pos.push(x + v[0], y + v[1], z + v[2]);
+            col.push(r, g, b);
+          }
+          idxArr.push(vCount, vCount + 1, vCount + 2, vCount, vCount + 2, vCount + 3);
+          vCount += 4;
+        }
       }
-      const shade = FACE_SHADE[d.k] * grain * (1 - 0.065 * occ);
-      const r = Math.min(1, base[0] * shade), g = Math.min(1, base[1] * shade), b = Math.min(1, base[2] * shade);
-      for (const v of d.q) { pos.push(x + v[0], y + v[1], z + v[2]); col.push(r, g, b); }
-      idxArr.push(vCount, vCount + 1, vCount + 2, vCount, vCount + 2, vCount + 3);
-      vCount += 4;
-    }
-  }
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
   geo.setIndex(idxArr);
-  const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2, midZ = (minZ + maxZ) / 2;
+  const midX = (minX + maxX) / 2,
+    midY = (minY + maxY) / 2,
+    midZ = (minZ + maxZ) / 2;
   geo.translate(-midX, -midY, -midZ);
   return { geo, halfH: (maxY - minY) / 2, halfD: (maxZ - minZ) / 2 };
 }
@@ -516,63 +671,202 @@ const MAX_HP = 100;
 // Community Day exclusives. One is picked at random for each load.
 const CHARGED_MOVES = [
   // Normal
-  "BODY SLAM", "BOOMBURST", "FRUSTRATION", "GIGA IMPACT", "HORN ATTACK",
-  "HYPER BEAM", "HYPER FANG", "LAST RESORT", "RETURN", "SKULL BASH", "STOMP",
-  "STRUGGLE", "SWIFT", "TECHNO BLAST", "TRI ATTACK", "VISE GRIP", "WEATHER BALL", "WRAP",
+  "BODY SLAM",
+  "BOOMBURST",
+  "FRUSTRATION",
+  "GIGA IMPACT",
+  "HORN ATTACK",
+  "HYPER BEAM",
+  "HYPER FANG",
+  "LAST RESORT",
+  "RETURN",
+  "SKULL BASH",
+  "STOMP",
+  "STRUGGLE",
+  "SWIFT",
+  "TECHNO BLAST",
+  "TRI ATTACK",
+  "VISE GRIP",
+  "WEATHER BALL",
+  "WRAP",
   // Fighting
-  "AURA SPHERE", "BRICK BREAK", "CLOSE COMBAT", "CROSS CHOP", "DYNAMIC PUNCH",
-  "FLYING PRESS", "FOCUS BLAST", "LOW SWEEP", "POWER-UP PUNCH", "SACRED SWORD",
-  "SUBMISSION", "SUPERPOWER",
+  "AURA SPHERE",
+  "BRICK BREAK",
+  "CLOSE COMBAT",
+  "CROSS CHOP",
+  "DYNAMIC PUNCH",
+  "FLYING PRESS",
+  "FOCUS BLAST",
+  "LOW SWEEP",
+  "POWER-UP PUNCH",
+  "SACRED SWORD",
+  "SUBMISSION",
+  "SUPERPOWER",
   // Flying
-  "ACROBATICS", "AERIAL ACE", "AEROBLAST", "AIR CUTTER", "BRAVE BIRD",
-  "DRAGON ASCENT", "DRILL PECK", "FEATHER DANCE", "FLY", "HURRICANE",
-  "OBLIVION WING", "SKY ATTACK",
+  "ACROBATICS",
+  "AERIAL ACE",
+  "AEROBLAST",
+  "AIR CUTTER",
+  "BRAVE BIRD",
+  "DRAGON ASCENT",
+  "DRILL PECK",
+  "FEATHER DANCE",
+  "FLY",
+  "HURRICANE",
+  "OBLIVION WING",
+  "SKY ATTACK",
   // Poison
-  "ACID SPRAY", "CROSS POISON", "GUNK SHOT", "POISON FANG", "SLUDGE",
-  "SLUDGE BOMB", "SLUDGE WAVE",
+  "ACID SPRAY",
+  "CROSS POISON",
+  "GUNK SHOT",
+  "POISON FANG",
+  "SLUDGE",
+  "SLUDGE BOMB",
+  "SLUDGE WAVE",
   // Ground
-  "BONE CLUB", "BULLDOZE", "DIG", "DRILL RUN", "EARTH POWER", "EARTHQUAKE",
-  "HIGH HORSEPOWER", "MUD BOMB", "PRECIPICE BLADES", "SAND TOMB", "SCORCHING SANDS",
+  "BONE CLUB",
+  "BULLDOZE",
+  "DIG",
+  "DRILL RUN",
+  "EARTH POWER",
+  "EARTHQUAKE",
+  "HIGH HORSEPOWER",
+  "MUD BOMB",
+  "PRECIPICE BLADES",
+  "SAND TOMB",
+  "SCORCHING SANDS",
   // Rock
-  "ANCIENT POWER", "METEOR BEAM", "POWER GEM", "ROCK BLAST", "ROCK SLIDE",
-  "ROCK TOMB", "ROCK WRECKER", "STONE EDGE",
+  "ANCIENT POWER",
+  "METEOR BEAM",
+  "POWER GEM",
+  "ROCK BLAST",
+  "ROCK SLIDE",
+  "ROCK TOMB",
+  "ROCK WRECKER",
+  "STONE EDGE",
   // Bug
-  "BUG BUZZ", "FELL STINGER", "MEGAHORN", "SIGNAL BEAM", "SILVER WIND", "X-SCISSOR",
+  "BUG BUZZ",
+  "FELL STINGER",
+  "MEGAHORN",
+  "SIGNAL BEAM",
+  "SILVER WIND",
+  "X-SCISSOR",
   // Ghost
-  "NIGHT SHADE", "OMINOUS WIND", "SHADOW BALL", "SHADOW BONE", "SHADOW FORCE",
-  "SHADOW PUNCH", "SHADOW SNEAK",
+  "NIGHT SHADE",
+  "OMINOUS WIND",
+  "SHADOW BALL",
+  "SHADOW BONE",
+  "SHADOW FORCE",
+  "SHADOW PUNCH",
+  "SHADOW SNEAK",
   // Steel
-  "DOOM DESIRE", "DOUBLE IRON BASH", "FLASH CANNON", "HEAVY SLAM", "IRON HEAD",
-  "MAGNET BOMB", "METEOR MASH", "MIRROR SHOT",
+  "DOOM DESIRE",
+  "DOUBLE IRON BASH",
+  "FLASH CANNON",
+  "HEAVY SLAM",
+  "IRON HEAD",
+  "MAGNET BOMB",
+  "METEOR MASH",
+  "MIRROR SHOT",
   // Fire
-  "BLAST BURN", "BLAZE KICK", "FIRE BLAST", "FIRE PUNCH", "FLAME BURST",
-  "FLAME CHARGE", "FLAME WHEEL", "FLAMETHROWER", "FUSION FLARE", "HEAT WAVE",
-  "MAGMA STORM", "MYSTICAL FIRE", "OVERHEAT", "SACRED FIRE", "V-CREATE",
+  "BLAST BURN",
+  "BLAZE KICK",
+  "FIRE BLAST",
+  "FIRE PUNCH",
+  "FLAME BURST",
+  "FLAME CHARGE",
+  "FLAME WHEEL",
+  "FLAMETHROWER",
+  "FUSION FLARE",
+  "HEAT WAVE",
+  "MAGMA STORM",
+  "MYSTICAL FIRE",
+  "OVERHEAT",
+  "SACRED FIRE",
+  "V-CREATE",
   // Water
-  "AQUA JET", "AQUA TAIL", "BRINE", "BUBBLE BEAM", "CRABHAMMER", "HYDRO CANNON",
-  "HYDRO PUMP", "LIQUIDATION", "MUDDY WATER", "OCTAZOOKA", "ORIGIN PULSE",
-  "SCALD", "SURF", "WATER PULSE",
+  "AQUA JET",
+  "AQUA TAIL",
+  "BRINE",
+  "BUBBLE BEAM",
+  "CRABHAMMER",
+  "HYDRO CANNON",
+  "HYDRO PUMP",
+  "LIQUIDATION",
+  "MUDDY WATER",
+  "OCTAZOOKA",
+  "ORIGIN PULSE",
+  "SCALD",
+  "SURF",
+  "WATER PULSE",
   // Grass
-  "ENERGY BALL", "FRENZY PLANT", "GRASS KNOT", "LEAF BLADE", "LEAF STORM",
-  "LEAF TORNADO", "PETAL BLIZZARD", "POWER WHIP", "SEED BOMB", "SEED FLARE",
-  "SOLAR BEAM", "TRAILBLAZE",
+  "ENERGY BALL",
+  "FRENZY PLANT",
+  "GRASS KNOT",
+  "LEAF BLADE",
+  "LEAF STORM",
+  "LEAF TORNADO",
+  "PETAL BLIZZARD",
+  "POWER WHIP",
+  "SEED BOMB",
+  "SEED FLARE",
+  "SOLAR BEAM",
+  "TRAILBLAZE",
   // Electric
-  "AURA WHEEL", "DISCHARGE", "FUSION BOLT", "PARABOLIC CHARGE", "THUNDER",
-  "THUNDER PUNCH", "THUNDERBOLT", "WILD CHARGE", "ZAP CANNON",
+  "AURA WHEEL",
+  "DISCHARGE",
+  "FUSION BOLT",
+  "PARABOLIC CHARGE",
+  "THUNDER",
+  "THUNDER PUNCH",
+  "THUNDERBOLT",
+  "WILD CHARGE",
+  "ZAP CANNON",
   // Psychic
-  "FUTURE SIGHT", "LUSTER PURGE", "MIRROR COAT", "MIST BALL", "PSYBEAM",
-  "PSYCHIC", "PSYCHIC FANGS", "PSYCHO BOOST", "PSYSHOCK", "PSYSTRIKE", "SYNCHRONOISE",
+  "FUTURE SIGHT",
+  "LUSTER PURGE",
+  "MIRROR COAT",
+  "MIST BALL",
+  "PSYBEAM",
+  "PSYCHIC",
+  "PSYCHIC FANGS",
+  "PSYCHO BOOST",
+  "PSYSHOCK",
+  "PSYSTRIKE",
+  "SYNCHRONOISE",
   // Ice
-  "AURORA BEAM", "AVALANCHE", "BLIZZARD", "GLACIATE", "ICE BEAM", "ICE PUNCH",
-  "ICICLE SPEAR", "ICY WIND", "TRIPLE AXEL",
+  "AURORA BEAM",
+  "AVALANCHE",
+  "BLIZZARD",
+  "GLACIATE",
+  "ICE BEAM",
+  "ICE PUNCH",
+  "ICICLE SPEAR",
+  "ICY WIND",
+  "TRIPLE AXEL",
   // Dragon
-  "BREAKING SWIPE", "DRACO METEOR", "DRAGON CLAW", "DRAGON PULSE", "OUTRAGE",
-  "ROAR OF TIME", "SPACIAL REND", "TWISTER",
+  "BREAKING SWIPE",
+  "DRACO METEOR",
+  "DRAGON CLAW",
+  "DRAGON PULSE",
+  "OUTRAGE",
+  "ROAR OF TIME",
+  "SPACIAL REND",
+  "TWISTER",
   // Dark
-  "BRUTAL SWING", "CRUNCH", "DARK PULSE", "FOUL PLAY", "NIGHT SLASH",
-  "OBSTRUCT", "PAYBACK",
+  "BRUTAL SWING",
+  "CRUNCH",
+  "DARK PULSE",
+  "FOUL PLAY",
+  "NIGHT SLASH",
+  "OBSTRUCT",
+  "PAYBACK",
   // Fairy
-  "DAZZLING GLEAM", "DISARMING VOICE", "DRAINING KISS", "MOONBLAST", "PLAY ROUGH",
+  "DAZZLING GLEAM",
+  "DISARMING VOICE",
+  "DRAINING KISS",
+  "MOONBLAST",
+  "PLAY ROUGH",
 ];
 const loadMsgs = (move) => [
   { at: 0, t: "Website used SUBSTITUTE!" },
@@ -594,14 +888,15 @@ function SubstituteLoader({ onDone, getProgress }) {
   const simRef = useRef(null);
 
   const motes = useMemo(
-    () => Array.from({ length: 12 }, (_, i) => ({
-      left: 6 + ((i * 53) % 90),
-      size: 2 + (i % 3) * 2,
-      dur: 9 + (i % 5) * 2.6,
-      delay: -(i * 1.7),
-      op: 0.1 + (i % 4) * 0.05,
-    })),
-    []
+    () =>
+      Array.from({ length: 12 }, (_, i) => ({
+        left: 6 + ((i * 53) % 90),
+        size: 2 + (i % 3) * 2,
+        dur: 9 + (i % 5) * 2.6,
+        delay: -(i * 1.7),
+        op: 0.1 + (i % 4) * 0.05,
+      })),
+    [],
   );
 
   useEffect(() => {
@@ -637,30 +932,54 @@ function SubstituteLoader({ onDone, getProgress }) {
     const platMatA = new THREE.MeshBasicMaterial({ color: 0x6fa763, transparent: true, opacity: 0.95 });
     const platMatB = new THREE.MeshBasicMaterial({ color: 0x507f49, transparent: true, opacity: 0.95 });
     const plat = new THREE.Mesh(new THREE.CircleGeometry(21, 40), platMatA);
-    plat.rotation.x = -Math.PI / 2; plat.scale.set(1.18, 0.62, 1); plat.position.y = 0.05;
+    plat.rotation.x = -Math.PI / 2;
+    plat.scale.set(1.18, 0.62, 1);
+    plat.position.y = 0.05;
     const rim = new THREE.Mesh(new THREE.RingGeometry(21, 24, 40), platMatB);
-    rim.rotation.x = -Math.PI / 2; rim.scale.set(1.18, 0.62, 1); rim.position.y = 0.04;
+    rim.rotation.x = -Math.PI / 2;
+    rim.scale.set(1.18, 0.62, 1);
+    rim.position.y = 0.04;
     const shadowMat = new THREE.MeshBasicMaterial({ color: 0x10210f, transparent: true, opacity: 0.34 });
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(15, 32), shadowMat);
-    shadow.rotation.x = -Math.PI / 2; shadow.scale.set(1.1, 0.6, 1); shadow.position.y = 0.12;
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.scale.set(1.1, 0.6, 1);
+    shadow.position.y = 0.12;
     scene.add(plat, rim, shadow);
 
-    const BASE_RX = THREE.MathUtils.degToRad(10);  // 10 degrees down
+    const BASE_RX = THREE.MathUtils.degToRad(10); // 10 degrees down
     const BASE_RY = THREE.MathUtils.degToRad(-30); // 30 degrees to the left
     const sim = {
-      phase: "load", progress: 0, t: 0,
-      stalls: [{ at: 33, dur: 0.7, hit: false }, { at: 71, dur: 0.55, hit: false }],
+      phase: "load",
+      progress: 0,
+      t: 0,
+      stalls: [
+        { at: 33, dur: 0.7, hit: false },
+        { at: 71, dur: 0.55, hit: false },
+      ],
       stallLeft: 0,
-      msgText: "", msgStart: 0,
-      px: 0, py: halfH + 2.4, vy: 0, vx: 0,
-      rx: BASE_RX, rz: 0, vrx: 0, vrz: 0,
-      bounces: 0, grounded: false, settleAt: 0, dieAt: 0, fadeStart: 0, fade: 0,
+      msgText: "",
+      msgStart: 0,
+      px: 0,
+      py: halfH + 2.4,
+      vy: 0,
+      vx: 0,
+      rx: BASE_RX,
+      rz: 0,
+      vrx: 0,
+      vrz: 0,
+      bounces: 0,
+      grounded: false,
+      settleAt: 0,
+      dieAt: 0,
+      fadeStart: 0,
+      fade: 0,
       doneFired: false,
     };
     simRef.current = sim;
 
     const fit = () => {
-      const W = window.innerWidth, H = window.innerHeight;
+      const W = window.innerWidth,
+        H = window.innerHeight;
       const s3 = Math.round(Math.min(W * 0.84, H * 0.52, 540));
       glRef.current.style.width = s3 + "px";
       glRef.current.style.height = s3 + "px";
@@ -679,7 +998,9 @@ function SubstituteLoader({ onDone, getProgress }) {
     const pCtx = playerRef.current.getContext("2d");
     const mCtx = msgRef.current.getContext("2d");
 
-    let raf = 0, last = performance.now(), dead = false;
+    let raf = 0,
+      last = performance.now(),
+      dead = false;
     const G_ACC = 215;
 
     const tick = (now) => {
@@ -694,7 +1015,10 @@ function SubstituteLoader({ onDone, getProgress }) {
         // is the only timed part of the sequence.
         const real = progressRef.current ? Number(progressRef.current()) || 0 : 100;
         sim.progress = Math.max(sim.progress, Math.min(100, real));
-        if (sim.progress >= 100) { sim.phase = "dying"; sim.dieAt = now; }
+        if (sim.progress >= 100) {
+          sim.phase = "dying";
+          sim.dieAt = now;
+        }
       }
       if (sim.phase === "dying" && now - sim.dieAt > 480) {
         sim.phase = "ko";
@@ -716,7 +1040,10 @@ function SubstituteLoader({ onDone, getProgress }) {
         sim.rx += sim.vrx * dt;
         sim.rz += sim.vrz * dt;
         sim.vrz *= 0.985;
-        if (sim.rx < -1.62) { sim.rx = -1.62; sim.vrx *= -0.22; }
+        if (sim.rx < -1.62) {
+          sim.rx = -1.62;
+          sim.vrx *= -0.22;
+        }
         const tilt = Math.min(Math.PI / 2, Math.max(0, BASE_RX - sim.rx));
         const rest = halfH - (halfH - halfD - 0.5) * Math.sin(tilt);
         if (sim.py <= rest) {
@@ -728,12 +1055,18 @@ function SubstituteLoader({ onDone, getProgress }) {
             sim.vrx += (Math.random() - 0.5) * 0.8;
             sim.bounces++;
           } else {
-            sim.vy = 0; sim.vx *= 0.82; sim.vrz *= 0.8;
-            if (!sim.grounded) { sim.grounded = true; sim.settleAt = now; }
+            sim.vy = 0;
+            sim.vx *= 0.82;
+            sim.vrz *= 0.8;
+            if (!sim.grounded) {
+              sim.grounded = true;
+              sim.settleAt = now;
+            }
           }
         }
         if (sim.grounded && sim.phase === "ko" && now - sim.settleAt > 420) {
-          sim.phase = "fade"; sim.fadeStart = now;
+          sim.phase = "fade";
+          sim.fadeStart = now;
         }
         if (sim.phase === "fade") {
           sim.fade = Math.min(1, (now - sim.fadeStart) / 900);
@@ -760,10 +1093,11 @@ function SubstituteLoader({ onDone, getProgress }) {
       drawPlayerBox(pCtx, "LOADING", 67, cur, MAX_HP, now);
 
       const target =
-        sim.phase === "load"
-          ? LOAD_MSGS.reduce((acc, m) => (sim.progress >= m.at ? m.t : acc), LOAD_MSGS[0].t)
-          : FAINT_MSG;
-      if (target !== sim.msgText) { sim.msgText = target; sim.msgStart = now; }
+        sim.phase === "load" ? LOAD_MSGS.reduce((acc, m) => (sim.progress >= m.at ? m.t : acc), LOAD_MSGS[0].t) : FAINT_MSG;
+      if (target !== sim.msgText) {
+        sim.msgText = target;
+        sim.msgStart = now;
+      }
       const typed = Math.floor((now - sim.msgStart) / 26);
       drawMessageBox(mCtx, sim.msgText, typed, now);
 
@@ -776,9 +1110,14 @@ function SubstituteLoader({ onDone, getProgress }) {
       dead = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", fit);
-      geo.dispose(); dollMat.dispose();
-      plat.geometry.dispose(); rim.geometry.dispose(); shadow.geometry.dispose();
-      platMatA.dispose(); platMatB.dispose(); shadowMat.dispose();
+      geo.dispose();
+      dollMat.dispose();
+      plat.geometry.dispose();
+      rim.geometry.dispose();
+      shadow.geometry.dispose();
+      platMatA.dispose();
+      platMatB.dispose();
+      shadowMat.dispose();
       renderer.dispose();
     };
   }, []);
@@ -817,7 +1156,11 @@ function SubstituteLoader({ onDone, getProgress }) {
 
       <div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-        style={{ width: "72vmin", height: "72vmin", background: "radial-gradient(circle,rgba(158,189,128,0.16),transparent 62%)" }}
+        style={{
+          width: "72vmin",
+          height: "72vmin",
+          background: "radial-gradient(circle,rgba(158,189,128,0.16),transparent 62%)",
+        }}
       />
 
       <div className="flex-1 flex items-center justify-center min-h-0 pt-4 sm:pt-7">

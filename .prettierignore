@@ -1,0 +1,11 @@
+# Build output
+.next/
+out/
+node_modules/
+
+# Generated / vendored assets
+public/
+*.min.*
+
+# Lockfiles
+package-lock.json

@@ -101,12 +101,20 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
       const p = Math.min(100, (frac * 0.85 + (windowLoaded ? 0.15 : 0)) * 100);
       if (p > progressRef.current) progressRef.current = p;
     };
-    const onWin = () => { windowLoaded = true; recompute(); };
+    const onWin = () => {
+      windowLoaded = true;
+      recompute();
+    };
     if (!windowLoaded) window.addEventListener("load", onWin);
     const imgs = urls.map((url) => {
       const img = new Image();
       img.decoding = "async";
-      const tick = () => { if (!cancelled) { loaded++; recompute(); } };
+      const tick = () => {
+        if (!cancelled) {
+          loaded++;
+          recompute();
+        }
+      };
       img.onload = tick;
       img.onerror = tick;
       img.src = url;
@@ -116,16 +124,23 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
       window.removeEventListener("load", onWin);
-      imgs.forEach((i) => { i.onload = null; i.onerror = null; });
+      imgs.forEach((i) => {
+        i.onload = null;
+        i.onerror = null;
+      });
     };
   }, [reduced]);
 
   // Prefetch the OCR engine and guide images on IDLE time (after first paint) so
   // they don't contend for bandwidth with the critical load + the loader bundle.
-  useEffect(() => runWhenIdle(() => {
-    warmupOcr();
-    warmGuideImages();
-  }), []);
+  useEffect(
+    () =>
+      runWhenIdle(() => {
+        warmupOcr();
+        warmGuideImages();
+      }),
+    [],
+  );
 
   // Reduced-motion → no WebGL; a brief static splash then reveal.
   useEffect(() => {
@@ -140,9 +155,12 @@ export function SubstituteLoader({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [handleDone]);
 
-  useEffect(() => () => {
-    if (veilTimer.current) clearTimeout(veilTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (veilTimer.current) clearTimeout(veilTimer.current);
+    },
+    [],
+  );
 
   // The page beneath must not scroll while the loading screen covers it.
   const overlayUp = phase !== "app";

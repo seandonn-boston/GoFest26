@@ -62,8 +62,8 @@ export function BossList() {
         </div>
       </div>
       <p className="mb-3 font-mono text-[12px] uppercase tracking-wider text-slate-500">
-        <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span>{" "}
-        = not raidable in {region.label}; needs a Remote Raid Pass (capped per day).
+        <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-extrabold text-black">Remote</span> = not raidable in{" "}
+        {region.label}; needs a Remote Raid Pass (capped per day).
       </p>
 
       {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
@@ -80,8 +80,13 @@ export function BossList() {
             <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400">
               {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
               <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
-              <span className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5" title={`Featured wild spawns: ${habitat.types.join(", ")}`}>
-                <span aria-hidden className="text-slate-600">–</span>
+              <span
+                className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5"
+                title={`Featured wild spawns: ${habitat.types.join(", ")}`}
+              >
+                <span aria-hidden className="text-slate-600">
+                  –
+                </span>
                 {habitat.types.map((t) => (
                   <TypeIcon key={t} type={t} size={14} />
                 ))}

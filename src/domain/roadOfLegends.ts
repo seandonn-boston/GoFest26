@@ -122,7 +122,11 @@ export function computeRoadPlan(
     for (const { bossId, def } of energyGoalsForDay(dayId)) {
       let demand: number;
       if (roadCoupled) {
-        const prog = inputById.get(bossId)?.energy?.[def.key];
+        const inp = inputById.get(bossId);
+        // A goal left on after the boss was deselected must not plan raids —
+        // matching the pre-credit below, which also requires `selected`.
+        if (!inp?.selected) continue;
+        const prog = inp.energy?.[def.key];
         if (!prog?.on) continue;
         const goal = prog.goal > 0 ? prog.goal : def.cost;
         demand = sized(energyRaidsNeeded(prog.have ?? 0, goal, def.perRaid), rewardCase);
@@ -171,7 +175,10 @@ export function computeRoadPlan(
       return { filled: fillShares(ordered, fiveCap), capacity: fiveCap };
     }
     const megaCap: Range = { min: rpH.min * day.megaHours, max: rpH.max * day.megaHours };
-    const f5 = fillShares(ordered.filter((s) => !isMegaWindow(s)), fiveCap);
+    const f5 = fillShares(
+      ordered.filter((s) => !isMegaWindow(s)),
+      fiveCap,
+    );
     const fm = fillShares(ordered.filter(isMegaWindow), megaCap);
     return {
       filled: {
@@ -232,9 +239,16 @@ export function computeRoadPlan(
       const fiveHours = day.raidHourHours - day.megaHours;
       const fiveCap: Range = { min: rpH.min * fiveHours, max: rpH.max * fiveHours };
       const megaCap: Range = { min: rpH.min * day.megaHours, max: rpH.max * day.megaHours };
-      const energyShares = energySharesForDay(day.id);
+      // An explicit per-day drag list is also a per-day SELECTION: targets the user
+      // toggled off this day are dropped BEFORE the even split, so the day's whole
+      // raid-hour budget flows to the targets that remain (not to ghost shares).
+      const explicit = roadTargets[day.id];
+      const pickSet = explicit ? new Set(explicit) : null;
+      const energyShares = energySharesForDay(day.id).filter(
+        (e) => !pickSet || pickSet.has(energyTargetId(e.bossId, e.energyKey!)),
+      );
       const rosterIds = Array.from(new Set(day.bossIds.map(toPrimary)))
-        .filter((id) => roadSelected[id] && isLocal(id))
+        .filter((id) => roadSelected[id] && isLocal(id) && (!pickSet || pickSet.has(id)))
         .sort((a, z) => (rosterRank.get(a) ?? 0) - (rosterRank.get(z) ?? 0));
 
       // Split roster + energy demand across the two Raid-Hour windows so each is
@@ -247,13 +261,17 @@ export function computeRoadPlan(
         const fiveEnergy = energyShares.filter((s) => !isMegaWindow(s)).reduce((s, e) => s + e.raids, 0);
         const megaEnergy = energyShares.filter(isMegaWindow).reduce((s, e) => s + e.raids, 0);
         rosterShares = [
-          ...evenSplitRoster(rosterIds.filter((id) => !isMegaTier(id)), fiveCap, fiveEnergy, day),
+          ...evenSplitRoster(
+            rosterIds.filter((id) => !isMegaTier(id)),
+            fiveCap,
+            fiveEnergy,
+            day,
+          ),
           ...evenSplitRoster(rosterIds.filter(isMegaTier), megaCap, megaEnergy, day),
         ];
       }
 
       // Respect the user's drag order when set; otherwise energy first, then roster.
-      const explicit = roadTargets[day.id];
       const byTarget = new Map<string, RawShare>([
         ...energyShares.map((e) => [energyTargetId(e.bossId, e.energyKey!), e] as const),
         ...rosterShares.map((r) => [r.bossId, r] as const),
@@ -291,13 +309,16 @@ export function computeRoadPlan(
 
   // Raids still wanted per selected, LOCAL species (region-locked targets can't
   // be raided in person during a weekday raid hour — they stay weekend/remote).
+  // Remote allocations are netted out (mirroring computeBlockPlan's blockTotal):
+  // raids the user assigned to remote passes don't need weekday raid-hour slots.
+  const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
   const remaining = new Map<string, number>();
   for (const input of collapsed) {
     if (!input.selected) continue;
     const boss = getBoss(input.bossId);
     const res = resultById.get(input.bossId);
     if (!boss || !res || !bossIsLocal(boss, settings.region)) continue;
-    const n = sized(res.raids, rewardCase);
+    const n = sized(res.raids, rewardCase) - remoteFor(input.bossId);
     if (n > 0) remaining.set(input.bossId, n);
   }
 
@@ -321,9 +342,14 @@ export function computeRoadPlan(
   // candy + 5 White + 5 Black" plans as 15 total raids (10 day-locked, 5 anywhere).
   // The energy raids themselves are counted below, where they sit as capacity-
   // consuming shares in each day's list — so this reserves only their CANDY effect,
-  // not the raid count (a small over-credit is possible if the user drags a fusion
-  // item below candy and the hour fills before the energy does — energy defaults
-  // to the top, so in practice it fits first).
+  // not the raid count. The assumption is optimistic (each goal alone in its
+  // window); the day loop records what ACTUALLY fits and the fix-up after the loop
+  // claws back any credit for energy raids that were squeezed out (two goals
+  // sharing one window, a candy target dragged above the energy item, or the
+  // energy chip deselected for the day) — so the weekend is never reduced by
+  // raids that will not happen.
+  const assumedEnergy = new Map<string, number>(); // bossId → assumed energy raids (window-capped)
+  const candyNeed0 = new Map<string, number>(); // bossId → candy need before the credit
   for (const input of collapsed) {
     if (!input.selected) continue;
     const goals = energyGoalsFor(input.bossId);
@@ -346,9 +372,13 @@ export function computeRoadPlan(
     const candyNeed = remaining.get(input.bossId) ?? 0;
     const credit = Math.min(candyNeed, energyRaids);
     if (credit <= 0) continue;
+    assumedEnergy.set(input.bossId, energyRaids);
+    candyNeed0.set(input.bossId, candyNeed);
     remaining.set(input.bossId, candyNeed - credit);
     headStart[input.bossId] = (headStart[input.bossId] ?? 0) + credit;
   }
+  // Energy raids that actually fit their day's window, per species (fills below).
+  const actualEnergy = new Map<string, number>();
 
   for (const day of ROAD_DAYS) {
     if (!playDays[day.id]) continue;
@@ -422,9 +452,13 @@ export function computeRoadPlan(
     // Fit the day's two Raid-Hour windows (6–7 PM 5★, 7–8 PM Mega/Primal).
     const { filled, capacity } = fitDay(shares, day);
     for (const s of filled.species) {
-      // Energy shares just consume capacity + count as raids done; their candy
-      // effect was already reserved by the pre-credit above.
-      if (s.fitted <= 0 || s.energyKey) continue;
+      if (s.energyKey) {
+        // Energy shares just consume capacity + count as raids done; their candy
+        // effect was reserved by the pre-credit and reconciled after the loop.
+        if (s.fitted > 0) actualEnergy.set(s.bossId, (actualEnergy.get(s.bossId) ?? 0) + s.fitted);
+        continue;
+      }
+      if (s.fitted <= 0) continue;
       remaining.set(s.bossId, Math.max(0, (remaining.get(s.bossId) ?? 0) - s.fitted));
       headStart[s.bossId] = (headStart[s.bossId] ?? 0) + s.fitted;
     }
@@ -440,6 +474,23 @@ export function computeRoadPlan(
       focus,
       ...filled,
     });
+  }
+
+  // Pre-credit fix-up: the credit assumed each energy goal fills its window alone;
+  // where goals competed for one window (Thursday's two Crowned raids, Friday's
+  // two Primals) or the user squeezed the energy out, the standing credit is
+  // re-derived from the raids that actually fit — min(candy need, actual energy
+  // raids) — and the phantom remainder is removed from the head start.
+  for (const [bossId, assumed] of assumedEnergy) {
+    const need = candyNeed0.get(bossId) ?? 0;
+    const givenCredit = Math.min(need, assumed);
+    const correctCredit = Math.min(need, actualEnergy.get(bossId) ?? 0);
+    const fixup = givenCredit - correctCredit;
+    if (fixup <= 0) continue;
+    remaining.set(bossId, (remaining.get(bossId) ?? 0) + fixup);
+    const next = (headStart[bossId] ?? 0) - fixup;
+    if (next > 0) headStart[bossId] = next;
+    else delete headStart[bossId];
   }
 
   return { days, headStart, totalFitted };

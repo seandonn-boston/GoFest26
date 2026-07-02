@@ -36,12 +36,18 @@ async function extract(): Promise<string | null> {
 
     // Symbol = saturated (colorful) pixel; black box and grey padding are not.
     const isSym = (i: number) => {
-      const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+      const r = data[i],
+        g = data[i + 1],
+        b = data[i + 2],
+        a = data[i + 3];
       if (a < 60) return false;
       return Math.max(r, g, b) - Math.min(r, g, b) > 45;
     };
 
-    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    let x0 = w,
+      y0 = h,
+      x1 = -1,
+      y1 = -1;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (isSym((y * w + x) * 4)) {

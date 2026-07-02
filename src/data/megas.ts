@@ -155,7 +155,10 @@ const ATTACKER_BY_NAME = new Map(MEGA_ATTACKERS.map((a) => [a.name, a]));
 
 /** Final-evolution species term from a mega's display name (for the search string). */
 function megaSpecies(name: string): string {
-  return name.replace(/^(Mega|Primal)\s+/, "").replace(/\s+[XY]$/, "").trim();
+  return name
+    .replace(/^(Mega|Primal)\s+/, "")
+    .replace(/\s+[XY]$/, "")
+    .trim();
 }
 
 // Build from the full type table (not just attackers) so every released mega is a

@@ -2,14 +2,7 @@ import { GAME_CONFIG } from "@/data/config";
 import { ceilDiv, ZERO_RANGE } from "@/lib/math";
 import { computeNetNeed } from "./requirements";
 import type { CalibrationMetric } from "./settings";
-import type {
-  BossInput,
-  BossResult,
-  Currency,
-  CurrencyNeed,
-  RaidBoss,
-  Range,
-} from "./types";
+import type { BossInput, BossResult, Currency, CurrencyNeed, RaidBoss, Range } from "./types";
 
 const CURRENCY_ORDER: Currency[] = ["megaEnergy", "xlCandy", "candy"];
 

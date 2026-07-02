@@ -99,11 +99,7 @@ function formFamilyIds(bossId: string): string[] {
  * species (Giratina, Dialga, …) toggles as one unit while both formes still show
  * in the selection list. Non-grouped bosses are unaffected.
  */
-function selectFamily(
-  inputs: Record<string, BossInput>,
-  bossId: string,
-  selected: boolean,
-): Record<string, BossInput> {
+function selectFamily(inputs: Record<string, BossInput>, bossId: string, selected: boolean): Record<string, BossInput> {
   const next = { ...inputs };
   for (const id of formFamilyIds(bossId)) {
     const boss = getBoss(id);
@@ -378,8 +374,7 @@ export function blockMembersInOrder(memberIds: string[], order: string[]): strin
   const roster = new Map(SORTED_BOSSES.map((b, i) => [b.id, i] as const));
   return [...memberIds].sort(
     (a, b) =>
-      (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity) ||
-      (roster.get(a) ?? Infinity) - (roster.get(b) ?? Infinity),
+      (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity) || (roster.get(a) ?? Infinity) - (roster.get(b) ?? Infinity),
   );
 }
 
@@ -407,10 +402,7 @@ export function selectedInGlobalOrder(state: {
  * canonical `globalPriority`, with any not-yet-ranked selections appended in
  * roster order. Drives the global priority list on the Prioritize step.
  */
-export function selectedInPriorityOrder(state: {
-  inputs: Record<string, BossInput>;
-  globalPriority: string[];
-}): string[] {
+export function selectedInPriorityOrder(state: { inputs: Record<string, BossInput>; globalPriority: string[] }): string[] {
   const rank = new Map(state.globalPriority.map((id, i) => [id, i] as const));
   return SORTED_BOSSES.filter((b) => {
     if (!state.inputs[b.id]?.selected) return false;
@@ -460,11 +452,9 @@ export const usePlannerStore = create<PlannerState>()(
       roadSelected: {},
       roadEnergy: {},
 
-      togglePlayDay: (dayId) =>
-        set((state) => ({ playDays: { ...state.playDays, [dayId]: !state.playDays[dayId] } })),
+      togglePlayDay: (dayId) => set((state) => ({ playDays: { ...state.playDays, [dayId]: !state.playDays[dayId] } })),
 
-      setRoadTargets: (dayId, ids) =>
-        set((state) => ({ roadTargets: { ...state.roadTargets, [dayId]: ids } })),
+      setRoadTargets: (dayId, ids) => set((state) => ({ roadTargets: { ...state.roadTargets, [dayId]: ids } })),
 
       toggleRoadCoupled: () => set((state) => ({ roadCoupled: !state.roadCoupled })),
 
@@ -515,11 +505,9 @@ export const usePlannerStore = create<PlannerState>()(
           return { imports: imports.slice(Math.max(0, imports.length - MAX_IMPORTS)) };
         }),
 
-      removeImport: (id) =>
-        set((state) => ({ imports: state.imports.filter((s) => s.id !== id) })),
+      removeImport: (id) => set((state) => ({ imports: state.imports.filter((s) => s.id !== id) })),
 
-      setImportKey: (id, key) =>
-        set((state) => ({ imports: state.imports.map((s) => (s.id === id ? { ...s, key } : s)) })),
+      setImportKey: (id, key) => set((state) => ({ imports: state.imports.map((s) => (s.id === id ? { ...s, key } : s)) })),
 
       clearImports: () => set({ imports: [] }),
 
@@ -579,9 +567,7 @@ export const usePlannerStore = create<PlannerState>()(
           const inputs = { ...state.inputs };
           for (const boss of SORTED_BOSSES) {
             const existing = inputs[boss.id];
-            inputs[boss.id] = existing
-              ? { ...existing, selected: true }
-              : { ...makeDefaultInput(boss), selected: true };
+            inputs[boss.id] = existing ? { ...existing, selected: true } : { ...makeDefaultInput(boss), selected: true };
           }
           const anyRemote = SORTED_BOSSES.some((b) => !bossIsLocal(b, state.settings.region));
           return anyRemote && !state.settings.useRemoteRaids
@@ -775,8 +761,7 @@ export const usePlannerStore = create<PlannerState>()(
           return { inputs };
         }),
 
-      setBlockPriority: (blockKey, ids) =>
-        set((state) => ({ blockPriority: { ...state.blockPriority, [blockKey]: ids } })),
+      setBlockPriority: (blockKey, ids) => set((state) => ({ blockPriority: { ...state.blockPriority, [blockKey]: ids } })),
 
       setGlobalPriority: (ids) =>
         set((state) => {

@@ -6,10 +6,7 @@ import { addBackupSheet } from "./backupFile";
  * Generates the raid-plan .xlsx in the browser and triggers a download.
  * ExcelJS is imported dynamically so it only loads when the user exports.
  */
-export async function exportPlanToXlsx(
-  summary: PlanSummary,
-  inputs: BossInput[],
-): Promise<void> {
+export async function exportPlanToXlsx(summary: PlanSummary, inputs: BossInput[]): Promise<void> {
   const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
   buildWorkbook(workbook, summary, inputs);

@@ -18,16 +18,14 @@ import { EnamelBadge } from "@/components/ui/EnamelBadge";
  * `roadSelected` / `roadEnergy` sets. Like BossSelectChip it subscribes only to
  * the primitives it needs and is memoized, so toggling one tile re-renders one tile.
  */
-type RoadTileProps =
-  | { kind: "boss"; boss: RaidBoss }
-  | { kind: "energy"; bossId: string; def: EnergyGoalDef };
+type RoadTileProps = { kind: "boss"; boss: RaidBoss } | { kind: "energy"; bossId: string; def: EnergyGoalDef };
 
 const STAGE = "h-[90px] w-[84px]";
-const LABEL = (
-  text: string,
-): React.ReactNode => (
+const LABEL = (text: string): React.ReactNode => (
   <span className="absolute inset-x-0 bottom-1.5 z-10 flex justify-center px-1">
-    <span className="enamel-label min-w-0 max-w-full overflow-hidden whitespace-nowrap text-[12px] leading-tight">{text}</span>
+    <span className="enamel-label min-w-0 max-w-full overflow-hidden whitespace-nowrap text-[12px] leading-tight">
+      {text}
+    </span>
   </span>
 );
 

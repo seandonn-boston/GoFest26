@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 
 const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
@@ -15,6 +21,10 @@ const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every
 export function useDragList(committed: string[], onReorder: (ids: string[]) => void) {
   const [draft, setDraft] = useState<string[]>(committed);
   const [dragId, setDragId] = useState<string | null>(null);
+  // Announced via the caller's aria-live region after a keyboard move — pointer
+  // drags are visible, but an Arrow-key reorder is otherwise silent to a screen
+  // reader. Render as: <span aria-live="polite" role="status" className="sr-only">
+  const [announcement, setAnnouncement] = useState("");
   const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   // While not dragging, track the committed order. Compared by value (not
@@ -69,13 +79,14 @@ export function useDragList(committed: string[], onReorder: (ids: string[]) => v
   };
 
   // Keyboard reordering on a focused grip.
-  const move = (id: string, dir: -1 | 1) => {
+  const move = (id: string, dir: -1 | 1, label: string) => {
     const idx = committed.indexOf(id);
     const to = idx + dir;
     if (idx < 0 || to < 0 || to >= committed.length) return;
     const next = [...committed];
     [next[idx], next[to]] = [next[to], next[idx]];
     onReorder(next);
+    setAnnouncement(`${label} moved to position ${to + 1} of ${next.length}`);
   };
 
   /** Props for a row's drag grip (pointer + Arrow Up/Down). */
@@ -87,10 +98,10 @@ export function useDragList(committed: string[], onReorder: (ids: string[]) => v
     onKeyDown: (e: ReactKeyboardEvent) => {
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        move(id, -1);
+        move(id, -1, label);
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        move(id, 1);
+        move(id, 1, label);
       }
     },
   });
@@ -98,5 +109,5 @@ export function useDragList(committed: string[], onReorder: (ids: string[]) => v
   /** Props for the scroll container that owns the rows. */
   const containerProps = { onPointerMove: onMove, onPointerUp: endDrag, onPointerCancel: endDrag };
 
-  return { list, dragId, setRow, gripProps, containerProps };
+  return { list, dragId, setRow, gripProps, containerProps, announcement };
 }

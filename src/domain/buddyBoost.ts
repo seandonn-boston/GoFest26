@@ -12,13 +12,8 @@ function shareType(a: RaidBoss, b: RaidBoss): boolean {
  * already working on (`candidateMegas`) and must share a type with `target`.
  * Returns the matching mega boss, or null if none applies.
  */
-export function recommendBuddy(
-  target: RaidBoss,
-  candidateMegas: RaidBoss[],
-): RaidBoss | null {
-  const matches = candidateMegas.filter(
-    (m) => m.id !== target.id && shareType(m, target),
-  );
+export function recommendBuddy(target: RaidBoss, candidateMegas: RaidBoss[]): RaidBoss | null {
+  const matches = candidateMegas.filter((m) => m.id !== target.id && shareType(m, target));
   if (matches.length === 0) return null;
   // Prefer the highest-tier, top-priority mega among the matches.
   matches.sort((a, b) => a.sortPriority - b.sortPriority);

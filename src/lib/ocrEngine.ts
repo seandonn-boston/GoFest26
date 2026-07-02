@@ -67,8 +67,7 @@ export function loadTesseract(): Promise<TesseractGlobal> {
     const s = document.createElement("script");
     s.src = CDN;
     s.async = true;
-    s.onload = () =>
-      window.Tesseract ? resolve(window.Tesseract) : reject(new Error("OCR engine failed to load"));
+    s.onload = () => (window.Tesseract ? resolve(window.Tesseract) : reject(new Error("OCR engine failed to load")));
     s.onerror = () =>
       reject(
         new Error(
@@ -267,8 +266,7 @@ function collectWords(data: TData): OcrWord[] {
     raw = data.words;
   } else {
     for (const b of data.blocks ?? [])
-      for (const p of b.paragraphs ?? [])
-        for (const l of p.lines ?? []) for (const w of l.words ?? []) raw.push(w);
+      for (const p of b.paragraphs ?? []) for (const l of p.lines ?? []) for (const w of l.words ?? []) raw.push(w);
   }
   return raw.filter((w) => w.bbox && w.text.trim()).map((w) => ({ text: w.text.trim(), ...w.bbox! }));
 }

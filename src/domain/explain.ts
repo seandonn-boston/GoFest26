@@ -139,7 +139,9 @@ export function explainCurrency(
       ],
     });
     if (quantity > 1) {
-      lines.push({ tokens: [txt("×"), ed("quantity", quantity, { min: 1, max: 99 }), txt("copies ="), out(`${fmt(gross)}`)] });
+      lines.push({
+        tokens: [txt("×"), ed("quantity", quantity, { min: 1, max: 99 }), txt("copies ="), out(`${fmt(gross)}`)],
+      });
     }
     lines.push({
       tokens: [txt("−"), ed("current.xlCandy", held, { min: 0 }), txt("on hand ="), out(`${fmt(needed)} still needed`)],
@@ -174,7 +176,9 @@ export function explainCurrency(
       ],
     });
     if (quantity > 1) {
-      lines.push({ tokens: [txt("×"), ed("quantity", quantity, { min: 1, max: 99 }), txt("copies ="), out(`${fmt(gross)}`)] });
+      lines.push({
+        tokens: [txt("×"), ed("quantity", quantity, { min: 1, max: 99 }), txt("copies ="), out(`${fmt(gross)}`)],
+      });
     }
     lines.push({
       tokens: [txt("−"), ed("current.megaEnergy", held, { min: 0 }), txt("on hand ="), out(`${fmt(needed)} still needed`)],

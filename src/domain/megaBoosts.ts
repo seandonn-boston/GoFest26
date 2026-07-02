@@ -18,8 +18,24 @@ import { effectiveness } from "./counters";
 import type { PType } from "@/data/attackers";
 
 const ALL_TYPES = new Set<PType>([
-  "Normal", "Fire", "Water", "Grass", "Electric", "Ice", "Fighting", "Poison",
-  "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy",
+  "Normal",
+  "Fire",
+  "Water",
+  "Grass",
+  "Electric",
+  "Ice",
+  "Fighting",
+  "Poison",
+  "Ground",
+  "Flying",
+  "Psychic",
+  "Bug",
+  "Rock",
+  "Ghost",
+  "Dragon",
+  "Dark",
+  "Steel",
+  "Fairy",
 ]);
 
 function asPTypes(types: readonly string[]): PType[] {

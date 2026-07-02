@@ -27,9 +27,7 @@ export function MegaSearchBar() {
       .filter((b): b is NonNullable<typeof b> => !!b);
     const pick = (day: EventDay) =>
       mergeMegaBoosts(
-        selected
-          .filter((b) => bossDays(b).includes(day))
-          .map((b) => megaBoostsForBoss(b.types ?? [], wildTypesForBoss(b))),
+        selected.filter((b) => bossDays(b).includes(day)).map((b) => megaBoostsForBoss(b.types ?? [], wildTypesForBoss(b))),
       );
     return { sat: pick("sat"), sun: pick("sun") };
   }, [inputs]);
@@ -50,8 +48,8 @@ export function MegaSearchBar() {
           <MegaBoostLegend />
         </div>
         <p className="mb-2 text-[13px] text-slate-400">
-          Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL
-          boost — the outline shows what each mega brings this day (see key). Only one counts at a time.
+          Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL boost — the outline
+          shows what each mega brings this day (see key). Only one counts at a time.
         </p>
         <MegaBoostRow boosts={boosts} size={24} />
       </Copyable>

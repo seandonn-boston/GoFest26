@@ -32,7 +32,12 @@ describe("explainCurrency matches the engine", () => {
   });
 
   it("XL with on-hand candy and multiple copies", () => {
-    expectMatch("zekrom", "xlCandy", input("zekrom", { current: { ...input("zekrom").current, xlCandy: 120 }, quantity: 2 }), 3);
+    expectMatch(
+      "zekrom",
+      "xlCandy",
+      input("zekrom", { current: { ...input("zekrom").current, xlCandy: 120 }, quantity: 2 }),
+      3,
+    );
   });
 
   it("Mega Energy for Mewtwo across mega levels", () => {
@@ -57,7 +62,10 @@ describe("explainCurrency matches the engine", () => {
   it("exposes editable source fields in the token stream", () => {
     const boss = getBoss("zekrom")!;
     const ex = explainCurrency(boss, input("zekrom"), "xlCandy", {}, 3)!;
-    const fields = ex.lines.flatMap((l) => l.tokens).filter((t) => t.t === "edit").map((t) => (t as { field: string }).field);
+    const fields = ex.lines
+      .flatMap((l) => l.tokens)
+      .filter((t) => t.t === "edit")
+      .map((t) => (t as { field: string }).field);
     expect(fields).toContain("current.level");
     expect(fields).toContain("target.level");
     expect(fields).toContain("current.xlCandy");

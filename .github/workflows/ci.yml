@@ -1,0 +1,40 @@
+name: CI
+
+# Quality gate for every PR and push: format, lint (zero warnings), types,
+# tests. Deploy (deploy-pages.yml) runs its own build on main; this workflow
+# is what keeps warnings and regressions from ever reaching it.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: ESLint (zero warnings)
+        run: npx eslint . --max-warnings 0
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test

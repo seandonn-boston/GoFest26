@@ -42,11 +42,10 @@ export function ResourcesOnHand() {
 
   const [open, setOpen] = useState(false);
 
-  const setNum =
-    (key: "passesOwned" | "remoteRaidPassesPlanned" | "linkChargesOwned") => (raw: string) => {
-      const n = Math.round(Number(raw.replace(/[^\d]/g, "")) || 0);
-      setSettings({ [key]: Math.max(0, Math.min(99999, n)) });
-    };
+  const setNum = (key: "passesOwned" | "remoteRaidPassesPlanned" | "linkChargesOwned") => (raw: string) => {
+    const n = Math.round(Number(raw.replace(/[^\d]/g, "")) || 0);
+    setSettings({ [key]: Math.max(0, Math.min(99999, n)) });
+  };
 
   return (
     <div className="brutal rounded-xl bg-gofest-panel/80 p-3">
@@ -63,82 +62,83 @@ export function ResourcesOnHand() {
       </button>
       {open ? (
         <>
-      <p className="mt-1.5 text-[13px] text-slate-400">
-        What you already hold — we spend it on your highest priorities first, so the cost step shows
-        only what you&apos;d still buy. Free daily passes are auto-counted, so leave those out.
-      </p>
+          <p className="mt-1.5 text-[13px] text-slate-400">
+            What you already hold — we spend it on your highest priorities first, so the cost step shows only what you&apos;d
+            still buy. Free daily passes are auto-counted, so leave those out.
+          </p>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-300">
-        <label className="flex items-center gap-1.5">
-          <span>Raid Passes</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={String(Math.max(0, Math.round(passesOwned)))}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setNum("passesOwned")(e.target.value)}
-            aria-label="Raid passes you already have"
-            className={numField}
-          />
-          <Info>
-            Premium / regular Raid Passes you hold for <b className="text-slate-200">in-person</b> raids. Free daily
-            passes aren&apos;t entered here — they&apos;re granted automatically and already counted.
-          </Info>
-        </label>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-slate-300">
+            <label className="flex items-center gap-1.5">
+              <span>Raid Passes</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={String(Math.max(0, Math.round(passesOwned)))}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setNum("passesOwned")(e.target.value)}
+                aria-label="Raid passes you already have"
+                className={numField}
+              />
+              <Info>
+                Premium / regular Raid Passes you hold for <b className="text-slate-200">in-person</b> raids. Free daily
+                passes aren&apos;t entered here — they&apos;re granted automatically and already counted.
+              </Info>
+            </label>
 
-        <label className="flex items-center gap-1.5">
-          <span>Remote Raid Passes</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={String(Math.max(0, Math.round(remotePlanned)))}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setNum("remoteRaidPassesPlanned")(e.target.value)}
-            aria-label="Remote Raid Passes you have"
-            className={numField}
-          />
-          <Info>
-            Remote Raid Passes are <b className="text-slate-200">unlimited</b> this event — this is just how many you
-            plan on using through the week. They&apos;re only used if you opt into remote raids on the Prioritize step.
-          </Info>
-        </label>
+            <label className="flex items-center gap-1.5">
+              <span>Remote Raid Passes</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={String(Math.max(0, Math.round(remotePlanned)))}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setNum("remoteRaidPassesPlanned")(e.target.value)}
+                aria-label="Remote Raid Passes you have"
+                className={numField}
+              />
+              <Info>
+                Remote Raid Passes are <b className="text-slate-200">unlimited</b> this event — this is just how many you
+                plan on using through the week. They&apos;re only used if you opt into remote raids on the Prioritize step.
+              </Info>
+            </label>
 
-        <label className="flex items-center gap-1.5">
-          <span>Link Charges</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={String(Math.max(0, Math.round(linkChargesOwned)))}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setNum("linkChargesOwned")(e.target.value)}
-            aria-label="Link Charges you have"
-            className={numField}
-          />
-          <Info>
-            A standalone currency — <b className="text-slate-200">in person</b> they pay for a Mega (150 LC) or Super
-            Mega (200 LC) raid instead of a pass. For <b className="text-slate-200">remote</b> they only enable a Super
-            Mega raid (a Remote Pass <b>and</b> 200 LC); they don&apos;t help ordinary remote Mega raids. Buy at 200 for
-            100 coins or 600 for 250.
-          </Info>
-        </label>
-      </div>
+            <label className="flex items-center gap-1.5">
+              <span>Link Charges</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={String(Math.max(0, Math.round(linkChargesOwned)))}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setNum("linkChargesOwned")(e.target.value)}
+                aria-label="Link Charges you have"
+                className={numField}
+              />
+              <Info>
+                A standalone currency — <b className="text-slate-200">in person</b> they pay for a Mega (150 LC) or Super
+                Mega (200 LC) raid instead of a pass. For <b className="text-slate-200">remote</b> they only enable a Super
+                Mega raid (a Remote Pass <b>and</b> 200 LC); they don&apos;t help ordinary remote Mega raids. Buy at 200 for
+                100 coins or 600 for 250.
+              </Info>
+            </label>
+          </div>
 
-      {/* Standalone opt-in — NOT tied to remote raids. */}
-      <label className="mt-2.5 flex items-start gap-2 text-[13px] text-slate-300">
-        <input
-          type="checkbox"
-          className="mt-0.5 h-4 w-4 shrink-0 accent-purple-400"
-          checked={useLinkCharges}
-          onChange={(e) => setSettings({ useLinkCharges: e.target.checked })}
-        />
-        <span>
-          Spend my Link Charges on <b className="text-purple-200">in-person Mega / Super Mega</b> raids — the cheapest
-          way to free up passes. {linkChargesOwned <= 0 ? <span className="text-slate-500">(Add some above first.)</span> : null}
-        </span>
-      </label>
+          {/* Standalone opt-in — NOT tied to remote raids. */}
+          <label className="mt-2.5 flex items-start gap-2 text-[13px] text-slate-300">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-purple-400"
+              checked={useLinkCharges}
+              onChange={(e) => setSettings({ useLinkCharges: e.target.checked })}
+            />
+            <span>
+              Spend my Link Charges on <b className="text-purple-200">in-person Mega / Super Mega</b> raids — the cheapest
+              way to free up passes.{" "}
+              {linkChargesOwned <= 0 ? <span className="text-slate-500">(Add some above first.)</span> : null}
+            </span>
+          </label>
         </>
       ) : null}
     </div>

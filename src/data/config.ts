@@ -154,8 +154,10 @@ export const GAME_CONFIG = {
   // source: in-game shop, June 2026 (screenshot-confirmed).
   passEconomy: {
     // Free Orange (daily) passes from spinning Gyms — applied first, for free.
+    // source: confirmed — weekend "up to nine free Raid Passes per day"; Road of
+    // Legends "up to 2 free Raid Passes from spinning Photo Discs at Gyms".
     freePassesPerWeekendDay: 9,
-    freePassesPerRoadDay: 3,
+    freePassesPerRoadDay: 2,
     // Premium Battle Pass ("green", in-person). 3-pack = 250 (≈83⅓/pass). A
     // limited-time box can carry ~99 passes for ~5,000 coins (≈50/pass).
     green: { bundlePasses: 3, bundleCoins: 250, bestBoxCoinsPerPass: 50 },

@@ -69,7 +69,7 @@ export function MewtwoCard({
 
   // Render whenever EITHER form is selected (selecting only X never creates the
   // Y input, and vice-versa). The per-form columns below are gated individually.
-  if (!selectedX && !selectedY || !owner) return null;
+  if ((!selectedX && !selectedY) || !owner) return null;
 
   // The shared Mewtwo (candy/XL/level/variant) lives on a selected form so its
   // leveling is counted exactly once; prefer X when both are selected.
@@ -79,121 +79,137 @@ export function MewtwoCard({
     <div className="enamel relative rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(MEWTWO_TYPES)}>
         <div className="card-text-legible relative z-10 p-4">
-        {/* Three z-layers, all centered in the header (= the collapsed card) so they
+          {/* Three z-layers, all centered in the header (= the collapsed card) so they
             don't move when the card opens: the "X Y" letters (back) and the X / Y
             sprites (middle) sit behind the card text/wordmark (button, z-20). */}
-        <div className="relative">
-        <MewtwoBackdrop spriteX={bossX.sprite} spriteY={bossY.sprite} />
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="relative z-20 block w-full text-left"
-        >
-          <span className="absolute right-3 top-3" title={open ? "Collapse" : "Expand"}>
-            <PlusToggle open={open} size={22} className="text-slate-200" />
-          </span>
-          <div className="mt-1 flex justify-center gap-1">
-            {MEWTWO_TYPES.map((t) => (
-              <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
-                <TypeIcon type={t} size={24} />
+          <div className="relative">
+            <MewtwoBackdrop spriteX={bossX.sprite} spriteY={bossY.sprite} />
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-expanded={open}
+              className="relative z-20 block w-full text-left"
+            >
+              <span className="absolute right-3 top-3" title={open ? "Collapse" : "Expand"}>
+                <PlusToggle open={open} size={22} className="text-slate-200" />
               </span>
-            ))}
+              <div className="mt-1 flex justify-center gap-1">
+                {MEWTWO_TYPES.map((t) => (
+                  <span key={t} className="rounded-full bg-black/50 ring-1 ring-white/25">
+                    <TypeIcon type={t} size={24} />
+                  </span>
+                ))}
+              </div>
+              <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
+                <span className="h-px w-12 bg-gradient-to-r from-transparent to-amber-300/50" />
+                <span className="text-[12px] leading-none">✦</span>
+                <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
+              </div>
+              <MewtwoTitle />
+              <div className="liquid-glass mx-auto mb-3 mt-2 max-w-full rounded-2xl px-3 py-2">
+                <p className="text-center text-xs font-medium text-slate-50">
+                  One Mewtwo, two Mega forms. X appears <span className="font-semibold text-white">Saturday</span>, Y appears{" "}
+                  <span className="font-semibold text-white">Sunday</span>, and their Mega Energy is separate — so enter your
+                  shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
+                </p>
+              </div>
+            </button>
           </div>
-          <div className="mb-3 mt-1.5 flex items-center justify-center gap-1.5 text-amber-200/70">
-            <span className="h-px w-12 bg-gradient-to-r from-transparent to-amber-300/50" />
-            <span className="text-[12px] leading-none">✦</span>
-            <span className="h-px w-12 bg-gradient-to-l from-transparent to-amber-300/50" />
-          </div>
-          <MewtwoTitle />
-          <div className="liquid-glass mx-auto mb-3 mt-2 max-w-full rounded-2xl px-3 py-2">
-            <p className="text-center text-xs font-medium text-slate-50">
-              One Mewtwo, two Mega forms. X appears <span className="font-semibold text-white">Saturday</span>, Y
-              appears <span className="font-semibold text-white">Sunday</span>, and their Mega Energy is separate —
-              so enter your shared Candy/XL/level once, then each form&apos;s energy and Mega Level.
-            </p>
-          </div>
-        </button>
-        </div>
 
-        {!open ? null : (
-        <>
-        {/* On-hand pool — shared Candy/XL plus each form's Mega Energy. */}
-        <div className="mb-4 rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gofest-accent2">
-            How much Mewtwo candy do you already have?
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <NumberInput label="Current Candy" value={owner.current.candy} onChange={(v) => setCurrent(ownerId, "candy", v)} />
-            <NumberInput label="Current XL Candy" value={owner.current.xlCandy} onChange={(v) => setCurrent(ownerId, "xlCandy", v)} />
-            {selectedX ? (
-              <NumberInput label="Current Mega X Candy" value={inputX!.current.megaEnergy} onChange={(v) => setCurrent(bossX.id, "megaEnergy", v)} />
-            ) : null}
-            {selectedY ? (
-              <NumberInput label="Current Mega Y Candy" value={inputY!.current.megaEnergy} onChange={(v) => setCurrent(bossY.id, "megaEnergy", v)} />
-            ) : null}
-          </div>
-          {preview ? (
-            <div className="mt-2 flex justify-end">
-              <ImageThumb src={preview.src} alt="Mewtwo screenshot" size={48} />
-            </div>
-          ) : null}
+          {!open ? null : (
+            <>
+              {/* On-hand pool — shared Candy/XL plus each form's Mega Energy. */}
+              <div className="mb-4 rounded-xl border border-white/10 bg-gofest-bg/30 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gofest-accent2">
+                  How much Mewtwo candy do you already have?
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <NumberInput
+                    label="Current Candy"
+                    value={owner.current.candy}
+                    onChange={(v) => setCurrent(ownerId, "candy", v)}
+                  />
+                  <NumberInput
+                    label="Current XL Candy"
+                    value={owner.current.xlCandy}
+                    onChange={(v) => setCurrent(ownerId, "xlCandy", v)}
+                  />
+                  {selectedX ? (
+                    <NumberInput
+                      label="Current Mega X Candy"
+                      value={inputX!.current.megaEnergy}
+                      onChange={(v) => setCurrent(bossX.id, "megaEnergy", v)}
+                    />
+                  ) : null}
+                  {selectedY ? (
+                    <NumberInput
+                      label="Current Mega Y Candy"
+                      value={inputY!.current.megaEnergy}
+                      onChange={(v) => setCurrent(bossY.id, "megaEnergy", v)}
+                    />
+                  ) : null}
+                </div>
+                {preview ? (
+                  <div className="mt-2 flex justify-end">
+                    <ImageThumb src={preview.src} alt="Mewtwo screenshot" size={48} />
+                  </div>
+                ) : null}
 
-          {/* Maxing section — always shown, with the screenshot uploader inline
+                {/* Maxing section — always shown, with the screenshot uploader inline
               above the #1 / #2 priority tiles. */}
-          <MewtwoCopiesEditor
-            scanSlot={
-              <CardScan
-                expectedSpecies="mewtwo"
-                bossLabel="Mega Mewtwo"
-                onThumb={(thumb, capturedAt) => setScreenshot("mewtwo", thumb, capturedAt)}
-                onApply={(s) => {
-                  if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
-                  if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
-                  const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
-                  if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
-                  if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
-                }}
-              />
-            }
-          />
-        </div>
+                <MewtwoCopiesEditor
+                  scanSlot={
+                    <CardScan
+                      expectedSpecies="mewtwo"
+                      bossLabel="Mega Mewtwo"
+                      onThumb={(thumb, capturedAt) => setScreenshot("mewtwo", thumb, capturedAt)}
+                      onApply={(s) => {
+                        if (s.candy !== undefined) setCurrent(ownerId, "candy", s.candy);
+                        if (s.xlCandy !== undefined) setCurrent(ownerId, "xlCandy", s.xlCandy);
+                        const vals = energyForBosses(s.megaEnergies, [bossX, bossY]);
+                        if (vals[0] !== undefined) setCurrent(bossX.id, "megaEnergy", vals[0]);
+                        if (vals[1] !== undefined) setCurrent(bossY.id, "megaEnergy", vals[1]);
+                      }}
+                    />
+                  }
+                />
+              </div>
 
-        {/* Per-form (only the forms you selected) */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {selectedX ? (
-            <FormColumn
-              title="Mega Mewtwo X"
-              subtitle={describeAvailability(bossX)}
-              types={bossX.types}
-              sprite={bossX.sprite}
-              megaBuddy={inputX!.megaBuddy ?? true}
-              l4Buddy={inputX!.l4Buddy ?? false}
-              l4Eligible={isL4Eligible(bossX)}
-              onMegaBuddy={(v) => setMegaBuddy(bossX.id, v)}
-              onL4Buddy={(v) => setL4Buddy(bossX.id, v)}
-              result={resultX}
-              preUnlocked={!!bossX.goFestPreUnlocked}
-            />
-          ) : null}
-          {selectedY ? (
-            <FormColumn
-              title="Mega Mewtwo Y"
-              subtitle={describeAvailability(bossY)}
-              types={bossY.types}
-              sprite={bossY.sprite}
-              megaBuddy={inputY!.megaBuddy ?? true}
-              l4Buddy={inputY!.l4Buddy ?? false}
-              l4Eligible={isL4Eligible(bossY)}
-              onMegaBuddy={(v) => setMegaBuddy(bossY.id, v)}
-              onL4Buddy={(v) => setL4Buddy(bossY.id, v)}
-              result={resultY}
-              preUnlocked={!!bossY.goFestPreUnlocked}
-            />
-          ) : null}
-        </div>
-        </>
-        )}
+              {/* Per-form (only the forms you selected) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {selectedX ? (
+                  <FormColumn
+                    title="Mega Mewtwo X"
+                    subtitle={describeAvailability(bossX)}
+                    types={bossX.types}
+                    sprite={bossX.sprite}
+                    megaBuddy={inputX!.megaBuddy ?? true}
+                    l4Buddy={inputX!.l4Buddy ?? false}
+                    l4Eligible={isL4Eligible(bossX)}
+                    onMegaBuddy={(v) => setMegaBuddy(bossX.id, v)}
+                    onL4Buddy={(v) => setL4Buddy(bossX.id, v)}
+                    result={resultX}
+                    preUnlocked={!!bossX.goFestPreUnlocked}
+                  />
+                ) : null}
+                {selectedY ? (
+                  <FormColumn
+                    title="Mega Mewtwo Y"
+                    subtitle={describeAvailability(bossY)}
+                    types={bossY.types}
+                    sprite={bossY.sprite}
+                    megaBuddy={inputY!.megaBuddy ?? true}
+                    l4Buddy={inputY!.l4Buddy ?? false}
+                    l4Eligible={isL4Eligible(bossY)}
+                    onMegaBuddy={(v) => setMegaBuddy(bossY.id, v)}
+                    onL4Buddy={(v) => setL4Buddy(bossY.id, v)}
+                    result={resultY}
+                    preUnlocked={!!bossY.goFestPreUnlocked}
+                  />
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -241,7 +257,12 @@ function FormColumn({
 
       <div className="flex flex-col gap-1 text-[13px] text-slate-300">
         <label className="flex items-center gap-1.5">
-          <input type="checkbox" className="h-3 w-3 accent-gofest-accent2" checked={megaBuddy} onChange={(e) => onMegaBuddy(e.target.checked)} />
+          <input
+            type="checkbox"
+            className="h-3 w-3 accent-gofest-accent2"
+            checked={megaBuddy}
+            onChange={(e) => onMegaBuddy(e.target.checked)}
+          />
           Mega buddy bonus
         </label>
         {l4Eligible ? (
@@ -272,7 +293,8 @@ function FormColumn({
             <ul className="mt-1 space-y-0.5 text-[13px] text-slate-400">
               {needEntries.map(([c, n]) => (
                 <li key={c}>
-                  {CURRENCY_LABELS[c]}: need <span className="text-slate-200">{formatNumber(n.needed)}</span> → {formatRange(n.raidsRange)} raids
+                  {CURRENCY_LABELS[c]}: need <span className="text-slate-200">{formatNumber(n.needed)}</span> →{" "}
+                  {formatRange(n.raidsRange)} raids
                 </li>
               ))}
             </ul>
@@ -280,8 +302,8 @@ function FormColumn({
         )}
         {preUnlocked ? (
           <p className="mt-1.5 text-[13px] text-slate-500">
-            💡 Protip: GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500 first-evolution cost) —
-            set Mega lvl to 0 if you&apos;re evolving one you already own.
+            💡 Protip: GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500 first-evolution cost) — set Mega lvl to 0 if
+            you&apos;re evolving one you already own.
           </p>
         ) : null}
       </div>

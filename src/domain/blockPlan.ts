@@ -172,8 +172,7 @@ export function bandsForSpecies(
     // Position is measured in time-slots; a quick-catch raid advances it by less,
     // so more of the species' raids land inside guaranteed time.
     const pos = cumStart + k * slotCost;
-    let band: RiskBand =
-      k < sure ? "blue" : k < sure + green ? "green" : k < sure + green + yellow ? "yellow" : "red";
+    let band: RiskBand = k < sure ? "blue" : k < sure + green ? "green" : k < sure + green + yellow ? "yellow" : "red";
     if (band === "blue" && pos >= capacity.min) band = "green";
     bands[band] += 1;
   }
@@ -300,8 +299,7 @@ export function computeBlockPlan(
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
   const quickFactor = capacity.quickCatchSlotFactor ?? 1;
-  const isQuick = (bossId: string, blockIdx: number) =>
-    !!quickCatchBlocks[`${bossId}@${keyAt(blockIdx)}`];
+  const isQuick = (bossId: string, blockIdx: number) => !!quickCatchBlocks[`${bossId}@${keyAt(blockIdx)}`];
   // Multi-form species collapse to one shared-resource target (primary forme),
   // matching the collapsed results from computePlanSummary.
   inputs = collapseForms(inputs);
@@ -454,7 +452,14 @@ export function computeBlockPlan(
   const remoteRank = new Map(globalOrder.map((id, i) => [id, i] as const));
   const remotePriorityOf = (id: string) => remoteRank.get(id) ?? Infinity;
   const remote = settings.useRemoteRaids
-    ? computeRemotePlan(inputs, resultById, rewardCase, remotePriorityOf, remoteAllocations, midpoint(capacity.remoteCapacity))
+    ? computeRemotePlan(
+        inputs,
+        resultById,
+        rewardCase,
+        remotePriorityOf,
+        remoteAllocations,
+        midpoint(capacity.remoteCapacity),
+      )
     : undefined;
 
   return { blocks, remote, feasible: blocks.every((b) => b.remaining === 0) };
@@ -569,7 +574,7 @@ export function autoRemoteAllocations(
     .filter((b): b is RaidBoss => !!b)
     .map((b) => ({
       id: b.id,
-      need: bossIsLocal(b, settings.region) ? shortfall.get(b.id) ?? 0 : sized(resultById.get(b.id)?.raids, rewardCase),
+      need: bossIsLocal(b, settings.region) ? (shortfall.get(b.id) ?? 0) : sized(resultById.get(b.id)?.raids, rewardCase),
       remoteOnly: !bossIsLocal(b, settings.region),
       mewtwo: isMewtwo(b.id),
     }))

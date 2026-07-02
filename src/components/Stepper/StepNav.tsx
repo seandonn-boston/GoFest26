@@ -18,15 +18,7 @@ export interface StepMeta {
  * the active step is highlighted and completed steps show a ✓. Scrolls sideways
  * on narrow screens so it never crowds a phone.
  */
-export function StepNav({
-  steps,
-  active,
-  onSelect,
-}: {
-  steps: StepMeta[];
-  active: StepId;
-  onSelect: (id: StepId) => void;
-}) {
+export function StepNav({ steps, active, onSelect }: { steps: StepMeta[]; active: StepId; onSelect: (id: StepId) => void }) {
   return (
     <nav
       aria-label="Planner steps"
@@ -62,18 +54,18 @@ export function StepNav({
                 </span>
                 <span className="flex flex-col leading-tight">
                   <span
-                    className={`whitespace-nowrap text-xs font-semibold ${
-                      isActive ? "text-slate-100" : "text-slate-300"
-                    }`}
+                    className={`whitespace-nowrap text-xs font-semibold ${isActive ? "text-slate-100" : "text-slate-300"}`}
                   >
                     {s.label}
                   </span>
-                  {s.optional ? (
-                    <span className="text-[11px] uppercase tracking-wide text-slate-500">Optional</span>
-                  ) : null}
+                  {s.optional ? <span className="text-[11px] uppercase tracking-wide text-slate-500">Optional</span> : null}
                 </span>
               </button>
-              {s.id < steps.length ? <span aria-hidden className="text-slate-600">›</span> : null}
+              {s.id < steps.length ? (
+                <span aria-hidden className="text-slate-600">
+                  ›
+                </span>
+              ) : null}
             </li>
           );
         })}

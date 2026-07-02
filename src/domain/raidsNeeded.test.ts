@@ -76,10 +76,10 @@ describe("same-type Mega buddy XL boost", () => {
   });
 
   it("does not boost a calibrated (observed) XL value", () => {
-    const boostedAtL3 = computeBossResult(articuno, input("articuno", { level: 50 }), { legendaryXl: 6 }, 3)
-      .needs.xlCandy!.raidsRange.max;
-    const boostedAtL1 = computeBossResult(articuno, input("articuno", { level: 50 }), { legendaryXl: 6 }, 1)
-      .needs.xlCandy!.raidsRange.max;
+    const boostedAtL3 = computeBossResult(articuno, input("articuno", { level: 50 }), { legendaryXl: 6 }, 3).needs.xlCandy!
+      .raidsRange.max;
+    const boostedAtL1 = computeBossResult(articuno, input("articuno", { level: 50 }), { legendaryXl: 6 }, 1).needs.xlCandy!
+      .raidsRange.max;
     expect(boostedAtL3).toBe(boostedAtL1); // calibration wins; boost not re-applied
   });
 });

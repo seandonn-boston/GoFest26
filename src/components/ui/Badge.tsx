@@ -25,13 +25,7 @@ export function TierBadge({ tier }: { tier: RaidTier }) {
   );
 }
 
-export function Badge({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function Badge({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <span
       className={`rounded-sm border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono text-[12px] uppercase tracking-widest text-slate-300 ${className}`}

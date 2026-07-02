@@ -55,9 +55,7 @@ export const viewport: Viewport = {
   themeColor: "#050507",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body className="text-slate-100 antialiased">

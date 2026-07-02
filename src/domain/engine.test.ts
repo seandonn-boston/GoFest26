@@ -18,16 +18,17 @@ function planningPerHour() {
 
 function scheduleFor(inputs: BossInput[], settings: PlannerSettings = DEFAULT_SETTINGS) {
   const cap = computeCapacity(settings);
-  const results = inputs
-    .filter((i) => i.selected)
-    .map((i) => computeBossResult(getBoss(i.bossId)!, i));
+  const results = inputs.filter((i) => i.selected).map((i) => computeBossResult(getBoss(i.bossId)!, i));
   return computeSchedule(inputs, results, cap, settings);
 }
 
 const mewtwoX = getBoss("mega-mewtwo-x")!;
 const reshiram = getBoss("reshiram")!;
 
-function input(bossId: string, overrides: Partial<BossInput["current"]> & { targetMegaLevel?: number; targetLevel?: number } = {}): BossInput {
+function input(
+  bossId: string,
+  overrides: Partial<BossInput["current"]> & { targetMegaLevel?: number; targetLevel?: number } = {},
+): BossInput {
   const base = makeDefaultInput(getBoss(bossId)!);
   return {
     ...base,
@@ -73,9 +74,7 @@ describe("requirements", () => {
 describe("research credits", () => {
   it("credits research rewards as on-hand currency, reducing raids", () => {
     const base = input("reshiram", { level: 40, targetLevel: 50 }); // needs 296 XL
-    const [credited] = applyResearchCredits([base], [
-      { bossId: "reshiram", currency: "xlCandy", amount: 100 },
-    ]);
+    const [credited] = applyResearchCredits([base], [{ bossId: "reshiram", currency: "xlCandy", amount: 100 }]);
     expect(credited.current.xlCandy).toBe(100);
     const before = computeBossResult(reshiram, base);
     const after = computeBossResult(reshiram, credited);
@@ -84,9 +83,7 @@ describe("research credits", () => {
 
   it("only credits the targeted boss and never mutates the input", () => {
     const base = input("reshiram", { level: 40, targetLevel: 50 });
-    const out = applyResearchCredits([base], [
-      { bossId: "mega-mewtwo-x", currency: "megaEnergy", amount: 100 },
-    ]);
+    const out = applyResearchCredits([base], [{ bossId: "mega-mewtwo-x", currency: "megaEnergy", amount: 100 }]);
     expect(out[0].current.megaEnergy).toBe(base.current.megaEnergy); // untouched
     expect(base.current.xlCandy).toBe(0); // original not mutated
   });
@@ -308,7 +305,10 @@ describe("computePlanSummary", () => {
   });
 
   it("keeps the whole climb on the sole form when only one Mewtwo is raided", () => {
-    const x = { ...input("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 1, targetMegaLevel: 4 }), selected: true };
+    const x = {
+      ...input("mega-mewtwo-x", { level: 40, targetLevel: 50, megaLevel: 1, targetMegaLevel: 4 }),
+      selected: true,
+    };
     const { results } = computePlanSummary([x]);
     const xr = results.find((r) => r.bossId === "mega-mewtwo-x")!;
     expect(xr.needs.xlCandy?.needed).toBe(computeNetNeed(mewtwoX, x).xlCandy);

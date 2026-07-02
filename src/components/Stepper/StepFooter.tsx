@@ -27,9 +27,7 @@ export function StepFooter({
         onClick={onPrev}
         disabled={isFirst}
         className={`rounded-md border px-3 py-1.5 text-sm transition ${
-          isFirst
-            ? "cursor-not-allowed border-white/10 text-slate-600"
-            : "border-white/20 text-slate-200 hover:bg-white/5"
+          isFirst ? "cursor-not-allowed border-white/10 text-slate-600" : "border-white/20 text-slate-200 hover:bg-white/5"
         }`}
       >
         ← Back

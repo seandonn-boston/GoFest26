@@ -80,11 +80,15 @@ export function RoadOfLegendsSection() {
           </label>
           <p className="mb-3 text-[13px] text-slate-400">
             {coupled ? (
-              <>These mirror your weekend targets — tap a tile to add it to your plan. Fusion/Primal tiles turn on that
-              Pokémon&apos;s energy goal.</>
+              <>
+                These mirror your weekend targets — tap a tile to add it to your plan. Fusion/Primal tiles turn on that
+                Pokémon&apos;s energy goal.
+              </>
             ) : (
-              <>Independent Road of Legends agenda — pick whatever you&apos;ll raid this week, separate from your GO Fest
-              targets.</>
+              <>
+                Independent Road of Legends agenda — pick whatever you&apos;ll raid this week, separate from your GO Fest
+                targets.
+              </>
             )}
           </p>
 

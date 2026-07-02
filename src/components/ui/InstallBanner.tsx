@@ -91,7 +91,9 @@ export function InstallBanner() {
   return (
     <>
       <div className="flex items-center gap-2 border-b border-gofest-accent/30 bg-gofest-accent/10 px-3 py-2 text-[14px] text-slate-100">
-        <span aria-hidden className="text-base leading-none">📲</span>
+        <span aria-hidden className="text-base leading-none">
+          📲
+        </span>
         <p className="min-w-0 flex-1 leading-tight">
           <b>Add to Home Screen</b> — launches full-screen and keeps your plan saved between sessions.
         </p>
@@ -154,33 +156,51 @@ function Steps({ platform }: { platform: Platform }) {
   if (platform === "ios-safari") {
     return (
       <>
-        <li>Tap the <b>Share</b> icon (the square with an up-arrow) in the Safari toolbar.</li>
-        <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
-        <li>Tap <b>Add</b> in the top-right.</li>
+        <li>
+          Tap the <b>Share</b> icon (the square with an up-arrow) in the Safari toolbar.
+        </li>
+        <li>
+          Scroll down and tap <b>Add to Home Screen</b>.
+        </li>
+        <li>
+          Tap <b>Add</b> in the top-right.
+        </li>
       </>
     );
   }
   if (platform === "ios-other") {
     return (
       <>
-        <li>iOS only lets <b>Safari</b> add Home-Screen apps — open this page in Safari first.</li>
-        <li>Then tap the <b>Share</b> icon → <b>Add to Home Screen</b> → <b>Add</b>.</li>
+        <li>
+          iOS only lets <b>Safari</b> add Home-Screen apps — open this page in Safari first.
+        </li>
+        <li>
+          Then tap the <b>Share</b> icon → <b>Add to Home Screen</b> → <b>Add</b>.
+        </li>
       </>
     );
   }
   if (platform === "android") {
     return (
       <>
-        <li>Tap the <b>⋮</b> menu (top-right of Chrome).</li>
-        <li>Tap <b>Add to Home screen</b> (or <b>Install app</b>).</li>
-        <li>Confirm with <b>Add</b> / <b>Install</b>.</li>
+        <li>
+          Tap the <b>⋮</b> menu (top-right of Chrome).
+        </li>
+        <li>
+          Tap <b>Add to Home screen</b> (or <b>Install app</b>).
+        </li>
+        <li>
+          Confirm with <b>Add</b> / <b>Install</b>.
+        </li>
       </>
     );
   }
   return (
     <>
       <li>Open your browser&apos;s menu.</li>
-      <li>Choose <b>Install app</b> or <b>Add to Home Screen</b>.</li>
+      <li>
+        Choose <b>Install app</b> or <b>Add to Home Screen</b>.
+      </li>
     </>
   );
 }

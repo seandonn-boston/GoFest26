@@ -12,9 +12,7 @@ export { MEWTWO_X_SPRITE, MEWTWO_Y_SPRITE } from "./bosses";
 export { LOCATION_PRESETS, DEFAULT_REGION } from "./locations";
 
 /** Roster sorted for display (Mega Mewtwo X/Y pinned to the top). */
-export const SORTED_BOSSES: RaidBoss[] = [...RAID_BOSSES].sort(
-  (a, b) => a.sortPriority - b.sortPriority,
-);
+export const SORTED_BOSSES: RaidBoss[] = [...RAID_BOSSES].sort((a, b) => a.sortPriority - b.sortPriority);
 
 export function getBoss(id: string): RaidBoss | undefined {
   return RAID_BOSSES.find((b) => b.id === id);

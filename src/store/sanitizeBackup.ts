@@ -156,7 +156,9 @@ const strArray = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isStr) :
 
 function numRecord(v: unknown): Record<string, number> {
   const out: Record<string, number> = {};
-  if (isObj(v)) for (const [k, val] of Object.entries(v)) if (k !== "__proto__" && typeof val === "number" && Number.isFinite(val)) out[k] = val;
+  if (isObj(v))
+    for (const [k, val] of Object.entries(v))
+      if (k !== "__proto__" && typeof val === "number" && Number.isFinite(val)) out[k] = val;
   return out;
 }
 function boolRecord(v: unknown): Record<string, boolean> {

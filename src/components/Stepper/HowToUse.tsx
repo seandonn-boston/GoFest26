@@ -17,9 +17,9 @@ const GUIDE: GuideStep[] = [
     title: "Pick your targets",
     body: (
       <>
-        Tap the Pokémon you want to power up this weekend — that&apos;s all this step is.
-        For our example, tap the <b>Mega Mewtwo X</b> (Saturday) and <b>Mega Mewtwo Y</b> (Sunday)
-        headliner tiles. Everything else is optional, so don&apos;t feel like you have to touch it.
+        Tap the Pokémon you want to power up this weekend — that&apos;s all this step is. For our example, tap the{" "}
+        <b>Mega Mewtwo X</b> (Saturday) and <b>Mega Mewtwo Y</b> (Sunday) headliner tiles. Everything else is optional, so
+        don&apos;t feel like you have to touch it.
       </>
     ),
   },
@@ -28,10 +28,10 @@ const GUIDE: GuideStep[] = [
     title: "Enter what you have",
     body: (
       <>
-        Tell the app what you already hold and where you want to end up. Hate typing? Drop your
-        Pokémon&apos;s stat-page <b>screenshots</b> at the top and it reads your <b>Candy</b>,
-        <b> XL Candy</b> and <b>Mega Energy</b> for you. For Mewtwo, set your level, the <b>X &amp; Y
-        Mega Levels</b>, and a goal (say, Mega Level 4 on both) — the one-tap <b>presets</b> help.
+        Tell the app what you already hold and where you want to end up. Hate typing? Drop your Pokémon&apos;s stat-page{" "}
+        <b>screenshots</b> at the top and it reads your <b>Candy</b>,<b> XL Candy</b> and <b>Mega Energy</b> for you. For
+        Mewtwo, set your level, the <b>X &amp; Y Mega Levels</b>, and a goal (say, Mega Level 4 on both) — the one-tap{" "}
+        <b>presets</b> help.
       </>
     ),
   },
@@ -40,9 +40,9 @@ const GUIDE: GuideStep[] = [
     title: "Road of Legends",
     body: (
       <>
-        Optional pre-event head start. The <b>Road of Legends</b> weekday raid hours (Mon Jul 6 – Fri
-        Jul 10) run before GO Fest. Pick the evenings you&apos;ll raid and which targets to pre-farm
-        each day — whatever you knock out here shrinks your weekend demand.
+        Optional pre-event head start. The <b>Road of Legends</b> weekday raid hours (Mon Jul 6 – Fri Jul 10) run before GO
+        Fest. Pick the evenings you&apos;ll raid and which targets to pre-farm each day — whatever you knock out here shrinks
+        your weekend demand.
       </>
     ),
   },
@@ -51,10 +51,9 @@ const GUIDE: GuideStep[] = [
     title: "GO Fest Prioritizer",
     body: (
       <>
-        Your weekend payoff: how many raids each target needs, a block-by-block schedule, the top
-        counters and the best <b>Mega to evolve</b> each hour, and a spreadsheet export. This is where
-        you <b>set priority</b> — drag your targets to rank them inside each time block; if a block is
-        over capacity, the ones at the bottom get cut first.
+        Your weekend payoff: how many raids each target needs, a block-by-block schedule, the top counters and the best{" "}
+        <b>Mega to evolve</b> each hour, and a spreadsheet export. This is where you <b>set priority</b> — drag your targets
+        to rank them inside each time block; if a block is over capacity, the ones at the bottom get cut first.
       </>
     ),
   },
@@ -63,9 +62,8 @@ const GUIDE: GuideStep[] = [
     title: "Remote Prioritizer",
     body: (
       <>
-        Optional. Opt into <b>remote raids</b> and assign how many of each species you&apos;ll do
-        remotely — region-locked targets first, then your priority. Those raids drop out of the
-        in-person time blocks.
+        Optional. Opt into <b>remote raids</b> and assign how many of each species you&apos;ll do remotely — region-locked
+        targets first, then your priority. Those raids drop out of the in-person time blocks.
       </>
     ),
   },
@@ -74,9 +72,8 @@ const GUIDE: GuideStep[] = [
     title: "Check the cost",
     body: (
       <>
-        Last, the money. Using the <b>passes you entered</b> in step 2, the app spends them on your top
-        priorities first, then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to own
-        them after your free daily passes.
+        Last, the money. Using the <b>passes you entered</b> in step 2, the app spends them on your top priorities first,
+        then shows how many more you&apos;d buy and the <b>PokéCoin cost</b> to own them after your free daily passes.
       </>
     ),
   },
@@ -114,8 +111,8 @@ export function HowToUse() {
             How to use this app
           </h2>
           <p className="mt-1 text-xs text-slate-300">
-            New here? The whole thing is just six steps. You only need to pick a target and enter your
-            numbers — everything else is optional. Here&apos;s the flow, using Mega Mewtwo as the example.
+            New here? The whole thing is just six steps. You only need to pick a target and enter your numbers — everything
+            else is optional. Here&apos;s the flow, using Mega Mewtwo as the example.
           </p>
         </div>
         <button
@@ -146,8 +143,7 @@ export function HowToUse() {
                 className="mr-1 font-semibold text-slate-100 underline-offset-2 hover:underline"
               >
                 {s.title}
-                {s.optional ? <span className="ml-1 text-[12px] font-normal text-slate-500">(optional)</span> : null}
-                .
+                {s.optional ? <span className="ml-1 text-[12px] font-normal text-slate-500">(optional)</span> : null}.
               </button>
               {s.body}
             </p>
@@ -156,8 +152,7 @@ export function HowToUse() {
       </ol>
 
       <p className="mt-3 text-[13px] text-slate-400">
-        Your plan saves on your device automatically — close the app and come back whenever; it&apos;ll
-        still be here.
+        Your plan saves on your device automatically — close the app and come back whenever; it&apos;ll still be here.
       </p>
     </section>
   );

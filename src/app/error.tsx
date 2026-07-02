@@ -17,9 +17,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <div className="font-mono text-[12px] uppercase tracking-[0.3em] text-gofest-accent">▚ ERROR // RECOVERABLE</div>
       <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-100">Something glitched</h1>
       <p className="mt-3 text-sm leading-relaxed text-slate-400">
-        The planner hit an unexpected error while rendering.{" "}
-        <span className="text-slate-300">Your saved plan is safe</span> — it&apos;s stored on this device, not in the
-        page. Try again, or reload if that doesn&apos;t clear it.
+        The planner hit an unexpected error while rendering. <span className="text-slate-300">Your saved plan is safe</span>{" "}
+        — it&apos;s stored on this device, not in the page. Try again, or reload if that doesn&apos;t clear it.
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <button
