@@ -2,9 +2,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { getBoss, SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, HABITATS } from "@/data";
 import { blockKey } from "@/data/habitats";
+import { ENERGY_GOALS } from "@/data/energyGoals";
+import { ROAD_DAYS } from "@/data/roadOfLegends";
 import { FORM_META } from "@/data/formGroups";
 import { RESEARCH_LINES } from "@/data/research";
 import { globalPriorityFromBlocks } from "@/domain/blockPlan";
+import { primaryFormId } from "@/domain/forms";
 import { bossIsLocal } from "@/domain/region";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
@@ -569,10 +572,45 @@ export const usePlannerStore = create<PlannerState>()(
             const existing = inputs[boss.id];
             inputs[boss.id] = existing ? { ...existing, selected: true } : { ...makeDefaultInput(boss), selected: true };
           }
+          // Road of Legends is part of "all": turn on every fusion/crowned/primal
+          // energy goal (the special-forme tiles aren't roster bosses — they live
+          // as energy goals on their base species), seeding the goal to the
+          // fuse/revert cost exactly like tapping the tile would.
+          for (const [bossId, defs] of Object.entries(ENERGY_GOALS)) {
+            const input = inputs[bossId];
+            if (!input) continue;
+            const energy = { ...input.energy };
+            for (const def of defs) {
+              const cur = energy[def.key];
+              energy[def.key] = { have: cur?.have ?? 0, goal: cur && cur.goal > 0 ? cur.goal : def.cost, on: true };
+            }
+            inputs[bossId] = { ...input, energy };
+          }
+          // Mirror into the decoupled RoL sets too, so "Select all" means all in
+          // either coupling mode: every featured weekday roster target (stored by
+          // primary forme id, matching what the plan reads) + every energy goal.
+          const roadSelected = { ...state.roadSelected };
+          for (const day of ROAD_DAYS) {
+            for (const id of day.bossIds) {
+              const meta = FORM_META.get(id);
+              roadSelected[meta && !meta.primary ? primaryFormId(meta.group) : id] = true;
+            }
+          }
+          const roadEnergy = { ...state.roadEnergy };
+          for (const [bossId, defs] of Object.entries(ENERGY_GOALS)) {
+            const cur = new Set(roadEnergy[bossId] ?? []);
+            for (const def of defs) cur.add(def.key);
+            roadEnergy[bossId] = Array.from(cur);
+          }
           const anyRemote = SORTED_BOSSES.some((b) => !bossIsLocal(b, state.settings.region));
-          return anyRemote && !state.settings.useRemoteRaids
-            ? { inputs, settings: { ...state.settings, useRemoteRaids: true } }
-            : { inputs };
+          return {
+            inputs,
+            roadSelected,
+            roadEnergy,
+            ...(anyRemote && !state.settings.useRemoteRaids
+              ? { settings: { ...state.settings, useRemoteRaids: true } }
+              : {}),
+          };
         }),
 
       setCount: (bossId, variant, value) =>

@@ -14,6 +14,23 @@ beforeEach(() => {
 });
 
 describe("planner store interactive actions", () => {
+  it("selectAll also selects the Road of Legends targets (energy goals + decoupled sets)", () => {
+    store().selectAll();
+    // Fusion/primal tiles = energy goals on their base species, seeded to cost.
+    expect(store().inputs.kyurem.energy?.blaze).toMatchObject({ on: true, goal: 1000 });
+    expect(store().inputs.kyurem.energy?.volt).toMatchObject({ on: true, goal: 1000 });
+    expect(store().inputs.zacian.energy?.sword?.on).toBe(true);
+    expect(store().inputs.groudon.energy?.primal?.on).toBe(true);
+    // Decoupled RoL sets mirror it, stored by primary forme id (dialga-origin → dialga).
+    expect(store().roadSelected.zekrom).toBe(true);
+    expect(store().roadSelected.dialga).toBe(true);
+    expect(store().roadEnergy.kyurem).toEqual(expect.arrayContaining(["blaze", "volt"]));
+    // A goal's existing progress survives: goal already customized stays put.
+    store().setEnergy("kyurem", "blaze", { goal: 700, have: 150 });
+    store().selectAll();
+    expect(store().inputs.kyurem.energy?.blaze).toMatchObject({ on: true, goal: 700, have: 150 });
+  });
+
   it("toggleSelected selects then deselects a boss", () => {
     expect(store().inputs[MEWTWO_X_ID]?.selected ?? false).toBe(false);
     store().toggleSelected(MEWTWO_X_ID);

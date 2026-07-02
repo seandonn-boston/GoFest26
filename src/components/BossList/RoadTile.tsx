@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { getBoss } from "@/data";
 import { spriteUrl } from "@/data/bosses";
+import { primaryFormId } from "@/domain/forms";
 import type { EnergyGoalDef, RaidBoss } from "@/domain/types";
 import { tileTitle, tileTitleForSource } from "@/lib/tileTitle";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -31,8 +32,11 @@ const LABEL = (text: string): React.ReactNode => (
 
 function BossRoadTile({ boss }: { boss: RaidBoss }) {
   const coupled = usePlannerStore((s) => s.roadCoupled);
+  // Decoupled RoL picks are stored by PRIMARY forme id — the shared-resource id
+  // the road plan reads — so a Friday "Origin Forme Dialga" tile toggles `dialga`.
+  const roadId = boss.formGroup ? primaryFormId(boss.formGroup) : boss.id;
   const weekendSelected = usePlannerStore((s) => !!s.inputs[boss.id]?.selected);
-  const roadSelected = usePlannerStore((s) => !!s.roadSelected[boss.id]);
+  const roadSelected = usePlannerStore((s) => !!s.roadSelected[roadId]);
   const toggleSelected = usePlannerStore((s) => s.toggleSelected);
   const toggleRoadTarget = usePlannerStore((s) => s.toggleRoadTarget);
 
@@ -42,7 +46,7 @@ function BossRoadTile({ boss }: { boss: RaidBoss }) {
     <EnamelBadge
       types={boss.types}
       selected={selected}
-      onToggle={() => (coupled ? toggleSelected(boss.id) : toggleRoadTarget(boss.id))}
+      onToggle={() => (coupled ? toggleSelected(boss.id) : toggleRoadTarget(roadId))}
       title={boss.name}
       stageClassName={STAGE}
     >
