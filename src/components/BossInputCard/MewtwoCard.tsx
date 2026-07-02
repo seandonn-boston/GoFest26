@@ -79,9 +79,9 @@ export function MewtwoCard({
     <div id="card-mewtwo" className="enamel relative scroll-mt-32 rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(MEWTWO_TYPES)}>
         <div className="card-text-legible relative z-10 p-4">
-          {/* Three z-layers, all centered in the header (= the collapsed card) so they
-            don't move when the card opens: the "X Y" letters (back) and the X / Y
-            sprites (middle) sit behind the card text/wordmark (button, z-20). */}
+          {/* Two z-layers in the header: the X / Y sprites (backdrop, z-10) sit
+            behind the card text/wordmark (button, z-20). The big "X Y" letters
+            live inside MewtwoTitle so they stay centered on the MEWTWO wordmark. */}
           <div className="relative">
             <MewtwoBackdrop spriteX={bossX.sprite} spriteY={bossY.sprite} />
             <button

@@ -2,41 +2,29 @@
 
 import { Sprite } from "@/components/ui/Sprite";
 import { CARD_SPRITE_SIZE } from "@/components/ui/CardSpriteBackdrop";
-import { GlitchText } from "@/components/ui/GlitchText";
 
-// Matches MewtwoTitle: purple fill (#8E7CC3) + the CSS glitch.
-const PURPLE = "#8E7CC3";
-const XY = "7.7rem"; // big "X Y" letters — +40% over the old 5.5rem
 const SIZE = CARD_SPRITE_SIZE; // same size as every other card
 
 /**
- * Mewtwo-only backdrop, in two z-layers behind the card text:
- *  - z-0 (back): the big "X Y" glitch letters, centered.
- *  - z-10 (middle): the Mega Mewtwo X / Y sprites (same size as every other card),
- *    each centered on the 10%-from-its-side mark so X and Y sit well apart.
- * The card's "Mewtwo" wordmark / header text sits ABOVE both (z-20 in MewtwoCard).
+ * Mewtwo-only backdrop behind the card text: the Mega Mewtwo X / Y sprites (same
+ * size as every other card), each centered on the 10%-from-its-side mark so X
+ * and Y sit well apart. The big "X Y" glitch letters live in MewtwoTitle (inside
+ * the wordmark's reserved box) so they stay centered on MEWTWO at any width.
+ * The card's wordmark / header text sits ABOVE this layer (z-20 in MewtwoCard).
  */
 export function MewtwoBackdrop({ spriteX, spriteY }: { spriteX?: string; spriteY?: string }) {
   return (
-    <>
-      {/* Back — the X Y letters. */}
-      <div aria-hidden className="absolute inset-0 z-0 flex items-center justify-center gap-[2px]">
-        <GlitchText as="span" text="X" className="mewtwo-xy" style={{ color: PURPLE, fontSize: XY }} />
-        <GlitchText as="span" text="Y" className="mewtwo-xy relative left-[2px]" style={{ color: PURPLE, fontSize: XY }} />
-      </div>
-      {/* Middle — the two sprites, centers 10% in from each edge. */}
-      <div aria-hidden className="absolute inset-0 z-10">
-        {spriteX ? (
-          <span className="absolute left-[10%] top-[8px] -translate-x-1/2">
-            <Sprite src={spriteX} alt="" size={SIZE} />
-          </span>
-        ) : null}
-        {spriteY ? (
-          <span className="absolute right-[10%] top-[8px] translate-x-1/2">
-            <Sprite src={spriteY} alt="" size={SIZE} />
-          </span>
-        ) : null}
-      </div>
-    </>
+    <div aria-hidden className="absolute inset-0 z-10">
+      {spriteX ? (
+        <span className="absolute left-[10%] top-[8px] -translate-x-1/2">
+          <Sprite src={spriteX} alt="" size={SIZE} />
+        </span>
+      ) : null}
+      {spriteY ? (
+        <span className="absolute right-[10%] top-[8px] translate-x-1/2">
+          <Sprite src={spriteY} alt="" size={SIZE} />
+        </span>
+      ) : null}
+    </div>
   );
 }
