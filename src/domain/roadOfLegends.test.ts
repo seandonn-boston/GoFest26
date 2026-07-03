@@ -319,25 +319,24 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
 });
 
 describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () => {
-  const FUSION = { min: 80, max: 140 };
   const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
-  // White Kyurem (blaze) is a Tuesday 5★ raid; energy raids at the safe reward case.
-  // Goal 400 → 5 raids, which fits inside the 6-raid 6–7 PM 5★ hour.
-  const eRaids = sized(energyRaidsNeeded(0, 400, FUSION), "safe"); // ceil(400/80) = 5
+  // White Kyurem (blaze) is a Tuesday 5★ raid; its 6–7 PM 5★ hour holds 6 raids.
   const kyuremWith = (goal: number): BossInput => ({
     ...input("kyurem"),
     energy: { blaze: { have: 0, goal, on: true } },
   });
 
   it("energy raids consume the day's capacity, sit in species, and default to the top", () => {
-    // Tuesday 5★ window = 6. Energy (White Kyurem, 5) fills first; Zekrom candy gets 1.
+    // Tuesday 5★ window = 6. White Kyurem banks Kyurem Candy too, and Kyurem still
+    // wants 30 raids for the weekend, so it grinds to fill the whole 6-raid hour
+    // (energy-first default); Zekrom candy is squeezed to the next day/weekend.
     const inputs = [kyuremWith(400), input("zekrom")];
     const results = [result("kyurem", 30), result("zekrom", 30)];
     const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }).days[0];
     const energyRow = tue.species.find((s) => s.energyKey === "blaze");
     expect(energyRow?.bossId).toBe("kyurem");
-    expect(energyRow?.fitted).toBe(eRaids); // 5
-    expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted).toBe(6 - eRaids); // 1
+    expect(energyRow?.fitted).toBe(6); // grinds Kyurem Candy to fill the hour, not just ~5 energy raids
+    expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted ?? 0).toBe(0);
     expect(tue.fitted).toBe(6); // the 5★ hour is full; the Mega hour is empty
   });
 
@@ -364,9 +363,10 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
 
   it("counts energy once in totalFitted (no double vs. the candy pre-credit)", () => {
     const road = computeRoadPlan([kyuremWith(400)], [result("kyurem", 30)], capacity, safe, { tue: true });
-    // Only the White Kyurem energy raids happen Tuesday (Kyurem isn't candy-featured Tue).
-    expect(road.totalFitted).toBe(eRaids);
-    expect(road.headStart.kyurem).toBe(eRaids); // candy credit from the pre-credit
+    // White Kyurem grinds Kyurem Candy to fill the 6-raid 5★ hour (need 30 > window),
+    // and those 6 raids are counted once — the pre-credit reserves their Candy effect.
+    expect(road.totalFitted).toBe(6);
+    expect(road.headStart.kyurem).toBe(6); // candy credit from the pre-credit
   });
 
   it("caps a Tue–Thu Mega at its 7–8 PM hour (6), not the full 2h", () => {
@@ -382,7 +382,7 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
     expect(thu.species.some((s) => s.bossId === "zacian" && !s.energyKey)).toBe(false); // no Hero pre-farm
     const crowned = thu.species.find((s) => s.energyKey === "sword");
     expect(crowned?.bossId).toBe("zacian");
-    expect(crowned?.fitted).toBe(eRaids);
+    expect(crowned?.fitted).toBe(6); // grinds Zacian Candy to fill the 6-raid hour (need 30 > window)
     // Crowned raids still bank Zacian candy toward the weekend.
     const weekend = computeBlockPlan(
       [zacian],
@@ -398,12 +398,57 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
       (sum, b) => sum + b.species.filter((s) => s.bossId === "zacian").reduce((a, s) => a + s.raids, 0),
       0,
     );
-    expect(demanded).toBe(30 - eRaids); // credited
+    expect(demanded).toBe(30 - 6); // credited by the 6 Crowned raids that fit Thursday's hour
   });
 });
 
-describe("computeRoadPlan — Primal raids grind base Candy to fill their hour", () => {
+describe("computeRoadPlan — energy raids grind base Candy across every slot", () => {
   const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
+  const FUSION = { min: 80, max: 140 };
+
+  it("fusion: White/Black Kyurem grind Kyurem Candy across Tue + Wed + the weekend", () => {
+    // Kyurem needs 30 raids. Tue (White) and Wed (Black) each grind their 6-raid 5★
+    // hour toward it (12 total), and the weekend covers the rest — one shared pool.
+    const kyurem: BossInput = {
+      ...input("kyurem"),
+      energy: { blaze: { have: 0, goal: 1000, on: true }, volt: { have: 0, goal: 1000, on: true } },
+    };
+    const road = computeRoadPlan([kyurem], [result("kyurem", 30)], capacity, safe, { tue: true, wed: true });
+    const tue = road.days.find((d) => d.id === "tue")!;
+    const wed = road.days.find((d) => d.id === "wed")!;
+    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted).toBe(6); // fills the hour, not ~13 energy raids
+    expect(wed.species.find((s) => s.energyKey === "volt")?.fitted).toBe(6);
+    expect(road.headStart.kyurem).toBe(12); // 6 + 6 credited to the weekend
+    const weekend = computeBlockPlan([kyurem], [result("kyurem", 30)], capacity, safe, {}, {}, {}, road.headStart);
+    const demanded = weekend.blocks.reduce(
+      (sum, b) => sum + b.species.filter((s) => s.bossId === "kyurem").reduce((a, s) => a + s.raids, 0),
+      0,
+    );
+    expect(demanded).toBe(30 - 12); // weekend covers what the two fusion days didn't
+  });
+
+  it("two species sharing Tuesday's 5★ hour split it (White Kyurem + Dawn Wings Necrozma)", () => {
+    // Both grind base Candy (30 raids each wanted); Tuesday's 6-raid 5★ hour splits 3/3.
+    const inputs: BossInput[] = [
+      { ...input("kyurem"), energy: { blaze: { have: 0, goal: 1000, on: true } } },
+      { ...input("necrozma"), energy: { lunar: { have: 0, goal: 1000, on: true } } },
+    ];
+    const results = [result("kyurem", 30), result("necrozma", 30)];
+    const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }).days[0];
+    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted).toBe(3);
+    expect(tue.species.find((s) => s.energyKey === "lunar")?.fitted).toBe(3);
+    expect(tue.fitted).toBe(6);
+  });
+
+  it("a small Candy need falls back to the plain energy count (no over-grind)", () => {
+    // Kyurem only needs 2 raids for the weekend; the fusion raid grinds no more than
+    // its ~5 energy raids (need < energy), and credits only the 2 Candy actually wanted.
+    const kyurem: BossInput = { ...input("kyurem"), energy: { blaze: { have: 0, goal: 400, on: true } } };
+    const eRaids = sized(energyRaidsNeeded(0, 400, FUSION), "safe"); // 5
+    const road = computeRoadPlan([kyurem], [result("kyurem", 2)], capacity, safe, { tue: true });
+    expect(road.days[0].species.find((s) => s.energyKey === "blaze")?.fitted).toBe(eRaids); // 5, not grown
+    expect(road.headStart.kyurem).toBe(2); // credit capped at the small Candy need
+  });
   // Primal Kyogre/Groudon are Friday's 7–8 PM raids; the 1h Mega/Primal window holds
   // 6 (6/hr). The 400-energy reversion is ~5 raids — but a Primal raid also banks base
   // Candy, so with a big weekend Kyogre goal the grinder should fill the whole hour.
@@ -483,15 +528,15 @@ describe("computeRoadPlan — pre-credit reconciliation and demand netting (revi
     energy: { [key]: { have: 0, goal, on: true } },
   });
 
-  it("claws back phantom credit when two goals compete for one window (Thursday Crowned pair)", () => {
-    // Both Crowned goals want 1000 energy (13 raids each, window-capped to 6), but
-    // Thursday's 5★ hour holds 6 TOTAL. Zacian (first in order) banks all 6;
-    // Zamazenta's assumed credit must be clawed back — no phantom weekend head start.
+  it("two goals sharing one window split it evenly (Thursday Crowned pair)", () => {
+    // Both Crowned goals grind their base Candy (30 raids wanted each), but Thursday's
+    // 5★ hour holds 6 TOTAL — so they split it 3/3 instead of the first eating all 6.
+    // Both fit, so each banks 3 raids of Candy credit; no phantom head start either way.
     const inputs = [withGoal("zacian", "sword", 1000), withGoal("zamazenta", "shield", 1000)];
     const results = [result("zacian", 30), result("zamazenta", 30)];
     const road = computeRoadPlan(inputs, results, capacity, safe, { thu: true });
-    expect(road.headStart.zacian).toBe(6);
-    expect(road.headStart.zamazenta ?? 0).toBe(0); // was 6 before the fix
+    expect(road.headStart.zacian).toBe(3);
+    expect(road.headStart.zamazenta).toBe(3);
     expect(road.totalFitted).toBe(6);
   });
 
