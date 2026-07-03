@@ -229,7 +229,9 @@ describe("scheduler", () => {
   it("recommends a type-matching mega buddy when one is selected", () => {
     // Mega Salamence (Dragon/Flying) can boost Reshiram (Dragon/Fire) raids.
     const resh = input("reshiram", { level: 40, targetLevel: 50 });
-    const sala = input("mega-salamence", { megaLevel: 1, targetMegaLevel: 3 });
+    // Salamence is here only as a mega buddy — no level climb (target 40), so it
+    // doesn't crowd Reshiram out of the schedule.
+    const sala = input("mega-salamence", { megaLevel: 1, targetMegaLevel: 3, targetLevel: 40 });
     const schedule = scheduleFor([resh, sala]);
     const reshRaid = schedule.raids.find((r) => r.bossId === "reshiram");
     expect(reshRaid?.recommendedBuddyMegaId).toBe("mega-salamence");

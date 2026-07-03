@@ -20,7 +20,17 @@ import { collapseForms, planningWindows, formeInBlock } from "./forms";
 import { midpoint } from "@/lib/math";
 import { bossIsLocal } from "./region";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
-import type { BossInput, BossResult, CapacityModel, EventDay, HabitatWindow, RaidBoss, Range } from "./types";
+import { computeAllocation, hasPins } from "./allocate";
+import type {
+  BlockAllocation,
+  BossInput,
+  BossResult,
+  CapacityModel,
+  EventDay,
+  HabitatWindow,
+  RaidBoss,
+  Range,
+} from "./types";
 
 export type RiskBand = "blue" | "green" | "yellow" | "red";
 
@@ -246,6 +256,10 @@ export function fillShares(
   ordered: RawShare[],
   cap: Range,
   quickFactor = 1,
+  /** Per-position raid allocation (from `computeAllocation`). When given, each
+   *  target takes exactly its allocated count instead of greedily filling the
+   *  window in order — so shares/fixed pins are honoured. Absent → greedy fill. */
+  alloc?: number[],
 ): { species: BlockSpeciesShare[]; demand: number; fitted: number; remaining: number; bands: Record<RiskBand, number> } {
   // `cum` is measured in normal-raid time-slots: a quick-catch raid costs only
   // `quickFactor` (<1) of a slot, so the block fits more of them before its
@@ -255,11 +269,16 @@ export function fillShares(
   let fitted = 0;
   let remaining = 0;
   const agg = emptyBands();
-  const species = ordered.map((sh) => {
+  const species = ordered.map((sh, i) => {
     const slotCost = sh.quick ? quickFactor : 1;
-    const fit = Math.max(0, Math.min(sh.raids, Math.floor((cap.max - cum) / slotCost + 1e-9)));
+    // Allocated fill honours the pins; greedy fill takes whatever time is left in
+    // order. Banding advances `cum` by the time actually spent on this target so a
+    // downstream share still lands at the right (time-luck) position.
+    const fit = alloc
+      ? Math.max(0, Math.min(sh.raids, Math.round(alloc[i] ?? 0)))
+      : Math.max(0, Math.min(sh.raids, Math.floor((cap.max - cum) / slotCost + 1e-9)));
     const bands = bandsForSpecies(fit, sh.raids, sh.range, cum, cap, slotCost);
-    cum += sh.raids * slotCost;
+    cum += (alloc ? fit : sh.raids) * slotCost;
     demand += sh.raids;
     fitted += fit;
     remaining += sh.raids - fit;
@@ -296,6 +315,9 @@ export function computeBlockPlan(
   remoteAllocations: Record<string, number> = {},
   quickCatchBlocks: Record<string, boolean> = {},
   headStart: Record<string, number> = {},
+  /** Per-block, per-target allocation pins (share % / exact count). A block with
+   *  no pins fills in plain priority order, exactly as before. */
+  blockAllocations: Record<string, Record<string, BlockAllocation>> = {},
 ): WeekendBlockPlan {
   const rewardCase = settings.rewardCase;
   const quickFactor = capacity.quickCatchSlotFactor ?? 1;
@@ -451,15 +473,30 @@ export function computeBlockPlan(
 
   // 3. Order each block by ITS OWN priority list and fill to 100% (the tail is cut
   //    when over capacity). Default tie-break: fixed species before Mewtwo, then
-  //    roster order.
-  const blocks: BlockPlan[] = HABITATS.map((h, i) => ({
-    day: h.day,
-    name: h.name,
-    startHour: h.startHour,
-    endHour: h.endHour,
-    capacity: capacities[i],
-    ...fillShares(orderByBlock(shares[i], blockPriority[keyAt(i)] ?? []), capacities[i], quickFactor),
-  }));
+  //    roster order. A block with allocation pins divides its time via
+  //    computeAllocation instead of the plain top-down fill.
+  const blocks: BlockPlan[] = HABITATS.map((h, i) => {
+    const ordered = orderByBlock(shares[i], blockPriority[keyAt(i)] ?? []);
+    const specs = blockAllocations[keyAt(i)];
+    const specList = ordered.map((s) => specs?.[s.bossId]);
+    const alloc =
+      specs && hasPins(specList)
+        ? computeAllocation(
+            ordered.map((s) => s.raids),
+            ordered.map((s) => (s.quick ? quickFactor : 1)),
+            specList,
+            capacities[i].max,
+          )
+        : undefined;
+    return {
+      day: h.day,
+      name: h.name,
+      startHour: h.startHour,
+      endHour: h.endHour,
+      capacity: capacities[i],
+      ...fillShares(ordered, capacities[i], quickFactor, alloc),
+    };
+  });
 
   // 4. Remote-raid pool (opt-in): the per-species counts the user assigned, shown
   //    against the 60-pass budget. Ordered by a global priority derived from the

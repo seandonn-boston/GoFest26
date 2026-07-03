@@ -83,8 +83,21 @@ describe("bandsForSpecies — dynamic ranges + 5:3:2 spread", () => {
 });
 
 /** Selected inputs + their results for a set of boss ids, all at default goals. */
+// These structural tests (Mewtwo spread, priority order, goalProgress) are about
+// HOW capacity is divided, not the app's default climb — so pin explicit modest
+// levels (a 40→50 climb, megas capped at mega level 40) to keep them stable
+// regardless of the product's default current/target levels.
 function buildFor(ids: string[]): { inputs: BossInput[]; results: BossResult[] } {
-  const inputs = ids.map((id) => makeDefaultInput(getBoss(id)!));
+  const inputs = ids.map((id) => {
+    const boss = getBoss(id)!;
+    const base = makeDefaultInput(boss);
+    const isMega = boss.tier === "mega" || boss.tier === "super-mega";
+    return {
+      ...base,
+      current: { ...base.current, level: 40 },
+      target: { ...base.target, level: isMega ? 40 : 50 },
+    };
+  });
   const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
   return { inputs, results };
 }
