@@ -7,7 +7,7 @@ import { getBoss } from "@/data";
 import { goalProgress } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
 import type { BossResult } from "@/domain/types";
-import { usePlannerStore, selectedInGlobalOrder } from "@/store/usePlannerStore";
+import { usePlannerStore } from "@/store/usePlannerStore";
 
 const ratioTone = (a: number, r: number) => {
   const x = r > 0 ? a / r : 1;
@@ -35,18 +35,33 @@ export function GoalProgress({
 }) {
   const [open, setOpen] = useExpandable(false);
   const inputs = usePlannerStore((s) => s.inputs);
-  const blockPriority = usePlannerStore((s) => s.blockPriority);
   const settings = usePlannerStore((s) => s.settings);
   const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
+  const setSelected = usePlannerStore((s) => s.setSelected);
 
   const progress = useMemo(
     () => goalProgress(plan, results, settings, quickCatchBlocks, headStart),
     [plan, results, settings, quickCatchBlocks, headStart],
   );
-  const order = useMemo(
-    () => selectedInGlobalOrder({ inputs, blockPriority }).filter((id) => progress.bySpecies[id] !== undefined),
-    [inputs, blockPriority, progress],
-  );
+  // Order by outcome, not priority: fully-covered goals first (fewest raids →
+  // most), then partials (least raids remaining → most), then targets the plan
+  // couldn't allocate any raids to. Ties break by name.
+  const order = useMemo(() => {
+    const group = (a: number, r: number) => (a <= 0 ? 2 : a >= r ? 0 : 1); // 0 done · 1 partial · 2 none
+    return Object.keys(progress.bySpecies)
+      .filter((id) => inputs[id]?.selected)
+      .sort((x, y) => {
+        const px = progress.bySpecies[x]!;
+        const py = progress.bySpecies[y]!;
+        const gx = group(px.achievable, px.required);
+        const gy = group(py.achievable, py.required);
+        if (gx !== gy) return gx - gy;
+        // within complete/none: by required asc; within partial: by remaining asc.
+        const kx = gx === 1 ? px.required - px.achievable : px.required;
+        const ky = gy === 1 ? py.required - py.achievable : py.required;
+        return kx - ky || (getBoss(x)?.name ?? x).localeCompare(getBoss(y)?.name ?? y);
+      });
+  }, [inputs, progress]);
   if (!order.length || progress.required === 0) return null;
 
   const { achievable, required } = progress;
@@ -80,8 +95,19 @@ export function GoalProgress({
             return (
               <li key={id} className="flex items-center justify-between gap-2">
                 <span className="min-w-0 truncate text-slate-300">{boss?.name ?? id}</span>
-                <span className={`shrink-0 font-mono font-bold ${ratioTone(a, r)}`}>
-                  {a}/{r}
+                <span className="flex shrink-0 items-center gap-2.5">
+                  <span className={`font-mono font-bold ${ratioTone(a, r)}`}>
+                    {a}/{r}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(id, false)}
+                    aria-label={`Remove ${boss?.name ?? id} from your plan`}
+                    title="Remove from your plan — deselects it on step 1 and everywhere else"
+                    className="flex h-5 w-5 items-center justify-center rounded text-slate-500 transition hover:bg-rose-500/15 hover:text-rose-300"
+                  >
+                    ✕
+                  </button>
                 </span>
               </li>
             );
