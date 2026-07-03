@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
 import { usePlannerResults, useBlockPlan } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { useUiStore, type StepId } from "@/store/useUiStore";
+import { useUiStore, STEP_COUNT, type StepId } from "@/store/useUiStore";
 import { isSecondaryForm } from "@/domain";
 import type { WeekendBlockPlan, RoadPlan } from "@/domain";
 import type { PlanSummary, BossResult, RaidBoss } from "@/domain/types";
@@ -37,6 +37,7 @@ import { HowToUse } from "@/components/Stepper/HowToUse";
 import { WeekOverview } from "@/components/Dashboard/WeekOverview";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
 import { StepFooter } from "@/components/Stepper/StepFooter";
+import { LayoutToggle } from "@/components/Stepper/LayoutToggle";
 import { StepNudge, missingStep } from "@/components/Stepper/StepNudge";
 
 export default function Home() {
@@ -54,21 +55,60 @@ export default function Home() {
   const setStep = useUiStore((s) => s.setStep);
   const nextStep = useUiStore((s) => s.nextStep);
   const prevStep = useUiStore((s) => s.prevStep);
-  // Swipe left → next step, right → previous (touch only; clamped at the ends).
+  const layout = useUiStore((s) => s.layout);
+  const setLayout = useUiStore((s) => s.setLayout);
+  const single = layout === "single";
+
+  // In single-page mode a "step change" is a scroll to that section, not a swap.
+  const goToStep = (id: StepId) => {
+    if (single) document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    else setStep(id);
+  };
+
+  // Swipe left → next step, right → previous (stepper only; one-page just scrolls).
   const swipe = useSwipeNav({ onLeft: nextStep, onRight: prevStep });
 
-  // Changing step (pill, footer button, or swipe) jumps back to the top so each
-  // step starts at its heading, not wherever the previous step was scrolled to.
-  // Skip the first render so a refresh on a persisted step doesn't fight the
-  // browser's own scroll restoration.
+  // Stepper: changing step jumps back to the top so each step starts at its
+  // heading. Skip the first render (don't fight the browser's scroll restore) and
+  // don't run at all in single-page mode, where the user scrolls freely.
   const firstStepRender = useRef(true);
   useEffect(() => {
     if (firstStepRender.current) {
       firstStepRender.current = false;
       return;
     }
-    window.scrollTo({ top: 0 });
-  }, [step]);
+    if (!single) window.scrollTo({ top: 0 });
+  }, [step, single]);
+
+  // Single-page: highlight the step nav pill for the section currently in view.
+  const [activeSection, setActiveSection] = useState<StepId>(1);
+  useEffect(() => {
+    if (!single || typeof IntersectionObserver === "undefined") return;
+    const seen = new Map<number, number>(); // step id → intersection ratio
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const id = Number(e.target.getAttribute("data-step"));
+          if (id) seen.set(id, e.isIntersecting ? e.intersectionRatio : 0);
+        }
+        let best = 1;
+        let bestRatio = -1;
+        for (const [id, ratio] of seen) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            best = id;
+          }
+        }
+        if (bestRatio > 0) setActiveSection(best as StepId);
+      },
+      { rootMargin: "-64px 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    for (let i = 1; i <= STEP_COUNT; i++) {
+      const el = document.getElementById(`step-${i}`);
+      if (el) io.observe(el);
+    }
+    return () => io.disconnect();
+  }, [single]);
 
   const resultById = new Map(summary.results.map((r) => [r.bossId, r]));
   const mewtwoSelected = !!inputs[MEWTWO_X_ID]?.selected || !!inputs[MEWTWO_Y_ID]?.selected;
@@ -130,17 +170,14 @@ export default function Home() {
             <HowToUse />
             <LocationPrompt />
             <SharedPlanBanner />
-            <StepNav steps={steps} active={step} onSelect={setStep} />
+            <div className="mb-2 flex justify-end">
+              <LayoutToggle layout={layout} onChange={setLayout} />
+            </div>
+            <StepNav steps={steps} active={single ? activeSection : step} onSelect={goToStep} />
 
-            <div className="space-y-6" {...swipe}>
-              {/* The 7-day path frames every plan step (RoL → Prioritizer →
-                  Remote → Cost) — the whole event at a glance, one tap to the
-                  step that edits each piece. */}
-              {step >= 3 ? (
-                <WeekOverview summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} onJump={setStep} />
-              ) : null}
-              <StepContent
-                step={step}
+            {single ? (
+              <SinglePageFlow
+                steps={steps}
                 anySelected={anySelected}
                 mewtwoSelected={mewtwoSelected}
                 otherSelectedBosses={otherSelectedBosses}
@@ -149,16 +186,37 @@ export default function Home() {
                 blockPlan={blockPlan}
                 roadPlan={roadPlan}
                 onResetAll={resetAll}
-                onJump={setStep}
+                onJump={goToStep}
               />
+            ) : (
+              <div className="space-y-6" {...swipe}>
+                {/* The 7-day path frames every plan step (RoL → Prioritizer →
+                    Remote → Cost) — the whole event at a glance, one tap to the
+                    step that edits each piece. */}
+                {step >= 3 ? (
+                  <WeekOverview summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} onJump={setStep} />
+                ) : null}
+                <StepContent
+                  step={step}
+                  anySelected={anySelected}
+                  mewtwoSelected={mewtwoSelected}
+                  otherSelectedBosses={otherSelectedBosses}
+                  resultById={resultById}
+                  summary={summary}
+                  blockPlan={blockPlan}
+                  roadPlan={roadPlan}
+                  onResetAll={resetAll}
+                  onJump={setStep}
+                />
 
-              <StepFooter
-                step={step}
-                onPrev={prevStep}
-                onNext={nextStep}
-                nextLabel={step === 3 ? "See results" : step === 4 ? "See remote" : step === 5 ? "See cost" : undefined}
-              />
-            </div>
+                <StepFooter
+                  step={step}
+                  onPrev={prevStep}
+                  onNext={nextStep}
+                  nextLabel={step === 3 ? "See results" : step === 4 ? "See remote" : step === 5 ? "See cost" : undefined}
+                />
+              </div>
+            )}
 
             <Disclaimer />
           </SubstituteLoader>
@@ -166,6 +224,53 @@ export default function Home() {
       </main>
       <ActionDock />
     </>
+  );
+}
+
+/** A numbered divider that opens each section of the single-page flow, tying it
+ *  back to the step nav's numbering (✓ once the step's work is done). */
+function SectionDivider({ meta, first }: { meta: StepMeta; first: boolean }) {
+  return (
+    <div className={`flex items-center gap-2.5 ${first ? "" : "border-t border-white/10 pt-6"}`}>
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[13px] font-bold ${
+          meta.done
+            ? "border-emerald-400 bg-emerald-400 text-black"
+            : "border-gofest-accent2 bg-gofest-accent2/20 text-gofest-accent2"
+        }`}
+      >
+        {meta.done ? "✓" : meta.id}
+      </span>
+      <span className="font-mono text-[12px] uppercase tracking-[0.25em] text-slate-400">{meta.label}</span>
+      <span className="h-px flex-1 bg-white/10" />
+    </div>
+  );
+}
+
+/** Every step stacked into one continuous page. Each section is anchored
+ *  (`#step-N`) so the step nav can smooth-scroll to it and the scroll-spy can
+ *  highlight it. The 7-day path sits just above the Road-of-Legends section, the
+ *  first point at which it has anything to show. */
+function SinglePageFlow(
+  props: {
+    steps: StepMeta[];
+  } & Omit<Parameters<typeof StepContent>[0], "step">,
+) {
+  const { steps, summary, blockPlan, roadPlan, onJump } = props;
+  return (
+    <div className="space-y-8">
+      {steps.map((meta, i) => (
+        <Fragment key={meta.id}>
+          {meta.id === 3 ? (
+            <WeekOverview summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} onJump={onJump} />
+          ) : null}
+          <section id={`step-${meta.id}`} data-step={meta.id} className="scroll-mt-[64px] space-y-4">
+            <SectionDivider meta={meta} first={i === 0} />
+            <StepContent {...props} step={meta.id} />
+          </section>
+        </Fragment>
+      ))}
+    </div>
   );
 }
 
