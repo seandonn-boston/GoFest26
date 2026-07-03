@@ -187,7 +187,14 @@ function TargetCard({
           <MathTooltip
             label="Why this %"
             hideIcon
-            trigger={<span className="shrink-0 cursor-help text-[12px] text-rose-300">{goalPct}%</span>}
+            trigger={
+              <span
+                className="shrink-0 cursor-help whitespace-nowrap text-[12px] text-rose-300"
+                title={`Only ${share.fitted} of ${share.raids} fit in time`}
+              >
+                ⚠ {share.fitted} fit · {goalPct}%
+              </span>
+            }
           >
             <div className="space-y-1 text-[13px] leading-relaxed text-slate-300">
               <p>
@@ -499,12 +506,24 @@ export function BlockAccordion({
   results: BossResult[];
   headStart?: Record<string, number>;
 }) {
+  const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
   const byDay: { day: EventDay; blocks: BlockPlan[] }[] = [];
   for (const day of ["sat", "sun"] as EventDay[]) {
     const blocks = plan.blocks.filter((b) => b.day === day && b.demand > 0);
     if (blocks.length) byDay.push({ day, blocks });
   }
   if (!byDay.length) return null;
+
+  // Smart order: rank every target by its AVERAGE required raids, fewest first,
+  // so the quickest goals complete before capacity runs out (and the most goals
+  // finish overall). Seeds every block's priority via setGlobalPriority.
+  const smartPrioritize = () => {
+    const order = [...results]
+      .filter((r) => sized(r.raids, "expected") > 0)
+      .sort((a, b) => sized(a.raids, "expected") - sized(b.raids, "expected") || a.bossId.localeCompare(b.bossId))
+      .map((r) => r.bossId);
+    setGlobalPriority(order);
+  };
 
   return (
     <div className="mt-4">
@@ -517,6 +536,14 @@ export function BlockAccordion({
           <MegaBoostLegend />
         </div>
       </div>
+      <button
+        type="button"
+        onClick={smartPrioritize}
+        title="Order every block by average raids needed — fewest first — so the most goals finish before time runs out"
+        className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-gofest-accent2/50 bg-gofest-accent2/10 px-2.5 py-1 text-[12px] font-semibold text-gofest-accent2 transition hover:bg-gofest-accent2/20"
+      >
+        ✨ Smart auto-prioritize
+      </button>
       <p className="mb-2 text-[12px] leading-snug text-slate-500">
         Each bar fills from <span className="text-sky-300">guaranteed</span> raids out to the{" "}
         <span className="text-rose-300">worst-case</span> if drops run cold (see key).
