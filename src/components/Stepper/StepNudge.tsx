@@ -9,7 +9,8 @@ const STEP_LABELS: Record<StepId, string> = {
   3: "Road of Legends",
   4: "GO Fest Prioritizer",
   5: "Remote Prioritizer",
-  6: "Cost",
+  6: "Results",
+  7: "Cost",
 };
 
 export interface MissingStep {

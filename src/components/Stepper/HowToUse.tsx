@@ -70,6 +70,17 @@ const GUIDE: GuideStep[] = [
   },
   {
     id: 6,
+    title: "Results",
+    body: (
+      <>
+        Your plan at a glance: the <b>passes it takes</b> (held vs. what your committed raids need), the{" "}
+        <b>raids you can finish</b> toward each goal, and one tap to <b>export</b> it — Excel, a share link, or a JSON
+        backup.
+      </>
+    ),
+  },
+  {
+    id: 7,
     title: "Check the cost",
     body: (
       <>
@@ -92,7 +103,7 @@ export function HowToUse() {
   const reopen = useUiStore((s) => s.reopenHowTo);
   const setStep = useUiStore((s) => s.setStep);
   const step = useUiStore((s) => s.step);
-  // Tapping the reopener on steps 2–6 shows the guide right there, this once;
+  // Tapping the reopener on steps 2–7 shows the guide right there, this once;
   // navigating away collapses it again.
   const [forcedOpen, setForcedOpen] = useState(false);
   useEffect(() => setForcedOpen(false), [step]);

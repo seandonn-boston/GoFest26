@@ -7,6 +7,7 @@ import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Badge } from "@/components/ui/Badge";
+import { CalibrationPanel } from "@/components/ui/CalibrationPanel";
 
 // Assumed same-type Mega buddy levels (the opt-in Level-4 tier is per boss).
 const BUDDY_LEVELS: { level: number; label: string; hint: string }[] = [
@@ -221,6 +222,10 @@ export function AssumptionsControls() {
           })}
         </div>
       </div>
+
+      {/* Luck calibration — moved in from the old "Advanced" panel so all the
+          knobs that shift the raid math live in one place. */}
+      <CalibrationPanel />
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-500">Every edit updates the calculations live.</p>

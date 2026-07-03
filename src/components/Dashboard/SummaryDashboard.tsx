@@ -2,12 +2,11 @@
 
 import { useMemo } from "react";
 import type { PlanSummary, Range } from "@/domain/types";
-import type { RoadPlan, WeekendBlockPlan } from "@/domain";
+import type { WeekendBlockPlan } from "@/domain";
 import type { PlannerSettings } from "@/domain/settings";
 import { midpoint } from "@/lib/math";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
-import { Disclosure } from "@/components/ui/Disclosure";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { CapacityGauge } from "./CapacityGauge";
 import { BlockAccordion } from "./BlockAccordion";
@@ -29,15 +28,7 @@ function caseValue(range: Range, rc: RewardCase, favorHigh: boolean): number {
   return rc === "optimistic" ? best : worst;
 }
 
-export function SummaryDashboard({
-  summary,
-  blockPlan,
-  roadPlan,
-}: {
-  summary: PlanSummary;
-  blockPlan: WeekendBlockPlan;
-  roadPlan: RoadPlan;
-}) {
+export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
   // Re-balance remote passes by priority while in auto mode (no-op once manual).
   useRemoteAutoBalance(summary);
   const rewardCase = usePlannerStore((s) => s.settings.rewardCase);
@@ -153,7 +144,7 @@ export function SummaryDashboard({
             );
           })()}
 
-          <BlockAccordion plan={blockPlan} results={summary.results} headStart={roadPlan.headStart} />
+          <BlockAccordion plan={blockPlan} results={summary.results} />
 
           {/* Weekend capacity-used bar — below all the time blocks. */}
           <CapacityGauge utilization={summary.utilization} />
@@ -163,18 +154,6 @@ export function SummaryDashboard({
           Select bosses and enter what you currently hold to see how many raids you need.
         </p>
       )}
-
-      <div className="mt-3">
-        <Disclosure title="How capacity is calculated">
-          <p className="text-[13px] leading-snug text-slate-500">
-            Capacity assumes {capacity.hoursPerDay}h/day × {capacity.days} days, a {capacity.lobbySize}-trainer lobby (~
-            {capacity.battleSecRange.min}–{capacity.battleSecRange.max}s battle by tier) + {capacity.catchSec}s catch per
-            raid, plus a {capacity.lobbySec}s lobby wait, {capacity.transitionSecRange.min}–{capacity.transitionSecRange.max}
-            s of transitions, and {capacity.downtimeSecRange.min}–{capacity.downtimeSecRange.max}s between raids.
-            {remotePool > 0 ? ` Plus ${remotePool} remote raid passes.` : ""}
-          </p>
-        </Disclosure>
-      </div>
     </section>
   );
 }

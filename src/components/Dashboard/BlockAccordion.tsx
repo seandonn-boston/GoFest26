@@ -26,7 +26,6 @@ import { RaidsNeededTooltip } from "@/components/ui/RaidsNeededTooltip";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { AllocationControl, AllocationBar } from "./AllocationControl";
 import type { BlockAllocation } from "@/domain/types";
-import { GoalProgress } from "./GoalProgress";
 
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
 
@@ -497,15 +496,7 @@ function BlockItem({ block }: { block: BlockPlan }) {
  * reporting any shortfall rather than overflowing. Region-locked targets are
  * handled on the Remote step.
  */
-export function BlockAccordion({
-  plan,
-  results,
-  headStart = {},
-}: {
-  plan: WeekendBlockPlan;
-  results: BossResult[];
-  headStart?: Record<string, number>;
-}) {
+export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; results: BossResult[] }) {
   const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
   const byDay: { day: EventDay; blocks: BlockPlan[] }[] = [];
   for (const day of ["sat", "sun"] as EventDay[]) {
@@ -562,8 +553,6 @@ export function BlockAccordion({
           </div>
         ))}
       </div>
-
-      <GoalProgress plan={plan} results={results} headStart={headStart} />
     </div>
   );
 }

@@ -2,9 +2,9 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 /** Total steps in the planner flow (Pick → Enter what you have → Road of Legends
- *  → GO Fest Prioritizer → Remote Prioritizer → Cost). */
-export const STEP_COUNT = 6;
-export type StepId = 1 | 2 | 3 | 4 | 5 | 6;
+ *  → GO Fest Prioritizer → Remote Prioritizer → Results → Cost). */
+export const STEP_COUNT = 7;
+export type StepId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 /** How the planner is laid out: the one-at-a-time stepper (default), or a single
  *  continuous page with every step stacked. Persisted per-device. */
@@ -99,7 +99,7 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 5, // v2: 6 steps; v3: layout; v4: theme; v5: fabSide added
+      version: 6, // v2: 6 steps; v3: layout; v4: theme; v5: fabSide; v6: Results step → 7 steps
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
       // The expand/collapse-all broadcast and the transient FAB-open flag are never
       // persisted, so a reload returns to the mixed initial state / a closed dial.
