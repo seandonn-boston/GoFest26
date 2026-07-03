@@ -16,8 +16,13 @@ export function SharedPlanBanner() {
   const [shared, setShared] = useState<StateBackup | null>(null);
 
   useEffect(() => {
-    const plan = decodeSharedPlan(window.location.hash);
-    if (plan) setShared(plan);
+    let cancelled = false;
+    decodeSharedPlan(window.location.hash).then((plan) => {
+      if (!cancelled && plan) setShared(plan);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!shared) return null;
