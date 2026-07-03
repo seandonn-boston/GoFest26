@@ -249,6 +249,12 @@ function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
 function RoadDayCard({ day }: { day: RoadDayPlan }) {
   const over = day.remaining > 0;
   const used = day.species.filter((s) => s.fitted > 0);
+  // Featured bosses this day whose goal the concentrated Raid Hour can't finish —
+  // but they keep spawning all day, so the user can keep raiding them to close the
+  // gap. De-duped display names, in the order they appear.
+  const stillOpen = Array.from(
+    new Map(day.species.filter((s) => s.remaining > 0).map((s) => [s.bossId, s.bossName.replace(/^Mega /, "")])).values(),
+  );
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2">
       <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
@@ -280,6 +286,12 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       ) : (
         <p className="mt-1.5 text-[13px] text-slate-500">None of your selected targets are featured this day.</p>
       )}
+      {stillOpen.length > 0 ? (
+        <p className="mt-1.5 text-[12px] leading-snug text-emerald-300/80">
+          ⏱ The Raid Hour can&apos;t finish these, but they&apos;re featured <b>all day</b> (≈6 AM–10 PM) — keep raiding{" "}
+          <span className="text-emerald-200">{stillOpen.join(", ")}</span> {day.label} to close the gap.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -303,10 +315,10 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
         ) : null}
       </div>
       <p className="mb-2 text-[13px] text-slate-400">
-        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local). Only the day&apos;s featured <b>Mega</b> is
-        limited to one hour — the 5★ raids, the fusion/crowned raids, and <b>Friday&apos;s Primal Kyogre &amp; Groudon</b>{" "}
-        are all raidable the whole 2 hours. Your selected targets are poured into each day&apos;s budget — what fits is a
-        head start that reduces your weekend below.
+        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local) — when the featured bosses take over{" "}
+        <b>every</b> gym, so it&apos;s the fastest window. The bar shows how much of your goals that hour covers. But those
+        bosses keep spawning as normal raids <b>all day</b> (≈6 AM–10 PM), so anything the hour can&apos;t finish you can
+        keep chipping at that day — whatever you knock out is a head start that reduces your weekend below.
       </p>
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context

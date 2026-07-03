@@ -1,15 +1,14 @@
 // Road of Legends — the weekday raid-hour plan that runs INTO the weekend.
 //
-// Each selected weekday (Mon Jul 6 → Fri Jul 10) runs a 2-hour Raid Hour (6–8 PM).
-// Only the day's featured MEGA is limited to a single hour; every other target —
-// 5★, the fusion/crowned energy raids, AND Primal Groudon/Kyogre — is raidable the
-// whole 2h and shares the full pool (the Mega just reserves its one hour first).
-// Using the same raids/hour assumption as the weekend, that gives a per-day raid
-// budget. We pour the player's already-chosen targets (top-section selections) into
-// each day's budget — only targets actually featured that day, in their weekend
-// priority order — and whatever fits is a HEAD START that reduces the weekend's
-// remaining demand (computeBlockPlan reads the returned `headStart`). Mewtwo is
-// absent (Super Mega Raids are weekend-only).
+// Each selected weekday (Mon Jul 6 → Fri Jul 10) runs a 2-hour Raid Hour split
+// into two: a 5★ hour and a 7–8 PM Mega/Primal hour (disjoint on Tue–Fri; on
+// Monday the 5★ span the full 6–8 PM and the Mega shares the 7–8). Using the same
+// raids/hour assumption as the weekend, that gives a per-day raid budget. We pour
+// the player's already-chosen
+// targets (top-section selections) into each day's budget — only targets actually
+// featured that day, in their weekend priority order — and whatever fits is a
+// HEAD START that reduces the weekend's remaining demand (computeBlockPlan reads
+// the returned `headStart`). Mewtwo is absent (Super Mega Raids are weekend-only).
 
 import { getBoss, RAID_BOSSES } from "@/data";
 import { ROAD_DAYS, type RoadDay } from "@/data/roadOfLegends";
@@ -119,7 +118,7 @@ export function computeRoadPlan(
 
   // Water-fill `cap` units across items, each capped at wants[i]; leftover from a
   // satisfied item reflows to the rest. Keeps two grinders that share one window
-  // balanced (Friday's Primal Kyogre + Groudon split the 2h rather than the
+  // balanced (Friday's Primal Kyogre + Groudon split the hour rather than the
   // first one eating it whole).
   const evenFillCapped = (wants: number[], cap: number): number[] => {
     const give = wants.map(() => 0);
@@ -148,10 +147,10 @@ export function computeRoadPlan(
   // raid it (its RoL forme days + the weekend + remote), not stopped at the ~4–8
   // energy raids. It matters most when the base target is deprioritized on the
   // weekend and not remoted (White Kyurem on Tue, Primal Kyogre on Fri may be the
-  // only place it's farmed). Fusion/crowned/primal raids are all NON-Mega, so they
-  // share the full 2-hour Raid Hour; same-day grinders split it evenly (Tue's White
-  // Kyurem + Dawn Wings Necrozma; Fri's Primal Kyogre + Groudon) so one doesn't eat
-  // the whole block; a small candy need falls back to the plain energy count.
+  // only place it's farmed). Same-window grinders split their Raid Hour evenly
+  // (Tue's White Kyurem + Dawn Wings Necrozma share the 6–7 PM 5★ hour; Fri's Primal
+  // Kyogre + Groudon share the 7–8 PM Primal hour) so one doesn't eat the whole
+  // hour; a small candy need falls back to the plain energy count.
   const energySharesForDay = (dayId: string, candyTargetOf: (bossId: string) => number): RawShare[] => {
     const day = ROAD_DAYS.find((d) => d.id === dayId);
     const collected: { bossId: string; def: EnergyGoalDef; grind: number }[] = [];
@@ -178,18 +177,28 @@ export function computeRoadPlan(
     }
     if (!collected.length) return [];
 
-    // Every energy raid (fusion/crowned/primal) is non-Mega, so they all share the
-    // full 2-hour Raid Hour; split it evenly across the day's grinders (capped per
-    // grind target). Monday has no energy raids, so its single pool never matters.
-    const energyCapMax = day ? rpH.max * day.raidHourHours : 0;
+    // Split each Raid-Hour window across the grinders that share it (capped per grind
+    // target): Primals in the 7–8 PM Mega/Primal hour, everything else (fusion/
+    // crowned) in the 5★ hour. Monday has no energy raids, so its window never matters.
+    const megaCapMax = day ? rpH.max * day.megaHours : 0;
+    const fiveCapMax = day ? rpH.max * day.fiveStarHours : 0;
     const alloc = new Map<(typeof collected)[number], number>();
-    if (collected.length) {
+    const splitWindow = (members: typeof collected, cap: number) => {
+      if (!members.length) return;
       const split = evenFillCapped(
-        collected.map((c) => c.grind),
-        energyCapMax,
+        members.map((c) => c.grind),
+        cap,
       );
-      collected.forEach((c, i) => alloc.set(c, split[i]));
-    }
+      members.forEach((c, i) => alloc.set(c, split[i]));
+    };
+    splitWindow(
+      collected.filter((c) => c.def.kind === "primal"),
+      megaCapMax,
+    );
+    splitWindow(
+      collected.filter((c) => c.def.kind !== "primal"),
+      fiveCapMax,
+    );
 
     const out: RawShare[] = [];
     for (const c of collected) {
@@ -208,10 +217,10 @@ export function computeRoadPlan(
     return out;
   };
 
-  // The ONLY targets limited to the single Mega hour are actual Mega Raids. 5★,
-  // fusion/crowned energy, and Primal (Groudon/Kyogre) energy are all two-hour.
-  const isMega = (s: RawShare): boolean => {
-    if (s.energyKey) return false; // fusion/crowned/primal energy raids are two-hour
+  // A share belongs to the 7–8 PM window (Mega Raid Hour, or Friday's Primal Raid
+  // Hour) rather than the 6–7 PM 5★ window: Mega roster bosses, and Primal energy.
+  const isMegaWindow = (s: RawShare): boolean => {
+    if (s.energyKey) return energyGoalsFor(s.bossId).find((d) => d.key === s.energyKey)?.kind === "primal";
     const t = getBoss(s.bossId)?.tier;
     return t === "mega" || t === "super-mega";
   };
@@ -223,29 +232,30 @@ export function computeRoadPlan(
   });
 
   /**
-   * Fit a day's ordered shares into its 2-hour Raid Hour. Only the featured Mega is
-   * limited to a single hour, so it reserves that hour FIRST (it can't be raided any
-   * other time); everything else — 5★, fusion/crowned, Primal — then shares whatever
-   * of the 2h is left (the WHOLE block on a Mega-less day like Friday, or one hour
-   * once the Mega has taken the other). Non-Megas keep the user's priority order.
-   * Every day with a featured Mega (Salamence Mon, Tyranitar Tue, Gardevoir Wed,
-   * Gengar Thu) caps it at that one hour; Friday (megaHours = 0) has no Mega cap.
+   * Fit a day's ordered shares into its Raid Hour. The featured Mega raids the
+   * 7–8 PM Mega hour (with Primal), so it fills that hour first; everything else —
+   * 5★ + fusion/crowned — fills the 5★ hour. On Tue–Fri the two are DISJOINT (5★
+   * 6–7, Mega 7–8), so the 5★ hour is its own capacity. On Monday the 5★ hour is
+   * the full 6–8 PM and OVERLAPS the Mega hour, so the two can't exceed the 2h
+   * block: the Mega reserves 7–8 and the 5★ get the rest. (This models the
+   * concentrated Raid Hour only — featured bosses also spawn all day as normal
+   * raids, surfaced to the user as informational guidance, not extra capacity.)
    */
   const fitDay = (ordered: RawShare[], day: RoadDay) => {
     const totalCap: Range = { min: rpH.min * day.raidHourHours, max: rpH.max * day.raidHourHours };
-    if (day.megaHours <= 0) {
-      return { filled: fillShares(ordered, totalCap), capacity: totalCap };
-    }
+    const fiveCap: Range = { min: rpH.min * day.fiveStarHours, max: rpH.max * day.fiveStarHours };
     const megaCap: Range = { min: rpH.min * day.megaHours, max: rpH.max * day.megaHours };
-    const fm = fillShares(ordered.filter(isMega), megaCap);
-    // Non-Megas get the rest of the 2h once the Mega has taken its (≤ 1h) share.
-    const nonMegaCap: Range = {
-      min: Math.max(0, totalCap.min - fm.fitted),
-      max: Math.max(0, totalCap.max - fm.fitted),
-    };
+    const fm = fillShares(ordered.filter(isMegaWindow), megaCap);
+    // Overlap (Monday): the 5★ hour and Mega hour share the 7–8 PM slot, so the 5★
+    // budget is the block minus what the Mega took. Disjoint (Tue–Fri): the 5★ get
+    // their own hour regardless of the Mega.
+    const overlaps = day.fiveStarHours + day.megaHours > day.raidHourHours;
+    const fiveEff: Range = overlaps
+      ? { min: Math.max(0, totalCap.min - fm.fitted), max: Math.max(0, totalCap.max - fm.fitted) }
+      : fiveCap;
     const f5 = fillShares(
-      ordered.filter((s) => !isMega(s)),
-      nonMegaCap,
+      ordered.filter((s) => !isMegaWindow(s)),
+      fiveEff,
     );
     return {
       filled: {
@@ -314,6 +324,7 @@ export function computeRoadPlan(
     for (const day of ROAD_DAYS) {
       if (!playDays[day.id]) continue;
       const totalCap: Range = { min: rpH.min * day.raidHourHours, max: rpH.max * day.raidHourHours };
+      const fiveCap: Range = { min: rpH.min * day.fiveStarHours, max: rpH.max * day.fiveStarHours };
       const megaCap: Range = { min: rpH.min * day.megaHours, max: rpH.max * day.megaHours };
       // An explicit per-day drag list is also a per-day SELECTION: targets the user
       // toggled off this day are dropped BEFORE the even split, so the day's whole
@@ -327,31 +338,28 @@ export function computeRoadPlan(
         .filter((id) => roadSelected[id] && isLocal(id) && (!pickSet || pickSet.has(id)))
         .sort((a, z) => (rosterRank.get(a) ?? 0) - (rosterRank.get(z) ?? 0));
 
-      // Only the featured Mega is one-hour-limited: it even-splits its Mega hour
-      // first, and everything else — 5★ + all energy — even-splits whatever of the
-      // 2h is left (the WHOLE block when no Mega is picked). Monday's Mega shares the
-      // marathon pool (megaHours = 0 → no separate Mega split).
-      const energyDemand = energyShares.reduce((s, e) => s + e.raids, 0);
-      let rosterShares: RawShare[];
-      if (day.megaHours <= 0) {
-        rosterShares = evenSplitRoster(rosterIds, totalCap, energyDemand, day);
-      } else {
-        const megaShares = evenSplitRoster(rosterIds.filter(isMegaTier), megaCap, 0, day);
-        const megaRaids = megaShares.reduce((s, r) => s + r.raids, 0);
-        const nonMegaCap: Range = {
-          min: Math.max(0, totalCap.min - megaRaids),
-          max: Math.max(0, totalCap.max - megaRaids),
-        };
-        rosterShares = [
-          ...evenSplitRoster(
-            rosterIds.filter((id) => !isMegaTier(id)),
-            nonMegaCap,
-            energyDemand,
-            day,
-          ),
-          ...megaShares,
-        ];
-      }
+      // Split roster + energy demand across the two Raid Hours. The Mega hour (Mega
+      // roster + Primal energy) even-splits its 7–8 PM hour; the 5★ hour (5★ roster
+      // + fusion/crowned energy) even-splits its own capacity — the full 6–8 PM block
+      // minus the Mega's reserved hour on Monday (overlap), or its disjoint 6–7 PM
+      // hour on Tue–Fri.
+      const fiveEnergy = energyShares.filter((s) => !isMegaWindow(s)).reduce((s, e) => s + e.raids, 0);
+      const megaEnergy = energyShares.filter(isMegaWindow).reduce((s, e) => s + e.raids, 0);
+      const overlaps = day.fiveStarHours + day.megaHours > day.raidHourHours;
+      const megaShares = evenSplitRoster(rosterIds.filter(isMegaTier), megaCap, megaEnergy, day);
+      const megaRaids = megaShares.reduce((s, r) => s + r.raids, 0) + megaEnergy;
+      const fiveBudget: Range = overlaps
+        ? { min: Math.max(0, totalCap.min - megaRaids), max: Math.max(0, totalCap.max - megaRaids) }
+        : fiveCap;
+      const rosterShares: RawShare[] = [
+        ...evenSplitRoster(
+          rosterIds.filter((id) => !isMegaTier(id)),
+          fiveBudget,
+          fiveEnergy,
+          day,
+        ),
+        ...megaShares,
+      ];
 
       // Respect the user's drag order when set; otherwise energy first, then roster.
       const byTarget = new Map<string, RawShare>([
@@ -454,9 +462,9 @@ export function computeRoadPlan(
       const prog = input.energy?.[def.key];
       if (!prog?.on) continue;
       const day = ROAD_DAYS.find((d) => d.id === def.roadDayId);
-      // Every energy raid (fusion/crowned/primal) is non-Mega, so it can use the
-      // full 2-hour Raid Hour — cap the assumed energy at the whole window.
-      const windowHours = day ? day.raidHourHours : 1;
+      // The planned raids for this goal that day (Primal grinders are already
+      // window-split; Fusion/Crowned are capped here at their one Raid-Hour window).
+      const windowHours = day ? (def.kind === "primal" ? day.megaHours : day.fiveStarHours) : 1;
       const share = (energyByDay.get(def.roadDayId) ?? []).find((s) => s.bossId === input.bossId && s.energyKey === def.key);
       energyRaids += Math.min(share?.raids ?? 0, rpH.max * windowHours);
     }
@@ -541,7 +549,7 @@ export function computeRoadPlan(
       shares = [...energyShares, ...candy]; // energy defaults to the top
     }
 
-    // Fit the day's 2-hour Raid Hour (only the featured Mega is one-hour-limited).
+    // Fit the day's two Raid Hours (5★ hour + 7–8 PM Mega/Primal hour).
     const { filled, capacity } = fitDay(shares, day);
     for (const s of filled.species) {
       if (s.energyKey) {
