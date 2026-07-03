@@ -64,15 +64,15 @@ export function RoadOfLegendsSection() {
   const weekdays = ROAD_DAYS.filter((d) => d.id !== "mon");
 
   return (
-    <section className="mb-5 rounded-lg border border-gofest-acid/25 bg-gofest-acid/[0.04]">
+    <section className="mb-5 rounded-lg border border-orange-400/25 bg-orange-400/[0.04]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-1.5 p-3 text-left"
       >
-        <h3 className="text-sm font-semibold text-gofest-acid">Road of Legends · Mon–Fri 6–8pm — Fusions and Primal</h3>
-        <PlusToggle open={open} size={15} className="shrink-0 text-gofest-acid" />
+        <h3 className="text-sm font-semibold text-orange-400">Road of Legends · Mon–Fri 6–8pm — Fusions and Primal</h3>
+        <PlusToggle open={open} size={15} className="shrink-0 text-orange-400" />
       </button>
 
       {open ? (
@@ -80,7 +80,7 @@ export function RoadOfLegendsSection() {
           <label className="mb-2 flex cursor-pointer items-center gap-1.5 text-[12px] text-slate-300">
             <input
               type="checkbox"
-              className="h-3.5 w-3.5 accent-gofest-accent2"
+              className="h-3.5 w-3.5 accent-orange-400"
               checked={coupled}
               onChange={toggleRoadCoupled}
             />

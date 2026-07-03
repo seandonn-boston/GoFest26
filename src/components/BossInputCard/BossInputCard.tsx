@@ -218,7 +218,7 @@ export function BossInputCard({
                 {regionLabel || remoteOnly ? (
                   <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">
                     📍 {regionLabel ?? "Region-locked"}
-                    {remoteOnly ? <span className="text-gofest-accent"> · Remote</span> : null}
+                    {remoteOnly ? <span className="text-sky-400"> · Remote</span> : null}
                   </p>
                 ) : null}
                 {isGroup ? (

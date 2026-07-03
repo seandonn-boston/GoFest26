@@ -31,7 +31,7 @@ const GROUPS = HABITATS.map((h) => ({
 }));
 
 /**
- * The GO Fest weekend section — the main event, in its magenta accent. The two
+ * The GO Fest weekend section — the main event, in its green accent. The two
  * Super Mega Mewtwo headliners always show (even collapsed); the six habitat
  * blocks of weekend targets fold inside it, expanded by default. Collapsing it
  * keeps just the Mewtwo tiles so the long roster can be tucked away.
@@ -39,17 +39,17 @@ const GROUPS = HABITATS.map((h) => ({
 function GoFestSection({ region, start }: { region: UserRegion; start: number }) {
   const [open, setOpen] = useExpandable(true);
   return (
-    <section className="mb-5 rounded-lg border border-gofest-accent/25 bg-gofest-accent/[0.04] p-3">
+    <section className="mb-5 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.04] p-3">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <h3 className="text-sm font-semibold text-gofest-accent">
+        <h3 className="text-sm font-semibold text-emerald-400">
           🎉 GO Fest weekend · Sat Jul 11 – Sun Jul 12 — the main event
         </h3>
-        <PlusToggle open={open} size={15} className="shrink-0 text-gofest-accent" />
+        <PlusToggle open={open} size={15} className="shrink-0 text-emerald-400" />
       </button>
       <p className="mb-3 mt-1 text-[13px] text-slate-400">
         The Super Mega Mewtwo debut headlines both days — tap a headliner

@@ -102,7 +102,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
               className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-[13px] transition ${
                 on
                   ? m.energy
-                    ? "border-cyan-300/60 bg-cyan-400/15 text-white shadow-[0_0_0_1px_rgba(103,232,249,0.3)]"
+                    ? "border-orange-300/60 bg-orange-400/15 text-white shadow-[0_0_0_1px_rgba(251,146,60,0.35)]"
                     : "border-slate-300 bg-slate-300/15 text-white shadow-[0_0_0_1px_rgba(203,213,225,0.35)]"
                   : "border-white/15 bg-gofest-bg/40 text-slate-400 hover:border-white/35"
               }`}
@@ -110,7 +110,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
               <Sprite src={m.sprite} alt={m.name} size={26} />
               <span className="whitespace-nowrap">
                 {m.energy ? (
-                  <span aria-hidden className="mr-0.5 text-cyan-300">
+                  <span aria-hidden className="mr-0.5 text-orange-300">
                     ⚡
                   </span>
                 ) : null}
@@ -146,7 +146,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
                   <Sprite src={m.sprite} alt={m.name} size={20} />
                   <span className="truncate text-slate-200">
                     {m.energy ? (
-                      <span aria-hidden className="mr-0.5 text-cyan-300">
+                      <span aria-hidden className="mr-0.5 text-orange-300">
                         ⚡
                       </span>
                     ) : null}
@@ -214,10 +214,10 @@ function EnergySpeciesRow({ share }: { share: BlockSpeciesShare }) {
         className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-500"
         title="This raid banks Fusion/Primal Energy toward the goal — plus the base Pokémon's Candy"
       >
-        banks <span className="text-cyan-300/90">⚡ energy</span> <span className="text-slate-600">+</span> candy
+        banks <span className="text-orange-300/90">⚡ energy</span> <span className="text-slate-600">+</span> candy
       </span>
       <span
-        className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2"
+        className="w-9 shrink-0 text-right font-mono text-sm font-bold text-orange-400"
         title={remaining > 0 ? `${formatNumber(remaining)} energy to go` : "enough energy banked"}
       >
         {share.fitted}
@@ -239,10 +239,7 @@ function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
       <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-500" title="What this raid banks">
         banks {rewards.map((c) => CURRENCY_CHIP[c]).join(" + ")}
       </span>
-      <span
-        className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2"
-        title="Raids you'd do this day"
-      >
+      <span className="w-9 shrink-0 text-right font-mono text-sm font-bold text-orange-400" title="Raids you'd do this day">
         {share.fitted}
       </span>
     </div>
@@ -268,7 +265,7 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       </div>
       <RoadDaySelect dayId={day.id} />
       {day.focus ? (
-        <p className="mb-1 text-[12px] text-gofest-acid/90">
+        <p className="mb-1 text-[12px] text-orange-400/90">
           🎯 Targeting <b>{day.focus.blockName}</b> — the weekend block with the most raids that won&apos;t fit (
           {day.focus.overflow} over), worked down its priority order.
         </p>
@@ -298,9 +295,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
   const togglePlayDay = usePlannerStore((s) => s.togglePlayDay);
 
   return (
-    <div className="mt-4 rounded-lg border border-gofest-acid/25 bg-gofest-acid/[0.04] p-3">
+    <div className="mt-4 rounded-lg border border-orange-400/25 bg-orange-400/[0.04] p-3">
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gofest-acid">Road of Legends · raid week</h3>
+        <h3 className="text-sm font-semibold text-orange-400">Road of Legends · raid week</h3>
         {road.totalFitted > 0 ? (
           <span className="shrink-0 text-[13px] text-emerald-300">★ {road.totalFitted}-raid head start</span>
         ) : null}
@@ -314,16 +311,16 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
           that doesn't affect the head-start math but matters this week. */}
-      <div className="mb-2 space-y-1.5 rounded-md border border-cyan-400/20 bg-cyan-400/[0.05] p-2 text-[13px] leading-relaxed text-slate-300">
+      <div className="mb-2 space-y-1.5 rounded-md border border-orange-400/20 bg-orange-400/[0.05] p-2 text-[13px] leading-relaxed text-slate-300">
         <p>
-          <span className="font-semibold text-cyan-300">⚡ Fusion / Primal energy:</span> raid week also brings the special
+          <span className="font-semibold text-orange-300">⚡ Fusion / Primal energy:</span> raid week also brings the special
           raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
           <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the fusion /
           crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon, Kyogre).
           Each energy comes from one specific raid on one day.
         </p>
         <p>
-          <span className="font-semibold text-cyan-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
+          <span className="font-semibold text-orange-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
           already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
           <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting it.
         </p>
@@ -341,12 +338,12 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
               onClick={() => togglePlayDay(d.id)}
               className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left text-[13px] transition ${
                 on
-                  ? "border-gofest-acid/60 bg-gofest-acid/15 text-white"
+                  ? "border-orange-400/60 bg-orange-400/15 text-white"
                   : "border-white/15 bg-gofest-bg/40 text-slate-300 hover:border-white/30"
               }`}
             >
               <span
-                className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[11px] ${on ? "border-gofest-acid bg-gofest-acid text-black" : "border-white/30"}`}
+                className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border text-[11px] ${on ? "border-orange-400 bg-orange-400 text-black" : "border-white/30"}`}
               >
                 {on ? "✓" : ""}
               </span>

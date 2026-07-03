@@ -35,7 +35,7 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
   };
 
   return (
-    <div className="rounded-lg border border-gofest-accent/30 bg-gofest-accent/[0.04] px-2.5 py-2">
+    <div className="rounded-lg border border-sky-400/30 bg-sky-400/[0.04] px-2.5 py-2">
       {/* Opt-in at the very top. Disabled until a remote value is entered in the
           allocator below — entering one auto-enables and checks this. */}
       <label
@@ -45,7 +45,7 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
       >
         <input
           type="checkbox"
-          className="h-4 w-4 accent-gofest-accent disabled:opacity-40"
+          className="h-4 w-4 accent-sky-400 disabled:opacity-40"
           checked={on}
           disabled={!hasAllocations}
           onChange={(e) => toggle(e.target.checked)}
@@ -58,14 +58,14 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
 
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-2 w-full text-left">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-          <span className="inline-flex items-center font-medium text-gofest-accent">Assign per species</span>
+          <span className="inline-flex items-center font-medium text-sky-400">Assign per species</span>
           <span className="flex shrink-0 items-center gap-1.5">
             {on ? (
               <span className={over ? "text-rose-300" : "text-slate-400"}>
                 {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
               </span>
             ) : null}
-            <PlusToggle open={open} size={11} className="text-gofest-accent" />
+            <PlusToggle open={open} size={11} className="text-sky-400" />
           </span>
         </div>
         {on && remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
