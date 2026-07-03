@@ -35,7 +35,7 @@ function BossSelectChipImpl({ boss, remoteOnly = false }: { boss: RaidBoss; remo
       {isMega ? <MegaRelief /> : null}
       <TileSprite src={boss.sprite} alt={boss.name} />
       {remoteOnly ? (
-        <span className="absolute left-1 top-1 z-20 rounded-sm border border-black/30 bg-gofest-accent px-1 py-[1px] font-mono text-[10px] font-extrabold uppercase leading-none tracking-wider text-black shadow">
+        <span className="absolute left-1 top-1 z-20 rounded-sm border border-black/30 bg-sky-400 px-1 py-[1px] font-mono text-[10px] font-extrabold uppercase leading-none tracking-wider text-black shadow">
           Remote
         </span>
       ) : null}

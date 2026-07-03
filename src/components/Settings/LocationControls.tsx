@@ -35,7 +35,7 @@ export function LocationControls() {
     <div className="space-y-3">
       <p className="text-sm text-slate-400">
         Sets which region-locked raids are local. Ones you can&apos;t reach are flagged{" "}
-        <span className="text-gofest-accent">Remote only</span> and planned with a Remote Raid Pass.
+        <span className="text-sky-400">Remote only</span> and planned with a Remote Raid Pass.
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">

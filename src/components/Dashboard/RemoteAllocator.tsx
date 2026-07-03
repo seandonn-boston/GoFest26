@@ -39,7 +39,7 @@ export function RemoteAllocator() {
           <span className="text-slate-300">{total}</span> total.
         </p>
         {remoteAuto ? (
-          <span className="shrink-0 rounded-sm border border-gofest-accent2/40 bg-gofest-accent2/10 px-1.5 py-[1px] font-mono text-[11px] font-bold uppercase tracking-wider text-gofest-accent2">
+          <span className="shrink-0 rounded-sm border border-sky-400/40 bg-sky-400/10 px-1.5 py-[1px] font-mono text-[11px] font-bold uppercase tracking-wider text-sky-400">
             Auto
           </span>
         ) : (
@@ -51,7 +51,7 @@ export function RemoteAllocator() {
               setRemoteAuto(true);
             }}
             title="Re-fill region-locked first, then by priority"
-            className="shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1.5 py-[1px] font-mono text-[11px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-gofest-accent2/50 hover:text-gofest-accent2"
+            className="shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1.5 py-[1px] font-mono text-[11px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-sky-400/50 hover:text-sky-400"
           >
             ↻ Auto-balance
           </button>
@@ -68,7 +68,7 @@ export function RemoteAllocator() {
             <Sprite src={boss.sprite} alt={boss.name} size={24} />
             <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{label}</span>
             {remoteOnly ? (
-              <span className="shrink-0 rounded-sm border border-gofest-accent/50 bg-gofest-accent/15 px-1 py-[1px] font-mono text-[10px] font-extrabold uppercase tracking-wider text-gofest-accent">
+              <span className="shrink-0 rounded-sm border border-sky-400/50 bg-sky-400/15 px-1 py-[1px] font-mono text-[10px] font-extrabold uppercase tracking-wider text-sky-400">
                 Remote
               </span>
             ) : null}
@@ -83,7 +83,7 @@ export function RemoteAllocator() {
                 setRemoteAllocation(id, Math.max(0, n));
               }}
               aria-label={`Remote raids for ${boss.name}`}
-              className="w-12 shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent"
+              className="w-12 shrink-0 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-sky-400"
             />
           </div>
         );

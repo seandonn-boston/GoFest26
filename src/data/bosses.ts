@@ -239,19 +239,19 @@ const ROSTER: RaidBoss[] = [
     counters: ["Mega Sceptile", "Kartana", "Mega Venusaur"],
     note: "2nd-best Water attacker — prioritize if you don't have Primal Kyogre.",
   }),
-  // The Lake trio is NOT region-locked: the official event notes say they
-  // "appear more frequently in raids in their respective regions" (Uxie APAC,
-  // Mesprit EMEA, Azelf Americas) — a frequency boost, not availability. A hard
-  // `region` here would wrongly force them remote-only for 2/3 of players;
-  // `boostRegion` records the home region so remote planning can still target it.
+  // The Lake trio is region-LOCKED in raids — each appears only in its home
+  // region (Uxie Asia-Pacific, Mesprit EMEA, Azelf Americas). So they're pulled
+  // from the GO Fest habitat selection for everyone outside that region and shown
+  // in the Remote raids section instead (with its REMOTE label + host-region
+  // windows), exactly like the other region-locked targets.
   legendary({
     id: "uxie",
     name: "Uxie",
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
-    boostRegion: { continent: "apac" },
-    note: "Appears more frequently in Asia-Pacific, but raidable everywhere.",
+    region: { continent: "apac" },
+    note: "Region-locked to Asia-Pacific — raid it remotely from elsewhere.",
   }),
   legendary({
     id: "mesprit",
@@ -259,8 +259,8 @@ const ROSTER: RaidBoss[] = [
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
-    boostRegion: { continent: "emea" },
-    note: "Appears more frequently in Europe, the Middle East, Africa & India, but raidable everywhere.",
+    region: { continent: "emea" },
+    note: "Region-locked to Europe, the Middle East, Africa & India — raid it remotely from elsewhere.",
   }),
   legendary({
     id: "azelf",
@@ -268,8 +268,8 @@ const ROSTER: RaidBoss[] = [
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
-    boostRegion: { continent: "americas" },
-    note: "Appears more frequently in the Americas, but raidable everywhere.",
+    region: { continent: "americas" },
+    note: "Region-locked to the Americas — raid it remotely from elsewhere.",
   }),
   legendary({
     id: "dialga",

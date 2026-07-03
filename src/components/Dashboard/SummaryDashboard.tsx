@@ -194,7 +194,7 @@ function Stat({
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`text-xl font-bold ${accent}`}>{value}</div>
-      {sub ? <div className="text-[12px] text-gofest-accent">{sub}</div> : null}
+      {sub ? <div className="text-[12px] text-sky-400">{sub}</div> : null}
     </div>
   );
 }

@@ -189,7 +189,7 @@ export function WeekOverview({
           <button
             type="button"
             onClick={() => onJump(5)}
-            className="rounded-md border border-gofest-accent/40 bg-gofest-accent/10 px-2 py-0.5 text-[12px] text-slate-200 transition hover:border-gofest-accent/70"
+            className="rounded-md border border-sky-400/40 bg-sky-400/10 px-2 py-0.5 text-[12px] text-slate-200 transition hover:border-sky-400/70"
           >
             🌐 +{remote.fitted} remote — any time, any day
           </button>

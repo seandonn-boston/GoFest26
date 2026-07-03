@@ -20,7 +20,7 @@ function WindowLine({ w, mounted }: { w: RemoteWindow; mounted: boolean }) {
   return (
     <li className="rounded-md border border-white/10 bg-gofest-bg/40 px-2 py-1 text-[12px] leading-snug">
       {mounted ? (
-        <span className="font-semibold text-cyan-200">
+        <span className="font-semibold text-sky-200">
           {fmt(w.anchorStartUtc)} – {fmt(w.anchorEndUtc)}
           <span className="ml-1.5 font-normal text-slate-500">your time · {w.anchorCity}</span>
         </span>
@@ -37,12 +37,10 @@ function WindowLine({ w, mounted }: { w: RemoteWindow; mounted: boolean }) {
  * worth pointing a Remote Raid Pass at from the player's region, so the whole
  * remote decision lives in one place.
  *
- *  - EXCLUSIVE: region-locked bosses not raidable here at all (their tiles are
- *    pulled out of the habitat / Road of Legends sections).
- *  - BOOSTED: the lake trio member(s) whose home region is elsewhere — raidable
- *    locally, but far more common in their home region, so remoting into that
- *    region's windows is how you actually farm them. (They keep their habitat
- *    tile too, since a local raid still works.)
+ *  Region-locked bosses (incl. the Lake trio — Uxie APAC / Mesprit EMEA / Azelf
+ *  Americas) aren't raidable here at all, so their tiles are pulled out of the
+ *  habitat / Road of Legends sections and live here instead. (`boostRegion` is
+ *  still supported for any "boosted elsewhere, raidable locally" boss.)
  *
  * Each tile comes with the days and times the boss is live — the host region's
  * windows anchored to a major city with a big GO community (Tokyo, Berlin,
@@ -68,28 +66,27 @@ export function RemoteRaidsSection() {
   if (targets.length === 0) return null;
 
   return (
-    <section className="mb-5 rounded-lg border border-cyan-400/25 bg-cyan-400/[0.04]">
+    <section className="mb-5 rounded-lg border border-sky-400/25 bg-sky-400/[0.04]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-1.5 p-3 text-left"
       >
-        <h3 className="text-sm font-semibold text-cyan-300">
+        <h3 className="text-sm font-semibold text-sky-300">
           🕑 Remote raids · {targets.length} targets worth remoting from {region.label}
         </h3>
-        <PlusToggle open={open} size={15} className="shrink-0 text-cyan-300" />
+        <PlusToggle open={open} size={15} className="shrink-0 text-sky-300" />
       </button>
 
       {open ? (
         <div className="px-3 pb-3">
           <p className="mb-3 text-[13px] text-slate-400">
-            <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-mono text-[11px] font-extrabold uppercase text-black">
+            <span className="rounded-sm bg-sky-400 px-1 py-[1px] font-mono text-[11px] font-extrabold uppercase text-black">
               Remote
             </span>{" "}
-            = not raidable here at all; the lake trio is raidable everywhere but far more common at home. Either way you raid
-            them while their home region&apos;s windows are live — shown in <b>your time</b>, anchored to a
-            major-GO-community city there.
+            = region-locked, so you raid it remotely while its home region&apos;s window is live — shown in <b>your time</b>,
+            anchored to a major-GO-community city there.
           </p>
           <div className="space-y-3">
             {targets.map(({ boss, windows, exclusive }) => (
@@ -98,7 +95,7 @@ export function RemoteRaidsSection() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     {regionScopeLabel(boss.region ?? boss.boostRegion)}
-                    {exclusive ? null : <span className="ml-1.5 text-cyan-300/80">boosted there · raidable here too</span>}
+                    {exclusive ? null : <span className="ml-1.5 text-sky-300/80">boosted there · raidable here too</span>}
                   </div>
                   <ul className="mt-1 space-y-1">
                     {windows.map((w) => (
