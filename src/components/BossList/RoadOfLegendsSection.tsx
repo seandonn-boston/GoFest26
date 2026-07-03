@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { getBoss } from "@/data";
 import { ROAD_DAYS, type RoadDay } from "@/data/roadOfLegends";
 import { energyGoalsForDay } from "@/data/energyGoals";
@@ -8,6 +7,7 @@ import { bossIsLocal } from "@/domain/region";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { RoadTile } from "./RoadTile";
 
 /** The day's tiles: its fusion/primal special-forme goals first (the headline),
@@ -56,7 +56,7 @@ function DayRow({ day }: { day: RoadDay }) {
  * the player build an independent Road of Legends agenda.
  */
 export function RoadOfLegendsSection() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useExpandable(false);
   const coupled = usePlannerStore((s) => s.roadCoupled);
   const toggleRoadCoupled = usePlannerStore((s) => s.toggleRoadCoupled);
 
@@ -69,10 +69,10 @@ export function RoadOfLegendsSection() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-1.5 p-3 text-left"
+        className="flex w-full items-center justify-between gap-1.5 p-3 text-left"
       >
-        <PlusToggle open={open} size={15} className="shrink-0 text-gofest-acid" />
         <h3 className="text-sm font-semibold text-gofest-acid">Road of Legends · Mon–Fri 6–8pm — Fusions and Primal</h3>
+        <PlusToggle open={open} size={15} className="shrink-0 text-gofest-acid" />
       </button>
 
       {open ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
@@ -8,6 +8,7 @@ import { describeAvailability } from "@/data";
 import { typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { megaBoostsForBoss, megaBoostSpecies, isL4Eligible } from "@/domain";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { Sprite } from "@/components/ui/Sprite";
@@ -56,7 +57,7 @@ export function MewtwoCard({
   const ensureMewtwoCopies = usePlannerStore((s) => s.ensureMewtwoCopies);
   const setScreenshot = usePlannerStore((s) => s.setScreenshot);
   const preview = usePlannerStore((s) => s.screenshots["mewtwo"]);
-  const [open, setOpen] = useState(false); // collapsed by default (inputs hidden)
+  const [open, setOpen] = useExpandable(false); // collapsed by default (inputs hidden)
 
   const selectedX = !!inputX?.selected;
   const selectedY = !!inputY?.selected;

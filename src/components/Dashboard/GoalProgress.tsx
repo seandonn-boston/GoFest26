@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { getBoss } from "@/data";
 import { goalProgress } from "@/domain";
 import type { WeekendBlockPlan } from "@/domain";
@@ -32,7 +33,7 @@ export function GoalProgress({
   results: BossResult[];
   headStart?: Record<string, number>;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useExpandable(false);
   const inputs = usePlannerStore((s) => s.inputs);
   const blockPriority = usePlannerStore((s) => s.blockPriority);
   const settings = usePlannerStore((s) => s.settings);
@@ -56,13 +57,15 @@ export function GoalProgress({
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
         <div className="flex items-baseline justify-between gap-2">
           <span className="inline-flex items-center text-xs text-slate-300">
-            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
             Raids you can do toward your goals:{" "}
             <span className={`font-mono font-bold ${ratioTone(achievable, required)}`}>
               {achievable}/{required}
             </span>
           </span>
-          <span className="shrink-0 text-[12px] text-slate-500">per-Pokémon ⌄</span>
+          <span className="flex shrink-0 items-center gap-1.5 text-[12px] text-slate-500">
+            per-Pokémon
+            <PlusToggle open={open} size={11} className="text-slate-400" />
+          </span>
         </div>
         <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
           <div className={`h-full rounded-full ${ratioBar(achievable, required)}`} style={{ width: `${pct}%` }} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { BossResult, Currency, RaidBoss } from "@/domain/types";
 import { formatNumber, formatRange } from "@/lib/format";
 import { bossIsLocal, regionScopeLabel } from "@/domain/region";
@@ -25,6 +25,7 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { CardTitle } from "@/components/ui/CardTitle";
 import { CardSpriteBackdrop } from "@/components/ui/CardSpriteBackdrop";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
@@ -74,7 +75,7 @@ export function BossInputCard({
   const megaBuddyLevel = usePlannerStore((s) => s.settings.megaBuddyLevel);
   const calibration = usePlannerStore((s) => s.settings.calibration);
   const region = usePlannerStore((s) => s.settings.region);
-  const [open, setOpen] = useState(false); // cards start collapsed (inputs hidden)
+  const [open, setOpen] = useExpandable(false); // cards start collapsed (inputs hidden)
 
   // The maxing editor is always shown (even for one individual), so seed copy #1
   // from the single fields once the card is opened.
