@@ -15,6 +15,10 @@ export type Layout = "stepper" | "single";
  *  text + faint borders lifted). Persisted per-device. */
 export type Theme = "night" | "sun";
 
+/** Which side the floating action button (speed-dial) lives on — a right-handed
+ *  (default) or left-handed thumb reach. Persisted per-device. */
+export type FabSide = "left" | "right";
+
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
   step: StepId;
@@ -25,6 +29,14 @@ interface UiState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  /** Which side the FAB speed-dial sits on (right = default/right-handed). */
+  fabSide: FabSide;
+  setFabSide: (side: FabSide) => void;
+  toggleFabSide: () => void;
+  /** Whether the FAB speed-dial is open — shared so the opposite corner can swap
+   *  the theme toggle for the "switch side" button while it's open. Not persisted. */
+  fabOpen: boolean;
+  setFabOpen: (open: boolean) => void;
   /** Priority list grouping: off = one flat list of individuals (mixed species);
    *  on = individuals grouped under each species, with the species ranked as a
    *  whole and copies ranked within. */
@@ -66,6 +78,11 @@ export const useUiStore = create<UiState>()(
       theme: "night",
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "sun" ? "night" : "sun" })),
+      fabSide: "right",
+      setFabSide: (fabSide) => set({ fabSide }),
+      toggleFabSide: () => set((s) => ({ fabSide: s.fabSide === "right" ? "left" : "right" })),
+      fabOpen: false,
+      setFabOpen: (fabOpen) => set({ fabOpen }),
       groupBySpecies: false,
       setGroupBySpecies: (on) => set({ groupBySpecies: on }),
       expandNonce: 0,
@@ -82,17 +99,18 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 4, // v2: remote → own step (6 steps); v3: layout added; v4: theme added
+      version: 5, // v2: 6 steps; v3: layout; v4: theme; v5: fabSide added
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
-      // The expand/collapse-all broadcast is transient — never persist it, so a
-      // reload always returns to the mixed initial state with the button at "Expand all".
+      // The expand/collapse-all broadcast and the transient FAB-open flag are never
+      // persisted, so a reload returns to the mixed initial state / a closed dial.
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      partialize: ({ expandNonce, expandTarget, setExpandAll, ...rest }) => rest as UiState,
+      partialize: ({ expandNonce, expandTarget, setExpandAll, fabOpen, setFabOpen, ...rest }) => rest as UiState,
       migrate: (persisted) => {
         const s = (persisted ?? {}) as Partial<UiState>;
         if (typeof s.step === "number") s.step = clampStep(s.step);
         if (s.layout !== "single" && s.layout !== "stepper") s.layout = "stepper";
         if (s.theme !== "sun" && s.theme !== "night") s.theme = "night";
+        if (s.fabSide !== "left" && s.fabSide !== "right") s.fabSide = "right";
         return s as UiState;
       },
     },

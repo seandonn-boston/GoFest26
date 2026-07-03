@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { useUiStore } from "@/store/useUiStore";
 import { useTiltStore } from "@/store/useTiltStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDialog } from "@/hooks/useDialog";
@@ -38,7 +39,15 @@ const miniFab =
  * recompute the plan live, feedback pipes to GitHub Issues.
  */
 export function ActionDock() {
-  const [open, setOpen] = useState(false);
+  const fabSide = useUiStore((s) => s.fabSide);
+  const toggleFabSide = useUiStore((s) => s.toggleFabSide);
+  const open = useUiStore((s) => s.fabOpen);
+  const setFabOpen = useUiStore((s) => s.setFabOpen);
+  const setOpen = useCallback(
+    (v: boolean | ((o: boolean) => boolean)) => setFabOpen(typeof v === "function" ? v(useUiStore.getState().fabOpen) : v),
+    [setFabOpen],
+  );
+  const isRight = fabSide === "right";
   const [panel, setPanel] = useState<Panel | null>(null);
   const customized = !isDefaultSettings(usePlannerStore((s) => s.settings));
   const isMobile = useIsMobile();
@@ -153,11 +162,15 @@ export function ActionDock() {
           animation), so it must not capture taps over the tiles behind it —
           only its buttons re-enable pointer events. */}
       {panel === null ? (
-        <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+        <div
+          className={`pointer-events-none fixed bottom-20 z-50 flex flex-col gap-3 ${
+            isRight ? "right-4 items-end" : "left-4 items-start"
+          }`}
+        >
           {items.map((a, i) => (
             <div
               key={a.id}
-              className={`flex items-center gap-2.5 transition-all duration-200 ${
+              className={`flex items-center gap-2.5 transition-all duration-200 ${isRight ? "" : "flex-row-reverse"} ${
                 open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
               }`}
               style={{ transitionDelay: `${open ? (items.length - 1 - i) * 40 : 0}ms` }}
@@ -174,12 +187,14 @@ export function ActionDock() {
             </div>
           ))}
 
-          {/* Bottom row: the main FAB, with Hard reset fanning out to its LEFT
-              (horizontal, not stacked with the items above). */}
-          <div className="flex items-center gap-2.5">
+          {/* Bottom row: the main FAB, with Hard reset fanning out to the side
+              opposite the page edge (horizontal, not stacked with the items above). */}
+          <div className={`flex items-center gap-2.5 ${isRight ? "" : "flex-row-reverse"}`}>
             <div
-              className={`flex items-center gap-2.5 transition-all duration-200 ${
-                open ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0"
+              className={`flex items-center gap-2.5 transition-all duration-200 ${isRight ? "" : "flex-row-reverse"} ${
+                open
+                  ? "pointer-events-auto translate-x-0 opacity-100"
+                  : `pointer-events-none opacity-0 ${isRight ? "translate-x-4" : "-translate-x-4"}`
               }`}
             >
               <span className="rounded-md bg-rose-500 px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-white shadow">
@@ -228,6 +243,27 @@ export function ActionDock() {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {/* Switch-side button — while the dial is open, a translucent ghost FAB
+          appears in the SAME vertical slot on the OPPOSITE edge. Tapping it
+          flips the whole dock to that side (and closes the dial), so a
+          left-hander can move the whole experience under their thumb. */}
+      {panel === null && open ? (
+        <button
+          type="button"
+          onClick={() => {
+            toggleFabSide();
+            setOpen(false);
+          }}
+          aria-label={isRight ? "Move controls to the left side" : "Move controls to the right side"}
+          title={isRight ? "Switch to a left-handed layout" : "Switch to a right-handed layout"}
+          className={`pointer-events-auto fixed bottom-20 z-50 flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid/35 text-2xl text-black shadow-brutal backdrop-blur-sm transition hover:bg-gofest-acid/55 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+            isRight ? "left-4" : "right-4"
+          }`}
+        >
+          {isRight ? "⟵" : "⟶"}
+        </button>
       ) : null}
 
       {/* Bottom sheet */}
