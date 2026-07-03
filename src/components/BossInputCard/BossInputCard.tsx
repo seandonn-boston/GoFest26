@@ -28,7 +28,7 @@ import { PlusToggle } from "@/components/ui/PlusToggle";
 import { useExpandable } from "@/hooks/useExpandable";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
-import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { MegaBoostRow } from "@/components/ui/MegaBoostRow";
 import { Copyable } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { speciesKey } from "@/lib/pokemonSearch";
@@ -388,11 +388,10 @@ export function BossInputCard({
                         label="mega evolutions"
                         className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
                       >
-                        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
+                        <div className="mb-1.5 pr-8">
                           <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
                             Mega-evolve for candy
                           </span>
-                          <MegaBoostLegend />
                         </div>
                         <MegaBoostRow boosts={boosts} max={8} />
                         <p className="mt-1.5 text-[12px] text-slate-500">

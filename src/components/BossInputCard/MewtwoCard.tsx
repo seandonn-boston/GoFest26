@@ -13,7 +13,7 @@ import { megaBoostsForBoss, megaBoostSpecies, isL4Eligible } from "@/domain";
 import { buildMegaSearchString } from "@/lib/pokemonSearch";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
-import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { MegaBoostRow } from "@/components/ui/MegaBoostRow";
 import { Copyable } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { energyForBosses } from "@/lib/screenshotScan";
@@ -323,11 +323,10 @@ function FormColumn({
             label="mega evolutions"
             className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
           >
-            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
+            <div className="mb-1.5 pr-8">
               <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
                 Mega-evolve for candy
               </span>
-              <MegaBoostLegend />
             </div>
             <MegaBoostRow boosts={boosts} max={8} />
             <p className="mt-1.5 text-[12px] text-slate-500">

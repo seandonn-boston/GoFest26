@@ -494,10 +494,8 @@ export function BlockAccordion({
         </div>
       </div>
       <p className="mb-2 text-[12px] leading-snug text-slate-500">
-        Reward luck makes each target a range. The bars fill from <span className="text-sky-300">guaranteed</span> raids
-        you&apos;ll always need, through the <span className="text-emerald-300">best</span> and{" "}
-        <span className="text-amber-300">average</span> cases, out to the <span className="text-rose-300">worst</span> case
-        if your drops run cold.
+        Each bar fills from <span className="text-sky-300">guaranteed</span> raids out to the{" "}
+        <span className="text-rose-300">worst-case</span> if drops run cold (see key).
       </p>
       <div className="space-y-4">
         {byDay.map(({ day, blocks }) => (

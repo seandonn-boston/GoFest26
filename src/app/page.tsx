@@ -36,7 +36,6 @@ import { AdvancedTools } from "@/components/Settings/AdvancedTools";
 import { HowToUse } from "@/components/Stepper/HowToUse";
 import { WeekOverview } from "@/components/Dashboard/WeekOverview";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
-import { StepFooter } from "@/components/Stepper/StepFooter";
 import { LayoutToggle } from "@/components/Stepper/LayoutToggle";
 import { ExpandAllToggle } from "@/components/Stepper/ExpandAllToggle";
 import { StepNudge, missingStep } from "@/components/Stepper/StepNudge";
@@ -209,8 +208,6 @@ export default function Home() {
                   onResetAll={resetAll}
                   onJump={setStep}
                 />
-
-                <StepFooter step={step} onPrev={prevStep} onNext={nextStep} />
               </div>
             )}
 
@@ -319,10 +316,7 @@ function StepContent({
               Reset all
             </button>
           </div>
-          <p className="mt-1 text-sm text-slate-400">
-            Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal above what you already
-            have.
-          </p>
+          <p className="mt-1 text-sm text-slate-400">Screenshots auto-fill, or type your totals and a goal by hand.</p>
         </div>
         {anySelected ? (
           <>

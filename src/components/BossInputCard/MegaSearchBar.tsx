@@ -41,25 +41,33 @@ export function MegaSearchBar() {
         label={`${dayLabel} mega-evolve`}
         className="brutal rounded-xl bg-gofest-panel/80 p-3 transition hover:bg-gofest-panel"
       >
-        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 pr-8">
+        <div className="mb-1.5 pr-8">
           <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
             {dayLabel} mega-evolve
           </span>
-          <MegaBoostLegend />
         </div>
-        <p className="mb-2 text-[13px] text-slate-400">
-          Mega-Evolve one (Mega Level 3) before battling {dayLabel}’s bosses for a same-type Candy XL boost — the outline
-          shows what each mega brings this day (see key). Only one counts at a time.
-        </p>
         <MegaBoostRow boosts={boosts} size={24} />
       </Copyable>
     );
   };
 
+  const satBar = bar(byDay.sat, "Saturday");
+  const sunBar = bar(byDay.sun, "Sunday");
+  if (!satBar && !sunBar) return null;
+
+  // One shared instruction + colour key above both days — the rule is identical
+  // Saturday and Sunday, so it's said once rather than stamped on each bar.
   return (
     <div className="space-y-3">
-      {bar(byDay.sat, "Saturday")}
-      {bar(byDay.sun, "Sunday")}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <p className="text-[13px] text-slate-400">
+          Mega-Evolve one same-type Mega (Mega Level 3) before battling each day’s bosses for a Candy XL boost — the outline
+          shows what each mega brings (see key). Only one counts at a time.
+        </p>
+        <MegaBoostLegend />
+      </div>
+      {satBar}
+      {sunBar}
     </div>
   );
 }

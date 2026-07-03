@@ -13,6 +13,7 @@ import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { useDragList } from "./useDragList";
 
 /** Featured boss ids per Road of Legends day (for the per-day target picker). */
@@ -125,7 +126,6 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
           <span aria-live="polite" role="status" className="sr-only">
             {drag.announcement}
           </span>
-          <p className="mb-1 text-[12px] text-slate-500">Drag to set this day&apos;s priority (top is raided first).</p>
           <div className="space-y-1">
             {drag.list.map((id) => {
               const m = meta.get(id)!;
@@ -310,20 +310,29 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
       </p>
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
-          that doesn't affect the head-start math but matters this week. */}
-      <div className="mb-2 space-y-1.5 rounded-md border border-orange-400/20 bg-orange-400/[0.05] p-2 text-[13px] leading-relaxed text-slate-300">
-        <p>
-          <span className="font-semibold text-orange-300">⚡ Fusion / Primal energy:</span> raid week also brings the special
-          raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
-          <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the fusion /
-          crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon, Kyogre).
-          Each energy comes from one specific raid on one day.
-        </p>
-        <p>
-          <span className="font-semibold text-orange-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
-          already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
-          <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting it.
-        </p>
+          that doesn't affect the head-start math, so it's tucked behind a
+          disclosure to keep the interactive day picker up top. */}
+      <div className="mb-2">
+        <Disclosure
+          title={<span className="font-semibold text-orange-300">⚡ Fusion / Primal energy &amp; Origin move notes</span>}
+          hint={<span className="text-slate-500">what to raid this week</span>}
+        >
+          <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-300">
+            <p>
+              <span className="font-semibold text-orange-300">⚡ Fusion / Primal energy:</span> raid week also brings the
+              special raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
+              <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the
+              fusion / crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon,
+              Kyogre). Each energy comes from one specific raid on one day.
+            </p>
+            <p>
+              <span className="font-semibold text-orange-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
+              already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
+              <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting
+              it.
+            </p>
+          </div>
+        </Disclosure>
       </div>
 
       {/* Day-picker checkbox group. */}
