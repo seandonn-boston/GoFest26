@@ -207,14 +207,15 @@ function EnergySpeciesRow({ share }: { share: BlockSpeciesShare }) {
     <div className="flex items-center gap-2 py-0.5">
       <Sprite src={sprite} alt={share.bossName} size={22} />
       <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName}</span>
-      <div className="flex shrink-0 items-center gap-1">
-        <span className="rounded-sm border border-cyan-400/25 bg-cyan-400/[0.08] px-1 text-[11px] uppercase tracking-wide text-cyan-200">
-          Energy
-        </span>
-        <span className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400">
-          Candy
-        </span>
-      </div>
+      {/* A passive label of what this raid banks — NOT a toggle. Turn the goal on/
+          off with its tile on step 1 (or the boss card); include/exclude it for a
+          day with the pill at the top of this card. */}
+      <span
+        className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-500"
+        title="This raid banks Fusion/Primal Energy toward the goal — plus the base Pokémon's Candy"
+      >
+        banks <span className="text-cyan-300/90">⚡ energy</span> <span className="text-slate-600">+</span> candy
+      </span>
       <span
         className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2"
         title={remaining > 0 ? `${formatNumber(remaining)} energy to go` : "enough energy banked"}
@@ -234,16 +235,10 @@ function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
     <div className="flex items-center gap-2 py-0.5">
       <Sprite src={boss?.sprite} alt={share.bossName} size={22} />
       <span className="min-w-0 flex-1 truncate text-xs text-slate-200">{share.bossName.replace(/^Mega /, "")}</span>
-      <div className="flex shrink-0 items-center gap-1">
-        {rewards.map((c) => (
-          <span
-            key={c}
-            className="rounded-sm border border-white/10 bg-white/[0.03] px-1 text-[11px] uppercase tracking-wide text-slate-400"
-          >
-            {CURRENCY_CHIP[c]}
-          </span>
-        ))}
-      </div>
+      {/* Passive "what this raid banks" label (not a toggle). */}
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-500" title="What this raid banks">
+        banks {rewards.map((c) => CURRENCY_CHIP[c]).join(" + ")}
+      </span>
       <span
         className="w-9 shrink-0 text-right font-mono text-sm font-bold text-gofest-accent2"
         title="Raids you'd do this day"
