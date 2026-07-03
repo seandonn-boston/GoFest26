@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeBlockPlan, bandsForSpecies, goalProgress, autoRemoteAllocations, RISK_BANDS } from "./blockPlan";
+import { computeBlockPlan, bandsForSpecies, goalProgress, autoRemoteAllocations, sized, RISK_BANDS } from "./blockPlan";
 import { computeCapacity } from "./capacity";
 import { makeDefaultInput } from "./defaults";
 import { computeBossResult } from "./raidsNeeded";
@@ -280,6 +280,38 @@ describe("computeBlockPlan — allocation", () => {
       expect(mx, `Mewtwo X missing from ${key}`).toBeTruthy();
       expect(mx!.fitted).toBeGreaterThan(0); // #1 is never the one cut
     }
+  });
+
+  it("redistributes Mewtwo out of a block where it's outranked into blocks with room", () => {
+    // Mewtwo ranked #1 / #2 / last across three full Saturday blocks. Where a
+    // higher-ranked Mega fills the block (Mewtwo last), Mewtwo yields entirely and
+    // those raids flow to the blocks where it ranks high or has headroom — the full
+    // day need is met, nothing dropped. (An even split would strand raids in the
+    // block where Mewtwo is cut.)
+    const heavy = [0, 3, 6].map((hh) =>
+      SINGLE_BLOCK.find(
+        (b) => b.windows[0].day === "sat" && b.windows[0].startHour === hh && bossIsLocal(b, DEFAULT_SETTINGS.region),
+      )!,
+    );
+    const inputs = [
+      ...heavy.map((b) => ({ ...makeDefaultInput(b), quantity: 40 })),
+      makeDefaultInput(getBoss(MEWTWO_X_ID)!),
+    ];
+    const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
+    const prio: Record<string, string[]> = {
+      sat0: [MEWTWO_X_ID, heavy[0].id], // Mewtwo #1
+      sat3: [heavy[1].id, MEWTWO_X_ID], // Mewtwo last, behind a block-filling Mega
+      sat6: [heavy[2].id, MEWTWO_X_ID], // Mewtwo 2nd, with room to spare
+    };
+    const plan = computeBlockPlan(inputs, results, computeCapacity(DEFAULT_SETTINGS), DEFAULT_SETTINGS, prio);
+    const xFitted = (key: string) =>
+      plan.blocks.find((b) => blockKey(b.day, b.startHour) === key)!.species.find((s) => s.bossId === MEWTWO_X_ID)?.fitted ??
+      0;
+    const need = sized(results.find((r) => r.bossId === MEWTWO_X_ID)!.raids, DEFAULT_SETTINGS.rewardCase);
+    // sat3 is full of the higher-ranked Mega → Mewtwo gets nothing there…
+    expect(xFitted("sat3")).toBe(0);
+    // …but its whole day need still lands, spread over the blocks with headroom.
+    expect(xFitted("sat0") + xFitted("sat3") + xFitted("sat6")).toBe(need);
   });
 
   it("respects explicit priority order (lowest priority takes the risky tail)", () => {
