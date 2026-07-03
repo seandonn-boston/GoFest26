@@ -11,6 +11,7 @@ import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
 import { RoadOfLegendsSection } from "./RoadOfLegendsSection";
 import { RemoteRaidsSection } from "./RemoteRaidsSection";
+import { GoFestEmblem } from "./GoFestEmblem";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
@@ -114,6 +115,12 @@ export function BossList() {
           {/* Region-locked targets — their tiles live ONLY here, with the times
               their home-region windows hit the player's own clock. */}
           <RemoteRaidsSection />
+
+          {/* The main event — the GO Fest weekend selection, opened by its emblem */}
+          <GoFestEmblem />
+          <p className="mb-4 text-center font-mono text-[11px] uppercase tracking-[0.3em] text-slate-500">
+            Sat Jul 11 – Sun Jul 12 · The Main Event
+          </p>
 
           {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
           <div className="mb-5 grid grid-cols-2 gap-3">

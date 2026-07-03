@@ -430,3 +430,109 @@ input[type="number"] {
     animation: none;
   }
 }
+
+/* ---- GO FEST '26 emblem (step-1 weekend section title) ----
+   A text-shaped metal medallion (see GoFestEmblem.tsx). The only motion: the
+   type-color pool drifts like jostled liquid, and a glimmer occasionally sweeps
+   the metal band. Everything stops under prefers-reduced-motion. */
+.gf-emblem {
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.55)) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.45));
+}
+.gf-blob {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: 10s ease-in-out infinite alternate;
+}
+.gf-blob-1 {
+  animation-name: gf-drift-1;
+  animation-duration: 9s;
+}
+.gf-blob-2 {
+  animation-name: gf-drift-2;
+  animation-duration: 12s;
+  animation-delay: -4s;
+}
+.gf-blob-3 {
+  animation-name: gf-drift-3;
+  animation-duration: 8s;
+  animation-delay: -2s;
+}
+.gf-blob-4 {
+  animation-name: gf-drift-1;
+  animation-duration: 13s;
+  animation-delay: -7s;
+}
+.gf-blob-5 {
+  animation-name: gf-drift-2;
+  animation-duration: 10s;
+  animation-delay: -1s;
+}
+.gf-blob-6 {
+  animation-name: gf-drift-3;
+  animation-duration: 11s;
+  animation-delay: -5s;
+}
+@keyframes gf-drift-1 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  45% {
+    transform: translate(30px, -16px) scale(1.14);
+  }
+  to {
+    transform: translate(-22px, 14px) scale(0.92);
+  }
+}
+@keyframes gf-drift-2 {
+  from {
+    transform: translate(0, 0) scale(1.05);
+  }
+  55% {
+    transform: translate(-34px, 12px) scale(0.9);
+  }
+  to {
+    transform: translate(18px, -20px) scale(1.12);
+  }
+}
+@keyframes gf-drift-3 {
+  from {
+    transform: translate(0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate(16px, 24px) scale(1.1);
+  }
+  to {
+    transform: translate(-26px, -12px) scale(1);
+  }
+}
+/* One sweep every ~9s: parked and invisible ~3/4 of the cycle, then a quick
+   diagonal run across the band. */
+.gf-glint {
+  animation: gf-glint 9s linear infinite;
+  opacity: 0;
+}
+@keyframes gf-glint {
+  0%,
+  72% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  75% {
+    opacity: 0.85;
+  }
+  86% {
+    transform: translateX(760px);
+    opacity: 0.85;
+  }
+  88%,
+  100% {
+    transform: translateX(760px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gf-blob,
+  .gf-glint {
+    animation: none;
+  }
+}
