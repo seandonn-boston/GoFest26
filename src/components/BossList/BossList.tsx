@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { RAID_BOSSES, HABITATS, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss, GAME_CONFIG } from "@/data";
-import type { EventDay } from "@/domain/types";
+import type { EventDay, UserRegion } from "@/domain/types";
 import { bossIsLocal } from "@/domain/region";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { useExpandable } from "@/hooks/useExpandable";
 import { TypeIcon } from "@/components/ui/TypeIcon";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
 import { RoadOfLegendsSection } from "./RoadOfLegendsSection";
@@ -27,6 +29,73 @@ const GROUPS = HABITATS.map((h) => ({
       b.windows.some((w) => w.day === h.day && w.startHour === h.startHour && w.endHour === h.endHour),
   ),
 }));
+
+/**
+ * The GO Fest weekend section — the main event, in its magenta accent. The two
+ * Super Mega Mewtwo headliners always show (even collapsed); the six habitat
+ * blocks of weekend targets fold inside it, expanded by default. Collapsing it
+ * keeps just the Mewtwo tiles so the long roster can be tucked away.
+ */
+function GoFestSection({ region, start }: { region: UserRegion; start: number }) {
+  const [open, setOpen] = useExpandable(true);
+  return (
+    <section className="mb-5 rounded-lg border border-gofest-accent/25 bg-gofest-accent/[0.04] p-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <h3 className="text-sm font-semibold text-gofest-accent">
+          🎉 GO Fest weekend · Sat Jul 11 – Sun Jul 12 — the main event
+        </h3>
+        <PlusToggle open={open} size={15} className="shrink-0 text-gofest-accent" />
+      </button>
+      <p className="mb-3 mt-1 text-[13px] text-slate-400">
+        The Super Mega Mewtwo debut headlines both days — tap a headliner
+        {open ? ", then pick the rest from the habitat blocks below" : ""}.
+      </p>
+      {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right — always shown. */}
+      <div className="grid grid-cols-2 gap-3">
+        <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
+        <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
+      </div>
+
+      {open ? (
+        <div className="mt-4 space-y-4">
+          {GROUPS.map(({ habitat, bosses }) => (
+            <div key={`${habitat.day}-${habitat.startHour}`}>
+              <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400">
+                {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
+                <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
+                <span
+                  className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5"
+                  title={`Featured wild spawns: ${habitat.types.join(", ")}`}
+                >
+                  <span aria-hidden className="text-slate-600">
+                    –
+                  </span>
+                  {habitat.types.map((t) => (
+                    <TypeIcon key={t} type={t} size={14} />
+                  ))}
+                </span>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {/* Remote-only targets are hidden here — they live in the Remote
+                    raids section above, alongside their availability windows. */}
+                {bosses
+                  .filter((boss) => bossIsLocal(boss, region))
+                  .map((boss) => (
+                    <BossSelectChip key={boss.id} boss={boss} />
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
 
 export function BossList() {
   // Select a primitive count (not the whole inputs map) so editing a card's
@@ -115,55 +184,11 @@ export function BossList() {
               their home-region windows hit the player's own clock. */}
           <RemoteRaidsSection />
 
-          {/* The main event — GO Fest weekend. Same section treatment as the
-              Road of Legends and Remote raids cards, in its own accent. */}
-          <section className="mb-5 rounded-lg border border-gofest-accent/25 bg-gofest-accent/[0.04] p-3">
-            <h3 className="text-sm font-semibold text-gofest-accent">
-              🎉 GO Fest weekend · Sat Jul 11 – Sun Jul 12 — the main event
-            </h3>
-            <p className="mb-3 mt-1 text-[13px] text-slate-400">
-              The Super Mega Mewtwo debut headlines both days — tap a headliner, then pick the rest from the habitat blocks
-              below.
-            </p>
-            {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
-            <div className="grid grid-cols-2 gap-3">
-              <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
-              <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
-            </div>
-          </section>
+          {/* The main event — GO Fest weekend: the Mewtwo headliners + every
+              weekend habitat target, grouped in one collapsible magenta section. */}
+          <GoFestSection region={region} start={start} />
         </>
       )}
-
-      <div className={q ? "hidden" : "space-y-4"}>
-        {GROUPS.map(({ habitat, bosses }) => (
-          <div key={`${habitat.day}-${habitat.startHour}`}>
-            <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400">
-              {DAY_LONG[habitat.day]} · {hourLabel(habitat.startHour, start)}–{hourLabel(habitat.endHour, start)}
-              <span className="ml-2 normal-case text-gofest-accent2">{habitat.name}</span>
-              <span
-                className="ml-1.5 inline-flex translate-y-[2px] items-center gap-0.5"
-                title={`Featured wild spawns: ${habitat.types.join(", ")}`}
-              >
-                <span aria-hidden className="text-slate-600">
-                  –
-                </span>
-                {habitat.types.map((t) => (
-                  <TypeIcon key={t} type={t} size={14} />
-                ))}
-              </span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {/* Remote-only targets are hidden here — they live in the Remote
-                  raids section above, alongside their availability windows. */}
-              {bosses
-                .filter((boss) => bossIsLocal(boss, region))
-                .map((boss) => (
-                  <BossSelectChip key={boss.id} boss={boss} />
-                ))}
-            </div>
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
