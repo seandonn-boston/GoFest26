@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RAID_BOSSES } from "@/data";
-import { bossIsLocal, regionScopeLabel } from "@/domain/region";
+import { bossIsLocal, isScopeLocal, regionScopeLabel } from "@/domain/region";
 import { remoteWindowsForBoss, type RemoteWindow } from "@/domain/remoteWindows";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { PlusToggle } from "@/components/ui/PlusToggle";
 import { BossSelectChip } from "./BossSelectChip";
 
 /** "Sat 9:00 PM" in the device's own timezone. */
@@ -31,23 +32,34 @@ function WindowLine({ w, mounted }: { w: RemoteWindow; mounted: boolean }) {
 }
 
 /**
- * Remote-raid selection (Step 1): the targets that are NOT raidable in the
- * player's own region, pulled out of the habitat / Road of Legends sections so
- * every remote decision lives in one place. Each tile comes with the days and
- * times the boss is actually live — the host region's windows anchored to a
- * major city with a big GO community (Tokyo, Berlin, New York, …), converted to
- * the player's clock. Times render only after mount: they depend on the device
- * timezone, which the static prerender can't know.
+ * Remote-raid selection (Step 1, collapsible — starts closed): every target
+ * worth pointing a Remote Raid Pass at from the player's region, so the whole
+ * remote decision lives in one place.
+ *
+ *  - EXCLUSIVE: region-locked bosses not raidable here at all (their tiles are
+ *    pulled out of the habitat / Road of Legends sections).
+ *  - BOOSTED: the lake trio member(s) whose home region is elsewhere — raidable
+ *    locally, but far more common in their home region, so remoting into that
+ *    region's windows is how you actually farm them. (They keep their habitat
+ *    tile too, since a local raid still works.)
+ *
+ * Each tile comes with the days and times the boss is live — the host region's
+ * windows anchored to a major city with a big GO community (Tokyo, Berlin,
+ * New York, …), converted to the player's clock. Times render only after mount:
+ * they depend on the device timezone, which the static prerender can't know.
  */
 export function RemoteRaidsSection() {
   const region = usePlannerStore((s) => s.settings.region);
+  const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const targets = useMemo(
     () =>
-      RAID_BOSSES.filter((b) => b.region && !bossIsLocal(b, region))
-        .map((boss) => ({ boss, windows: remoteWindowsForBoss(boss) ?? [] }))
+      RAID_BOSSES.filter(
+        (b) => (b.region && !bossIsLocal(b, region)) || (b.boostRegion && !isScopeLocal(b.boostRegion, region)),
+      )
+        .map((boss) => ({ boss, windows: remoteWindowsForBoss(boss) ?? [], exclusive: !!boss.region }))
         .filter((t) => t.windows.length > 0),
     [region],
   );
@@ -55,33 +67,49 @@ export function RemoteRaidsSection() {
   if (targets.length === 0) return null;
 
   return (
-    <section className="mb-5 rounded-lg border border-cyan-400/25 bg-cyan-400/[0.04] p-3">
-      <h3 className="text-sm font-semibold text-cyan-300">🕑 Remote raids · not raidable in {region.label}</h3>
-      <p className="mb-3 mt-1 text-[13px] text-slate-400">
-        These need a{" "}
-        <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-mono text-[11px] font-extrabold uppercase text-black">
-          Remote
-        </span>{" "}
-        Raid Pass (capped per day) and only spawn while their home region&apos;s windows are live — shown here in{" "}
-        <b>your time</b>, anchored to a major-GO-community city there.
-      </p>
-      <div className="space-y-3">
-        {targets.map(({ boss, windows }) => (
-          <div key={boss.id} className="flex items-start gap-3">
-            <BossSelectChip boss={boss} remoteOnly />
-            <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                {regionScopeLabel(boss.region)}
+    <section className="mb-5 rounded-lg border border-cyan-400/25 bg-cyan-400/[0.04]">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1.5 p-3 text-left"
+      >
+        <PlusToggle open={open} size={15} className="shrink-0 text-cyan-300" />
+        <h3 className="text-sm font-semibold text-cyan-300">
+          🕑 Remote raids · {targets.length} targets worth remoting from {region.label}
+        </h3>
+      </button>
+
+      {open ? (
+        <div className="px-3 pb-3">
+          <p className="mb-3 text-[13px] text-slate-400">
+            <span className="rounded-sm bg-gofest-accent px-1 py-[1px] font-mono text-[11px] font-extrabold uppercase text-black">
+              Remote
+            </span>{" "}
+            = not raidable here at all; the lake trio is raidable everywhere but far more common at home. Either way you raid
+            them while their home region&apos;s windows are live — shown in <b>your time</b>, anchored to a
+            major-GO-community city there.
+          </p>
+          <div className="space-y-3">
+            {targets.map(({ boss, windows, exclusive }) => (
+              <div key={boss.id} className="flex items-start gap-3">
+                <BossSelectChip boss={boss} remoteOnly={exclusive} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {regionScopeLabel(boss.region ?? boss.boostRegion)}
+                    {exclusive ? null : <span className="ml-1.5 text-cyan-300/80">boosted there · raidable here too</span>}
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {windows.map((w) => (
+                      <WindowLine key={w.hostLabel} w={w} mounted={mounted} />
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <ul className="mt-1 space-y-1">
-                {windows.map((w) => (
-                  <WindowLine key={w.hostLabel} w={w} mounted={mounted} />
-                ))}
-              </ul>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }

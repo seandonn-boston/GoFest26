@@ -78,14 +78,14 @@ const DAY_SHORT: Record<string, string> = {
 };
 
 /**
- * The host-region windows in which a region-locked boss can be remote-raided:
- * its weekend habitat block(s), plus any Road of Legends raid hour featuring it
- * (region-locked 5★ are all in Monday's marathon roster). Chronological by the
- * anchor window. Returns null for a boss that isn't region-locked — its windows
- * are simply the listed local ones.
+ * The host-region windows in which a region-locked (or home-region-BOOSTED,
+ * e.g. the lake trio) boss can be remote-raided: its weekend habitat block(s),
+ * plus any Road of Legends raid hour featuring it (region-locked 5★ are all in
+ * Monday's marathon roster). Chronological by the anchor window. Returns null
+ * for a boss with no home region — its windows are simply the listed local ones.
  */
 export function remoteWindowsForBoss(boss: RaidBoss): RemoteWindow[] | null {
-  const clock = regionClockFor(boss.region);
+  const clock = regionClockFor(boss.region ?? boss.boostRegion);
   if (!clock) return null;
   const start = GAME_CONFIG.event.hourStartLocal; // habitat hours are event-local indexes
   const out: RemoteWindow[] = [];
