@@ -1,4 +1,5 @@
-import { useDeferredValue, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useDebouncedValue } from "./useDebouncedValue";
 import {
   autoRemoteAllocations,
   computeBlockPlan,
@@ -20,16 +21,16 @@ import { usePlannerStore, selectedInPriorityOrder } from "@/store/usePlannerStor
 
 /**
  * Recomputes the full plan summary whenever inputs, settings, or research
- * change. The store reads are run through useDeferredValue so a burst of rapid
- * selections (tapping many bosses fast) coalesces into far fewer of these
- * expensive recomputes — React keeps the selection UI responsive and runs the
- * heavy math once the burst settles, instead of synchronously on every tap.
+ * change. The store reads are debounced so a burst of rapid edits (typing a
+ * currency, tapping many bosses fast) coalesces into far fewer of these expensive
+ * recomputes — the input fields stay instant (they read/write the store directly),
+ * and the heavy math runs once the burst settles rather than on every keystroke.
  */
 export function usePlannerResults(): PlanSummary {
-  const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
-  const settings = useDeferredValue(usePlannerStore((s) => s.settings));
-  const research = useDeferredValue(usePlannerStore((s) => s.research));
-  const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
+  const inputs = useDebouncedValue(usePlannerStore((s) => s.inputs));
+  const settings = useDebouncedValue(usePlannerStore((s) => s.settings));
+  const research = useDebouncedValue(usePlannerStore((s) => s.research));
+  const remoteAllocations = useDebouncedValue(usePlannerStore((s) => s.remoteAllocations));
   return useMemo(() => {
     // Fold enabled research rewards into on-hand currency before planning.
     const credits: ResearchCredit[] = [];
@@ -53,17 +54,17 @@ export function usePlannerResults(): PlanSummary {
  * the planner settings. The weekday plan's head start reduces the weekend demand.
  */
 export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan; road: RoadPlan } {
-  const inputs = useDeferredValue(usePlannerStore((s) => s.inputs));
-  const settings = useDeferredValue(usePlannerStore((s) => s.settings));
-  const blockPriority = useDeferredValue(usePlannerStore((s) => s.blockPriority));
-  const remoteAllocations = useDeferredValue(usePlannerStore((s) => s.remoteAllocations));
-  const quickCatchBlocks = useDeferredValue(usePlannerStore((s) => s.quickCatchBlocks));
-  const playDays = useDeferredValue(usePlannerStore((s) => s.playDays));
-  const roadTargets = useDeferredValue(usePlannerStore((s) => s.roadTargets));
-  const roadCoupled = useDeferredValue(usePlannerStore((s) => s.roadCoupled));
-  const roadSelected = useDeferredValue(usePlannerStore((s) => s.roadSelected));
-  const roadEnergy = useDeferredValue(usePlannerStore((s) => s.roadEnergy));
-  const blockAllocations = useDeferredValue(usePlannerStore((s) => s.blockAllocations));
+  const inputs = useDebouncedValue(usePlannerStore((s) => s.inputs));
+  const settings = useDebouncedValue(usePlannerStore((s) => s.settings));
+  const blockPriority = useDebouncedValue(usePlannerStore((s) => s.blockPriority));
+  const remoteAllocations = useDebouncedValue(usePlannerStore((s) => s.remoteAllocations));
+  const quickCatchBlocks = useDebouncedValue(usePlannerStore((s) => s.quickCatchBlocks));
+  const playDays = useDebouncedValue(usePlannerStore((s) => s.playDays));
+  const roadTargets = useDebouncedValue(usePlannerStore((s) => s.roadTargets));
+  const roadCoupled = useDebouncedValue(usePlannerStore((s) => s.roadCoupled));
+  const roadSelected = useDebouncedValue(usePlannerStore((s) => s.roadSelected));
+  const roadEnergy = useDebouncedValue(usePlannerStore((s) => s.roadEnergy));
+  const blockAllocations = useDebouncedValue(usePlannerStore((s) => s.blockAllocations));
   return useMemo(() => {
     const list = Object.values(inputs);
     const road = computeRoadPlan(
@@ -114,7 +115,7 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
  * what they'd need to buy. Pure of the weekend plan — it's a have/need/buy view.
  */
 export function usePassCoverage(summary: PlanSummary): PassCoverage {
-  const inputs = usePlannerStore((s) => s.inputs);
+  const inputs = useDebouncedValue(usePlannerStore((s) => s.inputs));
   const globalPriority = usePlannerStore((s) => s.globalPriority);
   const passesOwned = usePlannerStore((s) => s.settings.passesOwned);
   return useMemo(() => {
@@ -149,7 +150,9 @@ function sameAllocation(a: Record<string, number>, b: Record<string, number>): b
  * this becomes a no-op until the user taps "Auto-balance" again.
  */
 export function useRemoteAutoBalance(summary: PlanSummary): void {
-  const inputs = usePlannerStore((s) => s.inputs);
+  // Debounced: this effect runs computeRoadPlan + computeBlockPlan AND writes the
+  // store, so throttling it is what keeps rapid edits from thrashing the tab.
+  const inputs = useDebouncedValue(usePlannerStore((s) => s.inputs));
   const settings = usePlannerStore((s) => s.settings);
   const blockPriority = usePlannerStore((s) => s.blockPriority);
   const remoteAuto = usePlannerStore((s) => s.remoteAuto);

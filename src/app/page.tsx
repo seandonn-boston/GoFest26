@@ -175,7 +175,6 @@ export default function Home() {
               <ExpandAllToggle />
               <LayoutToggle layout={layout} onChange={setLayout} />
             </div>
-            <StepNav steps={steps} active={single ? activeSection : step} onSelect={goToStep} />
 
             {single ? (
               <SinglePageFlow
@@ -211,16 +210,14 @@ export default function Home() {
                   onJump={setStep}
                 />
 
-                <StepFooter
-                  step={step}
-                  onPrev={prevStep}
-                  onNext={nextStep}
-                  nextLabel={step === 3 ? "See results" : step === 4 ? "See remote" : step === 5 ? "See cost" : undefined}
-                />
+                <StepFooter step={step} onPrev={prevStep} onNext={nextStep} />
               </div>
             )}
 
             <Disclaimer />
+            {/* The step navigator lives at the foot of the flow and sticks to the
+                bottom of the viewport, so it's always a thumb-reach away. */}
+            <StepNav steps={steps} active={single ? activeSection : step} onSelect={goToStep} />
           </SubstituteLoader>
         </SpriteScaleProvider>
       </main>

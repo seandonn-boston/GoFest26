@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { StepId } from "@/store/useUiStore";
 
 export interface StepMeta {
@@ -19,18 +20,33 @@ export interface StepMeta {
  * on narrow screens so it never crowds a phone.
  */
 export function StepNav({ steps, active, onSelect }: { steps: StepMeta[]; active: StepId; onSelect: (id: StepId) => void }) {
+  const navRef = useRef<HTMLElement>(null);
+  const activeRef = useRef<HTMLLIElement>(null);
+
+  // Whenever the active step changes (a tap, or scroll-spy in one-page mode),
+  // slide the row so the selected tile sits at the LEFT edge — the steps ahead
+  // stay in view to its right.
+  useEffect(() => {
+    const nav = navRef.current;
+    const li = activeRef.current;
+    if (!nav || !li) return;
+    const delta = li.getBoundingClientRect().left - nav.getBoundingClientRect().left;
+    nav.scrollTo({ left: nav.scrollLeft + delta - 16, behavior: "smooth" }); // 16 = the px-4 gutter
+  }, [active]);
+
   return (
     <nav
+      ref={navRef}
       aria-label="Planner steps"
-      // Sticky: rides in its natural spot, then pins to the top of the viewport
-      // once scrolled past, and snaps back into place when you scroll back up.
-      className="sticky top-0 z-30 -mx-4 mb-6 overflow-x-auto border-b border-white/5 bg-gofest-bg/90 px-4 py-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      // Pinned to the BOTTOM of the viewport at all times, so navigation is always
+      // a thumb-reach away; scrolls sideways to keep the active step at the left.
+      className="sticky bottom-0 z-30 -mx-4 mt-6 overflow-x-auto border-t border-white/5 bg-gofest-bg/90 px-4 py-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <ol className="flex min-w-max items-stretch gap-2">
         {steps.map((s) => {
           const isActive = s.id === active;
           return (
-            <li key={s.id} className="flex items-center gap-2">
+            <li key={s.id} ref={isActive ? activeRef : undefined} className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => onSelect(s.id)}
