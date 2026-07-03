@@ -136,6 +136,10 @@ export interface RaidBoss {
   sprite?: string;
   /** Geographic restriction; undefined = globally available. */
   region?: RegionScope;
+  /** Home region where the boss appears far MORE FREQUENTLY (a spawn-rate boost,
+   *  not a lock — it stays raidable everywhere; lake trio). Drives the remote
+   *  section's "worth remote-raiding from its home region" listing. */
+  boostRegion?: RegionScope;
   /** Optional planning tip (e.g. "wait for the Primal form to get Primal Energy"). */
   note?: string;
   // ---- Multi-form (shared-resource) species ----

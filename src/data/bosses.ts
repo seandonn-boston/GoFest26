@@ -90,6 +90,7 @@ interface LegOpts {
   windows: HabitatWindow[];
   counters: string[];
   region?: RegionScope;
+  boostRegion?: RegionScope;
   note?: string;
 }
 
@@ -106,6 +107,7 @@ function legendary(o: LegOpts): RaidBoss {
     bestCounters: o.counters,
     types: o.types,
     region: o.region,
+    boostRegion: o.boostRegion,
     note: o.note,
   };
 }
@@ -240,13 +242,15 @@ const ROSTER: RaidBoss[] = [
   // The Lake trio is NOT region-locked: the official event notes say they
   // "appear more frequently in raids in their respective regions" (Uxie APAC,
   // Mesprit EMEA, Azelf Americas) — a frequency boost, not availability. A hard
-  // `region` here would wrongly force them remote-only for 2/3 of players.
+  // `region` here would wrongly force them remote-only for 2/3 of players;
+  // `boostRegion` records the home region so remote planning can still target it.
   legendary({
     id: "uxie",
     name: "Uxie",
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
+    boostRegion: { continent: "apac" },
     note: "Appears more frequently in Asia-Pacific, but raidable everywhere.",
   }),
   legendary({
@@ -255,6 +259,7 @@ const ROSTER: RaidBoss[] = [
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
+    boostRegion: { continent: "emea" },
     note: "Appears more frequently in Europe, the Middle East, Africa & India, but raidable everywhere.",
   }),
   legendary({
@@ -263,6 +268,7 @@ const ROSTER: RaidBoss[] = [
     types: ["Psychic"],
     windows: [w("sat", 3, 6)],
     counters: ["Mega Gengar", "Shadow Tyranitar", "Darkrai"],
+    boostRegion: { continent: "americas" },
     note: "Appears more frequently in the Americas, but raidable everywhere.",
   }),
   legendary({
