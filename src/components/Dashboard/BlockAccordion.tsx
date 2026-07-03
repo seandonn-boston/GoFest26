@@ -329,7 +329,7 @@ function BlockItem({ block }: { block: BlockPlan }) {
   return (
     // Themed by the block's three featured wild-spawn types — a colored enamel
     // frame + dark veil, exactly like the boss cards.
-    <div className="overflow-hidden rounded-lg p-[2px]" style={typeBackgroundStyle(wildTypes)}>
+    <div className="cv-auto overflow-hidden rounded-lg p-[2px]" style={typeBackgroundStyle(wildTypes)}>
       <div className="rounded-[7px]" style={typePanelStyle(wildTypes)}>
         <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
           <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">

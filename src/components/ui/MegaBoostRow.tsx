@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { MegaBoost, MegaKind } from "@/domain";
 import { Sprite } from "./Sprite";
 
@@ -44,7 +45,15 @@ export const MEGA_KIND_LABEL: Record<MegaKind, string> = {
 const RAINBOW_GRADIENT = "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14e07a, #00b3ff, #7a5cff, #ff00c8, #ff0040)";
 
 /** A rank-ordered row of mega-evolution candy-boost sprites with kind outlines. */
-export function MegaBoostRow({ boosts, size = 26, max }: { boosts: MegaBoost[]; size?: number; max?: number }) {
+export const MegaBoostRow = memo(function MegaBoostRow({
+  boosts,
+  size = 26,
+  max,
+}: {
+  boosts: MegaBoost[];
+  size?: number;
+  max?: number;
+}) {
   const shown = typeof max === "number" ? boosts.slice(0, max) : boosts;
   if (shown.length === 0) return null;
   return (
@@ -60,7 +69,7 @@ export function MegaBoostRow({ boosts, size = 26, max }: { boosts: MegaBoost[]; 
       ))}
     </div>
   );
-}
+});
 
 const LEGEND: { kind: MegaKind; label: string }[] = [
   { kind: "rainbow", label: "boss+wild+atk" },
