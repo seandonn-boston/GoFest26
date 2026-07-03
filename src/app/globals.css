@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Skip layout + paint for off-screen heavy cards/blocks so a long, fully-expanded
+   page (every boss card + every habitat block open) doesn't re-lay-out and repaint
+   everything on each recompute. `auto <estimate>` remembers the last rendered size,
+   so scroll position stays stable. Only the on-screen ones do real work. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
 :root {
   color-scheme: dark;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;

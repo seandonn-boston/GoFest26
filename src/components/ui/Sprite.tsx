@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 /**
  * Renders a Pokémon GO sprite icon. The PokeMiners/Leek Duck CDN names some
@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
  * before giving up. Falls back to a typed-looking lettered chip if every
  * candidate fails (or there's no src).
  */
-export function Sprite({ src, alt, size = 48 }: { src?: string; alt: string; size?: number }) {
+export const Sprite = memo(function Sprite({ src, alt, size = 48 }: { src?: string; alt: string; size?: number }) {
   // Candidate URLs to try in order: the given one, then the alternate CDN naming.
   const candidates = useMemo(() => {
     if (!src) return [];
@@ -54,4 +54,4 @@ export function Sprite({ src, alt, size = 48 }: { src?: string; alt: string; siz
       className="shrink-0 object-contain drop-shadow"
     />
   );
-}
+});

@@ -181,7 +181,7 @@ export function BossInputCard({
   return (
     <div
       id={`card-${boss.id}`}
-      className="enamel relative scroll-mt-20 rounded-2xl p-2"
+      className="cv-auto enamel relative scroll-mt-20 rounded-2xl p-2"
       style={typeBackgroundStyle(cardTypes)}
     >
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(cardTypes)}>
