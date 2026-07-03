@@ -405,39 +405,32 @@ export function computeBlockPlan(
   const sunIdx = HABITATS.map((h, i) => (h.day === "sun" && ySel ? i : -1)).filter((i) => i >= 0);
   const allIdx = [...satIdx, ...sunIdx];
 
-  // Spread Mewtwo's day-locked energy + shared leveling across the day's blocks by
-  // leveling total load. NO capacity gate: Mewtwo is a first-class per-block target
-  // (priority #1 for many players), so it must be represented in EVERY block it can
-  // be raided, then compete on that block's priority order like everything else —
-  // each block's fillShares(orderByBlock) cuts the lowest-priority tail when over
-  // capacity. The old cap gate silently dropped a priority-#1 Mewtwo whenever the
-  // fixed species already overfilled the day (e.g. a Saturday stuffed with Lugia /
-  // Ho-Oh / Zapdos would give Super Mega Mewtwo X zero raids). `running` is in
-  // time-slots; quick-catch raids cost less than a slot.
+  // Distribute Mewtwo's day-locked energy + shared leveling into each block's
+  // HEADROOM ABOVE MEWTWO — the block's capacity minus the raids of the species the
+  // user EXPLICITLY ranked above Mewtwo there. A form's energy is a per-DAY total
+  // (X across Saturday, Y across Sunday), so the water-fill levels it across the
+  // day's blocks and, crucially, REDISTRIBUTES: a block where Mewtwo is outranked
+  // and already full spills its share into blocks where Mewtwo ranks higher or has
+  // room, instead of dropping those raids. Where Mewtwo isn't explicitly ranked
+  // (default, or a block with no drag order) it gets full headroom — so it's still
+  // represented everywhere (the old cap gate counted lower-priority species against
+  // it and could zero a priority-#1 Mewtwo). `running` is in time-slots; quick-catch
+  // raids cost less than a slot.
   const mewtwoFormAt = (i: number) => (HABITATS[i].day === "sat" ? MEWTWO_X_ID : MEWTWO_Y_ID);
   const mewtwoCost = (i: number) => (isQuick(mewtwoFormAt(i), i) ? quickFactor : 1);
-  const running = shares.map((list) => list.reduce((s, sh) => s + sh.raids * (sh.quick ? quickFactor : 1), 0));
-  // A form's day-locked energy is a per-DAY total (X across all Saturday blocks,
-  // Y across Sunday), so split it EVENLY across that day's blocks — Mewtwo is
-  // ranked per block and available all day, so it should show (and be prioritized)
-  // in each one rather than piling into whichever block happens to be emptiest.
-  const splitEven = (idxs: number[], budget: number): number[] => {
-    const add = new Array(running.length).fill(0);
-    const n = idxs.length;
-    const b = Math.max(0, Math.round(budget));
-    if (n <= 0 || b <= 0) return add;
-    idxs.forEach((idx, k) => {
-      const share = Math.floor(b / n) + (k < b % n ? 1 : 0);
-      add[idx] = share;
-      running[idx] += share * mewtwoCost(idx);
-    });
-    return add;
+  const mewtwoHeadroom = (i: number): number => {
+    const order = blockPriority[keyAt(i)] ?? [];
+    const rank = order.indexOf(mewtwoFormAt(i));
+    if (rank < 0) return capacities[i].max; // Mewtwo unranked here → full headroom
+    const above = new Set(order.slice(0, rank));
+    const used = shares[i].reduce((s, sh) => s + (above.has(sh.bossId) ? sh.raids * (sh.quick ? quickFactor : 1) : 0), 0);
+    return Math.max(0, capacities[i].max - used);
   };
-  const addSat = splitEven(satIdx, satLocked);
-  const addSun = splitEven(sunIdx, sunLocked);
-  // The shared leveling surplus is farmable on either day, so level it into the
-  // least-loaded blocks (no capacity gate — priority ordering does the cutting).
-  const addFluid = waterfill(running, allIdx, fluid, undefined, mewtwoCost);
+  const mewCaps = HABITATS.map((_, i) => mewtwoHeadroom(i));
+  const mewRunning = new Array(HABITATS.length).fill(0);
+  const addSat = waterfill(mewRunning, satIdx, satLocked, mewCaps, mewtwoCost);
+  const addSun = waterfill(mewRunning, sunIdx, sunLocked, mewCaps, mewtwoCost);
+  const addFluid = waterfill(mewRunning, allIdx, fluid, mewCaps, mewtwoCost);
 
   HABITATS.forEach((h, i) => {
     const n = addSat[i] + addSun[i] + addFluid[i];
