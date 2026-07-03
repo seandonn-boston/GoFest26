@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { RaidsNeededTooltip } from "@/components/ui/RaidsNeededTooltip";
 import { useExpandable } from "@/hooks/useExpandable";
 import { getBoss } from "@/data";
 import { goalProgress } from "@/domain";
@@ -96,9 +97,11 @@ export function GoalProgress({
               <li key={id} className="flex items-center justify-between gap-2">
                 <span className="min-w-0 truncate text-slate-300">{boss?.name ?? id}</span>
                 <span className="flex shrink-0 items-center gap-2.5">
-                  <span className={`font-mono font-bold ${ratioTone(a, r)}`}>
-                    {a}/{r}
-                  </span>
+                  <RaidsNeededTooltip bossId={id} label={`How ${boss?.name ?? id}'s raids are counted`}>
+                    <span className={`font-mono font-bold ${ratioTone(a, r)}`}>
+                      {a}/{r}
+                    </span>
+                  </RaidsNeededTooltip>
                   <button
                     type="button"
                     onClick={() => setSelected(id, false)}

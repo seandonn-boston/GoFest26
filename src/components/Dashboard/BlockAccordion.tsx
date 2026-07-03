@@ -21,6 +21,8 @@ import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 import { CopyableInline } from "@/components/ui/Copyable";
+import { MathTooltip } from "@/components/ui/MathTooltip";
+import { RaidsNeededTooltip } from "@/components/ui/RaidsNeededTooltip";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { AllocationControl, AllocationBar } from "./AllocationControl";
 import type { BlockAllocation } from "@/domain/types";
@@ -167,15 +169,37 @@ function TargetCard({
             className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
           />
           <span className="text-slate-500">/</span>
-          <span className="text-gofest-accent2" title="Raids needed (selected reward case)">
-            {need}
+          <span className="text-gofest-accent2">
+            {share.mewtwo ? (
+              <span title="Raids needed (selected reward case)">{need}</span>
+            ) : (
+              <RaidsNeededTooltip
+                bossId={share.bossId}
+                label={`How ${share.bossName.replace(/^Mega /, "")}'s raids are counted`}
+              >
+                {need}
+              </RaidsNeededTooltip>
+            )}
           </span>
         </div>
 
         {share.remaining > 0 ? (
-          <span className="shrink-0 text-[12px] text-rose-300" title={`${share.remaining} raids short`}>
-            {goalPct}%
-          </span>
+          <MathTooltip
+            label="Why this %"
+            hideIcon
+            trigger={<span className="shrink-0 cursor-help text-[12px] text-rose-300">{goalPct}%</span>}
+          >
+            <div className="space-y-1 text-[13px] leading-relaxed text-slate-300">
+              <p>
+                You can fit <b className="text-slate-100">{share.fitted}</b> of the{" "}
+                <b className="text-slate-100">{share.raids}</b> raids needed into this block&apos;s time —{" "}
+                <b className="text-rose-300">{share.remaining} short</b>.
+              </p>
+              <p className="text-slate-500">
+                {goalPct}% = fitted ÷ needed. Reprioritize, remote-raid, or trim the goal to close the gap.
+              </p>
+            </div>
+          </MathTooltip>
         ) : null}
         {gripRight}
       </div>
