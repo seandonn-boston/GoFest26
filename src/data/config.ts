@@ -16,6 +16,12 @@ export const GAME_CONFIG = {
     hoursPerDay: 9,
     days: 2,
     hourStartLocal: 10,
+    // Normal raid-open hours (local, 24h): gyms host raids roughly 6 AM–10 PM. A
+    // Road of Legends featured boss spawns as an ordinary raid across this WHOLE
+    // window — its concentrated 6–8 PM Raid Hour is only when it takes over EVERY
+    // gym. Used to widen the "raidable somewhere in region" span for remote raiding.
+    // source: estimate — community-reported daily raid window; one-line editable.
+    normalRaidHoursLocal: { start: 6, end: 22 },
   },
 
   capacity: {

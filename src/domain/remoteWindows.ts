@@ -52,14 +52,20 @@ function makeWindow(
   startHour24: number,
   endHour24: number,
   what: string,
+  /** Optional WIDER "raidable somewhere" span for the flexible range, when it
+   *  differs from the recommended (anchor) window — e.g. a Road of Legends boss is
+   *  raidable all day even though its concentrated Raid Hour is the anchor peak. */
+  wide?: { startHour: number; endHour: number },
 ): RemoteWindow {
   const startMin = startHour24 * 60;
   const endMin = endHour24 * 60;
+  const wideStartMin = (wide?.startHour ?? startHour24) * 60;
+  const wideEndMin = (wide?.endHour ?? endHour24) * 60;
   return {
     hostLabel: `${dayShort} ${hostClock(startHour24)}–${hostClock(endHour24)} · ${what}`,
     // Easternmost zone reaches the window first; westernmost leaves it last.
-    startUtc: utcAt(dayId, startMin, clock.eastOffsetMin),
-    endUtc: utcAt(dayId, endMin, clock.westOffsetMin),
+    startUtc: utcAt(dayId, wideStartMin, clock.eastOffsetMin),
+    endUtc: utcAt(dayId, wideEndMin, clock.westOffsetMin),
     anchorStartUtc: utcAt(dayId, startMin, clock.anchor.offsetMin),
     anchorEndUtc: utcAt(dayId, endMin, clock.anchor.offsetMin),
     anchorCity: clock.anchor.city,
@@ -80,8 +86,9 @@ const DAY_SHORT: Record<string, string> = {
 /**
  * The host-region windows in which a region-locked (or home-region-BOOSTED,
  * e.g. the lake trio) boss can be remote-raided: its weekend habitat block(s),
- * plus any Road of Legends raid hour featuring it (region-locked 5★ are all in
- * Monday's marathon roster). Chronological by the anchor window. Returns null
+ * plus any Road of Legends DAY featuring it — widened to all normal raid hours
+ * (the boss spawns all day, not just its concentrated Raid Hour, which the label
+ * flags as the reliable peak). Chronological by the anchor window. Returns null
  * for a boss with no home region — its windows are simply the listed local ones.
  */
 export function remoteWindowsForBoss(boss: RaidBoss): RemoteWindow[] | null {
@@ -90,13 +97,22 @@ export function remoteWindowsForBoss(boss: RaidBoss): RemoteWindow[] | null {
   const start = GAME_CONFIG.event.hourStartLocal; // habitat hours are event-local indexes
   const out: RemoteWindow[] = [];
 
-  // Road of Legends raid hours featuring this boss. Megas raid the 7–8 PM Mega
-  // hour; 5★ raid the 5★ hour — 6–7 PM on Tue–Fri, the full 6–8 PM on Monday.
+  // Road of Legends days featuring this boss. It's raidable somewhere in its region
+  // ALL DAY (normal raid hours ≈ 6 AM–10 PM), so the flexible span is the whole day —
+  // but it takes over EVERY gym only during its concentrated Raid Hour, the reliable
+  // peak to remote into, which stays the recommended (anchor) window. (Megas raid the
+  // 7–8 PM peak; 5★ the 5★ hour — 6–7 PM Tue–Fri, the full 6–8 PM Monday.)
+  const { start: dayStart, end: dayEnd } = GAME_CONFIG.event.normalRaidHoursLocal;
   for (const day of ROAD_DAYS) {
     if (!day.bossIds.includes(boss.id)) continue;
     const isMega = boss.tier === "mega" || boss.tier === "super-mega";
-    const [s, e] = isMega ? [20 - day.megaHours, 20] : [18, 18 + day.fiveStarHours];
-    out.push(makeWindow(clock, day.id, DAY_SHORT[day.id], s, e, `Raid Hour (${day.dateLabel})`));
+    const [peakS, peakE] = isMega ? [20 - day.megaHours, 20] : [18, 18 + day.fiveStarHours];
+    out.push(
+      makeWindow(clock, day.id, DAY_SHORT[day.id], peakS, peakE, "Raid Hour · up all day", {
+        startHour: dayStart,
+        endHour: dayEnd,
+      }),
+    );
   }
 
   // Weekend habitat blocks.
