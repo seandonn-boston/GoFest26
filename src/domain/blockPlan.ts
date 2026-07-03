@@ -405,16 +405,39 @@ export function computeBlockPlan(
   const sunIdx = HABITATS.map((h, i) => (h.day === "sun" && ySel ? i : -1)).filter((i) => i >= 0);
   const allIdx = [...satIdx, ...sunIdx];
 
-  // Cap Mewtwo so it never inflates a block past its capacity (a block already
-  // full of fixed raids gets no Mewtwo — it can't be raided there anyway).
-  // `running`/`caps` are in time-slots; quick-catch raids cost less than a slot.
+  // Spread Mewtwo's day-locked energy + shared leveling across the day's blocks by
+  // leveling total load. NO capacity gate: Mewtwo is a first-class per-block target
+  // (priority #1 for many players), so it must be represented in EVERY block it can
+  // be raided, then compete on that block's priority order like everything else —
+  // each block's fillShares(orderByBlock) cuts the lowest-priority tail when over
+  // capacity. The old cap gate silently dropped a priority-#1 Mewtwo whenever the
+  // fixed species already overfilled the day (e.g. a Saturday stuffed with Lugia /
+  // Ho-Oh / Zapdos would give Super Mega Mewtwo X zero raids). `running` is in
+  // time-slots; quick-catch raids cost less than a slot.
   const mewtwoFormAt = (i: number) => (HABITATS[i].day === "sat" ? MEWTWO_X_ID : MEWTWO_Y_ID);
   const mewtwoCost = (i: number) => (isQuick(mewtwoFormAt(i), i) ? quickFactor : 1);
-  const caps = capacities.map((c) => c.max);
   const running = shares.map((list) => list.reduce((s, sh) => s + sh.raids * (sh.quick ? quickFactor : 1), 0));
-  const addSat = waterfill(running, satIdx, satLocked, caps, mewtwoCost);
-  const addSun = waterfill(running, sunIdx, sunLocked, caps, mewtwoCost);
-  const addFluid = waterfill(running, allIdx, fluid, caps, mewtwoCost);
+  // A form's day-locked energy is a per-DAY total (X across all Saturday blocks,
+  // Y across Sunday), so split it EVENLY across that day's blocks — Mewtwo is
+  // ranked per block and available all day, so it should show (and be prioritized)
+  // in each one rather than piling into whichever block happens to be emptiest.
+  const splitEven = (idxs: number[], budget: number): number[] => {
+    const add = new Array(running.length).fill(0);
+    const n = idxs.length;
+    const b = Math.max(0, Math.round(budget));
+    if (n <= 0 || b <= 0) return add;
+    idxs.forEach((idx, k) => {
+      const share = Math.floor(b / n) + (k < b % n ? 1 : 0);
+      add[idx] = share;
+      running[idx] += share * mewtwoCost(idx);
+    });
+    return add;
+  };
+  const addSat = splitEven(satIdx, satLocked);
+  const addSun = splitEven(sunIdx, sunLocked);
+  // The shared leveling surplus is farmable on either day, so level it into the
+  // least-loaded blocks (no capacity gate — priority ordering does the cutting).
+  const addFluid = waterfill(running, allIdx, fluid, undefined, mewtwoCost);
 
   HABITATS.forEach((h, i) => {
     const n = addSat[i] + addSun[i] + addFluid[i];

@@ -197,7 +197,7 @@ describe("computeBlockPlan — allocation", () => {
     expect(plan.blocks.some((b) => b.species.some((s) => s.bossId === MEWTWO_Y_ID))).toBe(true);
   });
 
-  it("water-fills Mewtwo into the lighter blocks, never widening the spread", () => {
+  it("spreads Mewtwo across the day's blocks without widening the spread", () => {
     const blockA = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 0)!;
     const blockB = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && b.windows[0].startHour === 3)!;
     const spread = (ids: string[]) => {
@@ -248,6 +248,38 @@ describe("computeBlockPlan — allocation", () => {
     // Every Saturday block carries some Mega Mewtwo X — emphasis is steered by
     // each block's priority order, not a per-block hunt toggle.
     for (const key of ["sat0", "sat3", "sat6"]) expect(xIn(all, key)).toBeGreaterThan(0);
+  });
+
+  it("gives a priority-#1 Mewtwo X raids even when Saturday is already over capacity", () => {
+    // Regression: Mewtwo was poured only into each block's LEFTOVER capacity, so a
+    // Saturday already overfilled by fixed species (here a heavy boss in each of
+    // the three blocks) left Super Mega Mewtwo X — ranked #1 in every block — with
+    // ZERO raids. It must instead be a first-class share that competes on priority
+    // and cuts the lower-ranked species. Before the fix: fitted 0 in every block.
+    const satHours = [0, 3, 6];
+    const heavy = satHours.map((hh) =>
+      SINGLE_BLOCK.find(
+        (b) => b.windows[0].day === "sat" && b.windows[0].startHour === hh && bossIsLocal(b, DEFAULT_SETTINGS.region),
+      )!,
+    );
+    const inputs = [
+      ...heavy.map((b) => ({ ...makeDefaultInput(b), quantity: 40 })),
+      makeDefaultInput(getBoss(MEWTWO_X_ID)!),
+    ];
+    const results = inputs.map((i) => computeBossResult(getBoss(i.bossId)!, i));
+    // Rank Mewtwo X #1 in each Saturday block.
+    const prio: Record<string, string[]> = {
+      sat0: [MEWTWO_X_ID, heavy[0].id],
+      sat3: [MEWTWO_X_ID, heavy[1].id],
+      sat6: [MEWTWO_X_ID, heavy[2].id],
+    };
+    const plan = computeBlockPlan(inputs, results, computeCapacity(DEFAULT_SETTINGS), DEFAULT_SETTINGS, prio);
+    for (const key of ["sat0", "sat3", "sat6"]) {
+      const blk = plan.blocks.find((b) => blockKey(b.day, b.startHour) === key)!;
+      const mx = blk.species.find((s) => s.bossId === MEWTWO_X_ID);
+      expect(mx, `Mewtwo X missing from ${key}`).toBeTruthy();
+      expect(mx!.fitted).toBeGreaterThan(0); // #1 is never the one cut
+    }
   });
 
   it("respects explicit priority order (lowest priority takes the risky tail)", () => {
