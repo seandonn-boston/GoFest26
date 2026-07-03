@@ -521,18 +521,49 @@ input[type="number"] {
     opacity: 0.85;
   }
   86% {
-    transform: translateX(760px);
+    transform: translateX(860px);
     opacity: 0.85;
   }
   88%,
   100% {
-    transform: translateX(760px);
+    transform: translateX(860px);
     opacity: 0;
+  }
+}
+/* Sparkles winking across the pool — each circle staggers its own delay and
+   duration inline, so one keyframe serves all of them. */
+.gf-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: gf-sparkle 3s ease-in-out infinite;
+}
+@keyframes gf-sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  30% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  48% {
+    opacity: 0;
+    transform: scale(0.35);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .gf-blob,
-  .gf-glint {
+  .gf-glint,
+  .gf-spark {
     animation: none;
+  }
+  .gf-spark {
+    opacity: 0.5; /* static glitter instead of winking */
   }
 }

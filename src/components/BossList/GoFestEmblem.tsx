@@ -7,19 +7,26 @@
  *    dilated (feMorphology on the glyph alpha, blurred + re-thresholded into an
  *    organic blob), so the border hugs exactly how the font renders — change
  *    the font and the holder re-molds itself.
- *  - Inside it, a contained pool of the event's habitat energies — Psychic,
- *    Ghost, Electric and Ice type colors — drifts like liquid jostling to stay
- *    together (CSS-animated gradient blobs, masked to the inner silhouette).
+ *  - Inside it, a generous pool of the event's habitat energies — Psychic,
+ *    Ghost and Electric type colors — drifts like liquid jostling to stay
+ *    together, with sparkles winking across the surface (all masked to the
+ *    inner silhouette).
  *  - "GO / FEST" sits embossed on two lines, vertically centered, with "26"
  *    even larger behind them (the Mewtwo X/Y treatment's calmer sibling).
- *  - No glitching: the only motion is the pool and an occasional glimmer
- *    sweeping the metal band (masked to outer-minus-inner). All animation
+ *  - No glitching: the only motion is the pool, its sparkles, and an occasional
+ *    glimmer sweeping the metal band (masked to outer-minus-inner). All motion
  *    honors prefers-reduced-motion (see globals.css `.gf-*`).
  *
  * Every layer (metal, bevel light, pool mask, glint band) reuses ONE silhouette
  * group (#gf-sil), so the visible embossed text and its holder can never drift
  * apart.
  */
+
+// The heaviest face on the page — Archivo Black, self-hosted by next/font in
+// layout.tsx and exposed as --font-emblem so this component stays a pure SVG.
+// The silhouette derives from the glyph alpha, so the holder molds itself to
+// whatever face actually renders.
+const HEAVY_FONT = "var(--font-emblem, var(--font-display))";
 
 // The tile bezel's gold family (globals.css .badge), so the medallion reads as
 // kin to the enamel badges — just bigger and brighter.
@@ -28,19 +35,25 @@ const GOLD_MID = "#caa047";
 const GOLD_DEEP = "#9c7a30";
 const GOLD_SHADOW = "#6d5420";
 
-// The weekend's habitat energies (TYPE_COLORS): psychic/ghost/electric/ice.
+// The weekend's headline energies (TYPE_COLORS): psychic/ghost/electric.
 const PSYCHIC = "#F95587";
 const GHOST = "#735797";
 const ELECTRIC = "#F7D02C";
-const ICE = "#96D9D6";
+
+// Silhouette geometry: the pool reaches ~POOL units beyond the glyphs before
+// the metal band (~BAND units thick) takes over — a wide moat, not a snug edge.
+// (Dialed to read as ~72px of water around the type at full render size.)
+const POOL_RADIUS = 29;
+const BAND = 16;
+const SMOOTH = 12; // blur that rounds the dilation organic
 
 /** Organic silhouette: dilate the glyph alpha, blur it, then re-threshold —
  *  the blur+threshold rounds the dilation into a single liquid-metal blob. */
 function BlobFilter({ id, radius, white }: { id: string; radius: number; white?: boolean }) {
   return (
-    <filter id={id} x="-30%" y="-35%" width="160%" height="170%">
+    <filter id={id} filterUnits="userSpaceOnUse" x="-110" y="-110" width="740" height="560">
       <feMorphology in="SourceAlpha" operator="dilate" radius={radius} result="d" />
-      <feGaussianBlur in="d" stdDeviation="9" result="b" />
+      <feGaussianBlur in="d" stdDeviation={SMOOTH} result="b" />
       <feComponentTransfer in="b" result="t">
         <feFuncA type="linear" slope="18" intercept="-6" />
       </feComponentTransfer>
@@ -54,25 +67,41 @@ function BlobFilter({ id, radius, white }: { id: string; radius: number; white?:
   );
 }
 
+// Sparkles: (x, y, radius, delay s, duration s) — scattered across the pool.
+const SPARKS: Array<[number, number, number, number, number]> = [
+  [120, 90, 2.4, 0, 2.9],
+  [205, 62, 1.8, -1.1, 3.6],
+  [318, 84, 2.6, -2.3, 3.1],
+  [420, 120, 1.9, -0.6, 2.6],
+  [455, 210, 2.3, -1.8, 3.4],
+  [372, 262, 1.7, -2.9, 2.8],
+  [258, 288, 2.5, -0.3, 3.2],
+  [148, 268, 1.8, -1.5, 2.7],
+  [78, 196, 2.2, -2.6, 3.5],
+  [186, 168, 1.6, -0.9, 2.5],
+  [340, 178, 2.0, -2.0, 3.0],
+  [92, 128, 1.5, -1.3, 2.4],
+];
+
 const DRIFT = "gf-blob";
 
 export function GoFestEmblem() {
   return (
-    <h2 className="mx-auto mb-1 mt-6 w-full max-w-[460px]">
+    <h2 className="mx-auto mb-1 mt-6 w-full max-w-[520px]">
       <span className="sr-only">GO Fest ’26 — the main event. Pick your weekend targets.</span>
-      <svg viewBox="0 0 480 300" aria-hidden="true" className="gf-emblem block w-full select-none">
+      <svg viewBox="0 0 520 340" aria-hidden="true" className="gf-emblem block w-full select-none">
         <defs>
           {/* ---- the typography, defined ONCE (masks + visible copies all reuse it) ---- */}
           <g id="gf-year">
-            <text x="240" y="158" textAnchor="middle" dominantBaseline="central" fontSize="232" letterSpacing="-6">
+            <text x="260" y="178" textAnchor="middle" dominantBaseline="central" fontSize="230" letterSpacing="-6">
               26
             </text>
           </g>
           <g id="gf-words">
-            <text x="240" y="108" textAnchor="middle" dominantBaseline="central" fontSize="86" letterSpacing="10">
+            <text x="260" y="126" textAnchor="middle" dominantBaseline="central" fontSize="84" letterSpacing="8">
               GO
             </text>
-            <text x="240" y="196" textAnchor="middle" dominantBaseline="central" fontSize="86" letterSpacing="8">
+            <text x="260" y="214" textAnchor="middle" dominantBaseline="central" fontSize="84" letterSpacing="4">
               FEST
             </text>
           </g>
@@ -82,16 +111,16 @@ export function GoFestEmblem() {
           </g>
 
           {/* ---- silhouette filters: outer holder, inner pool, and the band between ---- */}
-          <BlobFilter id="gf-blob-outer" radius={19} white />
-          <BlobFilter id="gf-blob-inner" radius={8} white />
-          <filter id="gf-blob-ring" x="-30%" y="-35%" width="160%" height="170%">
-            <feMorphology in="SourceAlpha" operator="dilate" radius="19" result="do" />
-            <feGaussianBlur in="do" stdDeviation="9" result="bo" />
+          <BlobFilter id="gf-blob-outer" radius={POOL_RADIUS + BAND} white />
+          <BlobFilter id="gf-blob-inner" radius={POOL_RADIUS} white />
+          <filter id="gf-blob-ring" filterUnits="userSpaceOnUse" x="-110" y="-110" width="740" height="560">
+            <feMorphology in="SourceAlpha" operator="dilate" radius={POOL_RADIUS + BAND} result="do" />
+            <feGaussianBlur in="do" stdDeviation={SMOOTH} result="bo" />
             <feComponentTransfer in="bo" result="outer">
               <feFuncA type="linear" slope="18" intercept="-6" />
             </feComponentTransfer>
-            <feMorphology in="SourceAlpha" operator="dilate" radius="8" result="di" />
-            <feGaussianBlur in="di" stdDeviation="9" result="bi" />
+            <feMorphology in="SourceAlpha" operator="dilate" radius={POOL_RADIUS} result="di" />
+            <feGaussianBlur in="di" stdDeviation={SMOOTH} result="bi" />
             <feComponentTransfer in="bi" result="inner">
               <feFuncA type="linear" slope="18" intercept="-6" />
             </feComponentTransfer>
@@ -102,12 +131,12 @@ export function GoFestEmblem() {
 
           {/* Bevel light: specular over the softened outer silhouette → the raised,
               light-catching metal surface (a real object, not a flat sticker). */}
-          <filter id="gf-shine" x="-30%" y="-35%" width="160%" height="170%">
-            <feMorphology in="SourceAlpha" operator="dilate" radius="19" result="d" />
-            <feGaussianBlur in="d" stdDeviation="7" result="b" />
+          <filter id="gf-shine" filterUnits="userSpaceOnUse" x="-110" y="-110" width="740" height="560">
+            <feMorphology in="SourceAlpha" operator="dilate" radius={POOL_RADIUS + BAND} result="d" />
+            <feGaussianBlur in="d" stdDeviation="8" result="b" />
             <feSpecularLighting
               in="b"
-              surfaceScale="9"
+              surfaceScale="10"
               specularConstant="1"
               specularExponent="15"
               lightingColor="#fff7dd"
@@ -118,13 +147,13 @@ export function GoFestEmblem() {
             <feComposite in="spec" in2="b" operator="in" />
           </filter>
 
-          <mask id="gf-outer-mask" maskUnits="userSpaceOnUse" x="-80" y="-80" width="640" height="460">
+          <mask id="gf-outer-mask" maskUnits="userSpaceOnUse" x="-110" y="-110" width="740" height="560">
             <use href="#gf-sil" filter="url(#gf-blob-outer)" />
           </mask>
-          <mask id="gf-pool-mask" maskUnits="userSpaceOnUse" x="-80" y="-80" width="640" height="460">
+          <mask id="gf-pool-mask" maskUnits="userSpaceOnUse" x="-110" y="-110" width="740" height="560">
             <use href="#gf-sil" filter="url(#gf-blob-inner)" />
           </mask>
-          <mask id="gf-ring-mask" maskUnits="userSpaceOnUse" x="-80" y="-80" width="640" height="460">
+          <mask id="gf-ring-mask" maskUnits="userSpaceOnUse" x="-110" y="-110" width="740" height="560">
             <use href="#gf-sil" filter="url(#gf-blob-ring)" />
           </mask>
 
@@ -155,7 +184,6 @@ export function GoFestEmblem() {
             ["gf-c-psychic", PSYCHIC],
             ["gf-c-ghost", GHOST],
             ["gf-c-electric", ELECTRIC],
-            ["gf-c-ice", ICE],
           ].map(([id, c]) => (
             <radialGradient key={id} id={id}>
               <stop offset="0" stopColor={c} stopOpacity="0.95" />
@@ -165,25 +193,37 @@ export function GoFestEmblem() {
           ))}
         </defs>
 
-        {/* Everything below inherits the app display font at weight 900 — the
+        {/* Everything below inherits the ultra-black display font — the
             silhouette IS the rendered text, so the holder always fits it. */}
-        <g style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>
+        <g style={{ fontFamily: HEAVY_FONT }}>
           {/* 1 · the metal holder (text-shaped, organically rounded) */}
-          <rect x="-80" y="-80" width="640" height="460" fill="url(#gf-metal)" mask="url(#gf-outer-mask)" />
+          <rect x="-110" y="-110" width="740" height="560" fill="url(#gf-metal)" mask="url(#gf-outer-mask)" />
           {/* 2 · bevel light across the raised metal */}
           <use href="#gf-sil" filter="url(#gf-shine)" opacity="0.85" />
 
-          {/* 3 · the contained pool — habitat energies drifting like liquid */}
+          {/* 3 · the contained pool — headline energies drifting like liquid */}
           <g mask="url(#gf-pool-mask)">
-            <rect x="-80" y="-80" width="640" height="460" fill="#14102a" />
-            <circle className={`${DRIFT} gf-blob-1`} cx="140" cy="110" r="115" fill="url(#gf-c-psychic)" />
-            <circle className={`${DRIFT} gf-blob-2`} cx="340" cy="95" r="125" fill="url(#gf-c-ghost)" />
-            <circle className={`${DRIFT} gf-blob-3`} cx="250" cy="215" r="105" fill="url(#gf-c-electric)" />
-            <circle className={`${DRIFT} gf-blob-4`} cx="110" cy="225" r="100" fill="url(#gf-c-ice)" />
-            <circle className={`${DRIFT} gf-blob-5`} cx="390" cy="215" r="90" fill="url(#gf-c-ice)" />
-            <circle className={`${DRIFT} gf-blob-6`} cx="240" cy="140" r="80" fill="url(#gf-c-psychic)" />
+            <rect x="-110" y="-110" width="740" height="560" fill="#161028" />
+            <circle className={`${DRIFT} gf-blob-1`} cx="150" cy="120" r="135" fill="url(#gf-c-psychic)" />
+            <circle className={`${DRIFT} gf-blob-2`} cx="370" cy="105" r="145" fill="url(#gf-c-ghost)" />
+            <circle className={`${DRIFT} gf-blob-3`} cx="275" cy="250" r="130" fill="url(#gf-c-electric)" />
+            <circle className={`${DRIFT} gf-blob-4`} cx="105" cy="255" r="120" fill="url(#gf-c-psychic)" />
+            <circle className={`${DRIFT} gf-blob-5`} cx="440" cy="245" r="115" fill="url(#gf-c-ghost)" />
+            <circle className={`${DRIFT} gf-blob-6`} cx="215" cy="85" r="100" fill="url(#gf-c-electric)" />
+            {/* sparkles winking across the liquid */}
+            {SPARKS.map(([x, y, r, delay, dur], i) => (
+              <circle
+                key={i}
+                className="gf-spark"
+                cx={x}
+                cy={y}
+                r={r}
+                fill="#fff9e8"
+                style={{ animationDelay: `${delay}s`, animationDuration: `${dur}s` }}
+              />
+            ))}
             {/* liquid dome sheen so the pool reads as one glossy surface */}
-            <rect x="-80" y="-80" width="640" height="460" fill="url(#gf-sheen)" />
+            <rect x="-110" y="-110" width="740" height="560" fill="url(#gf-sheen)" />
           </g>
 
           {/* 4 · "26" — even larger, behind the wordmark (the X/Y treatment's kin) */}
@@ -199,8 +239,8 @@ export function GoFestEmblem() {
 
           {/* 6 · the occasional glimmer racing along the metal band only */}
           <g mask="url(#gf-ring-mask)">
-            <g transform="rotate(22 240 150)">
-              <rect className="gf-glint" x="-200" y="-170" width="95" height="640" fill="url(#gf-glint-grad)" />
+            <g transform="rotate(22 260 170)">
+              <rect className="gf-glint" x="-240" y="-200" width="100" height="740" fill="url(#gf-glint-grad)" />
             </g>
           </g>
         </g>
