@@ -41,9 +41,10 @@ const GHOST = "#735797";
 const ELECTRIC = "#F7D02C";
 
 // Silhouette geometry: the pool reaches ~POOL units beyond the glyphs before
-// the metal band (~BAND units thick) takes over — a wide moat, not a snug edge.
-const POOL_RADIUS = 29;
-const BAND = 16;
+// the metal band (~BAND units thick) takes over. Tuned so the moat reads as
+// ~50px of water and the gold band ~5px thicker than before.
+const POOL_RADIUS = 20;
+const BAND = 23;
 const SMOOTH = 12; // blur that rounds the dilation organic
 
 // Filter/mask region, kept tight to the actual art (viewBox is 520×340). A
