@@ -303,9 +303,9 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
         ) : null}
       </div>
       <p className="mb-2 text-[13px] text-slate-400">
-        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local): <b>6–7</b> is 5★ raids (Monday&apos;s is the
-        whole roster), <b>7–8</b> is a single featured Mega — except <b>Friday</b>, whose 7–8 is{" "}
-        <b>Primal Kyogre &amp; Groudon</b>. Your selected targets are poured into each day&apos;s budget — what fits is a
+        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local). Only the day&apos;s featured <b>Mega</b> is
+        limited to one hour — the 5★ raids, the fusion/crowned raids, and <b>Friday&apos;s Primal Kyogre &amp; Groudon</b>{" "}
+        are all raidable the whole 2 hours. Your selected targets are poured into each day&apos;s budget — what fits is a
         head start that reduces your weekend below.
       </p>
 

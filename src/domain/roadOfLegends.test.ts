@@ -132,17 +132,19 @@ describe("computeRoadPlan", () => {
       ],
       results: [result("kyurem", candyRaids)],
     });
-    // Raids each fusion goal needs, capped by its 5★ Raid-Hour window (1h × 6/hr = 6):
-    // White/Black Kyurem are 5★, so at most 6 fit their 6–7 PM hour each day.
-    const perGoal = Math.min(sized(energyRaidsNeeded(0, 500, FUSION), "safe"), 6);
+    // White/Black Kyurem are 5★ — non-Mega, so they grind the FULL 2h Raid Hour
+    // (up to 12/day), not a single 6-raid hour. The per-goal energy need alone is
+    // small; the grind is capped by the window (12) and the base candy need.
+    const perGoal = Math.min(sized(energyRaidsNeeded(0, 500, FUSION), "safe"), 12);
 
     it("credits the fusion raids toward the head start even though Kyurem isn't featured Tue/Wed", () => {
       const { inputs, results } = withGoals(15);
       const road = computeRoadPlan(inputs, results, capacity, safe, { tue: true, wed: true });
-      // Kyurem isn't in Tue/Wed bossIds, so without the fusion credit the head
-      // start would be 0; the two fusion goals supply 2 × perGoal candy-effective raids.
-      expect(road.headStart.kyurem).toBe(perGoal * 2);
-      expect(road.totalFitted).toBe(perGoal * 2);
+      // Kyurem isn't in Tue/Wed bossIds, so without the fusion credit the head start
+      // would be 0. Each day grinds its whole 2h Raid Hour (12) → 24 raids total; the
+      // candy credit caps at the 15-raid weekend need.
+      expect(road.headStart.kyurem).toBe(15); // candy need (< the 24 fusion raids)
+      expect(road.totalFitted).toBe(24); // 12 White (Tue) + 12 Black (Wed)
     });
 
     it("caps the credit at the species' candy need (extra energy raids don't over-reduce)", () => {
@@ -199,9 +201,10 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
     expect(b).toEqual(a);
   });
 
-  it("builds a plan from roadSelected with NO weekend results (no crash) and fills the 5★ hour", () => {
-    // Empty weekend inputs/results — zekrom is only a decoupled RoL pick. Tuesday's
-    // 5★ window is 1h at 6 raids/hr = 6; the lone 5★ target fills it.
+  it("builds a plan from roadSelected with NO weekend results (no crash) and fills the 2h Raid Hour", () => {
+    // Empty weekend inputs/results — zekrom is only a decoupled RoL pick. Zekrom is
+    // a 5★ (non-Mega), so with no Mega picked it uses the full 2h window: 6/hr × 2h
+    // = 12 raids (not the old single 6-raid hour).
     const road = computeRoadPlan(
       [],
       [],
@@ -217,13 +220,14 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
       {},
     );
     expect(road.days).toHaveLength(1);
-    expect(road.days[0].fitted).toBe(6);
-    expect(road.headStart.zekrom).toBe(6);
+    expect(road.days[0].fitted).toBe(12);
+    expect(road.headStart.zekrom).toBe(12);
   });
 
-  it("fills the 5★ and Mega windows independently (Tue–Thu Mega is 7–8 PM only)", () => {
-    // zekrom is a 5★ (6–7 PM window), mega-tyranitar a Mega (7–8 PM) — each fills its
-    // own 1h window (6), neither spilling into the other. Day total = 12.
+  it("caps the Mega at its one hour; a 5★ picked alongside gets the rest of the 2h", () => {
+    // mega-tyranitar reserves its 1h Mega window (6); zekrom (5★) then takes the
+    // remaining hour of the 2h block (6). Both farmed, day total = 12. (With NO Mega
+    // picked, zekrom alone would get the full 12 — see the test above.)
     const road = computeRoadPlan(
       [],
       [],
@@ -247,9 +251,9 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
     expect(road.days[0].remaining).toBe(0);
   });
 
-  it("schedules decoupled fusion energy on its locked day, capped by the 5★ hour", () => {
+  it("schedules decoupled fusion energy on its locked day, capped by the 2h Raid Hour", () => {
     // White Kyurem (blaze) is a Tuesday 5★ raid; roadEnergy drives it when decoupled,
-    // but only the 6-raid 6–7 PM hour can bank it.
+    // and being non-Mega it banks across the full 2h window (up to 12).
     const road = computeRoadPlan(
       [],
       [],
@@ -267,7 +271,7 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
       },
     );
     const eRaids = sized(energyRaidsNeeded(0, 1000, FUSION), DEFAULT_SETTINGS.rewardCase);
-    expect(road.headStart.kyurem).toBe(Math.min(eRaids, 6));
+    expect(road.headStart.kyurem).toBe(Math.min(eRaids, 12));
     // Off its day (only Wednesday played), nothing is earnable.
     const off = computeRoadPlan(
       [],
@@ -308,36 +312,37 @@ describe("computeRoadPlan — decoupled (independent RoL targets)", () => {
       },
       {},
     );
-    expect(road.headStart.zekrom).toBe(6);
+    expect(road.headStart.zekrom).toBe(12);
     const weekend = computeBlockPlan(inputs, results, capacity, DEFAULT_SETTINGS, {}, {}, {}, road.headStart);
     const demanded = weekend.blocks.reduce(
       (sum, b) => sum + b.species.filter((s) => s.bossId === "zekrom").reduce((a, s) => a + s.raids, 0),
       0,
     );
-    expect(demanded).toBe(24); // 30 − 6 head start (5★ hour, overlap credited)
+    expect(demanded).toBe(18); // 30 − 12 head start (full 2h Raid Hour, overlap credited)
   });
 });
 
 describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () => {
   const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
-  // White Kyurem (blaze) is a Tuesday 5★ raid; its 6–7 PM 5★ hour holds 6 raids.
+  // White Kyurem (blaze) is a Tuesday 5★ raid; being non-Mega it can fill the whole
+  // 2h Raid Hour (12 raids) — the featured Mega is the only 1-hour target.
   const kyuremWith = (goal: number): BossInput => ({
     ...input("kyurem"),
     energy: { blaze: { have: 0, goal, on: true } },
   });
 
   it("energy raids consume the day's capacity, sit in species, and default to the top", () => {
-    // Tuesday 5★ window = 6. White Kyurem banks Kyurem Candy too, and Kyurem still
-    // wants 30 raids for the weekend, so it grinds to fill the whole 6-raid hour
-    // (energy-first default); Zekrom candy is squeezed to the next day/weekend.
+    // Tuesday's 2h Raid Hour = 12. White Kyurem banks Kyurem Candy too, and Kyurem
+    // still wants 30 raids for the weekend, so it grinds to fill the whole 12-raid
+    // block (energy-first default); Zekrom candy is squeezed to the next day/weekend.
     const inputs = [kyuremWith(400), input("zekrom")];
     const results = [result("kyurem", 30), result("zekrom", 30)];
     const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }).days[0];
     const energyRow = tue.species.find((s) => s.energyKey === "blaze");
     expect(energyRow?.bossId).toBe("kyurem");
-    expect(energyRow?.fitted).toBe(6); // grinds Kyurem Candy to fill the hour, not just ~5 energy raids
+    expect(energyRow?.fitted).toBe(12); // grinds Kyurem Candy to fill the 2h, not just ~5 energy raids
     expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted ?? 0).toBe(0);
-    expect(tue.fitted).toBe(6); // the 5★ hour is full; the Mega hour is empty
+    expect(tue.fitted).toBe(12); // the whole 2h block is full (no Mega picked)
   });
 
   it("dragging a candy target above the energy item changes what fills the hour", () => {
@@ -357,16 +362,17 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
         tue: ["zekrom", "energy:kyurem:blaze"],
       },
     ).days[0];
-    expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted).toBe(6); // Zekrom eats the 5★ hour
+    expect(tue.species.find((s) => s.bossId === "zekrom" && !s.energyKey)?.fitted).toBe(12); // Zekrom eats the whole 2h
     expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted ?? 0).toBe(0); // energy squeezed out
   });
 
   it("counts energy once in totalFitted (no double vs. the candy pre-credit)", () => {
     const road = computeRoadPlan([kyuremWith(400)], [result("kyurem", 30)], capacity, safe, { tue: true });
-    // White Kyurem grinds Kyurem Candy to fill the 6-raid 5★ hour (need 30 > window),
-    // and those 6 raids are counted once — the pre-credit reserves their Candy effect.
-    expect(road.totalFitted).toBe(6);
-    expect(road.headStart.kyurem).toBe(6); // candy credit from the pre-credit
+    // White Kyurem grinds Kyurem Candy to fill the 12-raid 2h Raid Hour (need 30 >
+    // window), and those 12 raids are counted once — the pre-credit reserves their
+    // Candy effect.
+    expect(road.totalFitted).toBe(12);
+    expect(road.headStart.kyurem).toBe(12); // candy credit from the pre-credit
   });
 
   it("caps a Tue–Thu Mega at its 7–8 PM hour (6), not the full 2h", () => {
@@ -382,7 +388,7 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
     expect(thu.species.some((s) => s.bossId === "zacian" && !s.energyKey)).toBe(false); // no Hero pre-farm
     const crowned = thu.species.find((s) => s.energyKey === "sword");
     expect(crowned?.bossId).toBe("zacian");
-    expect(crowned?.fitted).toBe(6); // grinds Zacian Candy to fill the 6-raid hour (need 30 > window)
+    expect(crowned?.fitted).toBe(12); // grinds Zacian Candy to fill the 12-raid 2h hour (need 30 > window)
     // Crowned raids still bank Zacian candy toward the weekend.
     const weekend = computeBlockPlan(
       [zacian],
@@ -398,7 +404,7 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
       (sum, b) => sum + b.species.filter((s) => s.bossId === "zacian").reduce((a, s) => a + s.raids, 0),
       0,
     );
-    expect(demanded).toBe(30 - 6); // credited by the 6 Crowned raids that fit Thursday's hour
+    expect(demanded).toBe(30 - 12); // credited by the 12 Crowned raids that fit Thursday's 2h hour
   });
 });
 
@@ -407,8 +413,9 @@ describe("computeRoadPlan — energy raids grind base Candy across every slot", 
   const FUSION = { min: 80, max: 140 };
 
   it("fusion: White/Black Kyurem grind Kyurem Candy across Tue + Wed + the weekend", () => {
-    // Kyurem needs 30 raids. Tue (White) and Wed (Black) each grind their 6-raid 5★
-    // hour toward it (12 total), and the weekend covers the rest — one shared pool.
+    // Kyurem needs 30 raids. Tue (White) and Wed (Black) each grind their full 2h
+    // Raid Hour toward it (12 each = 24 total), and the weekend covers the rest —
+    // one shared pool.
     const kyurem: BossInput = {
       ...input("kyurem"),
       energy: { blaze: { have: 0, goal: 1000, on: true }, volt: { have: 0, goal: 1000, on: true } },
@@ -416,28 +423,28 @@ describe("computeRoadPlan — energy raids grind base Candy across every slot", 
     const road = computeRoadPlan([kyurem], [result("kyurem", 30)], capacity, safe, { tue: true, wed: true });
     const tue = road.days.find((d) => d.id === "tue")!;
     const wed = road.days.find((d) => d.id === "wed")!;
-    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted).toBe(6); // fills the hour, not ~13 energy raids
-    expect(wed.species.find((s) => s.energyKey === "volt")?.fitted).toBe(6);
-    expect(road.headStart.kyurem).toBe(12); // 6 + 6 credited to the weekend
+    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted).toBe(12); // fills the 2h, not ~13 energy raids
+    expect(wed.species.find((s) => s.energyKey === "volt")?.fitted).toBe(12);
+    expect(road.headStart.kyurem).toBe(24); // 12 + 12 credited to the weekend
     const weekend = computeBlockPlan([kyurem], [result("kyurem", 30)], capacity, safe, {}, {}, {}, road.headStart);
     const demanded = weekend.blocks.reduce(
       (sum, b) => sum + b.species.filter((s) => s.bossId === "kyurem").reduce((a, s) => a + s.raids, 0),
       0,
     );
-    expect(demanded).toBe(30 - 12); // weekend covers what the two fusion days didn't
+    expect(demanded).toBe(30 - 24); // weekend covers what the two fusion days didn't
   });
 
-  it("two species sharing Tuesday's 5★ hour split it (White Kyurem + Dawn Wings Necrozma)", () => {
-    // Both grind base Candy (30 raids each wanted); Tuesday's 6-raid 5★ hour splits 3/3.
+  it("two species sharing Tuesday's 2h Raid Hour split it (White Kyurem + Dawn Wings Necrozma)", () => {
+    // Both grind base Candy (30 raids each wanted); Tuesday's 12-raid 2h hour splits 6/6.
     const inputs: BossInput[] = [
       { ...input("kyurem"), energy: { blaze: { have: 0, goal: 1000, on: true } } },
       { ...input("necrozma"), energy: { lunar: { have: 0, goal: 1000, on: true } } },
     ];
     const results = [result("kyurem", 30), result("necrozma", 30)];
     const tue = computeRoadPlan(inputs, results, capacity, safe, { tue: true }).days[0];
-    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted).toBe(3);
-    expect(tue.species.find((s) => s.energyKey === "lunar")?.fitted).toBe(3);
-    expect(tue.fitted).toBe(6);
+    expect(tue.species.find((s) => s.energyKey === "blaze")?.fitted).toBe(6);
+    expect(tue.species.find((s) => s.energyKey === "lunar")?.fitted).toBe(6);
+    expect(tue.fitted).toBe(12);
   });
 
   it("a small Candy need falls back to the plain energy count (no over-grind)", () => {
@@ -449,23 +456,24 @@ describe("computeRoadPlan — energy raids grind base Candy across every slot", 
     expect(road.days[0].species.find((s) => s.energyKey === "blaze")?.fitted).toBe(eRaids); // 5, not grown
     expect(road.headStart.kyurem).toBe(2); // credit capped at the small Candy need
   });
-  // Primal Kyogre/Groudon are Friday's 7–8 PM raids; the 1h Mega/Primal window holds
-  // 6 (6/hr). The 400-energy reversion is ~5 raids — but a Primal raid also banks base
-  // Candy, so with a big weekend Kyogre goal the grinder should fill the whole hour.
+  // Primal Kyogre/Groudon headline Friday, which has NO featured Mega — so Primals
+  // are two-hour like every other non-Mega and share the full 12-raid 2h Raid Hour.
+  // The 400-energy reversion is ~5 raids — but a Primal raid also banks base Candy,
+  // so with a big weekend Kyogre goal the grinder should fill the whole 2h.
   const kyogrePrimal = (goal = 400): BossInput => ({
     ...input("kyogre"),
     energy: { primal: { have: 0, goal, on: true } },
   });
 
-  it("coupled: a Primal target with weekend Candy left fills its whole Raid Hour", () => {
-    // Weekend goal of 30 Kyogre raids; Friday's Primal hour (6) is grinding Candy.
+  it("coupled: a Primal target with weekend Candy left fills its whole 2h Raid Hour", () => {
+    // Weekend goal of 30 Kyogre raids; Friday's whole 2h block (12) grinds Candy.
     const road = computeRoadPlan([kyogrePrimal()], [result("kyogre", 30)], capacity, safe, { fri: true });
     const fri = road.days[0];
     const primal = fri.species.find((s) => s.energyKey === "primal");
     expect(primal?.bossId).toBe("kyogre");
-    expect(primal?.fitted).toBe(6); // the full hour, not the ~5 energy-only raids
-    // Every fitted Primal raid banks Kyogre Candy → the weekend is reduced by 6.
-    expect(road.headStart.kyogre).toBe(6);
+    expect(primal?.fitted).toBe(12); // the full 2h, not the ~5 energy-only raids
+    // Every fitted Primal raid banks Kyogre Candy → the weekend is reduced by 12.
+    expect(road.headStart.kyogre).toBe(12);
   });
 
   it("coupled: the grind is capped at the weekend Candy need (no over-credit)", () => {
@@ -474,10 +482,10 @@ describe("computeRoadPlan — energy raids grind base Candy across every slot", 
     expect(road.headStart.kyogre).toBe(3);
   });
 
-  it("decoupled: two Primals split the shared Primal hour evenly (not first-come)", () => {
+  it("decoupled: two Primals split the shared 2h Raid Hour evenly (not first-come)", () => {
     // Kyogre + Groudon both grinding on Friday, explicit order [groudon, kyogre].
-    // The 6-raid Primal hour splits 3/3 instead of the first target eating 5 and the
-    // second getting 1. Weekend goals of 30 each drive the grind.
+    // Friday's 12-raid 2h block splits 6/6 instead of the first target eating it.
+    // Weekend goals of 30 each drive the grind.
     const road = computeRoadPlan(
       [],
       [result("kyogre", 30), result("groudon", 30)],
@@ -493,11 +501,11 @@ describe("computeRoadPlan — energy raids grind base Candy across every slot", 
       { kyogre: ["primal"], groudon: ["primal"] },
     );
     const fri = road.days[0];
-    expect(fri.species.find((s) => s.bossId === "groudon" && s.energyKey === "primal")?.fitted).toBe(3);
-    expect(fri.species.find((s) => s.bossId === "kyogre" && s.energyKey === "primal")?.fitted).toBe(3);
-    expect(fri.fitted).toBe(6);
-    expect(road.headStart.kyogre).toBe(3);
-    expect(road.headStart.groudon).toBe(3);
+    expect(fri.species.find((s) => s.bossId === "groudon" && s.energyKey === "primal")?.fitted).toBe(6);
+    expect(fri.species.find((s) => s.bossId === "kyogre" && s.energyKey === "primal")?.fitted).toBe(6);
+    expect(fri.fitted).toBe(12);
+    expect(road.headStart.kyogre).toBe(6);
+    expect(road.headStart.groudon).toBe(6);
   });
 
   it("decoupled: with no weekend Candy need, a Primal stops at the energy goal", () => {
@@ -529,15 +537,15 @@ describe("computeRoadPlan — pre-credit reconciliation and demand netting (revi
   });
 
   it("two goals sharing one window split it evenly (Thursday Crowned pair)", () => {
-    // Both Crowned goals grind their base Candy (30 raids wanted each), but Thursday's
-    // 5★ hour holds 6 TOTAL — so they split it 3/3 instead of the first eating all 6.
-    // Both fit, so each banks 3 raids of Candy credit; no phantom head start either way.
+    // Both Crowned goals grind their base Candy (30 raids wanted each). They're
+    // non-Mega, so Thursday's whole 2h Raid Hour (12 TOTAL) is theirs — they split it
+    // 6/6. Both fit, so each banks 6 raids of Candy credit; no phantom head start.
     const inputs = [withGoal("zacian", "sword", 1000), withGoal("zamazenta", "shield", 1000)];
     const results = [result("zacian", 30), result("zamazenta", 30)];
     const road = computeRoadPlan(inputs, results, capacity, safe, { thu: true });
-    expect(road.headStart.zacian).toBe(3);
-    expect(road.headStart.zamazenta).toBe(3);
-    expect(road.totalFitted).toBe(6);
+    expect(road.headStart.zacian).toBe(6);
+    expect(road.headStart.zamazenta).toBe(6);
+    expect(road.totalFitted).toBe(12);
   });
 
   it("claws back the credit when the user drags candy above the energy item and squeezes it out", () => {
@@ -557,7 +565,7 @@ describe("computeRoadPlan — pre-credit reconciliation and demand netting (revi
       },
     );
     expect(road.headStart.kyurem ?? 0).toBe(0); // energy fit 0 → credit removed
-    expect(road.headStart.zekrom).toBe(6);
+    expect(road.headStart.zekrom).toBe(12); // Zekrom (5★) eats the full 2h Raid Hour
   });
 
   it("nets remote allocations out of the weekday demand", () => {

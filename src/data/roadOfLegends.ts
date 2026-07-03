@@ -3,10 +3,11 @@ import { RAID_BOSSES } from "./bosses";
 /**
  * The Road of Legends — the raid-heavy week leading into GO Fest 2026: Global
  * (Mon Jul 6 → Fri Jul 10, local time). Each day runs a two-hour Raid Hour from
- * 6–8 PM local: 6–7 PM is that day's 5★ raids (Monday's is the whole roster),
- * and 7–8 PM is a single featured Mega. These weekday raids let a player pre-farm
- * the SAME targets they plan to max over the weekend, so completing them here is
- * a head start that reduces what the weekend has to cover.
+ * 6–8 PM local. Only the day's featured Mega is limited to a single hour; the 5★
+ * raids, the fusion/crowned energy raids, and Primal Groudon/Kyogre are all
+ * raidable the whole 2 hours. These weekday raids let a player pre-farm the SAME
+ * targets they plan to max over the weekend, so completing them here is a head
+ * start that reduces what the weekend has to cover.
  *
  * Mega Mewtwo X/Y are NOT here — Super Mega Raids are a weekend-only debut.
  *
@@ -22,14 +23,15 @@ export interface RoadDay {
   label: string;
   /** Short calendar date, e.g. "Jul 6". */
   dateLabel: string;
-  /** Length of that day's Raid Hour block in hours. Every day runs the full
-   *  6–8 PM window (2h): 6–7 is the day's 5★ raids, 7–8 the featured Mega (or
-   *  Friday's Primal Kyogre / Groudon). */
+  /** Length of that day's Raid Hour block in hours — every day is the full 6–8 PM
+   *  window (2h). Only the featured Mega is limited to a single hour; 5★, fusion/
+   *  crowned, and Primal (Groudon/Kyogre) targets are raidable the whole 2h. */
   raidHourHours: number;
-  /** Hours of the 7–8 PM window, where the featured Mega (or Friday's Primal) is
-   *  the ONLY thing raidable — so Mega/Primal targets can't spill into the 6–7 PM
-   *  5★ hour. 1 for Tue–Fri; 0 on Monday, whose 6–8 PM block is one 5★ marathon
-   *  (its Mega Salamence shares that pool). The 5★ window is `raidHourHours - megaHours`. */
+  /** Hours the featured Mega is available (its cap). ONLY Mega raids are limited
+   *  to this one hour; everything else — 5★, fusion/crowned, AND Primal — shares
+   *  the full 2h block. 1 on the days with a featured Mega (Tue–Thu); 0 on Monday
+   *  (its Mega Salamence shares the 5★ marathon) and Friday (no Mega — Primal
+   *  Kyogre/Groudon headline, and Primals are two-hour like every non-Mega). */
   megaHours: number;
   /** Human Raid-Hour window, e.g. "6–8 PM". */
   raidHourLabel: string;
@@ -90,7 +92,9 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Friday",
     dateLabel: "Jul 10",
     raidHourHours: 2,
-    megaHours: 1,
+    // No featured Mega on Friday — Primal Kyogre/Groudon headline, and Primals are
+    // NOT Megas here: they're raidable the full 2h, so nothing is one-hour-limited.
+    megaHours: 0,
     raidHourLabel: "6–8 PM",
     // 5★: Origin Forme Dialga, Origin Forme Palkia · Primal: Kyogre*, Groudon* (off-roster)
     bossIds: ["dialga-origin", "palkia-origin"],
