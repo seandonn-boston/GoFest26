@@ -382,6 +382,13 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
     expect(road.headStart["mega-tyranitar"]).toBe(6);
   });
 
+  it("caps MONDAY's Mega Salamence at its 7–8 PM hour (6) — the four Megas are the only 1h targets", () => {
+    // Salamence is Monday's featured Mega (7–8 PM), so it's one-hour-limited like
+    // Tyranitar/Gardevoir/Gengar — 6 raids, not the full 2h roster marathon.
+    const road = computeRoadPlan([input("mega-salamence")], [result("mega-salamence", 30)], capacity, safe, { mon: true });
+    expect(road.headStart["mega-salamence"]).toBe(6);
+  });
+
   it("Thursday yields the Crowned energy raid, not a Hero-forme candy target", () => {
     const zacian: BossInput = { ...input("zacian"), energy: { sword: { have: 0, goal: 400, on: true } } };
     const thu = computeRoadPlan([zacian], [result("zacian", 30)], capacity, safe, { thu: true }).days[0];

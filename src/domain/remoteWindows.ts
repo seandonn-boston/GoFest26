@@ -90,13 +90,13 @@ export function remoteWindowsForBoss(boss: RaidBoss): RemoteWindow[] | null {
   const start = GAME_CONFIG.event.hourStartLocal; // habitat hours are event-local indexes
   const out: RemoteWindow[] = [];
 
-  // Road of Legends raid hours featuring this boss (host-region 6–8 PM window;
-  // 5★ raid the 6–7 PM hour except Monday's 2-hour marathon).
+  // Road of Legends raid hours featuring this boss (host-region 6–8 PM window).
+  // Only the featured Mega is limited to its 7–8 PM hour; every other target —
+  // 5★, fusion/crowned, Primal — is raidable the whole 6–8 PM block.
   for (const day of ROAD_DAYS) {
     if (!day.bossIds.includes(boss.id)) continue;
     const isMega = boss.tier === "mega" || boss.tier === "super-mega";
-    const fiveStarEnd = 18 + (day.raidHourHours - day.megaHours);
-    const [s, e] = isMega ? [20 - day.megaHours, 20] : [18, fiveStarEnd];
+    const [s, e] = isMega ? [20 - day.megaHours, 20] : [18, 18 + day.raidHourHours];
     out.push(makeWindow(clock, day.id, DAY_SHORT[day.id], s, e, `Raid Hour (${day.dateLabel})`));
   }
 

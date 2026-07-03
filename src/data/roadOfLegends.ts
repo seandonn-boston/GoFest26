@@ -15,6 +15,12 @@ import { RAID_BOSSES } from "./bosses";
  * weekend roster (i.e. can be a user target) are listed; off-roster raids on
  * these days (White/Black Kyurem, Dawn/Dusk Mane Necrozma, the Primals) are
  * intentionally omitted since the planner can't target them.
+ *
+ * Timing confidence: the four featured Megas (Salamence/Tyranitar/Gardevoir/Gengar)
+ * are CONFIRMED to a 7–8 PM one-hour window. Every other target running the full
+ * 6–8 PM block is the working assumption — Primal Kyogre/Groudon are believed 6–8,
+ * and the Tue–Thu non-Mega raid timings are unconfirmed. If Niantic publishes exact
+ * per-raid times, flip a day's `megaHours` (or split further) in one edit here.
  */
 export interface RoadDay {
   /** Stable id (also the playDays key). */
@@ -27,10 +33,10 @@ export interface RoadDay {
    *  window (2h). Only the featured Mega is limited to a single hour; 5★, fusion/
    *  crowned, and Primal (Groudon/Kyogre) targets are raidable the whole 2h. */
   raidHourHours: number;
-  /** Hours the featured Mega is available (its cap). ONLY Mega raids are limited
-   *  to this one hour; everything else — 5★, fusion/crowned, AND Primal — shares
-   *  the full 2h block. 1 on the days with a featured Mega (Tue–Thu); 0 on Monday
-   *  (its Mega Salamence shares the 5★ marathon) and Friday (no Mega — Primal
+  /** Hours the featured Mega is available (its 7–8 PM cap). ONLY Mega raids are
+   *  limited to this one hour; everything else — 5★, fusion/crowned, AND Primal —
+   *  is raidable the full 2h block. 1 on every day with a featured Mega (Salamence
+   *  Mon, Tyranitar Tue, Gardevoir Wed, Gengar Thu); 0 on Friday (no Mega — Primal
    *  Kyogre/Groudon headline, and Primals are two-hour like every non-Mega). */
   megaHours: number;
   /** Human Raid-Hour window, e.g. "6–8 PM". */
@@ -48,9 +54,11 @@ export const ROAD_DAYS: RoadDay[] = [
     label: "Monday",
     dateLabel: "Jul 6",
     raidHourHours: 2,
-    megaHours: 0,
+    // Mega Salamence is a one-hour (7–8 PM) feature like every other day's Mega;
+    // the full 5★ roster runs the whole 6–8 PM window.
+    megaHours: 1,
     raidHourLabel: "6–8 PM",
-    // The full 5★ roster, plus the day's only featured Mega (Salamence).
+    // The full 5★ roster (6–8 PM), plus the day's featured Mega Salamence (7–8 PM).
     bossIds: [...MONDAY_FIVE_STAR, "mega-salamence"],
   },
   {

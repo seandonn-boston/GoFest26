@@ -228,7 +228,8 @@ export function computeRoadPlan(
    * other time); everything else — 5★, fusion/crowned, Primal — then shares whatever
    * of the 2h is left (the WHOLE block on a Mega-less day like Friday, or one hour
    * once the Mega has taken the other). Non-Megas keep the user's priority order.
-   * Monday (megaHours = 0) is one marathon pool, so its Mega Salamence shares it too.
+   * Every day with a featured Mega (Salamence Mon, Tyranitar Tue, Gardevoir Wed,
+   * Gengar Thu) caps it at that one hour; Friday (megaHours = 0) has no Mega cap.
    */
   const fitDay = (ordered: RawShare[], day: RoadDay) => {
     const totalCap: Range = { min: rpH.min * day.raidHourHours, max: rpH.max * day.raidHourHours };
