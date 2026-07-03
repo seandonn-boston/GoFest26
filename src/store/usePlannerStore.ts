@@ -12,7 +12,7 @@ import { bossIsLocal } from "@/domain/region";
 import { PRESETS } from "@/data/presets";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings, type CalibrationMetric } from "@/domain/settings";
-import type { BossInput, Variant, PokemonCopy, EnergyProgress } from "@/domain/types";
+import type { BossInput, Variant, PokemonCopy, EnergyProgress, BlockAllocation } from "@/domain/types";
 import type { ScanResult } from "@/lib/screenshotScan";
 import { idbGet, idbSet } from "@/lib/idbStore";
 import type { StateBackup } from "./stateBackup";
@@ -90,6 +90,22 @@ const newMewtwoCopy = (owner: BossInput): PokemonCopy => ({
   current: { level: 25, megaLevel: 0, megaLevelY: 0 },
   target: { level: owner.target.level, megaLevel: 4, megaLevelY: 4 },
 });
+
+// --- Allocation-map helpers (immutable updates that prune empty maps, so a block
+//     or day with no pins carries no key at all). ---
+type AllocMap = Record<string, Record<string, BlockAllocation>>;
+function setAllocMap(all: AllocMap, key: string, inner: Record<string, BlockAllocation>): AllocMap {
+  const next = { ...all };
+  if (Object.keys(inner).length) next[key] = inner;
+  else delete next[key];
+  return next;
+}
+function setAllocEntry(all: AllocMap, key: string, bossId: string, alloc: BlockAllocation | null): AllocMap {
+  const inner = { ...(all[key] ?? {}) };
+  if (alloc) inner[bossId] = alloc;
+  else delete inner[bossId];
+  return setAllocMap(all, key, inner);
+}
 
 /** Boss ids sharing a form group with this one (incl. itself), else just it. */
 function formFamilyIds(bossId: string): string[] {
@@ -283,6 +299,26 @@ interface PlannerState {
   toggleRoadTarget: (bossId: string) => void;
   /** Toggle a decoupled RoL fusion/primal energy goal. */
   toggleRoadEnergy: (bossId: string, key: string) => void;
+  /**
+   * Per-target allocation pins for each weekend habitat block (keyed by block key
+   * → boss id → how it claims that block's time: priority / share % / goal % /
+   * fixed / floor / ceiling). A block with no entry fills in plain priority order.
+   */
+  blockAllocations: Record<string, Record<string, BlockAllocation>>;
+  /** Same, per Road-of-Legends day (keyed by day id → boss id → allocation). */
+  roadAllocations: Record<string, Record<string, BlockAllocation>>;
+  /** Set (or clear, with null) one target's allocation pin in a weekend block. */
+  setBlockAllocation: (blockKey: string, bossId: string, alloc: BlockAllocation | null) => void;
+  /** Replace a whole block's allocation map (for Even / presets / balanced). */
+  setBlockAllocations: (blockKey: string, allocs: Record<string, BlockAllocation>) => void;
+  /** Clear every pin in a weekend block (back to plain priority). */
+  clearBlockAllocations: (blockKey: string) => void;
+  /** Set (or clear, with null) one target's allocation pin on a RoL day. */
+  setRoadAllocation: (dayId: string, bossId: string, alloc: BlockAllocation | null) => void;
+  /** Replace a whole RoL day's allocation map. */
+  setRoadAllocations: (dayId: string, allocs: Record<string, BlockAllocation>) => void;
+  /** Clear every pin on a RoL day. */
+  clearRoadAllocations: (dayId: string) => void;
   toggleSelected: (bossId: string) => void;
   setSelected: (bossId: string, selected: boolean) => void;
   /** Select every roster boss at once. */
@@ -454,6 +490,8 @@ export const usePlannerStore = create<PlannerState>()(
       roadCoupled: true,
       roadSelected: {},
       roadEnergy: {},
+      blockAllocations: {},
+      roadAllocations: {},
 
       togglePlayDay: (dayId) => set((state) => ({ playDays: { ...state.playDays, [dayId]: !state.playDays[dayId] } })),
 
@@ -801,6 +839,19 @@ export const usePlannerStore = create<PlannerState>()(
 
       setBlockPriority: (blockKey, ids) => set((state) => ({ blockPriority: { ...state.blockPriority, [blockKey]: ids } })),
 
+      // --- Per-target allocation pins (weekend blocks + RoL days). Empty maps are
+      //     pruned so a cleared block/day carries no key (and serializes to nothing).
+      setBlockAllocation: (key, bossId, alloc) =>
+        set((state) => ({ blockAllocations: setAllocEntry(state.blockAllocations, key, bossId, alloc) })),
+      setBlockAllocations: (key, allocs) =>
+        set((state) => ({ blockAllocations: setAllocMap(state.blockAllocations, key, allocs) })),
+      clearBlockAllocations: (key) => set((state) => ({ blockAllocations: setAllocMap(state.blockAllocations, key, {}) })),
+      setRoadAllocation: (dayId, bossId, alloc) =>
+        set((state) => ({ roadAllocations: setAllocEntry(state.roadAllocations, dayId, bossId, alloc) })),
+      setRoadAllocations: (dayId, allocs) =>
+        set((state) => ({ roadAllocations: setAllocMap(state.roadAllocations, dayId, allocs) })),
+      clearRoadAllocations: (dayId) => set((state) => ({ roadAllocations: setAllocMap(state.roadAllocations, dayId, {}) })),
+
       setGlobalPriority: (ids) =>
         set((state) => {
           // One ranking drives every block: write the full ordered id list into
@@ -945,6 +996,8 @@ export const usePlannerStore = create<PlannerState>()(
           roadCoupled: true,
           roadSelected: {},
           roadEnergy: {},
+          blockAllocations: {},
+          roadAllocations: {},
         }),
 
       loadState: (raw) =>
@@ -972,12 +1025,14 @@ export const usePlannerStore = create<PlannerState>()(
             roadCoupled: b.roadCoupled ?? true,
             roadSelected: b.roadSelected ?? {},
             roadEnergy: b.roadEnergy ?? {},
+            blockAllocations: b.blockAllocations ?? {},
+            roadAllocations: b.roadAllocations ?? {},
           };
         }),
     }),
     {
       name: "gofest26-planner-v1",
-      version: 23, // +roadCoupled / roadSelected / roadEnergy (Road of Legends selection tiles)
+      version: 24, // +blockAllocations / roadAllocations (per-target time allocation pins)
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),
@@ -1006,6 +1061,8 @@ export const usePlannerStore = create<PlannerState>()(
         if (typeof state.roadCoupled !== "boolean") state.roadCoupled = true;
         if (!state.roadSelected || typeof state.roadSelected !== "object") state.roadSelected = {};
         if (!state.roadEnergy || typeof state.roadEnergy !== "object") state.roadEnergy = {};
+        if (!state.blockAllocations || typeof state.blockAllocations !== "object") state.blockAllocations = {};
+        if (!state.roadAllocations || typeof state.roadAllocations !== "object") state.roadAllocations = {};
         state.settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
         return state as PlannerState;
       },

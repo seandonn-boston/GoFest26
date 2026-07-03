@@ -64,6 +64,41 @@ describe("sanitizeBackup", () => {
     expect(missing.roadEnergy).toEqual({});
   });
 
+  it("round-trips allocation pins and drops malformed / proto entries", () => {
+    const out = sanitizeBackup(
+      backup({
+        blockAllocations: {
+          sat0: {
+            zekrom: { mode: "share", weight: 40 },
+            reshiram: { mode: "goal", percent: 80 },
+            "mega-salamence": { mode: "fixed", count: 10 },
+            kyurem: { mode: "floor", count: 5 },
+            groudon: { mode: "ceiling", count: 3 },
+            bogus: { mode: "nonsense" }, // unknown mode → dropped
+            __proto__: { mode: "share", weight: 9 }, // proto key → dropped
+          },
+          __proto__: { x: { mode: "share", weight: 1 } }, // proto window → dropped
+        },
+        roadAllocations: { fri: { kyogre: { mode: "share", weight: 20 } } },
+      }),
+    );
+    expect(out.blockAllocations).toEqual({
+      sat0: {
+        zekrom: { mode: "share", weight: 40 },
+        reshiram: { mode: "goal", percent: 80 },
+        "mega-salamence": { mode: "fixed", count: 10 },
+        kyurem: { mode: "floor", count: 5 },
+        groudon: { mode: "ceiling", count: 3 },
+      },
+    });
+    expect(out.roadAllocations).toEqual({ fri: { kyogre: { mode: "share", weight: 20 } } });
+
+    // Absent in an older backup → empty maps.
+    const missing = sanitizeBackup(backup({}));
+    expect(missing.blockAllocations).toEqual({});
+    expect(missing.roadAllocations).toEqual({});
+  });
+
   it("drops unknown boss ids, including __proto__", () => {
     const b = backup({
       inputs: {

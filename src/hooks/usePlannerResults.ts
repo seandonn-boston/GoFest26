@@ -63,6 +63,7 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
   const roadCoupled = useDeferredValue(usePlannerStore((s) => s.roadCoupled));
   const roadSelected = useDeferredValue(usePlannerStore((s) => s.roadSelected));
   const roadEnergy = useDeferredValue(usePlannerStore((s) => s.roadEnergy));
+  const blockAllocations = useDeferredValue(usePlannerStore((s) => s.blockAllocations));
   return useMemo(() => {
     const list = Object.values(inputs);
     const road = computeRoadPlan(
@@ -88,6 +89,7 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
       remoteAllocations,
       quickCatchBlocks,
       road.headStart,
+      blockAllocations,
     );
     return { weekend, road };
   }, [
@@ -102,6 +104,7 @@ export function useBlockPlan(summary: PlanSummary): { weekend: WeekendBlockPlan;
     roadCoupled,
     roadSelected,
     roadEnergy,
+    blockAllocations,
   ]);
 }
 
