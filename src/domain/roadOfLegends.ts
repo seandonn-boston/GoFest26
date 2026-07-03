@@ -138,14 +138,17 @@ export function computeRoadPlan(
   // shares that sit in the day's priority list. Active = the goal is toggled on
   // (coupled: the weekend card's energy goal; decoupled: the RoL `roadEnergy` set).
   //
-  // A Primal raid banks the base legendary's Candy/XL too, so once the 400-energy
-  // reversion is covered you keep reverting it to grind Candy — sized up to the base
-  // species' still-needed weekend raids (`candyTargetOf`). That matters when a Primal
-  // target is deprioritized on the weekend and not remoted: Friday's Primal Raid Hour
-  // is then the ONLY place it gets farmed, so it should fill that hour, not stop at
-  // ~4 energy raids. The Primals share the single 7–8 PM window (no roster Mega runs
-  // on a Primal day, so they own it) and split it evenly. Fusion/Crowned raids stay
-  // energy-sized — their base candy still credits via the pre-credit's double-duty.
+  // A fusion/crowned/primal raid banks the base species' Candy/XL as well as its
+  // energy, so once the energy goal is covered you keep raiding that forme to grind
+  // Candy — sized up to the base species' still-needed weekend raids (`candyTargetOf`).
+  // That way the base species' XL need is spread across EVERY slot the player will
+  // raid it (its RoL forme days + the weekend + remote), not stopped at the ~4–8
+  // energy raids. It matters most when the base target is deprioritized on the
+  // weekend and not remoted (White Kyurem on Tue, Primal Kyogre on Fri may be the
+  // only place it's farmed). Same-window grinders split their Raid Hour evenly
+  // (Tue's White Kyurem + Dawn Wings Necrozma share the 6–7 PM 5★ hour; Fri's Primal
+  // Kyogre + Groudon share the 7–8 PM Primal hour) so one doesn't eat the whole
+  // hour; a small candy need falls back to the plain energy count.
   const energySharesForDay = (dayId: string, candyTargetOf: (bossId: string) => number): RawShare[] => {
     const day = ROAD_DAYS.find((d) => d.id === dayId);
     const collected: { bossId: string; def: EnergyGoalDef; grind: number }[] = [];
@@ -164,28 +167,41 @@ export function computeRoadPlan(
         if (!(roadEnergy[bossId] ?? []).includes(def.key)) continue;
         energyNeed = sized(energyRaidsNeeded(0, def.cost, def.perRaid), rewardCase);
       }
-      // Primal: raid enough for the energy goal, then keep grinding base Candy up to
-      // the weekend need. Fusion/Crowned: the energy goal only.
-      const grind = def.kind === "primal" ? Math.max(energyNeed, candyTargetOf(bossId)) : energyNeed;
+      // Raid enough for the energy goal, then keep grinding base Candy up to the
+      // still-needed weekend raids.
+      const grind = Math.max(energyNeed, candyTargetOf(bossId));
       if (grind <= 0) continue;
       collected.push({ bossId, def, grind });
     }
     if (!collected.length) return [];
 
-    // Balance the Primal grinders across the 7–8 PM Primal Raid Hour they share.
-    const primals = collected.filter((c) => c.def.kind === "primal");
+    // Split each Raid-Hour window across the grinders that share it (capped per grind
+    // target): Primals in the 7–8 PM Mega/Primal window, everything else (fusion/
+    // crowned) in the 6–7 PM 5★ window. Monday has no energy raids, so its single
+    // pool never matters here.
+    const megaCapMax = day ? rpH.max * day.megaHours : 0;
+    const fiveCapMax = day ? rpH.max * (day.raidHourHours - day.megaHours) : 0;
     const alloc = new Map<(typeof collected)[number], number>();
-    if (primals.length) {
+    const splitWindow = (members: typeof collected, cap: number) => {
+      if (!members.length) return;
       const split = evenFillCapped(
-        primals.map((c) => c.grind),
-        day ? rpH.max * day.megaHours : 0,
+        members.map((c) => c.grind),
+        cap,
       );
-      primals.forEach((c, i) => alloc.set(c, split[i]));
-    }
+      members.forEach((c, i) => alloc.set(c, split[i]));
+    };
+    splitWindow(
+      collected.filter((c) => c.def.kind === "primal"),
+      megaCapMax,
+    );
+    splitWindow(
+      collected.filter((c) => c.def.kind !== "primal"),
+      fiveCapMax,
+    );
 
     const out: RawShare[] = [];
     for (const c of collected) {
-      const raids = c.def.kind === "primal" ? (alloc.get(c) ?? 0) : c.grind;
+      const raids = alloc.get(c) ?? 0;
       if (raids <= 0) continue;
       out.push({
         bossId: c.bossId,
@@ -407,10 +423,10 @@ export function computeRoadPlan(
   // the ONLY source of their energy and run on one specific Road of Legends day —
   // but they're still raids of the BASE species, so they also bank its Candy/XL.
   // Reserve that candy credit up front as a head start, capped at the species'
-  // candy need (extra energy raids beyond the candy goal don't reduce it). A Primal
-  // grinder is sized to the candy need (it fills its whole hour to grind XL, not
-  // just the ~4 energy raids), so the reserved credit can be the whole hour, not a
-  // token amount. Reserving it BEFORE the day loop means the candy-featured days
+  // candy need (extra energy raids beyond the candy goal don't reduce it). A grinder
+  // is sized to the candy need (it fills its Raid Hour to grind XL, not just the ~4–8
+  // energy raids), so the reserved credit can be the whole hour, not a token amount.
+  // Reserving it BEFORE the day loop means the candy-featured days
   // (esp. Monday, which runs first) only fill whatever candy the energy raids don't
   // already cover — so a goal of "15 Kyurem candy + 5 White + 5 Black" plans as 15
   // total raids (10 day-locked, 5 anywhere). The energy raids themselves are counted
