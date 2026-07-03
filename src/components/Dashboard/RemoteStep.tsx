@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import type { RemotePlan, WeekendBlockPlan } from "@/domain";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { BandBar } from "@/components/ui/BandBar";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { RemoteWindows } from "./RemoteWindows";
@@ -14,7 +14,7 @@ import { RemoteWindows } from "./RemoteWindows";
  * its own step (Remote Prioritizer) — moved off the GO Fest weekend step.
  */
 function RemoteSection({ remote }: { remote?: RemotePlan }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useExpandable(true);
   const useRemote = usePlannerStore((s) => s.settings.useRemoteRaids);
   const setSettings = usePlannerStore((s) => s.setSettings);
   const setRemoteAuto = usePlannerStore((s) => s.setRemoteAuto);
@@ -58,15 +58,15 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
 
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-2 w-full text-left">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-          <span className="inline-flex items-center font-medium text-gofest-accent">
-            <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-gofest-accent" />
-            Assign per species
+          <span className="inline-flex items-center font-medium text-gofest-accent">Assign per species</span>
+          <span className="flex shrink-0 items-center gap-1.5">
+            {on ? (
+              <span className={over ? "text-rose-300" : "text-slate-400"}>
+                {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
+              </span>
+            ) : null}
+            <PlusToggle open={open} size={11} className="text-gofest-accent" />
           </span>
-          {on ? (
-            <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-              {fitted} to do{over ? ` · ${remote!.remaining} beyond your remote time` : ""}
-            </span>
-          ) : null}
         </div>
         {on && remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
       </button>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 
 const numField =
   "w-16 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm text-slate-100 outline-none focus:border-gofest-accent2";
@@ -40,7 +41,7 @@ export function ResourcesOnHand() {
   const useLinkCharges = usePlannerStore((s) => s.settings.useLinkCharges);
   const setSettings = usePlannerStore((s) => s.setSettings);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useExpandable(false);
 
   const setNum = (key: "passesOwned" | "remoteRaidPassesPlanned" | "linkChargesOwned") => (raw: string) => {
     const n = Math.round(Number(raw.replace(/[^\d]/g, "")) || 0);

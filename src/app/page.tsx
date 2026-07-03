@@ -38,6 +38,7 @@ import { WeekOverview } from "@/components/Dashboard/WeekOverview";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
 import { StepFooter } from "@/components/Stepper/StepFooter";
 import { LayoutToggle } from "@/components/Stepper/LayoutToggle";
+import { ExpandAllToggle } from "@/components/Stepper/ExpandAllToggle";
 import { StepNudge, missingStep } from "@/components/Stepper/StepNudge";
 
 export default function Home() {
@@ -170,7 +171,8 @@ export default function Home() {
             <HowToUse />
             <LocationPrompt />
             <SharedPlanBanner />
-            <div className="mb-2 flex justify-end">
+            <div className="mb-2 flex items-center justify-end gap-2">
+              <ExpandAllToggle />
               <LayoutToggle layout={layout} onChange={setLayout} />
             </div>
             <StepNav steps={steps} active={single ? activeSection : step} onSelect={goToStep} />

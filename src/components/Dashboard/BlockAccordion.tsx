@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { habitatAt } from "@/data/habitats";
@@ -250,7 +251,9 @@ function TargetCard({
 
 const ZERO_BANDS: Record<RiskBand, number> = { blue: 0, green: 0, yellow: 0, red: 0 };
 
-function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean; onToggle: () => void }) {
+function BlockItem({ block }: { block: BlockPlan }) {
+  const [open, setOpen] = useExpandable(false);
+  const onToggle = () => setOpen((o) => !o);
   const start = GAME_CONFIG.event.hourStartLocal;
   const free = Math.max(0, block.capacity.max - block.fitted);
   const over = block.remaining > 0;
@@ -331,7 +334,6 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
         <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left">
           <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
             <span className="inline-flex items-center truncate">
-              <PlusToggle open={open} size={11} className="mr-1.5 shrink-0 text-slate-400" />
               <span className="truncate font-medium text-slate-200">{block.name}</span>
               {wildTypes.length ? (
                 <span
@@ -349,9 +351,12 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
                 {hourLabel(block.startHour, start)}–{hourLabel(block.endHour, start)}
               </span>
             </span>
-            <span className={over ? "shrink-0 text-rose-300" : "shrink-0 text-slate-400"}>
-              {block.fitted} raid{block.fitted === 1 ? "" : "s"}
-              {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
+            <span className="flex shrink-0 items-center gap-1.5">
+              <span className={over ? "text-rose-300" : "text-slate-400"}>
+                {block.fitted} raid{block.fitted === 1 ? "" : "s"}
+                {over ? ` · ${block.remaining} won't fit` : free > 0 ? ` · ${free} to spare` : " · full"}
+              </span>
+              <PlusToggle open={open} size={12} className="text-slate-400" />
             </span>
           </div>
           <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
@@ -470,15 +475,6 @@ export function BlockAccordion({
   results: BossResult[];
   headStart?: Record<string, number>;
 }) {
-  const [open, setOpen] = useState<Set<string>>(new Set());
-  const toggle = (k: string) =>
-    setOpen((cur) => {
-      const next = new Set(cur);
-      if (next.has(k)) next.delete(k);
-      else next.add(k);
-      return next;
-    });
-
   const byDay: { day: EventDay; blocks: BlockPlan[] }[] = [];
   for (const day of ["sat", "sun"] as EventDay[]) {
     const blocks = plan.blocks.filter((b) => b.day === day && b.demand > 0);
@@ -511,7 +507,7 @@ export function BlockAccordion({
             </div>
             <div className="space-y-2">
               {blocks.map((b) => (
-                <BlockItem key={blockKey(b)} block={b} open={open.has(blockKey(b))} onToggle={() => toggle(blockKey(b))} />
+                <BlockItem key={blockKey(b)} block={b} />
               ))}
             </div>
           </div>

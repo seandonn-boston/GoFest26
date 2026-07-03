@@ -21,6 +21,14 @@ interface UiState {
    *  whole and copies ranked within. */
   groupBySpecies: boolean;
   setGroupBySpecies: (on: boolean) => void;
+  /** Global expand/collapse-all broadcast. `expandNonce` bumps on each press;
+   *  collapsible sections watch it and snap to `expandTarget` (true = expand).
+   *  Nonce 0 = untouched, so sections keep their own mixed default state (and the
+   *  button reads "Expand all"). Not persisted — a reload resets to the mixed init. */
+  expandNonce: number;
+  expandTarget: boolean;
+  /** Expand (true) or collapse (false) every collapsible section at once. */
+  setExpandAll: (target: boolean) => void;
   /** Whether the "How to use" guide has been dismissed (remembered per-device). */
   howToDismissed: boolean;
   /** Whether we've asked the user for their location yet (one-time prompt). */
@@ -48,6 +56,9 @@ export const useUiStore = create<UiState>()(
       setLayout: (layout) => set({ layout }),
       groupBySpecies: false,
       setGroupBySpecies: (on) => set({ groupBySpecies: on }),
+      expandNonce: 0,
+      expandTarget: false,
+      setExpandAll: (target) => set((s) => ({ expandNonce: s.expandNonce + 1, expandTarget: target })),
       howToDismissed: false,
       locationAsked: false,
       setLocationAsked: () => set({ locationAsked: true }),
@@ -61,6 +72,10 @@ export const useUiStore = create<UiState>()(
       name: "gofest26-ui-v1",
       version: 3, // v2: remote split into its own step (6 steps); v3: layout added
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
+      // The expand/collapse-all broadcast is transient — never persist it, so a
+      // reload always returns to the mixed initial state with the button at "Expand all".
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      partialize: ({ expandNonce, expandTarget, setExpandAll, ...rest }) => rest as UiState,
       migrate: (persisted) => {
         const s = (persisted ?? {}) as Partial<UiState>;
         if (typeof s.step === "number") s.step = clampStep(s.step);

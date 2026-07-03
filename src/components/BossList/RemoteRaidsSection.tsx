@@ -6,6 +6,7 @@ import { bossIsLocal, isScopeLocal, regionScopeLabel } from "@/domain/region";
 import { remoteWindowsForBoss, type RemoteWindow } from "@/domain/remoteWindows";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { BossSelectChip } from "./BossSelectChip";
 
 /** "Sat 9:00 PM" in the device's own timezone. */
@@ -50,7 +51,7 @@ function WindowLine({ w, mounted }: { w: RemoteWindow; mounted: boolean }) {
  */
 export function RemoteRaidsSection() {
   const region = usePlannerStore((s) => s.settings.region);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useExpandable(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -72,12 +73,12 @@ export function RemoteRaidsSection() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-1.5 p-3 text-left"
+        className="flex w-full items-center justify-between gap-1.5 p-3 text-left"
       >
-        <PlusToggle open={open} size={15} className="shrink-0 text-cyan-300" />
         <h3 className="text-sm font-semibold text-cyan-300">
           🕑 Remote raids · {targets.length} targets worth remoting from {region.label}
         </h3>
+        <PlusToggle open={open} size={15} className="shrink-0 text-cyan-300" />
       </button>
 
       {open ? (

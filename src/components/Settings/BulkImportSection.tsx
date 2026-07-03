@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { useExpandable } from "@/hooks/useExpandable";
 import { ScreenshotImporter } from "./ScreenshotImporter";
 
 /**
@@ -13,7 +13,7 @@ import { ScreenshotImporter } from "./ScreenshotImporter";
  * rebuilds the view from that data. A count badge shows how many are held.
  */
 export function BulkImportSection() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useExpandable(false);
   const count = usePlannerStore((s) => s.imports.length);
 
   return (
