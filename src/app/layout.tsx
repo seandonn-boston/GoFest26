@@ -57,7 +57,17 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apply the saved colour theme before first paint so sunlight mode
+            doesn't flash the dark theme on load. Mirrors ThemeToggle's effect. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var s=JSON.parse(localStorage.getItem('gofest26-ui-v1')||'{}');if(s&&s.state&&s.state.theme==='sun')document.documentElement.setAttribute('data-theme','sun');}catch(e){}",
+          }}
+        />
+      </head>
       <body className="text-slate-100 antialiased">
         <RegisterServiceWorker />
         {children}
