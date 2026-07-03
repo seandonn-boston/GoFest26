@@ -130,7 +130,12 @@ export function HowToUse() {
         </div>
         <button
           type="button"
-          onClick={dismiss}
+          // Clear the forced-open flag too, or on step 1 `showFull` stays true
+          // (forcedOpen || …) and the guide can't be closed after a reopen.
+          onClick={() => {
+            dismiss();
+            setForcedOpen(false);
+          }}
           aria-label="Dismiss the how-to guide"
           className="shrink-0 rounded-sm border border-white/15 bg-white/5 px-2 py-1 text-xs text-slate-300 transition hover:text-white"
         >
