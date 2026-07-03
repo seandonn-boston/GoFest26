@@ -432,15 +432,143 @@ input[type="number"] {
 }
 
 /* ---- GO FEST '26 emblem (step-1 weekend section title) ----
-   A text-shaped metal medallion (see GoFestEmblem.tsx). It is fully STATIC and
-   carries heavy one-time SVG filters, so it must never repaint per-frame:
-   promote it to its own compositor layer (translateZ + will-change) so scrolling
-   composites a cached bitmap instead of re-rasterizing the filters, and cap the
-   layer so the browser can drop it when off-screen. No CSS animation lives here
-   by design — that is what made it lag. */
-.gf-emblem {
-  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.55)) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.45));
-  transform: translateZ(0);
+   Filter-free by design. NO SVG filters / masks / backdrop-filters anywhere —
+   those rasterize far too slowly on mobile GPUs and were what made the page
+   crawl. Everything here is CSS gradients + text-shadow + GPU transforms, so it
+   paints instantly and the pool churns for free on the compositor. */
+.gf2 {
+  position: relative;
+  aspect-ratio: 20 / 13;
+  border-radius: 30px;
+  padding: 15px; /* gold band thickness */
+  /* Gold bezel, same family as the enamel tile badges (.badge). */
+  background: conic-gradient(from 210deg, #ffeeb5, #b07f2b, #fff4ce, #9c7a30, #ffeeb5, #caa047, #b07f2b, #ffeeb5);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55);
+}
+.gf2-inner {
+  position: absolute;
+  inset: 15px;
+  border-radius: 17px;
+  overflow: hidden;
+  background: #161028;
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+/* Two gradient-blob layers that churn on long, mismatched cycles — their sum
+   never visibly repeats. Oversized + centered so the transform never bares an
+   edge. Transform-only animation = composited on the GPU, no repaint. */
+.gf2-pool {
+  position: absolute;
+  inset: -35%;
   will-change: transform;
-  contain: paint;
+}
+.gf2-pool-a {
+  background:
+    radial-gradient(closest-side at 30% 34%, rgba(249, 85, 135, 0.95), transparent 72%),
+    radial-gradient(closest-side at 74% 26%, rgba(115, 87, 151, 0.95), transparent 72%),
+    radial-gradient(closest-side at 56% 76%, rgba(247, 208, 44, 0.9), transparent 72%);
+  animation: gf2-spin 39s linear infinite;
+}
+.gf2-pool-b {
+  background:
+    radial-gradient(closest-side at 22% 70%, rgba(249, 85, 135, 0.8), transparent 70%),
+    radial-gradient(closest-side at 82% 68%, rgba(115, 87, 151, 0.85), transparent 70%),
+    radial-gradient(closest-side at 48% 22%, rgba(247, 208, 44, 0.7), transparent 70%);
+  animation: gf2-spin-rev 53s linear infinite;
+  opacity: 0.85;
+}
+@keyframes gf2-spin {
+  from {
+    transform: rotate(0deg) scale(1.08);
+  }
+  to {
+    transform: rotate(360deg) scale(1.08);
+  }
+}
+@keyframes gf2-spin-rev {
+  from {
+    transform: rotate(0deg) translateX(4%) scale(1.12);
+  }
+  to {
+    transform: rotate(-360deg) translateX(4%) scale(1.12);
+  }
+}
+/* Faint sparkles twinkling off the surface (opacity only). */
+.gf2-spark {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(circle at 18% 30%, rgba(255, 249, 232, 0.9) 0 1.4px, transparent 2px),
+    radial-gradient(circle at 66% 22%, rgba(255, 249, 232, 0.8) 0 1.6px, transparent 2.2px),
+    radial-gradient(circle at 84% 54%, rgba(255, 249, 232, 0.85) 0 1.3px, transparent 1.9px),
+    radial-gradient(circle at 40% 82%, rgba(255, 249, 232, 0.8) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 12% 66%, rgba(255, 249, 232, 0.75) 0 1.2px, transparent 1.8px);
+  animation: gf2-twinkle 4.5s ease-in-out infinite;
+}
+@keyframes gf2-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+/* Glossy dome over the well so the pool reads as one liquid surface. */
+.gf2-sheen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(75% 60% at 50% 12%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05) 45%, transparent 72%);
+}
+/* "26" — one layer of frosted glass, big, behind the wordmark. */
+.gf2-year {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-emblem, var(--font-display));
+  font-size: 47cqw;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.16);
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.14),
+    0 1px 10px rgba(0, 0, 0, 0.3);
+}
+/* GO / FEST — embossed via layered text-shadow (raised bevel + blurred drop). */
+.gf2-words {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.02em;
+  font-family: var(--font-emblem, var(--font-display));
+  line-height: 0.82;
+  color: #f3e9cd;
+}
+.gf2-words span {
+  font-size: 17cqw;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 1px 0 #fffdf6,
+    0 2px 0 rgba(255, 255, 255, 0.45),
+    0 -1px 1px rgba(0, 0, 0, 0.35),
+    0 6px 12px rgba(0, 0, 0, 0.55);
+}
+/* Size the type to the emblem width (cqw), not the viewport. */
+.gf2 {
+  container-type: inline-size;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gf2-pool,
+  .gf2-spark {
+    animation: none;
+  }
 }
