@@ -402,6 +402,80 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
   });
 });
 
+describe("computeRoadPlan — Primal raids grind base Candy to fill their hour", () => {
+  const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
+  // Primal Kyogre/Groudon are Friday's 7–8 PM raids; the 1h Mega/Primal window holds
+  // 6 (6/hr). The 400-energy reversion is ~5 raids — but a Primal raid also banks base
+  // Candy, so with a big weekend Kyogre goal the grinder should fill the whole hour.
+  const kyogrePrimal = (goal = 400): BossInput => ({
+    ...input("kyogre"),
+    energy: { primal: { have: 0, goal, on: true } },
+  });
+
+  it("coupled: a Primal target with weekend Candy left fills its whole Raid Hour", () => {
+    // Weekend goal of 30 Kyogre raids; Friday's Primal hour (6) is grinding Candy.
+    const road = computeRoadPlan([kyogrePrimal()], [result("kyogre", 30)], capacity, safe, { fri: true });
+    const fri = road.days[0];
+    const primal = fri.species.find((s) => s.energyKey === "primal");
+    expect(primal?.bossId).toBe("kyogre");
+    expect(primal?.fitted).toBe(6); // the full hour, not the ~5 energy-only raids
+    // Every fitted Primal raid banks Kyogre Candy → the weekend is reduced by 6.
+    expect(road.headStart.kyogre).toBe(6);
+  });
+
+  it("coupled: the grind is capped at the weekend Candy need (no over-credit)", () => {
+    // Only 3 Kyogre raids wanted for the weekend; the Primal raids can't credit more.
+    const road = computeRoadPlan([kyogrePrimal()], [result("kyogre", 3)], capacity, safe, { fri: true });
+    expect(road.headStart.kyogre).toBe(3);
+  });
+
+  it("decoupled: two Primals split the shared Primal hour evenly (not first-come)", () => {
+    // Kyogre + Groudon both grinding on Friday, explicit order [groudon, kyogre].
+    // The 6-raid Primal hour splits 3/3 instead of the first target eating 5 and the
+    // second getting 1. Weekend goals of 30 each drive the grind.
+    const road = computeRoadPlan(
+      [],
+      [result("kyogre", 30), result("groudon", 30)],
+      capacity,
+      DEFAULT_SETTINGS,
+      { fri: true },
+      {},
+      {},
+      {},
+      { fri: ["energy:groudon:primal", "energy:kyogre:primal"] },
+      false,
+      {},
+      { kyogre: ["primal"], groudon: ["primal"] },
+    );
+    const fri = road.days[0];
+    expect(fri.species.find((s) => s.bossId === "groudon" && s.energyKey === "primal")?.fitted).toBe(3);
+    expect(fri.species.find((s) => s.bossId === "kyogre" && s.energyKey === "primal")?.fitted).toBe(3);
+    expect(fri.fitted).toBe(6);
+    expect(road.headStart.kyogre).toBe(3);
+    expect(road.headStart.groudon).toBe(3);
+  });
+
+  it("decoupled: with no weekend Candy need, a Primal stops at the energy goal", () => {
+    // No weekend result for Kyogre → nothing to grind, so only the ~4 energy raids.
+    const eRaids = sized(energyRaidsNeeded(0, 400, { min: 80, max: 100 }), DEFAULT_SETTINGS.rewardCase);
+    const road = computeRoadPlan(
+      [],
+      [],
+      capacity,
+      DEFAULT_SETTINGS,
+      { fri: true },
+      {},
+      {},
+      {},
+      {},
+      false,
+      {},
+      { kyogre: ["primal"] },
+    );
+    expect(road.days[0].species.find((s) => s.energyKey === "primal")?.fitted).toBe(eRaids);
+  });
+});
+
 describe("computeRoadPlan — pre-credit reconciliation and demand netting (review fixes)", () => {
   const safe = { ...DEFAULT_SETTINGS, rewardCase: "safe" as const };
   const withGoal = (bossId: string, key: string, goal: number): BossInput => ({
