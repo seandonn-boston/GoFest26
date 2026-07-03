@@ -38,7 +38,7 @@ export function BackupControls() {
   async function copyShareLink() {
     setMsg(null);
     try {
-      await navigator.clipboard.writeText(buildShareUrl());
+      await navigator.clipboard.writeText(await buildShareUrl());
       setMsg({ ok: true, text: "Share link copied — anyone who opens it gets a copy of this plan." });
     } catch {
       setMsg({ ok: false, text: "Couldn't copy automatically — check clipboard permissions." });

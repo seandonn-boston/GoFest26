@@ -40,7 +40,7 @@ describe("<SharedPlanBanner>", () => {
   });
 
   it("loads the shared plan on confirm and strips the hash", async () => {
-    window.location.hash = `#plan=${encodePlanPayload(sharedPlan())}`;
+    window.location.hash = `#plan=${await encodePlanPayload(sharedPlan())}`;
     render(<SharedPlanBanner />);
 
     fireEvent.click(await screen.findByText("Open shared plan"));
@@ -50,7 +50,7 @@ describe("<SharedPlanBanner>", () => {
   });
 
   it("keeps the local plan untouched on dismiss", async () => {
-    window.location.hash = `#plan=${encodePlanPayload(sharedPlan())}`;
+    window.location.hash = `#plan=${await encodePlanPayload(sharedPlan())}`;
     render(<SharedPlanBanner />);
 
     fireEvent.click(await screen.findByText("Keep mine"));

@@ -26,34 +26,53 @@ const sample = (): StateBackup => ({
 });
 
 describe("sharePlan encode/decode", () => {
-  it("round-trips a plan through the #plan= payload losslessly", () => {
+  it("round-trips a plan through the #plan= payload losslessly", async () => {
     const backup = sample();
-    const hash = `#plan=${encodePlanPayload(backup)}`;
-    expect(decodeSharedPlan(hash)).toEqual(backup);
+    const hash = `#plan=${await encodePlanPayload(backup)}`;
+    expect(await decodeSharedPlan(hash)).toEqual(backup);
   });
 
-  it("survives a payload sitting alongside other hash params", () => {
+  it("survives a payload sitting alongside other hash params", async () => {
     const backup = sample();
-    const hash = `#foo=1&plan=${encodePlanPayload(backup)}&bar=2`;
-    expect(decodeSharedPlan(hash)?.inputs.zekrom.target.level).toBe(50);
+    const hash = `#foo=1&plan=${await encodePlanPayload(backup)}&bar=2`;
+    expect((await decodeSharedPlan(hash))?.inputs.zekrom.target.level).toBe(50);
   });
 
-  it("preserves non-ASCII text (UTF-8 safe)", () => {
+  it("preserves non-ASCII text (UTF-8 safe)", async () => {
     const backup = sample();
     backup.inputs.zekrom.bossId = "Pokémon★Mewtwo";
-    const decoded = decodeSharedPlan(`#plan=${encodePlanPayload(backup)}`);
+    const decoded = await decodeSharedPlan(`#plan=${await encodePlanPayload(backup)}`);
     expect(decoded?.inputs.zekrom.bossId).toBe("Pokémon★Mewtwo");
   });
 
-  it("returns null when there is no plan param", () => {
-    expect(decodeSharedPlan("#nothing=here")).toBeNull();
-    expect(decodeSharedPlan("")).toBeNull();
+  it("gzips the payload much shorter than raw base64, and still decodes", async () => {
+    // A larger, repetitive plan compresses well — the whole point of the change.
+    const backup = sample();
+    for (let i = 0; i < 30; i++) {
+      backup.inputs[`boss${i}`] = { ...backup.inputs.zekrom, bossId: `boss${i}` };
+    }
+    const rawLen = Buffer.from(JSON.stringify(backup)).toString("base64url").length;
+    const gz = await encodePlanPayload(backup);
+    expect(gz.length).toBeLessThan(rawLen * 0.6); // meaningfully shorter
+    expect(await decodeSharedPlan(`#plan=${gz}`)).toEqual(backup);
   });
 
-  it("returns null for a corrupt or non-backup payload (never throws)", () => {
-    expect(decodeSharedPlan("#plan=not-valid-base64!!")).toBeNull();
+  it("still decodes a LEGACY uncompressed link (backward compatible)", async () => {
+    // Old links carried plain base64url of the JSON (no gzip). Those must still open.
+    const backup = sample();
+    const legacy = Buffer.from(JSON.stringify(backup)).toString("base64url");
+    expect(await decodeSharedPlan(`#plan=${legacy}`)).toEqual(backup);
+  });
+
+  it("returns null when there is no plan param", async () => {
+    expect(await decodeSharedPlan("#nothing=here")).toBeNull();
+    expect(await decodeSharedPlan("")).toBeNull();
+  });
+
+  it("returns null for a corrupt or non-backup payload (never throws)", async () => {
+    expect(await decodeSharedPlan("#plan=not-valid-base64!!")).toBeNull();
     // valid base64url of JSON that isn't a backup shape
     const notBackup = Buffer.from(JSON.stringify({ hello: "world" })).toString("base64url");
-    expect(decodeSharedPlan(`#plan=${notBackup}`)).toBeNull();
+    expect(await decodeSharedPlan(`#plan=${notBackup}`)).toBeNull();
   });
 });
