@@ -1,4 +1,4 @@
-import type { BossInput } from "@/domain/types";
+import type { BlockAllocation, BossInput } from "@/domain/types";
 import type { PlannerSettings } from "@/domain/settings";
 import { usePlannerStore } from "./usePlannerStore";
 
@@ -30,6 +30,10 @@ export interface StateBackup {
   roadSelected?: Record<string, boolean>;
   /** Decoupled RoL fusion/primal energy goals, base boss id → keys (may be absent). */
   roadEnergy?: Record<string, string[]>;
+  /** Per-block, per-target allocation pins (may be absent in old backups). */
+  blockAllocations?: Record<string, Record<string, BlockAllocation>>;
+  /** Per-RoL-day, per-target allocation pins (may be absent). */
+  roadAllocations?: Record<string, Record<string, BlockAllocation>>;
 }
 
 export const BACKUP_APP = "gofest2026-raid-planner";
@@ -57,6 +61,8 @@ export function serializeState(): StateBackup {
     roadCoupled: s.roadCoupled,
     roadSelected: s.roadSelected,
     roadEnergy: s.roadEnergy,
+    blockAllocations: s.blockAllocations,
+    roadAllocations: s.roadAllocations,
   };
 }
 

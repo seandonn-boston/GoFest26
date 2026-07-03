@@ -2,7 +2,15 @@ import { getBoss } from "@/data";
 import { makeDefaultInput } from "@/domain/defaults";
 import { DEFAULT_SETTINGS, type PlannerSettings, type CalibrationMetric } from "@/domain/settings";
 import { DEFAULT_REGION } from "@/data/locations";
-import type { BossInput, EnergyProgress, PokemonCopy, UserRegion, Variant } from "@/domain/types";
+import type {
+  AllocationMode,
+  BlockAllocation,
+  BossInput,
+  EnergyProgress,
+  PokemonCopy,
+  UserRegion,
+  Variant,
+} from "@/domain/types";
 import type { StateBackup } from "./stateBackup";
 
 /**
@@ -172,6 +180,33 @@ function strArrayRecord(v: unknown): Record<string, string[]> {
   return out;
 }
 
+const ALLOC_MODES: readonly AllocationMode[] = ["priority", "share", "fixed", "goal", "floor", "ceiling"];
+function sanitizeAlloc(v: unknown): BlockAllocation | null {
+  if (!isObj(v) || !ALLOC_MODES.includes(v.mode as AllocationMode)) return null;
+  const mode = v.mode as AllocationMode;
+  if (mode === "share") return { mode, weight: Math.max(0, num(v.weight, 1)) };
+  if (mode === "goal") return { mode, percent: Math.min(100, Math.max(0, num(v.percent, 0))) };
+  if (mode === "fixed" || mode === "floor" || mode === "ceiling")
+    return { mode, count: Math.max(0, Math.round(num(v.count, 0))) };
+  return { mode: "priority" };
+}
+/** Coerce a per-window → per-target allocation map, dropping junk + proto keys. */
+function allocRecord(v: unknown): Record<string, Record<string, BlockAllocation>> {
+  const out: Record<string, Record<string, BlockAllocation>> = {};
+  if (!isObj(v)) return out;
+  for (const [key, inner] of Object.entries(v)) {
+    if (key === "__proto__" || !isObj(inner)) continue;
+    const bag: Record<string, BlockAllocation> = {};
+    for (const [bossId, a] of Object.entries(inner)) {
+      if (bossId === "__proto__") continue;
+      const s = sanitizeAlloc(a);
+      if (s) bag[bossId] = s;
+    }
+    if (Object.keys(bag).length) out[key] = bag;
+  }
+  return out;
+}
+
 /** Return a fully-coerced, safe-to-load copy of a backup. */
 export function sanitizeBackup(b: StateBackup): StateBackup {
   return {
@@ -191,5 +226,7 @@ export function sanitizeBackup(b: StateBackup): StateBackup {
     roadCoupled: bool(b.roadCoupled, true),
     roadSelected: boolRecord(b.roadSelected),
     roadEnergy: strArrayRecord(b.roadEnergy),
+    blockAllocations: allocRecord(b.blockAllocations),
+    roadAllocations: allocRecord(b.roadAllocations),
   };
 }

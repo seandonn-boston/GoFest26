@@ -21,6 +21,8 @@ import { TypeIcon } from "@/components/ui/TypeIcon";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 import { CopyableInline } from "@/components/ui/Copyable";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
+import { AllocationControl, AllocationBar } from "./AllocationControl";
+import type { BlockAllocation } from "@/domain/types";
 import { GoalProgress } from "./GoalProgress";
 
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
@@ -101,6 +103,7 @@ function TargetCard({
   rowRef,
   dragging,
   quickCatch,
+  allocation,
 }: {
   share: BlockSpeciesShare;
   dkey: string;
@@ -111,6 +114,8 @@ function TargetCard({
   rowRef?: (el: HTMLElement | null) => void;
   dragging?: boolean;
   quickCatch?: { on: boolean; onToggle: () => void };
+  /** Per-target time allocation pin (absent for Mewtwo, which levels on its own). */
+  allocation?: { alloc: BlockAllocation | undefined; need: number; onChange: (a: BlockAllocation | null) => void };
 }) {
   const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
   const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
@@ -174,10 +179,13 @@ function TargetCard({
         {gripRight}
       </div>
 
-      {/* Per-block quick-catch toggle — sits below the name and above the
-          counters (saves time, forfeits catch Candy/XL this block). */}
-      {quickCatch ? (
+      {/* Per-block quick-catch toggle + allocation control — sit below the name
+          and above the counters. */}
+      {quickCatch || allocation ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[36px]">
+          {allocation ? (
+            <AllocationControl alloc={allocation.alloc} need={allocation.need} onChange={allocation.onChange} />
+          ) : null}
           {quickCatch ? (
             <label
               className={`flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide ${
@@ -258,6 +266,10 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   const setBlockPriority = usePlannerStore((s) => s.setBlockPriority);
   const quickCatchBlocks = usePlannerStore((s) => s.quickCatchBlocks);
   const toggleQuickCatch = usePlannerStore((s) => s.toggleQuickCatch);
+  const blockAllocs = usePlannerStore((s) => s.blockAllocations[key]);
+  const setBlockAllocation = usePlannerStore((s) => s.setBlockAllocation);
+  const setBlockAllocations = usePlannerStore((s) => s.setBlockAllocations);
+  const clearBlockAllocations = usePlannerStore((s) => s.clearBlockAllocations);
 
   const memberIds: string[] = [
     ...block.species.filter((s) => !s.mewtwo).map((s) => s.bossId),
@@ -269,6 +281,14 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the join keys encode the inputs
   const orderedIds = useMemo(() => blockMembersInOrder(memberIds, order ?? []), [memberKey, orderKey]);
   const drag = useDragList(orderedIds, (ids) => setBlockPriority(key, ids));
+
+  // Mewtwo levels itself across the weekend, so it isn't allocated here (yet).
+  const allocatableIds = orderedIds.filter((id) => id !== MEWTWO_X_ID && id !== MEWTWO_Y_ID);
+  const evenSplit = () => {
+    const map: Record<string, BlockAllocation> = {};
+    for (const id of allocatableIds) map[id] = { mode: "share", weight: 1 };
+    setBlockAllocations(key, map);
+  };
 
   const shareFor = (id: string): BlockSpeciesShare =>
     block.species.find((s) => s.bossId === id) ?? {
@@ -348,9 +368,43 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
             <span aria-live="polite" role="status" className="sr-only">
               {drag.announcement}
             </span>
-            <p className="text-[12px] text-slate-500">
-              Drag the ⠿ handle to set this block&apos;s priority (lowest is cut first when over capacity).
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <p className="text-[12px] text-slate-500">
+                Drag ⠿ to prioritise, or set each target&apos;s share of this block&apos;s time below.
+              </p>
+              {allocatableIds.length >= 2 ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={evenSplit}
+                    className="rounded border border-white/15 px-1.5 py-0.5 text-[11px] text-slate-300 hover:border-gofest-accent2 hover:text-white"
+                    title="Split this block's time evenly across its targets"
+                  >
+                    Even split
+                  </button>
+                  {blockAllocs ? (
+                    <button
+                      type="button"
+                      onClick={() => clearBlockAllocations(key)}
+                      className="rounded border border-white/15 px-1.5 py-0.5 text-[11px] text-slate-400 hover:border-rose-400/60 hover:text-rose-200"
+                      title="Clear all allocation pins — back to plain priority"
+                    >
+                      Reset
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+            {blockAllocs ? (
+              <AllocationBar
+                segments={block.species.map((s) => ({
+                  bossId: s.bossId,
+                  label: (getBoss(s.formeBossId ?? s.bossId)?.name ?? s.bossId).replace(/^Mega /, ""),
+                  fitted: s.fitted,
+                }))}
+                capacityMax={block.capacity.max}
+              />
+            ) : null}
             {drag.list.map((id) => {
               const share = shareFor(id);
               // Two grips per row (left + right) so either thumb can drag — same
@@ -381,6 +435,11 @@ function BlockItem({ block, open, onToggle }: { block: BlockPlan; open: boolean;
                   rowRef={(el) => drag.setRow(id, el)}
                   dragging={drag.dragId === id}
                   quickCatch={{ on: !!quickCatchBlocks[`${id}@${key}`], onToggle: () => toggleQuickCatch(id, key) }}
+                  allocation={
+                    share.mewtwo
+                      ? undefined
+                      : { alloc: blockAllocs?.[id], need: share.raids, onChange: (a) => setBlockAllocation(key, id, a) }
+                  }
                 />
               );
             })}
