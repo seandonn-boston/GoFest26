@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo_Black } from "next/font/google";
 import "./globals.css";
 import { RegisterServiceWorker } from "@/components/pwa/RegisterServiceWorker";
-
-// Ultra-black display face for the GO FEST '26 emblem — self-hosted at build
-// time (next/font) and exposed as a CSS variable so the emblem component stays
-// a pure, test-friendly SVG.
-const emblemFont = Archivo_Black({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-emblem" });
 
 const TITLE = "GO Fest 2026 Raid Planner";
 const DESCRIPTION =
@@ -64,7 +58,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${emblemFont.variable} text-slate-100 antialiased`}>
+      <body className="text-slate-100 antialiased">
         <RegisterServiceWorker />
         {children}
       </body>

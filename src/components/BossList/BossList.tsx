@@ -11,7 +11,6 @@ import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
 import { RoadOfLegendsSection } from "./RoadOfLegendsSection";
 import { RemoteRaidsSection } from "./RemoteRaidsSection";
-import { GoFestEmblem } from "./GoFestEmblem";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
@@ -116,17 +115,22 @@ export function BossList() {
               their home-region windows hit the player's own clock. */}
           <RemoteRaidsSection />
 
-          {/* The main event — the GO Fest weekend selection, opened by its emblem */}
-          <GoFestEmblem />
-          <p className="mb-4 text-center font-mono text-[11px] uppercase tracking-[0.3em] text-slate-500">
-            Sat Jul 11 – Sun Jul 12 · The Main Event
-          </p>
-
-          {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
-          <div className="mb-5 grid grid-cols-2 gap-3">
-            <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
-            <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
-          </div>
+          {/* The main event — GO Fest weekend. Same section treatment as the
+              Road of Legends and Remote raids cards, in its own accent. */}
+          <section className="mb-5 rounded-lg border border-gofest-accent/25 bg-gofest-accent/[0.04] p-3">
+            <h3 className="text-sm font-semibold text-gofest-accent">
+              🎉 GO Fest weekend · Sat Jul 11 – Sun Jul 12 — the main event
+            </h3>
+            <p className="mb-3 mt-1 text-[13px] text-slate-400">
+              The Super Mega Mewtwo debut headlines both days — tap a headliner, then pick the rest from the habitat blocks
+              below.
+            </p>
+            {/* Headliners — Mega Mewtwo X (Sat) left, Y (Sun) right */}
+            <div className="grid grid-cols-2 gap-3">
+              <MewtwoSelectTile boss={MEWTWO_X} dayLabel="Saturday" />
+              <MewtwoSelectTile boss={MEWTWO_Y} dayLabel="Sunday" />
+            </div>
+          </section>
         </>
       )}
 
