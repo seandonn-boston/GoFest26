@@ -6,9 +6,16 @@ import { persist, createJSONStorage } from "zustand/middleware";
 export const STEP_COUNT = 6;
 export type StepId = 1 | 2 | 3 | 4 | 5 | 6;
 
+/** How the planner is laid out: the one-at-a-time stepper (default), or a single
+ *  continuous page with every step stacked. Persisted per-device. */
+export type Layout = "stepper" | "single";
+
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
   step: StepId;
+  /** Stepper (one step at a time) vs. single-page (all steps stacked). */
+  layout: Layout;
+  setLayout: (layout: Layout) => void;
   /** Priority list grouping: off = one flat list of individuals (mixed species);
    *  on = individuals grouped under each species, with the species ranked as a
    *  whole and copies ranked within. */
@@ -37,6 +44,8 @@ export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
       step: 1,
+      layout: "stepper",
+      setLayout: (layout) => set({ layout }),
       groupBySpecies: false,
       setGroupBySpecies: (on) => set({ groupBySpecies: on }),
       howToDismissed: false,
@@ -50,11 +59,12 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 2, // remote split into its own step → 6 steps; clamp stored step
+      version: 3, // v2: remote split into its own step (6 steps); v3: layout added
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
       migrate: (persisted) => {
         const s = (persisted ?? {}) as Partial<UiState>;
         if (typeof s.step === "number") s.step = clampStep(s.step);
+        if (s.layout !== "single" && s.layout !== "stepper") s.layout = "stepper";
         return s as UiState;
       },
     },
