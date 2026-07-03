@@ -77,7 +77,11 @@ export function MewtwoCard({
   const ownerId = selectedX ? bossX.id : bossY.id;
 
   return (
-    <div id="card-mewtwo" className="cv-auto enamel relative scroll-mt-20 rounded-2xl p-2" style={typeBackgroundStyle(MEWTWO_TYPES)}>
+    <div
+      id="card-mewtwo"
+      className="cv-auto enamel relative scroll-mt-20 rounded-2xl p-2"
+      style={typeBackgroundStyle(MEWTWO_TYPES)}
+    >
       <div className="relative z-10 overflow-hidden rounded-[12px]" style={typePanelStyle(MEWTWO_TYPES)}>
         <div className="card-text-legible relative z-10 p-4">
           {/* Two z-layers in the header: the X / Y sprites (backdrop, z-10) sit
@@ -275,7 +279,7 @@ function FormColumn({
               disabled={!megaBuddy}
               onChange={(e) => onL4Buddy(e.target.checked)}
             />
-            Level-4 Mega active (+30% XL)
+            Level-4 Mega active (+1 XL)
           </label>
         ) : null}
       </div>

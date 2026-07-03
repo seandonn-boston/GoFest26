@@ -121,18 +121,22 @@ export const GAME_CONFIG = {
   },
 
   // Same-type Mega buddy XL-Candy boost. An active Mega / Primal Evolution that
-  // SHARES A TYPE with the Pokémon you catch raises the chance of Candy XL per
-  // roll, scaling with the buddy's Mega Level. We model it as a proportional
-  // multiplier on the assumed catch-XL range (a logged calibration value already
-  // reflects the player's own mega, so it is NOT boosted again).
-  //   xlByLevel indexed by Mega Level 0..4 (flat % increase per roll):
-  //     L0/L1 (Base, 1 evo) none · L2 (High, 7 evo) +10% ·
-  //     L3 (Max, 30 evo, "standard") +25% · L4 (Super Max) +30%.
-  //   l4Types — the typings of the five Mega Level 4 species available in 2026;
-  //     a boss can use the +30% boost only if its typing includes one of these.
+  // SHARES A TYPE with the Pokémon you catch grants a GUARANTEED extra Candy XL
+  // per catch — a whole +1, NOT a fractional multiplier on the roll — so a base
+  // 1–3 XL catch floors to 2–4 with a boosting buddy. (A logged calibration
+  // value already reflects the player's own mega, so it is NOT bonused again.)
+  //   xlBonusByLevel indexed by Mega Level 0..4 (whole Candy XL added per catch):
+  //     L0/L1 (Base, 1 evo) none · L2 (High, 7 evo), L3 (Max, 30 evo,
+  //     "standard") and L4 (Super Max) each guarantee +1.
+  //   l4Types — the typings of the Mega Level 4 species available in 2026; a boss
+  //     can enable the Level-4 buddy only if its typing includes one of these.
+  // NOTE: community reports frame the higher Mega Levels as raising the *chance*
+  // of the bonus (≈+10/25/30% at L2/3/4); we model the bonus as banked
+  // (guaranteed) for planning, so every boosting level grants the same +1 floor.
+  // Bump a level to a larger integer here if a level should guarantee more.
   // source: community-reported boost tiers; Mega Level 4 is 2026-only. Editable.
   megaCatchBoost: {
-    xlByLevel: [0, 0, 0.1, 0.25, 0.3],
+    xlBonusByLevel: [0, 0, 1, 1, 1],
     l4Types: ["Fighting", "Psychic", "Grass", "Poison", "Dark", "Flying", "Dragon", "Steel"],
   },
 

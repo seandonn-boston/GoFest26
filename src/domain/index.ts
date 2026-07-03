@@ -11,7 +11,7 @@ import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, PlanSummary, Range } from "./types";
 
 export * from "./types";
-export { computeBossResult, isL4Eligible, xlBoostFactor, rewardBreakdown, raidsForCurrency } from "./raidsNeeded";
+export { computeBossResult, isL4Eligible, xlBuddyBonus, rewardBreakdown, raidsForCurrency } from "./raidsNeeded";
 export type { RewardBreakdown } from "./raidsNeeded";
 export { explainCurrency } from "./explain";
 export type { CurrencyExplanation, ExplainLine, Token, EditField } from "./explain";

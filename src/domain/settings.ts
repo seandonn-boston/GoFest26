@@ -54,10 +54,10 @@ export interface PlannerSettings {
    *  Mega raids REQUIRE 200 LC on top of a Remote Pass). Off by default. */
   useLinkCharges: boolean;
   /**
-   * Assumed Mega buddy level (0..4) for same-type catches, driving the XL-Candy
-   * boost (see GAME_CONFIG.megaCatchBoost). 1 = base (no XL boost — the default,
-   * so plans don't silently change); 3 = the "standard" leveled mega (+25%).
-   * Per-boss `l4Buddy` overrides this to level 4 for type-eligible bosses.
+   * Assumed Mega buddy level (0..4) for same-type catches, driving the guaranteed
+   * XL-Candy bonus (see GAME_CONFIG.megaCatchBoost). 1 = base (no XL bonus);
+   * 3 = the "standard" leveled mega. Any boosting level (L2+) banks a guaranteed
+   * +1 Candy XL. Per-boss `l4Buddy` overrides this to level 4 for type-eligible bosses.
    */
   megaBuddyLevel: number;
   /**
@@ -86,7 +86,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   linkChargesOwned: 0,
   useLinkCharges: false,
   // L3 (Max) is the "standard" leveled mega — the realistic same-type buddy a
-  // GO Fest raider runs, so the XL numbers reflect a +25% boost out of the box.
+  // GO Fest raider runs, so the XL numbers bank the guaranteed +1 out of the box.
   megaBuddyLevel: 3,
   calibration: {},
 };

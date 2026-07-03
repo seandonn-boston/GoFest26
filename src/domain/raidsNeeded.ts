@@ -8,7 +8,7 @@ const CURRENCY_ORDER: Currency[] = ["megaEnergy", "xlCandy", "candy"];
 
 type Calibration = Partial<Record<CalibrationMetric, number>>;
 
-const XL_BOOST_BY_LEVEL = GAME_CONFIG.megaCatchBoost.xlByLevel;
+const XL_BONUS_BY_LEVEL = GAME_CONFIG.megaCatchBoost.xlBonusByLevel;
 const L4_TYPES: readonly string[] = GAME_CONFIG.megaCatchBoost.l4Types;
 
 /** True when the boss's typing includes one of the Level-4 (Super Max) Mega
@@ -18,16 +18,19 @@ export function isL4Eligible(boss: RaidBoss): boolean {
 }
 
 /**
- * Same-type Mega buddy XL multiplier for this boss under the current toggles.
- * 1 = no boost. Requires an active matching buddy (megaBuddy on); the per-boss
- * l4Buddy overrides the assumed level to 4 when the boss is type-eligible.
- * Returns just the multiplier so callers can show the math.
+ * Guaranteed extra Candy XL per catch from a same-type Mega buddy under the
+ * current toggles. 0 = no boost. It's a whole-candy bump (a guaranteed +1 at a
+ * boosting Mega Level), added to the catch-XL range — NOT a fractional
+ * multiplier — so a base 1–3 roll floors to 2–4. Requires an active matching
+ * buddy (megaBuddy on); the per-boss l4Buddy overrides the assumed level to 4
+ * when the boss is type-eligible. Returns the whole Candy so callers can show
+ * the "+N buddy XL" math.
  */
-export function xlBoostFactor(boss: RaidBoss, input: BossInput, megaBuddyLevel: number): number {
-  if (!(input.megaBuddy ?? true)) return 1;
+export function xlBuddyBonus(boss: RaidBoss, input: BossInput, megaBuddyLevel: number): number {
+  if (!(input.megaBuddy ?? true)) return 0;
   const level = input.l4Buddy && isL4Eligible(boss) ? 4 : megaBuddyLevel;
-  const idx = Math.max(0, Math.min(XL_BOOST_BY_LEVEL.length - 1, Math.round(level)));
-  return 1 + (XL_BOOST_BY_LEVEL[idx] ?? 0);
+  const idx = Math.max(0, Math.min(XL_BONUS_BY_LEVEL.length - 1, Math.round(level)));
+  return XL_BONUS_BY_LEVEL[idx] ?? 0;
 }
 
 /** Which calibratable metric (if any) a currency maps to for this boss's tier. */
@@ -55,8 +58,8 @@ export interface RewardBreakdown {
   calibrated?: number;
   /** The pre-boost / pre-bonus reward range from the boss data. */
   base?: Range;
-  /** xlCandy: same-type Mega buddy boost multiplier applied to `base`. */
-  boostFactor?: number;
+  /** xlCandy: guaranteed same-type Mega buddy Candy XL added to `base` (whole candy). */
+  xlBonus?: number;
   /** candy: transfer + mega-buddy candy added to `base`. */
   candyBonus?: number;
 }
@@ -86,13 +89,13 @@ export function rewardBreakdown(
     return { range: { min: base.min + candyBonus, max: base.max + candyBonus }, base, candyBonus };
   }
   // xlCandy. A logged calibration value already reflects the player's own mega,
-  // so it's used as-is; otherwise the assumed range scales by the same-type Mega
-  // buddy XL boost (1 = none).
+  // so it's used as-is; otherwise the same-type Mega buddy adds a guaranteed
+  // whole Candy XL to the assumed range (0 = none) — a 1–3 catch floors to 2–4.
   if (calibrated) return { range: { min: calibrated, max: calibrated }, calibrated };
-  const boostFactor = xlBoostFactor(boss, input, megaBuddyLevel);
+  const xlBonus = xlBuddyBonus(boss, input, megaBuddyLevel);
   const base = boss.rewards.xlCandy;
-  const range = boostFactor === 1 ? base : { min: base.min * boostFactor, max: base.max * boostFactor };
-  return { range, base, boostFactor };
+  const range = xlBonus === 0 ? base : { min: base.min + xlBonus, max: base.max + xlBonus };
+  return { range, base, xlBonus };
 }
 
 function perRaidReward(
