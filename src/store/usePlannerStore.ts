@@ -50,7 +50,7 @@ const copyFromInput = (input: BossInput): PokemonCopy => ({
 const newCopy = (input: BossInput): PokemonCopy => ({
   id: cid(),
   variant: "standard",
-  current: { level: 40, megaLevel: 0 },
+  current: { level: 25, megaLevel: 0 },
   target: { level: input.target.level, megaLevel: input.target.megaLevel },
 });
 
@@ -87,7 +87,7 @@ const mewtwoSeedCopy = (xi: BossInput | undefined, yi: BossInput | undefined, ow
 const newMewtwoCopy = (owner: BossInput): PokemonCopy => ({
   id: cid(),
   variant: "standard",
-  current: { level: 40, megaLevel: 0, megaLevelY: 0 },
+  current: { level: 25, megaLevel: 0, megaLevelY: 0 },
   target: { level: owner.target.level, megaLevel: 4, megaLevelY: 4 },
 });
 

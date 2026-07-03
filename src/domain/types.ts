@@ -41,6 +41,37 @@ export interface Range {
   max: number;
 }
 
+/**
+ * How a single target claims its slice of a raid window (a weekend habitat block
+ * or a Road-of-Legends day). Absent → `priority` (the default): targets fill the
+ * window top-to-bottom in drag order, each taking its full need before the next.
+ *  - `fixed`:   an exact raid count reserved off the top (e.g. "10 Mewtwo").
+ *  - `goal`:    a percentage of THIS target's own required raids, reserved off the
+ *    top (e.g. "80% of its 50-raid goal" → 40 raids here, the rest elsewhere).
+ *  - `floor`:   a guaranteed minimum (≥ N) reserved off the top; the target then
+ *    keeps competing (like priority) for more time beyond its floor.
+ *  - `ceiling`: a maximum (≤ N) — fills like priority but never exceeds N, so the
+ *    rest of its need spills to other windows.
+ *  - `share`:   a relative weight — share targets split the TIME left after the
+ *    reservations, in proportion to their weights (50/40/10 or the equal-weight
+ *    "even" split), each capped at its real need, leftover reflowing to the others.
+ * Reservations (fixed + goal + floor minimums) come first in drag order, then
+ * shares split what's left, then priority/floor/ceiling targets soak up any
+ * remaining time in drag order — so they mix freely and an unpinned target always
+ * absorbs the slack (the window can't seize up). Time is measured in slots, so a
+ * "share" is a share of TIME.
+ */
+export type AllocationMode = "priority" | "share" | "fixed" | "goal" | "floor" | "ceiling";
+export interface BlockAllocation {
+  mode: AllocationMode;
+  /** Relative weight when `mode === "share"` (any positive number; normalized). */
+  weight?: number;
+  /** Raid count for `fixed` (exact), `floor` (minimum), or `ceiling` (maximum). */
+  count?: number;
+  /** Percent of this target's own required raids when `mode === "goal"` (0–100). */
+  percent?: number;
+}
+
 /** Reward amounts a single completed raid yields. */
 export interface RewardProfile {
   candy: Range;
