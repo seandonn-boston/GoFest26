@@ -35,9 +35,10 @@ export function ThemeToggle() {
       aria-pressed={sun}
       aria-label={sun ? "Switch to night theme" : "Switch to sunlight (high-contrast) theme"}
       title={sun ? "Sunlight mode on — tap for the night theme" : "Hard to read in sun? Tap for high-contrast sunlight mode"}
-      className={`fixed bottom-20 z-50 flex h-12 w-12 items-center justify-center rounded-full border-2 border-black/40 text-xl shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+      style={{ ["--accent" as string]: sun ? "#fbbf24" : "#8ba3c7" }}
+      className={`glass-fab fixed bottom-20 z-50 flex h-12 w-12 items-center justify-center rounded-full text-xl ${
         fabSide === "right" ? "left-4" : "right-4"
-      } ${sun ? "bg-amber-300 text-black" : "bg-slate-800 text-amber-200"}`}
+      }`}
     >
       {sun ? "☀️" : "🌙"}
     </button>

@@ -18,7 +18,9 @@ interface DialItem {
   id: string;
   label: string;
   icon: string;
-  circle: string;
+  /** Neon accent (hex) that tints this control's glass edge, glow, icon and
+   *  label bar via the `--accent` custom property. */
+  accent: string;
   onClick: () => void;
   badge?: boolean;
 }
@@ -30,8 +32,7 @@ const TITLES: Record<Panel, string> = {
   backup: "💾 Backup & restore",
 };
 
-const miniFab =
-  "flex h-12 w-12 items-center justify-center rounded-full border-2 border-black/40 text-xl shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none";
+const miniFab = "glass-fab flex h-12 w-12 items-center justify-center rounded-full text-xl";
 
 /**
  * Bottom-right FAB speed-dial: a single + button that fans out into Assumptions,
@@ -117,7 +118,7 @@ export function ActionDock() {
       id: "tilt",
       label: tiltEnabled ? "Tilt: on" : "Tilt: off",
       icon: "🧭",
-      circle: tiltEnabled ? "bg-amber-300 text-black" : "bg-amber-300/30 text-amber-100",
+      accent: tiltEnabled ? "#fbbf24" : "#a1751f",
       onClick: () => {
         if (tiltEnabled) setTiltEnabled(false);
         else requestTilt();
@@ -130,22 +131,22 @@ export function ActionDock() {
       id: "feedback",
       label: "Feedback",
       icon: "✎",
-      circle: "bg-gofest-accent text-black",
+      accent: "#ff2bd6",
       onClick: () => openPanel("feedback"),
     },
-    { id: "backup", label: "Backup", icon: "💾", circle: "bg-gofest-bone text-black", onClick: () => openPanel("backup") },
+    { id: "backup", label: "Backup", icon: "💾", accent: "#f4f1ea", onClick: () => openPanel("backup") },
     {
       id: "location",
       label: "Location",
       icon: "📍",
-      circle: "bg-gofest-accent2 text-black",
+      accent: "#00f0ff",
       onClick: () => openPanel("location"),
     },
     {
       id: "assumptions",
       label: "Assumptions",
       icon: "⚙",
-      circle: "bg-gofest-mewtwo text-white",
+      accent: "#b026ff",
       onClick: () => openPanel("assumptions"),
       badge: customized,
     },
@@ -175,13 +176,21 @@ export function ActionDock() {
               }`}
               style={{ transitionDelay: `${open ? (items.length - 1 - i) * 40 : 0}ms` }}
             >
-              <span className="rounded-md bg-gofest-bone px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-black shadow">
+              <span
+                className="glass-label rounded-md px-2.5 py-1 font-mono text-[12px] font-bold uppercase tracking-[0.15em]"
+                style={{ ["--accent" as string]: a.accent }}
+              >
                 {a.label}
               </span>
-              <button type="button" onClick={a.onClick} className={`relative ${miniFab} ${a.circle}`}>
+              <button
+                type="button"
+                onClick={a.onClick}
+                className={`relative ${miniFab}`}
+                style={{ ["--accent" as string]: a.accent }}
+              >
                 {a.icon}
                 {a.badge ? (
-                  <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-black bg-gofest-accent" />
+                  <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border border-white/40 bg-gofest-accent shadow-[0_0_8px_#ff2bd6]" />
                 ) : null}
               </button>
             </div>
@@ -197,14 +206,18 @@ export function ActionDock() {
                   : `pointer-events-none opacity-0 ${isRight ? "translate-x-4" : "-translate-x-4"}`
               }`}
             >
-              <span className="rounded-md bg-rose-500 px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-white shadow">
+              <span
+                className="glass-label rounded-md px-2.5 py-1 font-mono text-[12px] font-bold uppercase tracking-[0.15em]"
+                style={{ ["--accent" as string]: "#fb4268" }}
+              >
                 Hard reset
               </span>
               <button
                 type="button"
                 onClick={hardReset}
                 aria-label="Hard reset — erase everything saved on this device and reload"
-                className={`${miniFab} bg-rose-500 text-white`}
+                className={miniFab}
+                style={{ ["--accent" as string]: "#fb4268" }}
               >
                 🗑
               </button>
@@ -215,7 +228,7 @@ export function ActionDock() {
               onClick={() => setOpen((o) => !o)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="glass-fab glass-fab-primary pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full"
             >
               {/* Two-line hamburger → X. Each line spins 225° (top left, bottom
                 right) while sliding to the exact vertical center; closing
@@ -258,7 +271,8 @@ export function ActionDock() {
           }}
           aria-label={isRight ? "Move controls to the left side" : "Move controls to the right side"}
           title={isRight ? "Switch to a left-handed layout" : "Switch to a right-handed layout"}
-          className={`pointer-events-auto fixed bottom-20 z-50 flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid/35 text-2xl text-black shadow-brutal backdrop-blur-sm transition hover:bg-gofest-acid/55 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+          style={{ ["--accent" as string]: "#c6ff00", opacity: 0.62 }}
+          className={`glass-fab pointer-events-auto fixed bottom-20 z-50 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
             isRight ? "left-4" : "right-4"
           }`}
         >
