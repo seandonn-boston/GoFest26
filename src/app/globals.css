@@ -181,77 +181,101 @@ samp {
   }
 }
 
-/* ── Glass + cyber-modern FAB surfaces ───────────────────────────────────────
-   A frosted-glass button whose neon edge/glow is driven by a single `--accent`
-   custom property (set per action), so the whole speed-dial reads as one
-   translucent system with individually-tinted controls. */
+/* ── Glass + cyberpunk FAB surfaces ───────────────────────────────────────────
+   A heavy frosted-glass button whose neon edge/glow is driven by a single
+   `--accent` custom property (set per action), so the whole speed-dial reads as
+   one translucent system with individually-tinted controls. A faint CRT
+   scanline overlay + double neon rim give it the cyberpunk HUD edge. */
 .glass-fab {
   --accent: #f4f1ea;
   position: relative;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  isolation: isolate;
+  /* More opaque: a dark smoked-glass body faintly flooded with the accent. */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 20%, rgba(9, 9, 14, 0.86)), rgba(6, 6, 10, 0.8));
+  /* Blur harder. */
+  backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
+  -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
+  border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
   color: var(--accent);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.5),
-    0 0 16px color-mix(in srgb, var(--accent) 28%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 12px 30px rgba(0, 0, 0, 0.62),
+    0 0 22px color-mix(in srgb, var(--accent) 44%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 14px color-mix(in srgb, var(--accent) 20%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
   transition:
     transform 0.16s ease,
     box-shadow 0.22s ease,
     border-color 0.22s ease;
 }
-/* Crisp cyber highlight arc across the top edge. */
-.glass-fab::after {
+/* Top-light sheen + CRT scanlines, painted BELOW the glyph (::before). */
+.glass-fab::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: -1;
   border-radius: inherit;
-  background: radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.35), transparent 55%);
+  background:
+    radial-gradient(120% 75% at 50% -12%, rgba(255, 255, 255, 0.28), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  opacity: 0.65;
+  pointer-events: none;
+}
+/* Sharp inner HUD ring in the accent colour. */
+.glass-fab::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   opacity: 0.7;
   pointer-events: none;
 }
 .glass-fab:hover {
-  border-color: color-mix(in srgb, var(--accent) 80%, transparent);
+  border-color: var(--accent);
   box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.55),
-    0 0 26px color-mix(in srgb, var(--accent) 48%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 14px 34px rgba(0, 0, 0, 0.66),
+    0 0 32px color-mix(in srgb, var(--accent) 62%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .glass-fab:active {
   transform: scale(0.93);
 }
-/* The primary trigger — a heavier acid glow + a tinted glass body. */
+/* The primary trigger — a heavier acid flood + glow. */
 .glass-fab-primary {
   --accent: #c6ff00;
-  background: linear-gradient(150deg, rgba(198, 255, 0, 0.22), rgba(198, 255, 0, 0.04));
+  background: linear-gradient(150deg, rgba(198, 255, 0, 0.34), rgba(10, 14, 4, 0.82));
   box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.55),
-    0 0 30px rgba(198, 255, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 0 0 1px rgba(198, 255, 0, 0.12);
+    0 0 0 1px rgba(198, 255, 0, 0.4),
+    0 12px 34px rgba(0, 0, 0, 0.66),
+    0 0 34px rgba(198, 255, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 0 18px rgba(198, 255, 0, 0.22);
 }
 .glass-fab-primary:hover {
   box-shadow:
-    0 10px 34px rgba(0, 0, 0, 0.6),
-    0 0 40px rgba(198, 255, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 0 0 1px rgba(198, 255, 0, 0.18);
+    0 0 0 1px rgba(198, 255, 0, 0.55),
+    0 14px 38px rgba(0, 0, 0, 0.7),
+    0 0 46px rgba(198, 255, 0, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 24px rgba(198, 255, 0, 0.3);
 }
-/* Frosted label chip that trails each dial button. */
+/* Frosted label chip that trails each dial button — opaque smoked glass with a
+   neon left rail and a clipped cyber notch on its trailing corner. */
 .glass-label {
-  background: rgba(10, 10, 16, 0.55);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 7, 11, 0.82);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--accent, #00f0ff) 40%, rgba(255, 255, 255, 0.12));
   box-shadow:
-    inset 2px 0 0 var(--accent, #00f0ff),
-    0 4px 14px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 3px 0 0 var(--accent, #00f0ff),
+    0 0 12px color-mix(in srgb, var(--accent, #00f0ff) 24%, transparent),
+    0 4px 14px rgba(0, 0, 0, 0.45);
   color: #eef2f7;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .glass-fab {

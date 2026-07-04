@@ -40,7 +40,7 @@ export function ThemeToggle() {
         fabSide === "right" ? "left-4" : "right-4"
       }`}
     >
-      {sun ? "☀️" : "🌙"}
+      {sun ? "☀" : "☾"}
     </button>
   );
 }

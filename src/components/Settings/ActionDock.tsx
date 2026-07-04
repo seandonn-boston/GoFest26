@@ -117,7 +117,7 @@ export function ActionDock() {
     items.push({
       id: "tilt",
       label: tiltEnabled ? "Tilt: on" : "Tilt: off",
-      icon: "🧭",
+      icon: "◐",
       accent: tiltEnabled ? "#fbbf24" : "#a1751f",
       onClick: () => {
         if (tiltEnabled) setTiltEnabled(false);
@@ -130,22 +130,22 @@ export function ActionDock() {
     {
       id: "feedback",
       label: "Feedback",
-      icon: "✎",
+      icon: "◈",
       accent: "#ff2bd6",
       onClick: () => openPanel("feedback"),
     },
-    { id: "backup", label: "Backup", icon: "💾", accent: "#f4f1ea", onClick: () => openPanel("backup") },
+    { id: "backup", label: "Backup", icon: "⬢", accent: "#f4f1ea", onClick: () => openPanel("backup") },
     {
       id: "location",
       label: "Location",
-      icon: "📍",
+      icon: "⌖",
       accent: "#00f0ff",
       onClick: () => openPanel("location"),
     },
     {
       id: "assumptions",
       label: "Assumptions",
-      icon: "⚙",
+      icon: "◆",
       accent: "#b026ff",
       onClick: () => openPanel("assumptions"),
       badge: customized,
@@ -219,7 +219,7 @@ export function ActionDock() {
                 className={miniFab}
                 style={{ ["--accent" as string]: "#fb4268" }}
               >
-                🗑
+                ⨯
               </button>
             </div>
 
