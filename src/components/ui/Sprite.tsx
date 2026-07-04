@@ -32,7 +32,7 @@ export const Sprite = memo(function Sprite({ src, alt, size = 48 }: { src?: stri
   if (!current) {
     return (
       <div
-        style={{ width: size, height: size }}
+        style={{ width: `calc(${size}px * var(--sprite-scale, 1))`, height: `calc(${size}px * var(--sprite-scale, 1))` }}
         className="flex shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-slate-300"
         aria-hidden
       >
@@ -50,7 +50,8 @@ export const Sprite = memo(function Sprite({ src, alt, size = 48 }: { src?: stri
       height={size}
       loading="lazy"
       onError={() => setIdx((i) => i + 1)}
-      style={{ width: size, height: size }}
+      // Width/height honour the compact-density sprite scale (var set on <html>).
+      style={{ width: `calc(${size}px * var(--sprite-scale, 1))`, height: `calc(${size}px * var(--sprite-scale, 1))` }}
       className="shrink-0 object-contain drop-shadow"
     />
   );

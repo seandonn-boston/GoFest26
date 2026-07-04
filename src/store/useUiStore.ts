@@ -10,14 +10,19 @@ export type StepId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
  *  continuous page with every step stacked. Persisted per-device. */
 export type Layout = "stepper" | "single";
 
-/** Colour theme. `night` is the default neon-dark look; `sun` is a higher-contrast
- *  variant tuned for reading outdoors in bright sunlight (glare films removed, dim
- *  text + faint borders lifted). Persisted per-device. */
-export type Theme = "night" | "sun";
+/** Visual theme. `dark` is the default neon "CyberClassic" look; `light` is a
+ *  vivid bright-white theme with bold dark text (same hues, just brighter); and
+ *  `pokecenter` is the red/white/ice-blue Pokémon Center skin. Type colours are
+ *  never changed. Persisted per-device. */
+export type Theme = "dark" | "light" | "pokecenter";
 
 /** Which side the floating action button (speed-dial) lives on — a right-handed
  *  (default) or left-handed thumb reach. Persisted per-device. */
 export type FabSide = "left" | "right";
+
+/** Layout density: `cozy` (default) or `compact` (tighter spacing + smaller
+ *  sprites throughout). Persisted per-device. */
+export type Density = "cozy" | "compact";
 
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
@@ -25,14 +30,22 @@ interface UiState {
   /** Stepper (one step at a time) vs. single-page (all steps stacked). */
   layout: Layout;
   setLayout: (layout: Layout) => void;
-  /** Colour theme: neon `night` (default) or high-contrast `sun` for outdoors. */
+  /** Visual theme: Dark (default) / Light / Poké Center. */
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
   /** Which side the FAB speed-dial sits on (right = default/right-handed). */
   fabSide: FabSide;
   setFabSide: (side: FabSide) => void;
   toggleFabSide: () => void;
+  /** Layout density (cozy vs compact). */
+  density: Density;
+  setDensity: (density: Density) => void;
+  toggleDensity: () => void;
+  /** User-forced reduce-motion: kills glitching, tilt, the FAB/disclosure morph
+   *  animations, single-page and every other motion. OR'd with the OS setting. */
+  reduceMotion: boolean;
+  setReduceMotion: (on: boolean) => void;
+  toggleReduceMotion: () => void;
   /** Whether the FAB speed-dial is open — shared so the opposite corner can swap
    *  the theme toggle for the "switch side" button while it's open. Not persisted. */
   fabOpen: boolean;
@@ -75,12 +88,17 @@ export const useUiStore = create<UiState>()(
       step: 1,
       layout: "stepper",
       setLayout: (layout) => set({ layout }),
-      theme: "night",
+      theme: "dark",
       setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((s) => ({ theme: s.theme === "sun" ? "night" : "sun" })),
       fabSide: "right",
       setFabSide: (fabSide) => set({ fabSide }),
       toggleFabSide: () => set((s) => ({ fabSide: s.fabSide === "right" ? "left" : "right" })),
+      density: "cozy",
+      setDensity: (density) => set({ density }),
+      toggleDensity: () => set((s) => ({ density: s.density === "compact" ? "cozy" : "compact" })),
+      reduceMotion: false,
+      setReduceMotion: (reduceMotion) => set({ reduceMotion }),
+      toggleReduceMotion: () => set((s) => ({ reduceMotion: !s.reduceMotion })),
       fabOpen: false,
       setFabOpen: (fabOpen) => set({ fabOpen }),
       groupBySpecies: false,
@@ -99,7 +117,7 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 6, // v2: 6 steps; v3: layout; v4: theme; v5: fabSide; v6: Results step → 7 steps
+      version: 7, // v6: Results step → 7 steps; v7: theme dark/light/pokecenter + density/reduceMotion
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
       // The expand/collapse-all broadcast and the transient FAB-open flag are never
       // persisted, so a reload returns to the mixed initial state / a closed dial.
@@ -109,8 +127,14 @@ export const useUiStore = create<UiState>()(
         const s = (persisted ?? {}) as Partial<UiState>;
         if (typeof s.step === "number") s.step = clampStep(s.step);
         if (s.layout !== "single" && s.layout !== "stepper") s.layout = "stepper";
-        if (s.theme !== "sun" && s.theme !== "night") s.theme = "night";
+        // v7: night → dark, sun → light; anything else → dark.
+        const t = s.theme as string | undefined;
+        if (t === "night") s.theme = "dark";
+        else if (t === "sun") s.theme = "light";
+        else if (t !== "dark" && t !== "light" && t !== "pokecenter") s.theme = "dark";
         if (s.fabSide !== "left" && s.fabSide !== "right") s.fabSide = "right";
+        if (s.density !== "cozy" && s.density !== "compact") s.density = "cozy";
+        if (typeof s.reduceMotion !== "boolean") s.reduceMotion = false;
         return s as UiState;
       },
     },

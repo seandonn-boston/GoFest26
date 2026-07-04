@@ -25,6 +25,9 @@ import { CostStep } from "@/components/Dashboard/CostStep";
 import { RemotePrioritizer } from "@/components/Dashboard/RemoteStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
+import { RenderSettings } from "@/components/ui/RenderSettings";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
+import { useTiltStore } from "@/store/useTiltStore";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
@@ -56,7 +59,11 @@ export default function Home() {
   const prevStep = useUiStore((s) => s.prevStep);
   const layout = useUiStore((s) => s.layout);
   const setLayout = useUiStore((s) => s.setLayout);
-  const single = layout === "single";
+  // Single-page is a motion/layout indulgence: reduce-motion and gyroscope tilt
+  // both force the one-at-a-time stepper (tilt needs the card in view to lean).
+  const reduceMotion = useReduceMotion();
+  const tiltEnabled = useTiltStore((s) => s.enabled);
+  const single = layout === "single" && !reduceMotion && !tiltEnabled;
 
   // In single-page mode a "step change" is a scroll to that section, not a swap.
   const goToStep = (id: StepId) => {
@@ -219,6 +226,7 @@ export default function Home() {
         </SpriteScaleProvider>
       </main>
       <ActionDock />
+      <RenderSettings />
     </>
   );
 }
