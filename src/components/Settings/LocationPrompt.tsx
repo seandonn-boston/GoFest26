@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore } from "@/store/useUiStore";
 import { requestRegion } from "@/lib/geolocate";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /**
  * One-time prompt to use the visitor's real location for region-locked raids,
@@ -41,7 +42,7 @@ export function LocationPrompt() {
         <b className="text-gofest-accent2">{regionLabel}</b> — use your real location instead?
         {failed ? (
           <span className="mt-1 block text-amber-300">
-            Couldn&apos;t read your location — keep {regionLabel} or set it in the 📍 menu.
+            Couldn&apos;t read your location — keep {regionLabel} or set it in the <PixelIcon name="pin" size={12} /> menu.
           </span>
         ) : null}
       </p>
@@ -52,7 +53,13 @@ export function LocationPrompt() {
           disabled={busy}
           className="rounded-md bg-gofest-accent2 px-3 py-1.5 text-xs font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
         >
-          {busy ? "Locating…" : "📍 Use my location"}
+          {busy ? (
+            "Locating…"
+          ) : (
+            <>
+              <PixelIcon name="pin" size={12} /> Use my location
+            </>
+          )}
         </button>
         <button
           type="button"

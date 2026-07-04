@@ -13,6 +13,7 @@ import { BossSelectChip } from "./BossSelectChip";
 import { MewtwoSelectTile } from "./MewtwoSelectTile";
 import { RoadOfLegendsSection } from "./RoadOfLegendsSection";
 import { RemoteRaidsSection } from "./RemoteRaidsSection";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 const DAY_LONG: Record<EventDay, string> = { sat: "Saturday", sun: "Sunday" };
 
@@ -47,7 +48,7 @@ function GoFestSection({ region, start }: { region: UserRegion; start: number })
         className="flex w-full items-center justify-between gap-2 text-left"
       >
         <h3 className="text-sm font-semibold text-emerald-400">
-          🎉 GO Fest weekend · Sat Jul 11 – Sun Jul 12 — the main event
+          <PixelIcon name="confetti" size={13} /> GO Fest weekend · Sat Jul 11 – Sun Jul 12 — the main event
         </h3>
         <PlusToggle open={open} size={15} className="shrink-0 text-emerald-400" />
       </button>
@@ -144,7 +145,7 @@ export function BossList() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="🔎 Find a boss — try “kyu”…"
+          placeholder="Find a boss — try “kyu”…"
           aria-label="Search the raid roster by name"
           className="w-full rounded-lg border border-white/15 bg-gofest-bg/60 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-gofest-accent2/60 focus:outline-none"
         />

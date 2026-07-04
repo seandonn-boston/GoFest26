@@ -25,6 +25,7 @@ import { CopyableInline } from "@/components/ui/Copyable";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { RaidsNeededTooltip } from "@/components/ui/RaidsNeededTooltip";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 import { AllocationControl, AllocationBar } from "./AllocationControl";
 import type { BlockAllocation } from "@/domain/types";
 
@@ -138,7 +139,7 @@ function TargetCard({
                 className="shrink-0 cursor-help whitespace-nowrap text-[12px] text-rose-300"
                 title={`Only ${share.fitted} of ${share.raids} fit in time`}
               >
-                ⚠ {share.fitted} fit · {goalPct}%
+                <PixelIcon name="warning" size={11} /> {share.fitted} fit · {goalPct}%
               </span>
             }
           >
@@ -339,8 +340,8 @@ function BlockItem({ block }: { block: BlockPlan }) {
           <BandBar bands={block.bands} fitted={block.fitted} capacityMax={block.capacity.max} />
           {over ? (
             <p className="mt-1 text-[13px] font-medium text-rose-300">
-              ⚠ {block.remaining} {block.remaining === 1 ? "raid" : "raids"} can&apos;t fit this 3-hour block — tap for the
-              per-Pokémon breakdown.
+              <PixelIcon name="warning" size={12} /> {block.remaining} {block.remaining === 1 ? "raid" : "raids"} can&apos;t
+              fit this 3-hour block — tap for the per-Pokémon breakdown.
             </p>
           ) : null}
         </button>
@@ -485,7 +486,7 @@ export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; resu
         title="Order every block by average raids needed — fewest first — so the most goals finish before time runs out"
         className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-gofest-accent2/50 bg-gofest-accent2/10 px-2.5 py-1 text-[12px] font-semibold text-gofest-accent2 transition hover:bg-gofest-accent2/20"
       >
-        ✨ Smart auto-prioritize
+        <PixelIcon name="sparkle" size={12} /> Smart auto-prioritize
       </button>
       <p className="mb-2 text-[12px] leading-snug text-slate-500">
         Each bar fills from <span className="text-sky-300">guaranteed</span> raids out to the{" "}

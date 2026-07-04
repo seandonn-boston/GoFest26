@@ -9,6 +9,8 @@ import { remoteWindowsForBoss } from "@/domain/remoteWindows";
 import type { PlanSummary } from "@/domain/types";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import type { StepId } from "@/store/useUiStore";
+import { PixelIcon } from "@/components/ui/PixelIcon";
+import { ItemIcon } from "@/components/ui/ItemIcon";
 
 interface DayBit {
   key: string;
@@ -22,7 +24,7 @@ interface DayBit {
 }
 
 interface RemoteMark {
-  /** Any window on this day starts in the local night (9 PM–6 AM) → 🌙. */
+  /** Any window on this day starts in the local night (9 PM–6 AM) → moon marker. */
   overnight: boolean;
   /** Tooltip lines, e.g. "Xurkitree: Sun 12:00 AM–3:00 AM (Tokyo)". */
   lines: string[];
@@ -68,7 +70,7 @@ export function WeekOverview({
     [blockPlan, summary.results, settings, quickCatchBlocks, roadPlan.headStart],
   );
 
-  // 🌙 "be awake for this" markers: each selected region-locked target's anchor
+  // Moon "be awake for this" markers: each selected region-locked target's anchor
   // windows, bucketed onto the viewer-local calendar day they start on.
   const remoteMarks = useMemo(() => {
     const marks = new Map<string, RemoteMark>();
@@ -159,8 +161,11 @@ export function WeekOverview({
               }`}
             >
               {mark ? (
-                <span aria-hidden className="absolute -right-0.5 -top-1.5 text-[11px]">
-                  {mark.overnight ? "🌙" : "🕑"}
+                <span
+                  aria-hidden
+                  className={`absolute -right-0.5 -top-1.5 ${mark.overnight ? "text-indigo-300" : "text-sky-300"}`}
+                >
+                  <PixelIcon name={mark.overnight ? "moon" : "clock"} size={11} />
                 </span>
               ) : null}
               <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
@@ -180,7 +185,8 @@ export function WeekOverview({
           onClick={() => onJump(5)}
           className="mt-1.5 block w-full text-left text-[12px] text-slate-500 transition hover:text-slate-300"
         >
-          🌙 = overnight remote window for a region-locked target — tap for exact times on the Remote step
+          <PixelIcon name="moon" size={11} className="text-indigo-300" /> = overnight remote window for a region-locked
+          target — tap for exact times on the Remote step
         </button>
       ) : null}
 
@@ -191,10 +197,12 @@ export function WeekOverview({
             onClick={() => onJump(5)}
             className="rounded-md border border-sky-400/40 bg-sky-400/10 px-2 py-0.5 text-[12px] text-slate-200 transition hover:border-sky-400/70"
           >
-            🌐 +{remote.fitted} remote — any time, any day
+            <ItemIcon name="remotePass" size={14} /> +{remote.fitted} remote — any time, any day
           </button>
         ) : (
-          <span className="text-[12px] text-slate-500">🌐 remote raids: none assigned</span>
+          <span className="text-[12px] text-slate-500">
+            <ItemIcon name="remotePass" size={14} className="opacity-60 grayscale" /> remote raids: none assigned
+          </span>
         )}
         <span className="font-mono text-[12px] uppercase tracking-wide text-slate-500">{total} raids planned</span>
       </div>

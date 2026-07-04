@@ -6,6 +6,7 @@ import { exportPlanToXlsx } from "@/export/exportXlsx";
 import { downloadJsonBackup } from "@/export/backupFile";
 import { buildShareUrl } from "@/lib/sharePlan";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /**
  * The three ways to take your plan with you, given equal visual weight: an Excel
@@ -87,17 +88,17 @@ export function ExportGroup({ summary }: { summary: PlanSummary }) {
       <h3 className="text-sm font-semibold text-slate-200">Take your plan with you</h3>
       <div className="flex gap-2">
         <button type="button" onClick={doXlsx} disabled={busy !== null} className={`${tile} bg-gofest-accent text-white`}>
-          <span className="text-lg leading-none">⬇</span>
+          <PixelIcon name="download" size={18} />
           <span>{busy === "xlsx" ? "Building…" : "Excel"}</span>
           <span className="text-[11px] font-normal opacity-80">.xlsx plan</span>
         </button>
         <button type="button" onClick={doLink} disabled={busy !== null} className={`${tile} bg-gofest-accent2 text-black`}>
-          <span className="text-lg leading-none">🔗</span>
+          <PixelIcon name="link" size={18} />
           <span>Share link</span>
           <span className="text-[11px] font-normal opacity-80">copy URL</span>
         </button>
         <button type="button" onClick={doJson} disabled={busy !== null} className={`${tile} bg-gofest-bone text-black`}>
-          <span className="text-lg leading-none">💾</span>
+          <PixelIcon name="floppy" size={18} />
           <span>Backup</span>
           <span className="text-[11px] font-normal opacity-80">.json file</span>
         </button>

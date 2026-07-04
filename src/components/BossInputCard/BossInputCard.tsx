@@ -39,6 +39,7 @@ import { CardScan } from "./CardScan";
 import { CounterTable } from "./CounterTable";
 import { CopiesEditor } from "./CopiesEditor";
 import { FusionEnergyPanel } from "./FusionEnergyPanel";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /** Labels for the result breakdown ("Candy 46"). */
 const CURRENCY_LABELS: Record<Currency, string> = {
@@ -212,10 +213,12 @@ export function BossInputCard({
               {/* Sub-info on a liquid-glass pane, legible over any sprite behind it.
             Fixed line order: time block, then location (region), then tip. */}
               <div className="liquid-glass mx-auto mt-2 w-fit max-w-full rounded-2xl px-3 py-1.5">
-                <p className="text-center text-[13px] font-medium text-slate-50">🗓️ {availabilityText}</p>
+                <p className="text-center text-[13px] font-medium text-slate-50">
+                  <PixelIcon name="calendar" size={12} /> {availabilityText}
+                </p>
                 {regionLabel || remoteOnly ? (
                   <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">
-                    📍 {regionLabel ?? "Region-locked"}
+                    <PixelIcon name="pin" size={12} /> {regionLabel ?? "Region-locked"}
                     {remoteOnly ? <span className="text-sky-400"> · Remote</span> : null}
                   </p>
                 ) : null}
@@ -225,7 +228,9 @@ export function BossInputCard({
                   </p>
                 ) : null}
                 {boss.note ? (
-                  <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">💡 {boss.note}</p>
+                  <p className="mt-0.5 text-center text-[13px] font-medium text-slate-50">
+                    <PixelIcon name="bulb" size={12} /> {boss.note}
+                  </p>
                 ) : null}
               </div>
             </button>
@@ -354,9 +359,9 @@ export function BossInputCard({
                     </div>
                     {overWindow ? (
                       <p className="mt-1.5 text-[13px] text-rose-300">
-                        ⚠ More raids than its window allows (~{formatNumber(windowSlots)} max in {describeAvailability(boss)}
-                        ) — and bosses rotate hourly within a habitat, so you may get fewer. Trim the goal or spread across
-                        forms.
+                        <PixelIcon name="warning" size={12} /> More raids than its window allows (~
+                        {formatNumber(windowSlots)} max in {describeAvailability(boss)}) — and bosses rotate hourly within a
+                        habitat, so you may get fewer. Trim the goal or spread across forms.
                       </p>
                     ) : null}
                   </>

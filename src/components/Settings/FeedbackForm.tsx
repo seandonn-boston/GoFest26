@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { sanitizeBlock, sanitizeLine } from "@/lib/sanitizeFeedback";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 // The public repo issues feed. GitHub URLs are case-insensitive.
 const REPO = "seandonn-boston/GoFest26";
 
 const TYPES = [
-  { id: "bug", label: "Bug", emoji: "🐞" },
-  { id: "idea", label: "Idea", emoji: "✨" },
-  { id: "data", label: "Data fix", emoji: "📊" },
-  { id: "other", label: "Other", emoji: "💬" },
-];
+  { id: "bug", label: "Bug", icon: "bug" },
+  { id: "idea", label: "Idea", icon: "sparkle" },
+  { id: "data", label: "Data fix", icon: "chart" },
+  { id: "other", label: "Other", icon: "speech" },
+] as const;
 
 /**
  * Feedback → GitHub Issues. With no backend, the most direct pipeline is a
@@ -60,7 +61,7 @@ export function FeedbackForm({ onDone }: { onDone?: () => void }) {
                 : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"
             }`}
           >
-            {t.emoji} {t.label}
+            <PixelIcon name={t.icon} size={12} /> {t.label}
           </button>
         ))}
       </div>

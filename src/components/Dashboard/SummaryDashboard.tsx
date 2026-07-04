@@ -8,6 +8,7 @@ import { midpoint } from "@/lib/math";
 import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { MathTooltip } from "@/components/ui/MathTooltip";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 import { CapacityGauge } from "./CapacityGauge";
 import { BlockAccordion } from "./BlockAccordion";
 
@@ -133,13 +134,20 @@ export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary;
             const ok = blockPlan.feasible;
             return (
               <p className={`mt-3 text-sm ${ok ? "text-emerald-300" : "text-rose-300"}`}>
-                {ok
-                  ? "✓ Your goals fit within the weekend — and inside each boss's time windows."
-                  : cutNames.length > 0
-                    ? `⚠ Some goals can't fit their limited time windows: ${cutNames.join(
-                        ", ",
-                      )}. Each non-Mewtwo boss only spawns for one 3-hour habitat block — reorder priority or assign remote raids to cover them.`
-                    : "⚠ Your goals exceed the max raids possible this weekend. Trim targets, use the mega-buddy boost, or prioritize."}
+                {ok ? (
+                  "✓ Your goals fit within the weekend — and inside each boss's time windows."
+                ) : cutNames.length > 0 ? (
+                  <>
+                    <PixelIcon name="warning" size={13} /> Some goals can&apos;t fit their limited time windows:{" "}
+                    {cutNames.join(", ")}. Each non-Mewtwo boss only spawns for one 3-hour habitat block — reorder priority
+                    or assign remote raids to cover them.
+                  </>
+                ) : (
+                  <>
+                    <PixelIcon name="warning" size={13} /> Your goals exceed the max raids possible this weekend. Trim
+                    targets, use the mega-buddy boost, or prioritize.
+                  </>
+                )}
               </p>
             );
           })()}

@@ -22,6 +22,7 @@ import { MewtwoCopiesEditor } from "./MewtwoCopiesEditor";
 import { MewtwoTitle } from "./MewtwoTitle";
 import { MewtwoBackdrop } from "./MewtwoBackdrop";
 import { CounterTable } from "./CounterTable";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   candy: "Candy",
@@ -256,7 +257,9 @@ function FormColumn({
         <Sprite src={sprite} alt={title} size={32} />
         <div className="min-w-0">
           <div className="text-sm font-semibold">{title}</div>
-          <div className="text-[13px] text-slate-400">🗓 {subtitle}</div>
+          <div className="text-[13px] text-slate-400">
+            <PixelIcon name="calendar" size={12} /> {subtitle}
+          </div>
         </div>
       </div>
 
@@ -307,8 +310,8 @@ function FormColumn({
         )}
         {preUnlocked ? (
           <p className="mt-1.5 text-[13px] text-slate-500">
-            💡 Protip: GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500 first-evolution cost) — set Mega lvl to 0 if
-            you&apos;re evolving one you already own.
+            <PixelIcon name="bulb" size={12} /> Protip: GO Fest-caught Mewtwo start at ≥1 Mega Level (no 7,500
+            first-evolution cost) — set Mega lvl to 0 if you&apos;re evolving one you already own.
           </p>
         ) : null}
       </div>
