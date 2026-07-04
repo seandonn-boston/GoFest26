@@ -10,8 +10,8 @@ import { attackerIconUrl } from "@/data/pokemonSprites";
 import { TYPE_COLORS, typeBackgroundStyle, typePanelStyle } from "@/data/typeVisuals";
 import { RISK_BANDS, megaBoostsForBoss, topBlockMegas, megaBoostSpecies } from "@/domain";
 import { sized } from "@/domain/blockPlan";
-import type { BlockMegaRank, BlockPlan, BlockSpeciesShare, RiskBand, WeekendBlockPlan } from "@/domain";
-import { topCounters, topBlockCounters, type BlockCounter } from "@/domain/counters";
+import type { BlockPlan, BlockSpeciesShare, RiskBand, WeekendBlockPlan } from "@/domain";
+import { topCounters, topBlockCounters } from "@/domain/counters";
 import type { BossResult, EventDay } from "@/domain/types";
 import { buildSearchString, buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
@@ -20,6 +20,7 @@ import { useDragList } from "./useDragList";
 import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { CountersMegasChips } from "@/components/ui/CountersMegasRow";
 import { CopyableInline } from "@/components/ui/Copyable";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { RaidsNeededTooltip } from "@/components/ui/RaidsNeededTooltip";
@@ -38,60 +39,6 @@ const speciesTerm = (name: string) =>
     .replace(/^(Mega|Primal)\s+/, "")
     .replace(/\s+[XY]$/, "")
     .trim();
-
-/** Block-level best counters + megas to evolve, each as a horizontal row of sprite
- *  chips (matching the per-target tile rows). Counters are ringed by their best
- *  super-effective type; megas carry their kind ring (key shown once up top). */
-function BlockChips({
-  counters,
-  counterSearch,
-  megas,
-  megaSearch,
-}: {
-  counters: BlockCounter[];
-  counterSearch: string;
-  megas: BlockMegaRank[];
-  megaSearch: string;
-}) {
-  if (counters.length === 0 && megas.length === 0) return null;
-  return (
-    <div className="space-y-1.5 border-t border-white/10 px-2.5 py-2">
-      {counters.length > 0 ? (
-        <CopyableInline
-          search={counterSearch}
-          label="counters for this block"
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-gofest-acid">
-            Counters
-          </span>
-          {counters.map((c) => (
-            <span
-              key={c.attacker.name}
-              title={`${c.attacker.name} · strong vs ${c.bossesCovered} raid${c.bossesCovered === 1 ? "" : "s"} this block`}
-              className="inline-flex rounded-full bg-black/30 ring-2"
-              style={{ ["--tw-ring-color" as string]: TYPE_COLORS[c.via.toLowerCase()] }}
-            >
-              <Sprite src={attackerIconUrl(c.attacker)} alt={c.attacker.name} size={20} />
-            </span>
-          ))}
-        </CopyableInline>
-      ) : null}
-      {megas.length > 0 ? (
-        <CopyableInline
-          search={megaSearch}
-          label="megas to evolve for this block"
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          <span className="inline-block w-[9ch] shrink-0 whitespace-nowrap font-mono text-[11px] uppercase tracking-wider text-purple-300">
-            Megas
-          </span>
-          <MegaBoostRow boosts={megas} size={20} />
-        </CopyableInline>
-      ) : null}
-    </div>
-  );
-}
 
 /** One species' target in a block: a drag grip, completed (editable) / best ·
  *  avg · worst raid counts, the boss's types + candy-boost megas, and its best
@@ -483,7 +430,12 @@ function BlockItem({ block }: { block: BlockPlan }) {
 
         {/* Block-wide best counters + megas to evolve — kept visible whether the
           block is expanded or collapsed (they vary block to block). */}
-        <BlockChips counters={blockCounters} counterSearch={blockCounterSearch} megas={topMegas} megaSearch={megaSearch} />
+        <CountersMegasChips
+          counters={blockCounters}
+          counterSearch={blockCounterSearch}
+          megas={topMegas}
+          megaSearch={megaSearch}
+        />
       </div>
     </div>
   );
