@@ -16,6 +16,7 @@ import { usePlannerResults } from "@/hooks/usePlannerResults";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
 import { Disclosure } from "@/components/ui/Disclosure";
+import { RaidCountersMegas } from "@/components/ui/CountersMegasRow";
 import { useDragList } from "./useDragList";
 
 /** Featured boss ids per Road of Legends day (for the per-day target picker). */
@@ -279,6 +280,9 @@ function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
 function RoadDayCard({ day }: { day: RoadDayPlan }) {
   const over = day.remaining > 0;
   const used = day.species.filter((s) => s.fitted > 0);
+  // Best counters + megas for the raids actually happening this day — hidden when
+  // nothing is allocated. Raid-only window, so no habitat wild types.
+  const raidBossIds = used.map((s) => s.formeBossId ?? s.bossId);
   // Featured bosses this day whose goal the concentrated Raid Hour can't finish —
   // but they keep spawning all day, so the user can keep raiding them to close the
   // gap. De-duped display names, in the order they appear.
@@ -316,6 +320,11 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       ) : (
         <p className="mt-1.5 text-[13px] text-slate-500">None of your selected targets are featured this day.</p>
       )}
+      {raidBossIds.length > 0 ? (
+        <div className="mt-1.5">
+          <RaidCountersMegas bossIds={raidBossIds} />
+        </div>
+      ) : null}
       {stillOpen.length > 0 ? (
         <p className="mt-1.5 text-[12px] leading-snug text-emerald-300/80">
           ⏱ The Raid Hour can&apos;t finish these, but they&apos;re featured <b>all day</b> (≈6 AM–10 PM) — keep raiding{" "}

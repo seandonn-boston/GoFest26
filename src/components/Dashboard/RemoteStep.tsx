@@ -5,6 +5,7 @@ import type { RemotePlan, WeekendBlockPlan } from "@/domain";
 import { PlusToggle } from "@/components/ui/PlusToggle";
 import { useExpandable } from "@/hooks/useExpandable";
 import { BandBar } from "@/components/ui/BandBar";
+import { RaidCountersMegas } from "@/components/ui/CountersMegasRow";
 import { RemoteAllocator } from "./RemoteAllocator";
 import { RemoteWindows } from "./RemoteWindows";
 
@@ -28,6 +29,8 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
   const on = useRemote && hasAllocations;
   const fitted = remote?.fitted ?? 0;
   const over = !!remote && remote.remaining > 0;
+  // Bosses actually being raided remotely (a raid fits) → their counters + megas.
+  const remoteBossIds = (remote?.species ?? []).filter((s) => s.fitted > 0).map((s) => s.formeBossId ?? s.bossId);
 
   const toggle = (checked: boolean) => {
     setSettings({ useRemoteRaids: checked });
@@ -71,6 +74,13 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
         {on && remote ? <BandBar bands={remote.bands} fitted={fitted} capacityMax={remote.capacity} /> : null}
       </button>
       {open ? <RemoteAllocator /> : null}
+      {/* Best counters + megas for the species you're actually raiding remotely —
+          only when at least one remote raid is allocated (hidden at zero). */}
+      {on && remoteBossIds.length > 0 ? (
+        <div className="mt-2">
+          <RaidCountersMegas bossIds={remoteBossIds} />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore } from "@/store/useUiStore";
 import { useTiltStore } from "@/store/useTiltStore";
+import { useAppReady } from "@/store/useAppReady";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDialog } from "@/hooks/useDialog";
 import { AssumptionsControls } from "./AssumptionsControls";
@@ -122,6 +123,11 @@ export function ActionDock() {
   };
   const closePanel = useCallback(() => setPanel(null), []);
   const sheetRef = useDialog<HTMLDivElement>(panel !== null, closePanel);
+
+  // Stay hidden until the Substitute loading screen has fully lifted — the FAB
+  // must not float over the loader. (The theme-sync effect above still runs.)
+  const appReady = useAppReady((s) => s.ready);
+  if (!appReady) return null;
 
   // Rendered top → bottom; the last sits nearest the main FAB. The motion-tilt
   // opt-in only makes sense on a phone/tablet with a real orientation sensor.
