@@ -93,8 +93,8 @@ export function ResultsPassHighlights({
       {hundredExtra > 0 ? (
         <p className="mt-2 text-[12px] text-slate-500">
           To reach <b className="text-slate-300">100%</b> of your goals you&apos;d need about{" "}
-          <b className="text-slate-300">{hundredExtra}</b> more raid pass{hundredExtra === 1 ? "" : "es"} beyond the
-          committed plan (goals that don&apos;t fit their windows — see the Cost step).
+          <b className="text-slate-300">{hundredExtra}</b> more raid pass{hundredExtra === 1 ? "" : "es"}
+          {" beyond the committed plan (goals that don’t fit their windows — see the Cost step)."}
         </p>
       ) : (
         <p className="mt-2 text-[12px] text-emerald-300/80">
