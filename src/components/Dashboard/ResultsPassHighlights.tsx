@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { PlanSummary } from "@/domain/types";
 import type { RoadPlan, WeekendBlockPlan } from "@/domain";
-import { computeCommitment } from "@/domain";
+import { computeCommitment, commitmentByBoss, computePassCost } from "@/domain";
 import { usePassCoverage } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { formatRange } from "@/lib/format";
@@ -36,15 +36,26 @@ export function ResultsPassHighlights({
   roadPlan: RoadPlan;
 }) {
   const owned = usePlannerStore((s) => Math.max(0, Math.round(s.settings.passesOwned)));
+  const inputs = usePlannerStore((s) => s.inputs);
+  const settings = usePlannerStore((s) => s.settings);
+  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
+  const playDays = usePlannerStore((s) => s.playDays);
   const cov = usePassCoverage(summary);
   const commitment = useMemo(() => computeCommitment(blockPlan, roadPlan), [blockPlan, roadPlan]);
+  // The SAME committed-pass math the Cost step runs (owned + free daily passes
+  // spent first), so the "to buy" number here always matches the Cost step —
+  // they once disagreed (23 vs 0) because this card ignored the free dailies.
+  const committed = useMemo(() => commitmentByBoss(blockPlan, roadPlan), [blockPlan, roadPlan]);
+  const cost = useMemo(
+    () => computePassCost(Object.values(inputs), summary.results, settings, remoteAllocations, playDays, committed),
+    [inputs, summary.results, settings, remoteAllocations, playDays, committed],
+  );
 
   if (summary.totalRaids.max <= 0) return null;
 
   const greenNeeded = commitment.inPerson;
-  const greenToBuy = Math.max(0, greenNeeded - owned);
-  const ownedOnGreen = Math.min(owned, greenNeeded);
-  const remote = commitment.remote;
+  const greenToBuy = cost.paidInPerson;
+  const remote = cost.totalRemote;
   const covered = greenToBuy <= 0;
   // Passes a full 100% run would take beyond the committed plan.
   const hundredExtra = Math.max(0, cov.needed.max - commitment.total);
@@ -71,14 +82,21 @@ export function ResultsPassHighlights({
 
       <div className="mt-3 rounded-md border border-white/10 bg-gofest-bg/40 px-2.5 py-2 text-[13px]">
         {covered ? (
-          <p className="text-emerald-300">
-            ✓ You already hold enough passes for every in-person raid you&apos;ve committed to
-            {ownedOnGreen < owned ? ` · ${owned - ownedOnGreen} spare` : ""}.
-          </p>
+          cost.ownedPassesUsed + cost.freePassesUsed > 0 ? (
+            <p className="text-emerald-300">
+              ✓ Your {cost.ownedPassesUsed > 0 ? `${cost.ownedPassesUsed} owned` : ""}
+              {cost.ownedPassesUsed > 0 && cost.freePassesUsed > 0 ? " and " : ""}
+              {cost.freePassesUsed > 0 ? `${cost.freePassesUsed} free daily` : ""} pass
+              {cost.ownedPassesUsed + cost.freePassesUsed === 1 ? "" : "es"} cover every in-person raid you&apos;ve committed
+              to{owned > cost.ownedPassesUsed ? ` · ${owned - cost.ownedPassesUsed} spare` : ""}.
+            </p>
+          ) : (
+            <p className="text-emerald-300">✓ No in-person passes needed for this plan.</p>
+          )
         ) : (
           <p className="text-slate-300">
-            You&apos;d buy <b className="text-amber-300">{greenToBuy}</b> in-person (green) pass
-            {greenToBuy === 1 ? "" : "es"}
+            After your <b>{cost.ownedPassesUsed}</b> owned and <b>{cost.freePassesUsed}</b> free daily passes, you&apos;d buy{" "}
+            <b className="text-amber-300">{greenToBuy}</b> in-person (green) pass{greenToBuy === 1 ? "" : "es"}
             {remote > 0 ? (
               <>
                 {" "}
