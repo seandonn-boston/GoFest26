@@ -28,7 +28,7 @@ import { PlusToggle } from "@/components/ui/PlusToggle";
 import { useExpandable } from "@/hooks/useExpandable";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
-import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
+import { MegaBoostRow } from "@/components/ui/MegaBoostRow";
 import { Copyable } from "@/components/ui/Copyable";
 import { ImageThumb } from "@/components/ui/ImageThumb";
 import { speciesKey } from "@/lib/pokemonSearch";
@@ -90,10 +90,8 @@ export function BossInputCard({
   const megaBuddy = input.megaBuddy ?? true;
   const l4Buddy = input.l4Buddy ?? false;
   const l4Eligible = isL4Eligible(boss);
-  // XL boost the global "assumed buddy level" implies (L1 default = +0%).
-  const globalXlPct = Math.round(
-    (GAME_CONFIG.megaCatchBoost.xlByLevel[Math.min(3, Math.max(0, megaBuddyLevel))] ?? 0) * 100,
-  );
+  // Guaranteed catch-XL the global "assumed buddy level" implies (L1 default = +0).
+  const globalXlBonus = GAME_CONFIG.megaCatchBoost.xlBonusByLevel[Math.min(4, Math.max(0, megaBuddyLevel))] ?? 0;
   const regionLabel = regionScopeLabel(boss.region);
   const remoteOnly = !bossIsLocal(boss, region);
   // Multi-form species: the card represents the whole group (one shared pool),
@@ -295,7 +293,7 @@ export function BossInputCard({
                     checked={megaBuddy}
                     onChange={(e) => setMegaBuddy(boss.id, e.target.checked)}
                   />
-                  Mega buddy same-type bonus (+1 candy{globalXlPct > 0 ? `, +${globalXlPct}% XL` : ""}/catch)
+                  Mega buddy same-type bonus (+1 candy{globalXlBonus > 0 ? `, +${globalXlBonus} XL` : ""}/catch)
                 </label>
                 {l4Eligible ? (
                   <label className={`flex items-center gap-2 ${!megaBuddy ? "opacity-40" : ""}`}>
@@ -306,7 +304,7 @@ export function BossInputCard({
                       disabled={!megaBuddy}
                       onChange={(e) => setL4Buddy(boss.id, e.target.checked)}
                     />
-                    Catch with a Level-4 (Super Max) Mega active (+30% XL)
+                    Catch with a Level-4 (Super Max) Mega active (+1 XL)
                   </label>
                 ) : null}
               </div>
@@ -390,11 +388,10 @@ export function BossInputCard({
                         label="mega evolutions"
                         className="mt-3 rounded-lg border border-purple-300/20 bg-purple-300/[0.05] p-2.5 transition hover:border-purple-300/40"
                       >
-                        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pr-8">
+                        <div className="mb-1.5 pr-8">
                           <span className="font-mono text-[13px] font-bold uppercase tracking-widest text-purple-300">
                             Mega-evolve for candy
                           </span>
-                          <MegaBoostLegend />
                         </div>
                         <MegaBoostRow boosts={boosts} max={8} />
                         <p className="mt-1.5 text-[12px] text-slate-500">

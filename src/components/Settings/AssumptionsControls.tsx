@@ -7,14 +7,15 @@ import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Badge } from "@/components/ui/Badge";
+import { CalibrationPanel } from "@/components/ui/CalibrationPanel";
 
-// Assumed same-type Mega buddy levels (the +30% Level-4 tier is opt-in per boss).
+// Assumed same-type Mega buddy levels (the opt-in Level-4 tier is per boss).
 const BUDDY_LEVELS: { level: number; label: string; hint: string }[] = [
-  { level: 1, label: "L1 Base", hint: "1 evolution — Candy bonus only, no XL boost." },
-  { level: 2, label: "L2 High", hint: "7 evolutions — +10% Candy XL per same-type catch." },
-  { level: 3, label: "L3 Max", hint: "30 evolutions — +25% Candy XL (the typical leveled mega)." },
+  { level: 1, label: "L1 Base", hint: "1 evolution — Candy bonus only, no guaranteed XL." },
+  { level: 2, label: "L2 High", hint: "7 evolutions — a guaranteed +1 Candy XL per same-type catch." },
+  { level: 3, label: "L3 Max", hint: "30 evolutions — a guaranteed +1 Candy XL (the typical leveled mega)." },
 ];
-const buddyXlPct = (level: number) => Math.round((GAME_CONFIG.megaCatchBoost.xlByLevel[level] ?? 0) * 100);
+const buddyXlBonus = (level: number) => GAME_CONFIG.megaCatchBoost.xlBonusByLevel[level] ?? 0;
 
 const RESEARCH_CURRENCY: Record<string, string> = {
   candy: "Candy",
@@ -142,14 +143,17 @@ export function AssumptionsControls() {
               }`}
             >
               {b.label}
-              <span className="block text-[13px] text-slate-400">+{buddyXlPct(b.level)}% XL</span>
+              <span className="block text-[13px] text-slate-400">
+                {buddyXlBonus(b.level) > 0 ? `+${buddyXlBonus(b.level)} XL` : "no XL"}
+              </span>
             </button>
           ))}
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          A same-type Mega/Primal buddy raises Candy XL on catches, scaling with its Mega Level — applied to every boss whose
-          “Mega buddy” toggle is on. A handful of 2026 species reach <span className="text-white">Level 4 (+30%)</span>;
-          enable it per boss on Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon/Steel targets.
+          A same-type Mega/Primal buddy adds a <span className="text-white">guaranteed +1 Candy XL</span> on catches (a 1–3
+          roll floors to 2–4) at any boosting Mega Level — applied to every boss whose “Mega buddy” toggle is on. A handful
+          of 2026 species reach <span className="text-white">Level 4 (Super Max)</span>; enable it per boss on
+          Fighting/Psychic/Grass/Poison/Dark/Flying/Dragon/Steel targets.
         </p>
       </div>
 
@@ -218,6 +222,10 @@ export function AssumptionsControls() {
           })}
         </div>
       </div>
+
+      {/* Luck calibration — moved in from the old "Advanced" panel so all the
+          knobs that shift the raid math live in one place. */}
+      <CalibrationPanel />
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-500">Every edit updates the calculations live.</p>

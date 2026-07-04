@@ -77,9 +77,9 @@ export const ESTIMATE_NOTES: EstimateNote[] = [
   },
   {
     label: "Mega buddy XL boost",
-    value: "+10% / +25% / +30% at Mega Level 2 / 3 / 4 (same-type)",
+    value: "guaranteed +1 Candy XL at any boosting Mega Level (same-type)",
     confidence: "community",
-    note: "A same-type Mega raises Candy-XL odds per roll; scales the assumed XL range. Excludes transfer/trade XL.",
+    note: "A same-type Mega banks a guaranteed +1 Candy XL per catch (1–3 floors to 2–4). Excludes transfer/trade XL.",
   },
   {
     label: "Raiding pace",

@@ -16,6 +16,12 @@ export const GAME_CONFIG = {
     hoursPerDay: 9,
     days: 2,
     hourStartLocal: 10,
+    // Normal raid-open hours (local, 24h): gyms host raids roughly 6 AM–10 PM. A
+    // Road of Legends featured boss spawns as an ordinary raid across this WHOLE
+    // window — its concentrated 6–8 PM Raid Hour is only when it takes over EVERY
+    // gym. Used to widen the "raidable somewhere in region" span for remote raiding.
+    // source: estimate — community-reported daily raid window; one-line editable.
+    normalRaidHoursLocal: { start: 6, end: 22 },
   },
 
   capacity: {
@@ -121,18 +127,22 @@ export const GAME_CONFIG = {
   },
 
   // Same-type Mega buddy XL-Candy boost. An active Mega / Primal Evolution that
-  // SHARES A TYPE with the Pokémon you catch raises the chance of Candy XL per
-  // roll, scaling with the buddy's Mega Level. We model it as a proportional
-  // multiplier on the assumed catch-XL range (a logged calibration value already
-  // reflects the player's own mega, so it is NOT boosted again).
-  //   xlByLevel indexed by Mega Level 0..4 (flat % increase per roll):
-  //     L0/L1 (Base, 1 evo) none · L2 (High, 7 evo) +10% ·
-  //     L3 (Max, 30 evo, "standard") +25% · L4 (Super Max) +30%.
-  //   l4Types — the typings of the five Mega Level 4 species available in 2026;
-  //     a boss can use the +30% boost only if its typing includes one of these.
+  // SHARES A TYPE with the Pokémon you catch grants a GUARANTEED extra Candy XL
+  // per catch — a whole +1, NOT a fractional multiplier on the roll — so a base
+  // 1–3 XL catch floors to 2–4 with a boosting buddy. (A logged calibration
+  // value already reflects the player's own mega, so it is NOT bonused again.)
+  //   xlBonusByLevel indexed by Mega Level 0..4 (whole Candy XL added per catch):
+  //     L0/L1 (Base, 1 evo) none · L2 (High, 7 evo), L3 (Max, 30 evo,
+  //     "standard") and L4 (Super Max) each guarantee +1.
+  //   l4Types — the typings of the Mega Level 4 species available in 2026; a boss
+  //     can enable the Level-4 buddy only if its typing includes one of these.
+  // NOTE: community reports frame the higher Mega Levels as raising the *chance*
+  // of the bonus (≈+10/25/30% at L2/3/4); we model the bonus as banked
+  // (guaranteed) for planning, so every boosting level grants the same +1 floor.
+  // Bump a level to a larger integer here if a level should guarantee more.
   // source: community-reported boost tiers; Mega Level 4 is 2026-only. Editable.
   megaCatchBoost: {
-    xlByLevel: [0, 0, 0.1, 0.25, 0.3],
+    xlBonusByLevel: [0, 0, 1, 1, 1],
     l4Types: ["Fighting", "Psychic", "Grass", "Poison", "Dark", "Flying", "Dragon", "Steel"],
   },
 
@@ -161,9 +171,21 @@ export const GAME_CONFIG = {
     // Premium Battle Pass ("green", in-person). 3-pack = 250 (≈83⅓/pass). A
     // limited-time box can carry ~99 passes for ~5,000 coins (≈50/pass).
     green: { bundlePasses: 3, bundleCoins: 250, bestBoxCoinsPerPass: 50 },
-    // Remote Raid Pass ("blue"). 3-pack = 525 (175/pass). Carry limit 3, so no
-    // big packs — boxes rarely beat the 3-pack, so the low rate matches it.
-    remote: { bundlePasses: 3, bundleCoins: 525, bestBoxCoinsPerPass: 175 },
+    // Remote Raid Pass ("blue"). 3-pack = 525 (175/pass); a single = 100 coins.
+    // A trainer holds at most 3, so remotes are always bought as you go — never
+    // covered by owned/free passes. Cost = as many 3-packs as fit, then singles
+    // for the 1–2 remainder (a single at 100 beats rounding up to a 525 pack).
+    // source: confirmed prices (3-pack 525; single 100).
+    remote: { bundlePasses: 3, bundleCoins: 525, singleCoins: 100, bestBoxCoinsPerPass: 175 },
+    // Ongoing free Orange (Raid) passes earned per day AFTER the event — used only
+    // to estimate how many days of daily grinding it'd take to clear the leftover
+    // raids for a full 100% run (assuming every boss stayed available forever). A
+    // blended estimate:
+    //   • 1.00/day — the daily Gym Photo-Disc free Raid Pass
+    //   • ~0.30/day — event bonuses (~2 passes × ~4.5 events/month ÷ 30)
+    //   • ~0.14/day — weekly Community Day / Wednesday raid hour / Campfire / task
+    // source: estimate — editable; drives only the "days to 100%" figure.
+    freeOrangePassesPerDay: 1.44,
     // Link Charges — usable only on Mega (150 LC) or Super Mega (200 LC) raids.
     // In person they can stand in for a Mega/Super-Mega pass; a REMOTE Super Mega
     // Raid needs a Remote Pass AND 200 LC (LC alone can't remote a Mega raid).

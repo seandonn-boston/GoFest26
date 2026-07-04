@@ -11,16 +11,10 @@ import { RoadOfLegends } from "./RoadOfLegends";
  * Results step.
  */
 export function PlanSetup({ roadPlan }: { roadPlan: RoadPlan }) {
+  // The heading + description live inside RoadOfLegends (its own "raid week"
+  // header), so this step is just that section — no duplicate title above it.
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="mb-1 text-lg font-semibold">Road of Legends</h2>
-        <p className="text-sm text-slate-400">
-          The weekday raid hours (Mon Jul 6 – Fri Jul 10) before the event. Pick the evenings you&apos;ll raid and which
-          targets to pre-farm each day — whatever you knock out here is a head start that shrinks your GO Fest weekend.
-        </p>
-      </div>
-
+    <section>
       <RoadOfLegends road={roadPlan} />
     </section>
   );

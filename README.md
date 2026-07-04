@@ -77,7 +77,7 @@ Optional ways to refine the plan:
 
 - **Raids needed** — per boss and in total, as a range (rewards roll), showing which
   currency is the **binding constraint** and the effect of a same‑type **Mega buddy**
-  Candy/XL boost (scaling to **+30%** at Mega Level 4).
+  Candy/XL boost (a guaranteed **+1 Candy XL** per catch — a 1–3 roll floors to 2–4).
 - **Reward case** — plan around best‑case, expected, or worst‑case drops; the toggle
   re‑sizes every number live.
 - **Per‑block weekend plan** — fixed‑window bosses pin to their habitat block(s),

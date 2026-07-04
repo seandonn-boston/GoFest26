@@ -155,6 +155,134 @@ samp {
   animation: ticker 26s linear infinite;
 }
 
+/* Golden chromatic "0" — the plan is fully paid for. A slow shimmer sweeps a
+   metallic-gold gradient across the glyph so the zero glimmers without shouting. */
+@keyframes goldenGlimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.golden-zero {
+  background-image: linear-gradient(100deg, #b8860b 0%, #ffd700 25%, #fff6c8 50%, #ffd700 75%, #b8860b 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: goldenGlimmer 2.6s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.45));
+}
+@media (prefers-reduced-motion: reduce) {
+  .golden-zero {
+    animation: none;
+  }
+}
+
+/* ── Glass + cyberpunk FAB surfaces ───────────────────────────────────────────
+   A heavy frosted-glass button whose neon edge/glow is driven by a single
+   `--accent` custom property (set per action), so the whole speed-dial reads as
+   one translucent system with individually-tinted controls. A faint CRT
+   scanline overlay + double neon rim give it the cyberpunk HUD edge. */
+.glass-fab {
+  --accent: #f4f1ea;
+  position: relative;
+  isolation: isolate;
+  /* More opaque: a dark smoked-glass body faintly flooded with the accent. */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 20%, rgba(9, 9, 14, 0.86)), rgba(6, 6, 10, 0.8));
+  /* Blur harder. */
+  backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
+  -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
+  border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
+  color: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 12px 30px rgba(0, 0, 0, 0.62),
+    0 0 22px color-mix(in srgb, var(--accent) 44%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 14px color-mix(in srgb, var(--accent) 20%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+/* Top-light sheen + CRT scanlines, painted BELOW the glyph (::before). */
+.glass-fab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 75% at 50% -12%, rgba(255, 255, 255, 0.28), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  opacity: 0.65;
+  pointer-events: none;
+}
+/* Sharp inner HUD ring in the accent colour. */
+.glass-fab::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.glass-fab:hover {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 14px 34px rgba(0, 0, 0, 0.66),
+    0 0 32px color-mix(in srgb, var(--accent) 62%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.glass-fab:active {
+  transform: scale(0.93);
+}
+/* The primary trigger — a heavier acid flood + glow. */
+.glass-fab-primary {
+  --accent: #c6ff00;
+  background: linear-gradient(150deg, rgba(198, 255, 0, 0.34), rgba(10, 14, 4, 0.82));
+  box-shadow:
+    0 0 0 1px rgba(198, 255, 0, 0.4),
+    0 12px 34px rgba(0, 0, 0, 0.66),
+    0 0 34px rgba(198, 255, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 0 18px rgba(198, 255, 0, 0.22);
+}
+.glass-fab-primary:hover {
+  box-shadow:
+    0 0 0 1px rgba(198, 255, 0, 0.55),
+    0 14px 38px rgba(0, 0, 0, 0.7),
+    0 0 46px rgba(198, 255, 0, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 24px rgba(198, 255, 0, 0.3);
+}
+/* Frosted label chip that trails each dial button — opaque smoked glass with a
+   neon left rail and a clipped cyber notch on its trailing corner. */
+.glass-label {
+  background: rgba(7, 7, 11, 0.82);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--accent, #00f0ff) 40%, rgba(255, 255, 255, 0.12));
+  box-shadow:
+    inset 3px 0 0 var(--accent, #00f0ff),
+    0 0 12px color-mix(in srgb, var(--accent, #00f0ff) 24%, transparent),
+    0 4px 14px rgba(0, 0, 0, 0.45);
+  color: #eef2f7;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-fab {
+    transition: none;
+  }
+}
+
 /* Remove number-input spinners for a cleaner mobile look. */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
@@ -441,4 +569,58 @@ input[type="number"] {
   .mega-rainbow::before {
     animation: none;
   }
+}
+
+/* ============================================================================
+   Sunlight mode (:root[data-theme="sun"]) — a higher-contrast variant of the
+   dark theme for reading outdoors in direct sun. It does NOT flip to a light
+   theme (the type cards are white-text-on-dark by design); instead it makes the
+   dark theme survive glare: the low-contrast texture films come off, dim body
+   text and hairline borders are lifted, and faint surfaces are strengthened.
+   Every override targets content that sits on a dark background, so brightening
+   is uniformly safe. Toggle lives in ThemeToggle; attribute set pre-paint in
+   layout.tsx. ==========================================================*/
+:root[data-theme="sun"] body {
+  /* Lift off pure black so text edges don't crush, and drop the neon glow
+     gradients that muddy contrast under bright ambient light. */
+  background: #12151c;
+}
+:root[data-theme="sun"] body::before,
+:root[data-theme="sun"] body::after {
+  display: none; /* engineering grid + CRT scanlines both cut contrast — remove */
+}
+/* Lift dim text. All of it renders on dark surfaces, so pushing it brighter
+   only raises contrast. */
+:root[data-theme="sun"] .text-slate-600 {
+  color: #94a3b8;
+}
+:root[data-theme="sun"] .text-slate-500 {
+  color: #b8c2d0;
+}
+:root[data-theme="sun"] .text-slate-400 {
+  color: #d4dbe5;
+}
+:root[data-theme="sun"] .text-slate-300 {
+  color: #e8edf3;
+}
+/* Strengthen hairline borders + faint fills so card/section structure stays
+   legible when glare washes out the subtle values. */
+:root[data-theme="sun"] .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.26);
+}
+:root[data-theme="sun"] .border-white\/15 {
+  border-color: rgba(255, 255, 255, 0.34);
+}
+:root[data-theme="sun"] .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+:root[data-theme="sun"] .bg-white\/\[0\.02\] {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+/* Card body text already carries a dark halo; deepen it in sun so white text
+   holds its edge against a bright, reflective screen. */
+:root[data-theme="sun"] .card-text-legible {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 1),
+    0 0 5px rgba(0, 0, 0, 0.9);
 }

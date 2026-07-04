@@ -376,6 +376,29 @@ describe("computeRoadPlan — fusion/primal as reorderable per-day targets", () 
     expect(road.headStart["mega-tyranitar"]).toBe(6);
   });
 
+  it("caps MONDAY's Mega Salamence at its 7–8 PM hour (6) while 5★ run the full 6–8 PM", () => {
+    // Salamence is Monday's featured Mega — one-hour (7–8 PM) like the other days'
+    // Megas, so it caps at 6 even though Monday's 5★ hour is the full 2h. With an
+    // explicit Monday order [Salamence, Zekrom]: the Mega takes its 6-raid hour and
+    // Zekrom (5★) gets the block's other hour (12 − 6 = 6).
+    const both = computeRoadPlan(
+      [input("mega-salamence"), input("zekrom")],
+      [result("mega-salamence", 30), result("zekrom", 30)],
+      capacity,
+      safe,
+      { mon: true },
+      {},
+      {},
+      {},
+      { mon: ["mega-salamence", "zekrom"] },
+    );
+    expect(both.headStart["mega-salamence"]).toBe(6); // 7–8 PM Mega hour only
+    expect(both.headStart.zekrom).toBe(6); // the block's other hour
+    // A lone 5★ (no Mega picked) gets the WHOLE 2h block on Monday.
+    const solo = computeRoadPlan([input("zekrom")], [result("zekrom", 30)], capacity, safe, { mon: true });
+    expect(solo.headStart.zekrom).toBe(12);
+  });
+
   it("Thursday yields the Crowned energy raid, not a Hero-forme candy target", () => {
     const zacian: BossInput = { ...input("zacian"), energy: { sword: { have: 0, goal: 400, on: true } } };
     const thu = computeRoadPlan([zacian], [result("zacian", 30)], capacity, safe, { thu: true }).days[0];

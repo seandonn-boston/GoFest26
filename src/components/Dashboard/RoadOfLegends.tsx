@@ -6,17 +6,72 @@ import { spriteUrl } from "@/data/bosses";
 import { ROAD_DAYS } from "@/data/roadOfLegends";
 import { energyGoalsFor, energyGoalsForDay } from "@/data/energyGoals";
 import { type BlockSpeciesShare, type RoadDayPlan, type RoadPlan, energyRemaining } from "@/domain";
+import { sized } from "@/domain/blockPlan";
 import { bossIsLocal } from "@/domain/region";
 import { primaryFormId, groupDisplayName } from "@/domain/forms";
 import type { EnergyKind } from "@/domain/types";
 import { formatNumber } from "@/lib/format";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { usePlannerResults } from "@/hooks/usePlannerResults";
 import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { useDragList } from "./useDragList";
 
 /** Featured boss ids per Road of Legends day (for the per-day target picker). */
 const DAY_BOSSIDS: Record<string, string[]> = Object.fromEntries(ROAD_DAYS.map((d) => [d.id, d.bossIds]));
+
+interface DayMeta {
+  name: string;
+  sprite?: string;
+  energy: boolean;
+}
+interface RoadSelectCtx {
+  inputs: ReturnType<typeof usePlannerStore.getState>["inputs"];
+  region: ReturnType<typeof usePlannerStore.getState>["settings"]["region"];
+  roadCoupled: boolean;
+  roadSelected: Record<string, boolean>;
+  roadEnergy: Record<string, string[]>;
+}
+
+/**
+ * The day's eligible targets, split into fusion/primal ENERGY shares (which
+ * default to the top) and featured roster CANDY targets, plus their display
+ * meta. Shared by the per-day picker and the "smart auto-prioritize" seeder so
+ * both agree on what's raidable that day and in what order.
+ */
+function dayEligible(
+  dayId: string,
+  ctx: RoadSelectCtx,
+): { energyIds: string[]; candyIds: string[]; meta: Map<string, DayMeta> } {
+  const meta = new Map<string, DayMeta>();
+  const energyIds: string[] = [];
+  for (const { bossId, def } of energyGoalsForDay(dayId)) {
+    const active = ctx.roadCoupled
+      ? (ctx.inputs[bossId]?.energy?.[def.key]?.on ?? false)
+      : (ctx.roadEnergy[bossId] ?? []).includes(def.key);
+    if (!active) continue;
+    const id = `energy:${bossId}:${def.key}`;
+    energyIds.push(id);
+    meta.set(id, { name: def.source, sprite: def.sprite ? spriteUrl(def.sprite) : getBoss(bossId)?.sprite, energy: true });
+  }
+  const candyIds: string[] = [];
+  const seen = new Set<string>();
+  for (const id of DAY_BOSSIDS[dayId] ?? []) {
+    const boss = getBoss(id);
+    if (!boss) continue;
+    const primary = boss.formGroup ? primaryFormId(boss.formGroup) : id;
+    if (seen.has(primary)) continue;
+    seen.add(primary);
+    const pboss = getBoss(primary);
+    if (!pboss || !bossIsLocal(pboss, ctx.region)) continue;
+    const picked = ctx.roadCoupled ? !!ctx.inputs[primary]?.selected : !!ctx.roadSelected[primary];
+    if (!picked) continue;
+    candyIds.push(primary);
+    meta.set(primary, { name: groupDisplayName(pboss), sprite: pboss.sprite, energy: false });
+  }
+  return { energyIds, candyIds, meta };
+}
 
 /**
  * Per-day target picker: silver selection tiles for the targets featured this day
@@ -38,32 +93,8 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
   // targets you've picked and can raid locally. Membership follows the coupling
   // mode (coupled = weekend picks / card energy goals; decoupled = the RoL sets).
   const { eligible, meta } = useMemo(() => {
-    const meta = new Map<string, { name: string; sprite?: string; energy: boolean }>();
-    const out: string[] = [];
-    for (const { bossId, def } of energyGoalsForDay(dayId)) {
-      const active = roadCoupled
-        ? (inputs[bossId]?.energy?.[def.key]?.on ?? false)
-        : (roadEnergy[bossId] ?? []).includes(def.key);
-      if (!active) continue;
-      const id = `energy:${bossId}:${def.key}`;
-      out.push(id);
-      meta.set(id, { name: def.source, sprite: def.sprite ? spriteUrl(def.sprite) : getBoss(bossId)?.sprite, energy: true });
-    }
-    const seen = new Set<string>();
-    for (const id of DAY_BOSSIDS[dayId] ?? []) {
-      const boss = getBoss(id);
-      if (!boss) continue;
-      const primary = boss.formGroup ? primaryFormId(boss.formGroup) : id;
-      if (seen.has(primary)) continue;
-      seen.add(primary);
-      const pboss = getBoss(primary);
-      if (!pboss || !bossIsLocal(pboss, region)) continue;
-      const picked = roadCoupled ? !!inputs[primary]?.selected : !!roadSelected[primary];
-      if (!picked) continue;
-      out.push(primary);
-      meta.set(primary, { name: groupDisplayName(pboss), sprite: pboss.sprite, energy: false });
-    }
-    return { eligible: out, meta };
+    const { energyIds, candyIds, meta } = dayEligible(dayId, { inputs, region, roadCoupled, roadSelected, roadEnergy });
+    return { eligible: [...energyIds, ...candyIds], meta };
   }, [dayId, inputs, region, roadCoupled, roadSelected, roadEnergy]);
 
   const explicit = roadTargets[dayId];
@@ -125,7 +156,6 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
           <span aria-live="polite" role="status" className="sr-only">
             {drag.announcement}
           </span>
-          <p className="mb-1 text-[12px] text-slate-500">Drag to set this day&apos;s priority (top is raided first).</p>
           <div className="space-y-1">
             {drag.list.map((id) => {
               const m = meta.get(id)!;
@@ -249,6 +279,12 @@ function RoadSpecies({ share }: { share: BlockSpeciesShare }) {
 function RoadDayCard({ day }: { day: RoadDayPlan }) {
   const over = day.remaining > 0;
   const used = day.species.filter((s) => s.fitted > 0);
+  // Featured bosses this day whose goal the concentrated Raid Hour can't finish —
+  // but they keep spawning all day, so the user can keep raiding them to close the
+  // gap. De-duped display names, in the order they appear.
+  const stillOpen = Array.from(
+    new Map(day.species.filter((s) => s.remaining > 0).map((s) => [s.bossId, s.bossName.replace(/^Mega /, "")])).values(),
+  );
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2">
       <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
@@ -280,6 +316,12 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       ) : (
         <p className="mt-1.5 text-[13px] text-slate-500">None of your selected targets are featured this day.</p>
       )}
+      {stillOpen.length > 0 ? (
+        <p className="mt-1.5 text-[12px] leading-snug text-emerald-300/80">
+          ⏱ The Raid Hour can&apos;t finish these, but they&apos;re featured <b>all day</b> (≈6 AM–10 PM) — keep raiding{" "}
+          <span className="text-emerald-200">{stillOpen.join(", ")}</span> {day.label} to close the gap.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -293,6 +335,38 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
 export function RoadOfLegends({ road }: { road: RoadPlan }) {
   const playDays = usePlannerStore((s) => s.playDays);
   const togglePlayDay = usePlannerStore((s) => s.togglePlayDay);
+  const inputs = usePlannerStore((s) => s.inputs);
+  const region = usePlannerStore((s) => s.settings.region);
+  const roadCoupled = usePlannerStore((s) => s.roadCoupled);
+  const roadSelected = usePlannerStore((s) => s.roadSelected);
+  const roadEnergy = usePlannerStore((s) => s.roadEnergy);
+  const setRoadTargets = usePlannerStore((s) => s.setRoadTargets);
+  const summary = usePlannerResults();
+
+  // Average required raids per boss — drives the smart order (fewest first).
+  const raidsById = useMemo(
+    () => new Map(summary.results.map((r) => [r.bossId, sized(r.raids, "expected")])),
+    [summary.results],
+  );
+
+  // Seed every day's order: fusion/primal ENERGY shares stay on top (the
+  // energy-first default), then candy targets sorted fewest-raids-first so the
+  // quickest pre-farms bank first. Writes into roadTargets, which the drag list
+  // then lets the user override per day.
+  const anyToOrder = ROAD_DAYS.some((d) => {
+    const { energyIds, candyIds } = dayEligible(d.id, { inputs, region, roadCoupled, roadSelected, roadEnergy });
+    return energyIds.length + candyIds.length >= 2;
+  });
+  const smartPrioritize = () => {
+    for (const d of ROAD_DAYS) {
+      const { energyIds, candyIds } = dayEligible(d.id, { inputs, region, roadCoupled, roadSelected, roadEnergy });
+      if (energyIds.length + candyIds.length < 2) continue;
+      const orderedCandy = [...candyIds].sort(
+        (a, b) => (raidsById.get(a) ?? 0) - (raidsById.get(b) ?? 0) || a.localeCompare(b),
+      );
+      setRoadTargets(d.id, [...energyIds, ...orderedCandy]);
+    }
+  };
 
   return (
     <div className="mt-4 rounded-lg border border-orange-400/25 bg-orange-400/[0.04] p-3">
@@ -302,28 +376,47 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
           <span className="shrink-0 text-[13px] text-emerald-300">★ {road.totalFitted}-raid head start</span>
         ) : null}
       </div>
+      {anyToOrder ? (
+        <button
+          type="button"
+          onClick={smartPrioritize}
+          title="Order every day: fusion/primal energy first, then your candy targets by fewest raids needed. Drag to override any day."
+          className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-orange-300/50 bg-orange-400/10 px-2.5 py-1 text-[12px] font-semibold text-orange-200 transition hover:bg-orange-400/20"
+        >
+          ✨ Smart auto-prioritize
+        </button>
+      ) : null}
       <p className="mb-2 text-[13px] text-slate-400">
-        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local): <b>6–7</b> is 5★ raids (Monday&apos;s is the
-        whole roster), <b>7–8</b> is a single featured Mega — except <b>Friday</b>, whose 7–8 is{" "}
-        <b>Primal Kyogre &amp; Groudon</b>. Your selected targets are poured into each day&apos;s budget — what fits is a
-        head start that reduces your weekend below.
+        Pick the weekdays you&apos;ll raid the <b>Raid Hour</b> (6–8 PM local) — when the featured bosses take over{" "}
+        <b>every</b> gym, so it&apos;s the fastest window. The bar shows how much of your goals that hour covers. But those
+        bosses keep spawning as normal raids <b>all day</b> (≈6 AM–10 PM), so anything the hour can&apos;t finish you can
+        keep chipping at that day — whatever you knock out is a head start that reduces your weekend below.
       </p>
 
       {/* Fusion / Crowned / Primal energy + Origin Dialga/Palkia notes — context
-          that doesn't affect the head-start math but matters this week. */}
-      <div className="mb-2 space-y-1.5 rounded-md border border-orange-400/20 bg-orange-400/[0.05] p-2 text-[13px] leading-relaxed text-slate-300">
-        <p>
-          <span className="font-semibold text-orange-300">⚡ Fusion / Primal energy:</span> raid week also brings the special
-          raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
-          <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the fusion /
-          crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon, Kyogre).
-          Each energy comes from one specific raid on one day.
-        </p>
-        <p>
-          <span className="font-semibold text-orange-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
-          already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
-          <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting it.
-        </p>
+          that doesn't affect the head-start math, so it's tucked behind a
+          disclosure to keep the interactive day picker up top. */}
+      <div className="mb-2">
+        <Disclosure
+          title={<span className="font-semibold text-orange-300">⚡ Fusion / Primal energy &amp; Origin move notes</span>}
+          hint={<span className="text-slate-500">what to raid this week</span>}
+        >
+          <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-300">
+            <p>
+              <span className="font-semibold text-orange-300">⚡ Fusion / Primal energy:</span> raid week also brings the
+              special raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
+              <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the
+              fusion / crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon,
+              Kyogre). Each energy comes from one specific raid on one day.
+            </p>
+            <p>
+              <span className="font-semibold text-orange-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
+              already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
+              <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting
+              it.
+            </p>
+          </div>
+        </Disclosure>
       </div>
 
       {/* Day-picker checkbox group. */}

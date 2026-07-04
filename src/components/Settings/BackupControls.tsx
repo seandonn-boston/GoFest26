@@ -18,6 +18,9 @@ export function BackupControls() {
   const jsonRef = useRef<HTMLInputElement>(null);
   const xlsxRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // When an automatic copy fails (e.g. clipboard blocked), we surface the URL
+  // here so it can always be selected + copied by hand.
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   async function restore(file: File | undefined, read: (f: File) => Promise<StateBackup>) {
     if (!file) return;
@@ -37,11 +40,32 @@ export function BackupControls() {
 
   async function copyShareLink() {
     setMsg(null);
+    setShareUrl(null);
     try {
-      await navigator.clipboard.writeText(await buildShareUrl());
+      // Building the URL is async (it gzips the plan), and on iOS Safari any
+      // `await` before `clipboard.writeText` expires the tap's transient
+      // activation, so the write rejects as a bogus "permission" error. Passing
+      // a Promise to a ClipboardItem lets the async build happen *inside* the
+      // clipboard write while the gesture is still valid — the reliable
+      // cross-browser path. Fall back to writeText only where ClipboardItem
+      // isn't supported (older Firefox).
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        const text = buildShareUrl().then((url) => new Blob([url], { type: "text/plain" }));
+        await navigator.clipboard.write([new ClipboardItem({ "text/plain": text })]);
+      } else {
+        await navigator.clipboard.writeText(await buildShareUrl());
+      }
       setMsg({ ok: true, text: "Share link copied — anyone who opens it gets a copy of this plan." });
-    } catch {
-      setMsg({ ok: false, text: "Couldn't copy automatically — check clipboard permissions." });
+    } catch (e) {
+      // Copy was blocked (or unsupported) — show the link so it can be copied by
+      // hand, and name the real error rather than blaming clipboard permissions.
+      try {
+        setShareUrl(await buildShareUrl());
+      } catch {
+        /* couldn't even build the URL — leave the manual box empty */
+      }
+      const why = e instanceof Error && e.name ? ` (${e.name})` : "";
+      setMsg({ ok: false, text: `Couldn't copy automatically${why}. Select the link below and copy it.` });
     }
   }
 
@@ -84,6 +108,16 @@ export function BackupControls() {
         onChange={(e) => restore(e.target.files?.[0], readXlsxBackup)}
       />
       {msg ? <p className={`text-[13px] ${msg.ok ? "text-emerald-300" : "text-rose-300"}`}>{msg.text}</p> : null}
+      {shareUrl ? (
+        <input
+          readOnly
+          value={shareUrl}
+          onFocus={(e) => e.currentTarget.select()}
+          onClick={(e) => e.currentTarget.select()}
+          aria-label="Share link — tap to select, then copy"
+          className="w-full select-all rounded-md border border-gofest-accent2/40 bg-gofest-bg/60 px-2 py-1.5 font-mono text-[11px] text-slate-200"
+        />
+      ) : null}
     </div>
   );
 }

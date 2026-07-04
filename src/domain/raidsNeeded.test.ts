@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeBossResult, isL4Eligible, xlBoostFactor } from "./raidsNeeded";
+import { computeBossResult, isL4Eligible, xlBuddyBonus, rewardBreakdown } from "./raidsNeeded";
 import { getBoss } from "@/data";
 import type { BossInput } from "./types";
 
@@ -50,29 +50,38 @@ describe("same-type Mega buddy XL boost", () => {
     expect(isL4Eligible(raikou)).toBe(false);
   });
 
-  it("maps mega level to the boost factor", () => {
-    expect(xlBoostFactor(articuno, input("articuno"), 1)).toBeCloseTo(1.0); // base
-    expect(xlBoostFactor(articuno, input("articuno"), 2)).toBeCloseTo(1.1); // high
-    expect(xlBoostFactor(articuno, input("articuno"), 3)).toBeCloseTo(1.25); // max ("standard")
+  it("maps mega level to the guaranteed XL bonus (whole candy, not a multiplier)", () => {
+    expect(xlBuddyBonus(articuno, input("articuno"), 1)).toBe(0); // base — no boost
+    expect(xlBuddyBonus(articuno, input("articuno"), 2)).toBe(1); // high — guaranteed +1
+    expect(xlBuddyBonus(articuno, input("articuno"), 3)).toBe(1); // max ("standard") — guaranteed +1
   });
 
-  it("l4Buddy promotes an eligible boss to +30%, but is ignored when ineligible", () => {
-    expect(xlBoostFactor(articuno, { ...input("articuno"), l4Buddy: true }, 1)).toBeCloseTo(1.3);
-    expect(xlBoostFactor(raikou, { ...input("raikou"), l4Buddy: true }, 1)).toBeCloseTo(1.0);
+  it("l4Buddy promotes an eligible boss to a boost, but is ignored when ineligible", () => {
+    expect(xlBuddyBonus(articuno, { ...input("articuno"), l4Buddy: true }, 1)).toBe(1); // L4 → +1
+    expect(xlBuddyBonus(raikou, { ...input("raikou"), l4Buddy: true }, 1)).toBe(0); // ineligible → stays L1 → 0
   });
 
   it("requires an active matching buddy (no boost when buddy off)", () => {
-    expect(xlBoostFactor(articuno, { ...input("articuno"), megaBuddy: false }, 3)).toBe(1);
+    expect(xlBuddyBonus(articuno, { ...input("articuno"), megaBuddy: false }, 3)).toBe(0);
   });
 
-  it("a leveled buddy lowers the XL raids needed, L4 most of all", () => {
+  it("floors the per-raid XL range up by the guaranteed +1 (1–3 → 2–4)", () => {
+    // A Mega boss (megaXl base 1–3). With a boosting buddy the reward floors to 2–4.
+    const gengar = getBoss("mega-gengar")!;
+    const bd = rewardBreakdown(gengar, "xlCandy", { ...input("mega-gengar"), megaBuddy: true }, {}, 3);
+    expect(bd.base).toEqual({ min: 1, max: 3 });
+    expect(bd.xlBonus).toBe(1);
+    expect(bd.range).toEqual({ min: 2, max: 4 });
+  });
+
+  it("a boosting buddy lowers the XL raids needed; the guaranteed floor is level-flat", () => {
     const goal = (over: Partial<BossInput>, level: number) =>
       computeBossResult(articuno, { ...input("articuno", { level: 50 }), ...over }, {}, level).needs.xlCandy!.raidsRange.max;
     const base = goal({}, 1); // no boost
-    const standard = goal({}, 3); // +25%
-    const superMax = goal({ l4Buddy: true }, 3); // +30%
+    const standard = goal({}, 3); // guaranteed +1
+    const superMax = goal({ l4Buddy: true }, 3); // L4 — same guaranteed +1
     expect(standard).toBeLessThan(base);
-    expect(superMax).toBeLessThan(standard);
+    expect(superMax).toBe(standard); // the bonus is a banked +1 at any boosting level
   });
 
   it("does not boost a calibrated (observed) XL value", () => {

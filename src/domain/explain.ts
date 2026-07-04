@@ -74,12 +74,12 @@ function rewardTail(
 
   if (bd.calibrated !== undefined) {
     lines.push({ tokens: [txt("per raid ="), out(`${fmt(bd.calibrated)}`), txt("(your logged value)")] });
-  } else if (bd.boostFactor !== undefined && bd.boostFactor !== 1 && bd.base) {
+  } else if (bd.xlBonus !== undefined && bd.xlBonus !== 0 && bd.base) {
     lines.push({
       tokens: [
         txt("per raid ="),
         out(rangeStr(bd.base)),
-        txt(`× ${fmt(bd.boostFactor)} buddy boost =`),
+        txt(`+ ${bd.xlBonus} guaranteed buddy XL =`),
         out(rangeStr(reward)),
       ],
     });

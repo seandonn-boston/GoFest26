@@ -25,14 +25,19 @@ describe("remoteWindowsForBoss", () => {
     expect(habitat.hostLabel).toBe("Sun 1 PM–4 PM · Verdant Anomaly");
   });
 
-  it("includes Monday's marathon Raid Hour for a region-locked 5★ (full roster day)", () => {
+  it("keeps a RoL boss's recommended window at the concentrated Raid Hour but widens the flexible span to all day", () => {
     const windows = remoteWindowsForBoss(getBoss("xurkitree")!)!;
     const monday = windows.find((w) => w.hostLabel.includes("Raid Hour"))!;
-    // Monday 6–8 PM host-local (marathon, megaHours 0). Tokyo: 09:00–11:00 UTC Jul 6.
-    expect(monday.hostLabel).toBe("Mon 6 PM–8 PM · Raid Hour (Jul 6)");
+    // Xurkitree is a 5★ featured Monday. Recommended (anchor) = Monday's 6–8 PM 5★
+    // Raid Hour, when it's at every gym — Tokyo (+9): 09:00–11:00 UTC Jul 6.
+    expect(monday.hostLabel).toBe("Mon 6 PM–8 PM · Raid Hour · up all day");
     expect(monday.anchorStartUtc).toBe(Date.UTC(2026, 6, 6, 9, 0));
     expect(monday.anchorEndUtc).toBe(Date.UTC(2026, 6, 6, 11, 0));
-    // Windows come back chronological: Monday's raid hour before Sunday's habitat.
+    // But the flexible "raidable somewhere" span is the whole day (6 AM–10 PM host):
+    // opens in NZ (+12) at 18:00 UTC Jul 5, closes in Pakistan (+5) at 17:00 UTC Jul 6.
+    expect(monday.startUtc).toBe(Date.UTC(2026, 6, 5, 18, 0));
+    expect(monday.endUtc).toBe(Date.UTC(2026, 6, 6, 17, 0));
+    // Windows come back chronological: Monday's window before Sunday's habitat.
     expect(windows[0]).toBe(monday);
   });
 

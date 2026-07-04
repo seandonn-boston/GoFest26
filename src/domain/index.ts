@@ -11,7 +11,7 @@ import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult, PlanSummary, Range } from "./types";
 
 export * from "./types";
-export { computeBossResult, isL4Eligible, xlBoostFactor, rewardBreakdown, raidsForCurrency } from "./raidsNeeded";
+export { computeBossResult, isL4Eligible, xlBuddyBonus, rewardBreakdown, raidsForCurrency } from "./raidsNeeded";
 export type { RewardBreakdown } from "./raidsNeeded";
 export { explainCurrency } from "./explain";
 export type { CurrencyExplanation, ExplainLine, Token, EditField } from "./explain";
@@ -45,6 +45,8 @@ export {
 export { energyRaidsNeeded, energyRemaining, defaultEnergyGoal } from "./fusionEnergy";
 export { computePassCoverage } from "./passCoverage";
 export type { PassCoverage, SpeciesPassNeed, SpeciesPassCoverage } from "./passCoverage";
+export { computeCommitment, commitmentByBoss } from "./commitment";
+export type { Commitment, CommitmentByBoss } from "./commitment";
 
 /**
  * Top-level engine entry point: given the user's per-boss inputs, computes

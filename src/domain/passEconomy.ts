@@ -17,6 +17,7 @@ import { getBoss, MEWTWO_X_ID, MEWTWO_Y_ID } from "@/data";
 import { collapseForms } from "./forms";
 import { bossIsLocal } from "./region";
 import { sized } from "./blockPlan";
+import type { CommitmentByBoss } from "./commitment";
 import { DEFAULT_SETTINGS, type PlannerSettings } from "./settings";
 import type { BossInput, BossResult } from "./types";
 
@@ -40,8 +41,12 @@ export interface PassCost {
   /** Free Orange passes available across the days played. */
   freePasses: number;
   freePassesUsed: number;
+  /** Premium passes the user already holds (settings.passesOwned), applied to
+   *  in-person raids after the free dailies. */
+  ownedInPersonPasses: number;
+  ownedPassesUsed: number;
   /** In-person raids beyond the free passes that still need a bought green pass
-   *  (after any Link-Charge substitutions). */
+   *  (after any Link-Charge substitutions). Same as `greenToBuy`. */
   paidInPerson: number;
   totalRemote: number;
   /** Link Charges that must be BOUGHT (mandatory remote-Super-Mega LC beyond
@@ -83,9 +88,18 @@ export function linkChargeCost(targetLc: number): { coins: number; counts: { lc:
   return { coins: bestCoins, counts };
 }
 
+/** Fewest coins to buy `n` Remote Raid Passes: 3-packs, then singles for the
+ *  1–2 remainder (a single at 100 beats rounding up to a 525 pack). */
+export function remoteCost(n: number): number {
+  const passes = Math.max(0, Math.round(n));
+  if (passes <= 0) return 0;
+  const packs = Math.floor(passes / PE.remote.bundlePasses);
+  const singles = passes % PE.remote.bundlePasses;
+  return packs * PE.remote.bundleCoins + singles * PE.remote.singleCoins;
+}
+
 interface MethodCtx {
   greenBundles: number;
-  remoteBundles: number;
   paidInPerson: number;
   totalRemote: number;
   lc: ReturnType<typeof linkChargeCost>;
@@ -102,9 +116,13 @@ function buildMethods(kind: "low" | "high", d: MethodCtx): string[] {
     );
   }
   if (d.totalRemote > 0) {
-    out.push(
-      `${d.remoteBundles}× 3-Remote-Pass bundle (${PE.remote.bundleCoins} ea) = ${d.remoteBundles * PE.remote.bundleCoins} coins`,
-    );
+    const packs = Math.floor(d.totalRemote / PE.remote.bundlePasses);
+    const singles = d.totalRemote % PE.remote.bundlePasses;
+    const parts = [
+      packs > 0 ? `${packs}× 3-Remote-Pass bundle (${PE.remote.bundleCoins} ea)` : "",
+      singles > 0 ? `${singles}× single Remote Pass (${PE.remote.singleCoins} ea)` : "",
+    ].filter(Boolean);
+    out.push(`${parts.join(" + ")} = ${remoteCost(d.totalRemote)} coins`);
   }
   if (d.linkChargesToBuy > 0 && d.lc.counts.length) {
     const packs = d.lc.counts.map((c) => `${c.n}× ${c.lc} LC (${c.coins})`).join(" + ");
@@ -125,6 +143,7 @@ export function computePassCost(
   settings: PlannerSettings = DEFAULT_SETTINGS,
   remoteAllocations: Record<string, number> = {},
   playDays: Record<string, boolean> = {},
+  committed?: CommitmentByBoss,
 ): PassCost {
   const rewardCase = settings.rewardCase;
   const resById = new Map(results.map((r) => [r.bossId, r]));
@@ -132,7 +151,9 @@ export function computePassCost(
   const LC = PE.linkCharge;
 
   // Split by tier — only Mega (150 LC) and Super Mega (200 LC) raids can use Link
-  // Charges — and by in-person vs remote.
+  // Charges — and by in-person vs remote. When a `committed` map is passed, the
+  // per-boss counts are the raids the plan ACTUALLY commits to (what fit their
+  // windows); otherwise they're the full 100%-of-goals demand.
   let megaInPerson = 0,
     megaRemote = 0;
   let superInPerson = 0,
@@ -144,13 +165,21 @@ export function computePassCost(
     const boss = getBoss(input.bossId);
     const res = resById.get(input.bossId);
     if (!boss || !res) continue;
-    const required = sized(res.raids, rewardCase);
-    if (required <= 0) continue;
-    const local = bossIsLocal(boss, settings.region);
-    // Remote portion: what the user assigned remotely (region-locked → all of it).
-    let remote = settings.useRemoteRaids ? Math.min(required, clampInt(remoteAllocations[input.bossId])) : 0;
-    if (!local) remote = required;
-    const inPerson = Math.max(0, required - remote);
+    let inPerson: number;
+    let remote: number;
+    if (committed) {
+      inPerson = clampInt(committed.inPerson[input.bossId]);
+      remote = clampInt(committed.remote[input.bossId]);
+      if (inPerson + remote <= 0) continue;
+    } else {
+      const required = sized(res.raids, rewardCase);
+      if (required <= 0) continue;
+      const local = bossIsLocal(boss, settings.region);
+      // Remote portion: what the user assigned remotely (region-locked → all).
+      remote = settings.useRemoteRaids ? Math.min(required, clampInt(remoteAllocations[input.bossId])) : 0;
+      if (!local) remote = required;
+      inPerson = Math.max(0, required - remote);
+    }
     if (isMewtwoId(input.bossId) || boss.tier === "super-mega") {
       superInPerson += inPerson;
       superRemote += remote;
@@ -170,6 +199,11 @@ export function computePassCost(
   const weekdaysPlayed = Object.values(playDays).filter(Boolean).length;
   const freePasses = PE.freePassesPerWeekendDay * GAME_CONFIG.event.days + PE.freePassesPerRoadDay * weekdaysPlayed;
   const freePassesUsed = Math.min(freePasses, totalInPerson);
+  // Premium passes the user already holds cover in-person raids after the free
+  // dailies, at no coin cost. (Remotes are never covered — you can hold at most
+  // 3 and buy the rest as you go.)
+  const ownedInPersonPasses = clampInt(settings.passesOwned);
+  const ownedPassesUsed = Math.min(ownedInPersonPasses, totalInPerson - freePassesUsed);
 
   // A REMOTE Super Mega raid mandatorily costs 200 Link Charges (on top of a
   // Remote Pass). Owned Link Charges pay this first.
@@ -179,10 +213,10 @@ export function computePassCost(
   lcPool -= mandatoryFromOwned;
   const linkChargesNeeded = mandatoryLc - mandatoryFromOwned; // LC to buy
 
-  // Paid in-person raids (beyond the free dailies). Free passes are assumed to
-  // cover the cheapest raids first (5★ → Mega → Super Mega), leaving the
-  // Link-Charge-eligible Megas most likely to still be paid.
-  const paidTotal = Math.max(0, totalInPerson - freePassesUsed);
+  // Paid in-person raids (beyond the free dailies AND owned passes). Free/owned
+  // passes are assumed to cover the cheapest raids first (5★ → Mega → Super
+  // Mega), leaving the Link-Charge-eligible Megas most likely to still be paid.
+  const paidTotal = Math.max(0, totalInPerson - freePassesUsed - ownedPassesUsed);
   const paidOther = Math.min(otherInPerson, paidTotal);
   let rem = paidTotal - paidOther;
   const paidMega = Math.min(megaInPerson, rem);
@@ -204,14 +238,18 @@ export function computePassCost(
   const lc = linkChargeCost(linkChargesNeeded);
 
   const greenBundles = Math.ceil(paidInPerson / PE.green.bundlePasses);
-  const remoteBundles = Math.ceil(totalRemote / PE.remote.bundlePasses);
-  const ctx: MethodCtx = { greenBundles, remoteBundles, paidInPerson, totalRemote, lc, linkChargesToBuy: linkChargesNeeded };
+  const ctx: MethodCtx = { greenBundles, paidInPerson, totalRemote, lc, linkChargesToBuy: linkChargesNeeded };
+
+  // Remotes are always bought as you go: as many 3-packs as fit, then singles for
+  // the 1–2 remainder (a 100-coin single beats rounding up to a 525 pack). No
+  // best/worst spread — there are no remote bulk boxes.
+  const remoteCoins = remoteCost(totalRemote);
 
   // Highest = standard 3-packs (bundle-rounded). Lowest = best bulk-box per-pass.
   const highGreen = greenBundles * PE.green.bundleCoins;
-  const highRemote = remoteBundles * PE.remote.bundleCoins;
+  const highRemote = remoteCoins;
   const lowGreen = Math.round(paidInPerson * PE.green.bestBoxCoinsPerPass);
-  const lowRemote = Math.round(totalRemote * PE.remote.bestBoxCoinsPerPass);
+  const lowRemote = remoteCoins;
 
   const high: PassCostLine = {
     greenCoins: highGreen,
@@ -235,6 +273,8 @@ export function computePassCost(
     superMegaInPersonRaids: superMegaInPerson,
     freePasses,
     freePassesUsed,
+    ownedInPersonPasses,
+    ownedPassesUsed,
     paidInPerson,
     totalRemote,
     linkChargesNeeded,

@@ -27,8 +27,8 @@ function expectMatch(bossId: string, currency: Currency, inp: BossInput, megaBud
 describe("explainCurrency matches the engine", () => {
   it("XL leveling for a 5★ legendary (with and without the buddy boost)", () => {
     expectMatch("zekrom", "xlCandy", input("zekrom"), 1);
-    expectMatch("zekrom", "xlCandy", input("zekrom"), 3); // +25% reward → fewer raids
-    expectMatch("zekrom", "xlCandy", input("zekrom", { l4Buddy: true }), 3); // +30%
+    expectMatch("zekrom", "xlCandy", input("zekrom"), 3); // guaranteed +1 reward → fewer raids
+    expectMatch("zekrom", "xlCandy", input("zekrom", { l4Buddy: true }), 3); // L4 — same guaranteed +1
   });
 
   it("XL with on-hand candy and multiple copies", () => {

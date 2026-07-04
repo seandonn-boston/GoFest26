@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
+import { useUiStore } from "@/store/useUiStore";
 import { useTiltStore } from "@/store/useTiltStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDialog } from "@/hooks/useDialog";
@@ -17,7 +18,9 @@ interface DialItem {
   id: string;
   label: string;
   icon: string;
-  circle: string;
+  /** Neon accent (hex) that tints this control's glass edge, glow, icon and
+   *  label bar via the `--accent` custom property. */
+  accent: string;
   onClick: () => void;
   badge?: boolean;
 }
@@ -29,8 +32,7 @@ const TITLES: Record<Panel, string> = {
   backup: "💾 Backup & restore",
 };
 
-const miniFab =
-  "flex h-12 w-12 items-center justify-center rounded-full border-2 border-black/40 text-xl shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none";
+const miniFab = "glass-fab flex h-12 w-12 items-center justify-center rounded-full text-xl";
 
 /**
  * Bottom-right FAB speed-dial: a single + button that fans out into Assumptions,
@@ -38,7 +40,15 @@ const miniFab =
  * recompute the plan live, feedback pipes to GitHub Issues.
  */
 export function ActionDock() {
-  const [open, setOpen] = useState(false);
+  const fabSide = useUiStore((s) => s.fabSide);
+  const toggleFabSide = useUiStore((s) => s.toggleFabSide);
+  const open = useUiStore((s) => s.fabOpen);
+  const setFabOpen = useUiStore((s) => s.setFabOpen);
+  const setOpen = useCallback(
+    (v: boolean | ((o: boolean) => boolean)) => setFabOpen(typeof v === "function" ? v(useUiStore.getState().fabOpen) : v),
+    [setFabOpen],
+  );
+  const isRight = fabSide === "right";
   const [panel, setPanel] = useState<Panel | null>(null);
   const customized = !isDefaultSettings(usePlannerStore((s) => s.settings));
   const isMobile = useIsMobile();
@@ -107,8 +117,8 @@ export function ActionDock() {
     items.push({
       id: "tilt",
       label: tiltEnabled ? "Tilt: on" : "Tilt: off",
-      icon: "🧭",
-      circle: tiltEnabled ? "bg-amber-300 text-black" : "bg-amber-300/30 text-amber-100",
+      icon: "◐",
+      accent: tiltEnabled ? "#fbbf24" : "#a1751f",
       onClick: () => {
         if (tiltEnabled) setTiltEnabled(false);
         else requestTilt();
@@ -120,23 +130,23 @@ export function ActionDock() {
     {
       id: "feedback",
       label: "Feedback",
-      icon: "✎",
-      circle: "bg-gofest-accent text-black",
+      icon: "◈",
+      accent: "#ff2bd6",
       onClick: () => openPanel("feedback"),
     },
-    { id: "backup", label: "Backup", icon: "💾", circle: "bg-gofest-bone text-black", onClick: () => openPanel("backup") },
+    { id: "backup", label: "Backup", icon: "⬢", accent: "#f4f1ea", onClick: () => openPanel("backup") },
     {
       id: "location",
       label: "Location",
-      icon: "📍",
-      circle: "bg-gofest-accent2 text-black",
+      icon: "⌖",
+      accent: "#00f0ff",
       onClick: () => openPanel("location"),
     },
     {
       id: "assumptions",
       label: "Assumptions",
-      icon: "⚙",
-      circle: "bg-gofest-mewtwo text-white",
+      icon: "◆",
+      accent: "#b026ff",
       onClick: () => openPanel("assumptions"),
       badge: customized,
     },
@@ -153,45 +163,63 @@ export function ActionDock() {
           animation), so it must not capture taps over the tiles behind it —
           only its buttons re-enable pointer events. */}
       {panel === null ? (
-        <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
+        <div
+          className={`pointer-events-none fixed bottom-20 z-50 flex flex-col gap-3 ${
+            isRight ? "right-4 items-end" : "left-4 items-start"
+          }`}
+        >
           {items.map((a, i) => (
             <div
               key={a.id}
-              className={`flex items-center gap-2.5 transition-all duration-200 ${
+              className={`flex items-center gap-2.5 transition-all duration-200 ${isRight ? "" : "flex-row-reverse"} ${
                 open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
               }`}
               style={{ transitionDelay: `${open ? (items.length - 1 - i) * 40 : 0}ms` }}
             >
-              <span className="rounded-md bg-gofest-bone px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-black shadow">
+              <span
+                className="glass-label rounded-md px-2.5 py-1 font-mono text-[12px] font-bold uppercase tracking-[0.15em]"
+                style={{ ["--accent" as string]: a.accent }}
+              >
                 {a.label}
               </span>
-              <button type="button" onClick={a.onClick} className={`relative ${miniFab} ${a.circle}`}>
+              <button
+                type="button"
+                onClick={a.onClick}
+                className={`relative ${miniFab}`}
+                style={{ ["--accent" as string]: a.accent }}
+              >
                 {a.icon}
                 {a.badge ? (
-                  <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-black bg-gofest-accent" />
+                  <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border border-white/40 bg-gofest-accent shadow-[0_0_8px_#ff2bd6]" />
                 ) : null}
               </button>
             </div>
           ))}
 
-          {/* Bottom row: the main FAB, with Hard reset fanning out to its LEFT
-              (horizontal, not stacked with the items above). */}
-          <div className="flex items-center gap-2.5">
+          {/* Bottom row: the main FAB, with Hard reset fanning out to the side
+              opposite the page edge (horizontal, not stacked with the items above). */}
+          <div className={`flex items-center gap-2.5 ${isRight ? "" : "flex-row-reverse"}`}>
             <div
-              className={`flex items-center gap-2.5 transition-all duration-200 ${
-                open ? "pointer-events-auto translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0"
+              className={`flex items-center gap-2.5 transition-all duration-200 ${isRight ? "" : "flex-row-reverse"} ${
+                open
+                  ? "pointer-events-auto translate-x-0 opacity-100"
+                  : `pointer-events-none opacity-0 ${isRight ? "translate-x-4" : "-translate-x-4"}`
               }`}
             >
-              <span className="rounded-md bg-rose-500 px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-white shadow">
+              <span
+                className="glass-label rounded-md px-2.5 py-1 font-mono text-[12px] font-bold uppercase tracking-[0.15em]"
+                style={{ ["--accent" as string]: "#fb4268" }}
+              >
                 Hard reset
               </span>
               <button
                 type="button"
                 onClick={hardReset}
                 aria-label="Hard reset — erase everything saved on this device and reload"
-                className={`${miniFab} bg-rose-500 text-white`}
+                className={miniFab}
+                style={{ ["--accent" as string]: "#fb4268" }}
               >
-                🗑
+                ⨯
               </button>
             </div>
 
@@ -200,7 +228,7 @@ export function ActionDock() {
               onClick={() => setOpen((o) => !o)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-black/40 bg-gofest-acid text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="glass-fab glass-fab-primary pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full"
             >
               {/* Two-line hamburger → X. Each line spins 225° (top left, bottom
                 right) while sliding to the exact vertical center; closing
@@ -228,6 +256,28 @@ export function ActionDock() {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {/* Switch-side button — while the dial is open, a translucent ghost FAB
+          appears in the SAME vertical slot on the OPPOSITE edge. Tapping it
+          flips the whole dock to that side (and closes the dial), so a
+          left-hander can move the whole experience under their thumb. */}
+      {panel === null && open ? (
+        <button
+          type="button"
+          onClick={() => {
+            toggleFabSide();
+            setOpen(false);
+          }}
+          aria-label={isRight ? "Move controls to the left side" : "Move controls to the right side"}
+          title={isRight ? "Switch to a left-handed layout" : "Switch to a right-handed layout"}
+          style={{ ["--accent" as string]: "#c6ff00", opacity: 0.62 }}
+          className={`glass-fab pointer-events-auto fixed bottom-20 z-50 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
+            isRight ? "left-4" : "right-4"
+          }`}
+        >
+          {isRight ? "⟵" : "⟶"}
+        </button>
       ) : null}
 
       {/* Bottom sheet */}

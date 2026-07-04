@@ -20,11 +20,12 @@ import { Disclosure } from "@/components/ui/Disclosure";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
+import { ResultsStep } from "@/components/Dashboard/ResultsStep";
 import { CostStep } from "@/components/Dashboard/CostStep";
 import { RemotePrioritizer } from "@/components/Dashboard/RemoteStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
-import { ExportButton } from "@/components/ExportButton";
+import { ThemeToggle } from "@/components/Settings/ThemeToggle";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
@@ -32,11 +33,9 @@ import { InstallBanner } from "@/components/ui/InstallBanner";
 import { GlitchText } from "@/components/ui/GlitchText";
 import { SharedPlanBanner } from "@/components/Settings/SharedPlanBanner";
 import { LocationPrompt } from "@/components/Settings/LocationPrompt";
-import { AdvancedTools } from "@/components/Settings/AdvancedTools";
 import { HowToUse } from "@/components/Stepper/HowToUse";
 import { WeekOverview } from "@/components/Dashboard/WeekOverview";
 import { StepNav, type StepMeta } from "@/components/Stepper/StepNav";
-import { StepFooter } from "@/components/Stepper/StepFooter";
 import { LayoutToggle } from "@/components/Stepper/LayoutToggle";
 import { ExpandAllToggle } from "@/components/Stepper/ExpandAllToggle";
 import { StepNudge, missingStep } from "@/components/Stepper/StepNudge";
@@ -128,7 +127,8 @@ export default function Home() {
     { id: 3, label: "Road of Legends", done: anyPlayDay },
     { id: 4, label: "GO Fest Prioritizer", done: hasGoals },
     { id: 5, label: "Remote Prioritizer", done: useRemote },
-    { id: 6, label: "Cost", done: hasGoals },
+    { id: 6, label: "Results", done: hasGoals },
+    { id: 7, label: "Cost", done: hasGoals },
   ];
 
   if (!hydrated) {
@@ -209,8 +209,6 @@ export default function Home() {
                   onResetAll={resetAll}
                   onJump={setStep}
                 />
-
-                <StepFooter step={step} onPrev={prevStep} onNext={nextStep} />
               </div>
             )}
 
@@ -222,6 +220,7 @@ export default function Home() {
         </SpriteScaleProvider>
       </main>
       <ActionDock />
+      <ThemeToggle />
     </>
   );
 }
@@ -319,10 +318,7 @@ function StepContent({
               Reset all
             </button>
           </div>
-          <p className="mt-1 text-sm text-slate-400">
-            Drop in screenshots to auto-fill, or type your current Candy / XL / Mega Energy and a goal above what you already
-            have.
-          </p>
+          <p className="mt-1 text-sm text-slate-400">Screenshots auto-fill, or type your totals and a goal by hand.</p>
         </div>
         {anySelected ? (
           <>
@@ -383,21 +379,7 @@ function StepContent({
     return (
       <>
         {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
-
-        <SummaryDashboard summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
-
-        {summary.schedule.raids.length > 0 ? (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold">Export</h2>
-            <p className="text-sm text-slate-400">
-              Download your full chronological plan — every raid with its pass type, the Mega buddy to evolve, and top
-              counters — as an Excel workbook.
-            </p>
-            <ExportButton summary={summary} />
-          </section>
-        ) : null}
-
-        <AdvancedTools />
+        <SummaryDashboard summary={summary} blockPlan={blockPlan} />
       </>
     );
   }
@@ -411,11 +393,20 @@ function StepContent({
     );
   }
 
-  // step === 6 — Cost
+  if (step === 6) {
+    return (
+      <>
+        {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
+        <ResultsStep summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
+      </>
+    );
+  }
+
+  // step === 7 — Cost
   return (
     <>
       {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
-      <CostStep summary={summary} />
+      <CostStep summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
     </>
   );
 }

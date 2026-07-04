@@ -21,10 +21,11 @@ import { Sprite } from "@/components/ui/Sprite";
 import { TypeIcon } from "@/components/ui/TypeIcon";
 import { MegaBoostRow, MegaBoostLegend } from "@/components/ui/MegaBoostRow";
 import { CopyableInline } from "@/components/ui/Copyable";
+import { MathTooltip } from "@/components/ui/MathTooltip";
+import { RaidsNeededTooltip } from "@/components/ui/RaidsNeededTooltip";
 import { BandBar, BAND_COLOR, BAND_LABEL } from "@/components/ui/BandBar";
 import { AllocationControl, AllocationBar } from "./AllocationControl";
 import type { BlockAllocation } from "@/domain/types";
-import { GoalProgress } from "./GoalProgress";
 
 const DAY_LABEL: Record<EventDay, string> = { sat: "Saturday · Jul 11", sun: "Sunday · Jul 12" };
 
@@ -167,15 +168,44 @@ function TargetCard({
             className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
           />
           <span className="text-slate-500">/</span>
-          <span className="text-gofest-accent2" title="Raids needed (selected reward case)">
-            {need}
+          <span className="text-gofest-accent2">
+            {share.mewtwo ? (
+              <span title="Raids needed (selected reward case)">{need}</span>
+            ) : (
+              <RaidsNeededTooltip
+                bossId={share.bossId}
+                label={`How ${share.bossName.replace(/^Mega /, "")}'s raids are counted`}
+              >
+                {need}
+              </RaidsNeededTooltip>
+            )}
           </span>
         </div>
 
         {share.remaining > 0 ? (
-          <span className="shrink-0 text-[12px] text-rose-300" title={`${share.remaining} raids short`}>
-            {goalPct}%
-          </span>
+          <MathTooltip
+            label="Why this %"
+            hideIcon
+            trigger={
+              <span
+                className="shrink-0 cursor-help whitespace-nowrap text-[12px] text-rose-300"
+                title={`Only ${share.fitted} of ${share.raids} fit in time`}
+              >
+                ⚠ {share.fitted} fit · {goalPct}%
+              </span>
+            }
+          >
+            <div className="space-y-1 text-[13px] leading-relaxed text-slate-300">
+              <p>
+                You can fit <b className="text-slate-100">{share.fitted}</b> of the{" "}
+                <b className="text-slate-100">{share.raids}</b> raids needed into this block&apos;s time —{" "}
+                <b className="text-rose-300">{share.remaining} short</b>.
+              </p>
+              <p className="text-slate-500">
+                {goalPct}% = fitted ÷ needed. Reprioritize, remote-raid, or trim the goal to close the gap.
+              </p>
+            </div>
+          </MathTooltip>
         ) : null}
         {gripRight}
       </div>
@@ -466,21 +496,25 @@ function BlockItem({ block }: { block: BlockPlan }) {
  * reporting any shortfall rather than overflowing. Region-locked targets are
  * handled on the Remote step.
  */
-export function BlockAccordion({
-  plan,
-  results,
-  headStart = {},
-}: {
-  plan: WeekendBlockPlan;
-  results: BossResult[];
-  headStart?: Record<string, number>;
-}) {
+export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; results: BossResult[] }) {
+  const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
   const byDay: { day: EventDay; blocks: BlockPlan[] }[] = [];
   for (const day of ["sat", "sun"] as EventDay[]) {
     const blocks = plan.blocks.filter((b) => b.day === day && b.demand > 0);
     if (blocks.length) byDay.push({ day, blocks });
   }
   if (!byDay.length) return null;
+
+  // Smart order: rank every target by its AVERAGE required raids, fewest first,
+  // so the quickest goals complete before capacity runs out (and the most goals
+  // finish overall). Seeds every block's priority via setGlobalPriority.
+  const smartPrioritize = () => {
+    const order = [...results]
+      .filter((r) => sized(r.raids, "expected") > 0)
+      .sort((a, b) => sized(a.raids, "expected") - sized(b.raids, "expected") || a.bossId.localeCompare(b.bossId))
+      .map((r) => r.bossId);
+    setGlobalPriority(order);
+  };
 
   return (
     <div className="mt-4">
@@ -493,11 +527,17 @@ export function BlockAccordion({
           <MegaBoostLegend />
         </div>
       </div>
+      <button
+        type="button"
+        onClick={smartPrioritize}
+        title="Order every block by average raids needed — fewest first — so the most goals finish before time runs out"
+        className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-gofest-accent2/50 bg-gofest-accent2/10 px-2.5 py-1 text-[12px] font-semibold text-gofest-accent2 transition hover:bg-gofest-accent2/20"
+      >
+        ✨ Smart auto-prioritize
+      </button>
       <p className="mb-2 text-[12px] leading-snug text-slate-500">
-        Reward luck makes each target a range. The bars fill from <span className="text-sky-300">guaranteed</span> raids
-        you&apos;ll always need, through the <span className="text-emerald-300">best</span> and{" "}
-        <span className="text-amber-300">average</span> cases, out to the <span className="text-rose-300">worst</span> case
-        if your drops run cold.
+        Each bar fills from <span className="text-sky-300">guaranteed</span> raids out to the{" "}
+        <span className="text-rose-300">worst-case</span> if drops run cold (see key).
       </p>
       <div className="space-y-4">
         {byDay.map(({ day, blocks }) => (
@@ -513,8 +553,6 @@ export function BlockAccordion({
           </div>
         ))}
       </div>
-
-      <GoalProgress plan={plan} results={results} headStart={headStart} />
     </div>
   );
 }
