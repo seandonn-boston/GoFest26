@@ -1,19 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore } from "@/store/useUiStore";
-import { useTiltStore } from "@/store/useTiltStore";
 import { useAppReady } from "@/store/useAppReady";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDialog } from "@/hooks/useDialog";
 import { AssumptionsControls } from "./AssumptionsControls";
 import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
 import { BackupControls } from "./BackupControls";
+import { RendersControls } from "./RendersControls";
 
-type Panel = "assumptions" | "location" | "feedback" | "backup";
+type Panel = "renders" | "assumptions" | "location" | "feedback" | "backup";
 
 interface DialItem {
   id: string;
@@ -27,6 +26,7 @@ interface DialItem {
 }
 
 const TITLES: Record<Panel, string> = {
+  renders: "◐ Renders",
   assumptions: "⚙ Assumptions",
   location: "📍 Your location",
   feedback: "✎ Feedback",
@@ -50,26 +50,8 @@ export function ActionDock() {
     [setFabOpen],
   );
   const isRight = fabSide === "right";
-  const theme = useUiStore((s) => s.theme);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
-  const sun = theme === "sun";
   const [panel, setPanel] = useState<Panel | null>(null);
   const customized = !isDefaultSettings(usePlannerStore((s) => s.settings));
-  const isMobile = useIsMobile();
-  const tiltSupported = useTiltStore((s) => s.supported);
-  const tiltEnabled = useTiltStore((s) => s.enabled);
-  const requestTilt = useTiltStore((s) => s.request);
-  const setTiltEnabled = useTiltStore((s) => s.setEnabled);
-
-  // Mirror the chosen theme onto <html data-theme> — the sun/night control now
-  // lives in this menu, so the sync effect that ThemeToggle used to own moves
-  // here (ActionDock is always mounted). A pre-paint script in layout.tsx sets
-  // the same attribute before first paint, so there's no flash.
-  useEffect(() => {
-    const root = document.documentElement;
-    if (sun) root.setAttribute("data-theme", "sun");
-    else root.removeAttribute("data-theme");
-  }, [sun]);
 
   const openPanel = (id: Panel) => {
     setPanel(id);
@@ -125,35 +107,19 @@ export function ActionDock() {
   const sheetRef = useDialog<HTMLDivElement>(panel !== null, closePanel);
 
   // Stay hidden until the Substitute loading screen has fully lifted — the FAB
-  // must not float over the loader. (The theme-sync effect above still runs.)
+  // must not float over the loader.
   const appReady = useAppReady((s) => s.ready);
   if (!appReady) return null;
 
-  // Rendered top → bottom; the last sits nearest the main FAB. The motion-tilt
-  // opt-in only makes sense on a phone/tablet with a real orientation sensor.
+  // Rendered top → bottom; the last sits nearest the main FAB.
   const items: DialItem[] = [];
-  if (isMobile && tiltSupported) {
-    items.push({
-      id: "tilt",
-      label: tiltEnabled ? "Tilt: on" : "Tilt: off",
-      icon: "◐",
-      accent: tiltEnabled ? "#fbbf24" : "#a1751f",
-      onClick: () => {
-        if (tiltEnabled) setTiltEnabled(false);
-        else requestTilt();
-        setOpen(false);
-      },
-    });
-  }
   items.push(
     {
-      id: "theme",
-      label: sun ? "Theme: sun" : "Theme: night",
-      icon: sun ? "☀" : "☾",
-      accent: sun ? "#fbbf24" : "#8ba3c7",
-      // Toggle in place (no close) so the flip is visible and the label/glyph
-      // update live — tap again to switch back.
-      onClick: () => toggleTheme(),
+      id: "renders",
+      label: "Renders",
+      icon: "◐",
+      accent: "#8ba3c7",
+      onClick: () => openPanel("renders"),
     },
     {
       id: "feedback",
@@ -213,6 +179,7 @@ export function ActionDock() {
               <button
                 type="button"
                 onClick={a.onClick}
+                aria-label={a.label}
                 className={`relative ${miniFab}`}
                 style={{ ["--accent" as string]: a.accent }}
               >
@@ -340,6 +307,7 @@ export function ActionDock() {
               </button>
             </div>
             <div className="max-h-[72vh] overflow-y-auto px-4 py-4">
+              {panel === "renders" ? <RendersControls /> : null}
               {panel === "assumptions" ? <AssumptionsControls /> : null}
               {panel === "location" ? <LocationControls /> : null}
               {panel === "feedback" ? <FeedbackForm onDone={() => setPanel(null)} /> : null}

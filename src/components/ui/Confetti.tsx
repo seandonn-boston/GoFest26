@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 const COLORS = ["#d9f99d", "#a3e635", "#facc15", "#fbbf24", "#f472b6", "#38bdf8", "#c4b5fd"];
 
@@ -24,10 +25,10 @@ interface Bit {
  */
 export function Confetti({ fire, replayKey = 0, pieces = 90 }: { fire: boolean; replayKey?: number; pieces?: number }) {
   const [bits, setBits] = useState<Bit[] | null>(null);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-    if (!fire || reduced) return;
+    if (!fire || reduceMotion) return;
     setBits(
       Array.from({ length: pieces }, (_, i) => ({
         left: Math.random() * 100,
@@ -42,7 +43,7 @@ export function Confetti({ fire, replayKey = 0, pieces = 90 }: { fire: boolean; 
     );
     const t = setTimeout(() => setBits(null), 2400);
     return () => clearTimeout(t);
-  }, [fire, replayKey, pieces]);
+  }, [fire, replayKey, pieces, reduceMotion]);
 
   if (!bits) return null;
 

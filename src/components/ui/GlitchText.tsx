@@ -1,6 +1,7 @@
 "use client";
 
 import { createElement, Fragment, useEffect, useRef, type CSSProperties, type ElementType, type ReactNode } from "react";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 interface GlitchTextProps {
   /** The title text. A "\n" becomes a line break. */
@@ -27,11 +28,12 @@ const pick = <T,>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr
  */
 export function GlitchText({ text, as = "span", className = "", style, colorWords }: GlitchTextProps) {
   const ref = useRef<HTMLElement>(null);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (reduceMotion) return;
 
     let timer: number | undefined;
 
@@ -70,7 +72,7 @@ export function GlitchText({ text, as = "span", className = "", style, colorWord
     return () => {
       if (timer) window.clearTimeout(timer);
     };
-  }, [text]);
+  }, [text, reduceMotion]);
 
   const content: ReactNode[] = text.split("\n").map((line, li) => {
     const words = line.split(" ");

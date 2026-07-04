@@ -576,55 +576,155 @@ input[type="number"] {
 }
 
 /* ============================================================================
-   Sunlight mode (:root[data-theme="sun"]) — a higher-contrast variant of the
-   dark theme for reading outdoors in direct sun. It does NOT flip to a light
-   theme (the type cards are white-text-on-dark by design); instead it makes the
-   dark theme survive glare: the low-contrast texture films come off, dim body
-   text and hairline borders are lifted, and faint surfaces are strengthened.
-   Every override targets content that sits on a dark background, so brightening
-   is uniformly safe. Toggle lives in ThemeToggle; attribute set pre-paint in
-   layout.tsx. ==========================================================*/
-:root[data-theme="sun"] body {
-  /* Lift off pure black so text edges don't crush, and drop the neon glow
-     gradients that muddy contrast under bright ambient light. */
-  background: #12151c;
+   LIGHT theme (:root[data-theme="light"]) — a vivid bright-white flip of the
+   dark "CyberClassic" look: pure-white backdrop, heavy bold near-black text,
+   and the same neon key hues pushed DARKER (not re-hued) so they read on white.
+   Pokémon TYPE colours are never touched (they live in inline styles / their own
+   utilities and carry their own dark scrims). Attribute set pre-paint in
+   layout.tsx + synced by RenderSettings. ================================== */
+:root[data-theme="light"] {
+  color-scheme: light;
 }
-:root[data-theme="sun"] body::before,
-:root[data-theme="sun"] body::after {
-  display: none; /* engineering grid + CRT scanlines both cut contrast — remove */
+:root[data-theme="light"] body {
+  color: #0b1220;
+  font-weight: 500; /* heavier baseline — the light theme reads bold */
+  background:
+    radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.08), transparent 60%),
+    radial-gradient(60% 50% at 100% 0%, rgba(0, 176, 210, 0.08), transparent 55%),
+    radial-gradient(55% 45% at 50% 115%, rgba(124, 58, 237, 0.07), transparent 60%), #ffffff;
 }
-/* Lift dim text. All of it renders on dark surfaces, so pushing it brighter
-   only raises contrast. */
-:root[data-theme="sun"] .text-slate-600 {
-  color: #94a3b8;
+:root[data-theme="light"] body::before {
+  background-image:
+    linear-gradient(rgba(2, 6, 23, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.05) 1px, transparent 1px);
 }
-:root[data-theme="sun"] .text-slate-500 {
-  color: #b8c2d0;
+:root[data-theme="light"] body::after {
+  display: none; /* CRT scanline multiply film muddies a white bg */
 }
-:root[data-theme="sun"] .text-slate-400 {
-  color: #d4dbe5;
+/* Headings + strong text go deep and heavy. */
+:root[data-theme="light"] h1,
+:root[data-theme="light"] h2,
+:root[data-theme="light"] h3,
+:root[data-theme="light"] b,
+:root[data-theme="light"] strong {
+  color: #050914;
 }
-:root[data-theme="sun"] .text-slate-300 {
-  color: #e8edf3;
+/* Text ramp: invert the slate scale to dark-on-light, keeping the same visual
+   hierarchy (100 = strongest). */
+:root[data-theme="light"] .text-white,
+:root[data-theme="light"] .text-slate-100,
+:root[data-theme="light"] .text-slate-200 {
+  color: #0b1220;
 }
-/* Strengthen hairline borders + faint fills so card/section structure stays
-   legible when glare washes out the subtle values. */
-:root[data-theme="sun"] .border-white\/10 {
-  border-color: rgba(255, 255, 255, 0.26);
+:root[data-theme="light"] .text-slate-300 {
+  color: #1c2637;
 }
-:root[data-theme="sun"] .border-white\/15 {
-  border-color: rgba(255, 255, 255, 0.34);
+:root[data-theme="light"] .text-slate-400 {
+  color: #3a475e;
 }
-:root[data-theme="sun"] .bg-white\/5 {
-  background-color: rgba(255, 255, 255, 0.1);
+:root[data-theme="light"] .text-slate-500 {
+  color: #556072;
 }
-:root[data-theme="sun"] .bg-white\/\[0\.02\] {
-  background-color: rgba(255, 255, 255, 0.06);
+:root[data-theme="light"] .text-slate-600 {
+  color: #6b7688;
 }
-/* Card body text already carries a dark halo; deepen it in sun so white text
-   holds its edge against a bright, reflective screen. */
-:root[data-theme="sun"] .card-text-legible {
+/* Surfaces flip to white/very-light with subtle dark separators. */
+:root[data-theme="light"] .bg-gofest-bg,
+:root[data-theme="light"] .bg-gofest-panel,
+:root[data-theme="light"] .bg-gofest-panel\/60 {
+  background-color: #ffffff;
+}
+:root[data-theme="light"] .bg-gofest-bg\/40,
+:root[data-theme="light"] .bg-gofest-bg\/60,
+:root[data-theme="light"] .bg-gofest-bg\/30,
+:root[data-theme="light"] .bg-gofest-bg\/90 {
+  background-color: rgba(15, 23, 42, 0.035);
+}
+:root[data-theme="light"] .bg-white\/5,
+:root[data-theme="light"] .bg-white\/10,
+:root[data-theme="light"] .bg-white\/\[0\.02\],
+:root[data-theme="light"] .bg-white\/\[0\.06\] {
+  background-color: rgba(15, 23, 42, 0.05);
+}
+:root[data-theme="light"] .border-white\/5 {
+  border-color: rgba(2, 6, 23, 0.08);
+}
+:root[data-theme="light"] .border-white\/10 {
+  border-color: rgba(2, 6, 23, 0.12);
+}
+:root[data-theme="light"] .border-white\/15 {
+  border-color: rgba(2, 6, 23, 0.18);
+}
+:root[data-theme="light"] .divide-white\/\[0\.04\] > * + * {
+  border-color: rgba(2, 6, 23, 0.08);
+}
+/* Key neon hues: same colour, darker so they carry on white. */
+:root[data-theme="light"] .text-gofest-acid {
+  color: #5f8a00;
+}
+:root[data-theme="light"] .text-gofest-accent {
+  color: #c40aa3;
+}
+:root[data-theme="light"] .text-gofest-accent2 {
+  color: #0088a8;
+}
+:root[data-theme="light"] .text-gofest-mewtwo {
+  color: #7b1fd1;
+}
+:root[data-theme="light"] .text-amber-200,
+:root[data-theme="light"] .text-amber-300 {
+  color: #b45309;
+}
+:root[data-theme="light"] .text-emerald-300 {
+  color: #047857;
+}
+:root[data-theme="light"] .text-sky-300 {
+  color: #0369a1;
+}
+:root[data-theme="light"] .text-rose-300 {
+  color: #be123c;
+}
+/* The card sprite scrims assume white text; deepen their halo instead. */
+:root[data-theme="light"] .card-text-legible {
+  color: #ffffff;
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 1),
-    0 0 5px rgba(0, 0, 0, 0.9);
+    0 0 6px rgba(0, 0, 0, 0.85);
+}
+
+/* ============================================================================
+   COMPACT density (:root[data-density="compact"]) — shrink the whole rem scale
+   (all Tailwind spacing/text is rem) plus a sprite-scale var the Sprite reads.
+   ==========================================================================*/
+:root[data-density="compact"] {
+  font-size: 86.5%;
+  --sprite-scale: 0.82;
+}
+
+/* ============================================================================
+   REDUCE MOTION (.reduce-motion on <html>) — user toggle OR OS setting. Nukes
+   every CSS animation/transition (incl. inline transitions, via !important) so
+   the glitch bursts, ticker, golden shimmer, switch-in, tilt, and the FAB /
+   disclosure morphs all snap instantly. JS-driven motions gate on the
+   useReduceMotion() hook. ==================================================*/
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Card tilt — the boss cards lean with the gyroscope like the enamel badge does,
+   reading the same --tilt-x/y vars (only while .tilt-active is set). */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease;
+  will-change: transform;
+}
+.tilt-active .tilt-card {
+  transition: none;
+  transform: perspective(900px) rotateX(calc(var(--tilt-y, 0) * -7deg)) rotateY(calc(var(--tilt-x, 0) * 7deg));
 }
