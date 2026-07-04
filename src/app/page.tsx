@@ -17,6 +17,8 @@ import { CardJumpNav } from "@/components/BossInputCard/CardJumpNav";
 import { CounterSearchBar } from "@/components/BossInputCard/CounterSearchBar";
 import { MegaSearchBar } from "@/components/BossInputCard/MegaSearchBar";
 import { Disclosure } from "@/components/ui/Disclosure";
+import { AdventureEffects } from "@/components/Dashboard/AdventureEffects";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 import { BulkImportSection } from "@/components/Settings/BulkImportSection";
 import { ResourcesOnHand } from "@/components/Dashboard/ResourcesOnHand";
 import { SummaryDashboard } from "@/components/Dashboard/SummaryDashboard";
@@ -359,14 +361,26 @@ function StepContent({
             })}
             {/* Day-of copy-paste lists are long (dozens of species per day) and
                 only matter DURING the event — collapsed so entering numbers, the
-                actual job of this step, isn't buried under four screens of text. */}
+                actual job of this step, isn't buried under four screens of text.
+                The Adventure Effects planner lives here too: it's day-of prep
+                (what an effect costs in candy/dust before you cast it). */}
             <Disclosure
-              title={<span className="font-semibold text-slate-200">Day-of prep — counter &amp; mega-evolve lists</span>}
+              title={
+                <span className="font-semibold text-slate-200">
+                  Day-of prep — counters, mega-evolves &amp; Adventure Effects
+                </span>
+              }
               hint={<span className="text-slate-500">copy-paste for Sat / Sun</span>}
             >
               <div className="space-y-3 py-1">
                 <CounterSearchBar />
                 <MegaSearchBar />
+                <div className="border-t border-white/10 pt-3">
+                  <h4 className="mb-2 text-sm font-semibold text-slate-200">
+                    <PixelIcon name="bolt" size={12} /> Adventure Effects planner
+                  </h4>
+                  <AdventureEffects />
+                </div>
               </div>
             </Disclosure>
           </>

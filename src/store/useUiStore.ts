@@ -14,20 +14,12 @@ export type Layout = "stepper" | "single";
  *  (default) or left-handed thumb reach. Persisted per-device. */
 export type FabSide = "left" | "right";
 
-/** Visual theme. `dark` is the default neon "CyberClassic" look; `light` is a
- *  vivid bright-white theme with deep bold dark text (same colour families, just
- *  brightened for a sunlit read). Card/tile species names stay light. Persisted. */
-export type Theme = "dark" | "light";
-
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
   step: StepId;
   /** Stepper (one step at a time) vs. single-page (all steps stacked). */
   layout: Layout;
   setLayout: (layout: Layout) => void;
-  /** Visual theme: Dark (default) or Light. */
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
   /** Which side the FAB speed-dial sits on (right = default/right-handed). */
   fabSide: FabSide;
   setFabSide: (side: FabSide) => void;
@@ -74,8 +66,6 @@ export const useUiStore = create<UiState>()(
       step: 1,
       layout: "stepper",
       setLayout: (layout) => set({ layout }),
-      theme: "dark",
-      setTheme: (theme) => set({ theme }),
       fabSide: "right",
       setFabSide: (fabSide) => set({ fabSide }),
       toggleFabSide: () => set((s) => ({ fabSide: s.fabSide === "right" ? "left" : "right" })),
@@ -97,7 +87,7 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 8, // v8: drop density/reduceMotion; keep Dark/Light theme only
+      version: 9, // v9: drop the theme field — the app is single-theme (dark) again
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
       // The expand/collapse-all broadcast and the transient FAB-open flag are never
       // persisted, so a reload returns to the mixed initial state / a closed dial.
@@ -108,10 +98,8 @@ export const useUiStore = create<UiState>()(
         if (typeof s.step === "number") s.step = clampStep(s.step);
         if (s.layout !== "single" && s.layout !== "stepper") s.layout = "stepper";
         if (s.fabSide !== "left" && s.fabSide !== "right") s.fabSide = "right";
-        // v8: drop Poké Center, Compact and the reduce-motion toggle. Keep the
-        // Dark/Light theme (migrating the older night/sun/pokecenter values).
-        const t = (s as Record<string, unknown>).theme;
-        s.theme = t === "light" || t === "sun" ? "light" : "dark";
+        // v9: single-theme app — drop theme (and the older density/reduceMotion).
+        delete (s as Record<string, unknown>).theme;
         delete (s as Record<string, unknown>).density;
         delete (s as Record<string, unknown>).reduceMotion;
         return s as UiState;

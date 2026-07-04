@@ -1,21 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUiStore } from "@/store/useUiStore";
 
 /**
- * Mirrors the chosen theme onto `<html data-theme>` and the OS
- * `prefers-reduced-motion` setting onto the `reduce-motion` class, so CSS can
- * key off both. A pre-paint script in layout.tsx applies the theme before first
- * paint to avoid a flash. Headless.
+ * Mirrors the OS `prefers-reduced-motion` setting onto a `reduce-motion` class
+ * on `<html>`, so CSS can zero animations for users who ask for that. Headless.
  */
 export function RenderSettings() {
-  const theme = useUiStore((s) => s.theme);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
   useEffect(() => {
     const root = document.documentElement;
     const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");

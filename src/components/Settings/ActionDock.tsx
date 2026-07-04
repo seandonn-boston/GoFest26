@@ -10,10 +10,11 @@ import { AssumptionsControls } from "./AssumptionsControls";
 import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
 import { BackupControls } from "./BackupControls";
-import { RendersControls } from "./RendersControls";
 import { PixelIcon, type PixelIconName } from "@/components/ui/PixelIcon";
+import { useTiltStore } from "@/store/useTiltStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
-type Panel = "renders" | "assumptions" | "location" | "feedback" | "backup";
+type Panel = "assumptions" | "location" | "feedback" | "backup";
 
 interface DialItem {
   id: string;
@@ -27,7 +28,6 @@ interface DialItem {
 }
 
 const TITLES: Record<Panel, { icon: PixelIconName; label: string }> = {
-  renders: { icon: "theme", label: "Renders" },
   assumptions: { icon: "gear", label: "Assumptions" },
   location: { icon: "pin", label: "Your location" },
   feedback: { icon: "pencil", label: "Feedback" },
@@ -53,6 +53,11 @@ export function ActionDock() {
   const isRight = fabSide === "right";
   const [panel, setPanel] = useState<Panel | null>(null);
   const customized = !isDefaultSettings(usePlannerStore((s) => s.settings));
+  const isMobile = useIsMobile();
+  const tiltSupported = useTiltStore((s) => s.supported);
+  const tiltEnabled = useTiltStore((s) => s.enabled);
+  const requestTilt = useTiltStore((s) => s.request);
+  const setTiltEnabled = useTiltStore((s) => s.setEnabled);
 
   const openPanel = (id: Panel) => {
     setPanel(id);
@@ -114,14 +119,22 @@ export function ActionDock() {
 
   // Rendered top → bottom; the last sits nearest the main FAB.
   const items: DialItem[] = [];
-  items.push(
-    {
-      id: "renders",
-      label: "Renders",
-      icon: "theme",
+  // Gyroscope tilt — a direct on/off toggle (phones/tablets with a sensor only).
+  if (isMobile && tiltSupported) {
+    items.push({
+      id: "tilt",
+      label: tiltEnabled ? "Tilt · on" : "Tilt",
+      icon: "phone",
       accent: "#8ba3c7",
-      onClick: () => openPanel("renders"),
-    },
+      badge: tiltEnabled,
+      onClick: () => {
+        if (tiltEnabled) setTiltEnabled(false);
+        else requestTilt();
+        setOpen(false);
+      },
+    });
+  }
+  items.push(
     {
       id: "feedback",
       label: "Feedback",
@@ -309,7 +322,6 @@ export function ActionDock() {
               </button>
             </div>
             <div className="max-h-[72vh] overflow-y-auto px-4 py-4">
-              {panel === "renders" ? <RendersControls /> : null}
               {panel === "assumptions" ? <AssumptionsControls /> : null}
               {panel === "location" ? <LocationControls /> : null}
               {panel === "feedback" ? <FeedbackForm onDone={() => setPanel(null)} /> : null}

@@ -53,8 +53,13 @@ const addTo = (rec: Record<string, number>, id: string, n: number) => {
 /**
  * Break the committed raids down per boss so the Cost step can price the passes a
  * plan actually intends to buy (rather than the full 100%-of-goals demand). RoL
- * in-person credit comes from `headStart` (the reconciled per-boss fitted count);
- * weekend blocks and the remote pool sum their species' `fitted`.
+ * in-person raids come from the fitted day plans — candy AND energy shares, since
+ * every raid done consumes a pass. (`headStart` is deliberately NOT summed here:
+ * it's the weekend CANDY credit, where an energy raid only appears as a credit
+ * capped at the base species' candy need — summing it under-bills the raids
+ * actually done, which once let the Cost step claim 0 passes to buy while the
+ * Results step said 23.) These per-boss totals sum to `computeCommitment(...)`'s
+ * `inPerson`/`remote`, keeping both steps in agreement.
  */
 export function commitmentByBoss(weekend: WeekendBlockPlan, road: RoadPlan): CommitmentByBoss {
   const inPerson: Record<string, number> = {};
@@ -62,7 +67,9 @@ export function commitmentByBoss(weekend: WeekendBlockPlan, road: RoadPlan): Com
   for (const block of weekend.blocks) {
     for (const s of block.species) addTo(inPerson, s.bossId, s.fitted);
   }
-  for (const [bossId, fitted] of Object.entries(road.headStart)) addTo(inPerson, bossId, fitted);
+  for (const day of road.days) {
+    for (const s of day.species) addTo(inPerson, s.bossId, s.fitted);
+  }
   for (const s of weekend.remote?.species ?? []) addTo(remote, s.bossId, s.fitted);
   return { inPerson, remote };
 }
