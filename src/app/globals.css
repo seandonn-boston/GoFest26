@@ -584,54 +584,113 @@ input[type="number"] {
    layout.tsx + synced by RenderSettings. ================================== */
 :root[data-theme="light"] {
   color-scheme: light;
+  font-size: 104%; /* light theme reads a touch larger */
+}
+:root[data-theme="light"][data-density="compact"] {
+  font-size: 90%; /* light + compact compose explicitly (not multiplied) */
 }
 :root[data-theme="light"] body {
-  color: #0b1220;
-  font-weight: 500; /* heavier baseline — the light theme reads bold */
+  color: #0a0f1a;
+  font-weight: 600; /* heavy baseline — the light theme reads bold */
   background:
-    radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.08), transparent 60%),
-    radial-gradient(60% 50% at 100% 0%, rgba(0, 176, 210, 0.08), transparent 55%),
-    radial-gradient(55% 45% at 50% 115%, rgba(124, 58, 237, 0.07), transparent 60%), #ffffff;
+    radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.07), transparent 60%),
+    radial-gradient(60% 50% at 100% 0%, rgba(0, 176, 210, 0.07), transparent 55%),
+    radial-gradient(55% 45% at 50% 115%, rgba(124, 58, 237, 0.06), transparent 60%), #ffffff;
 }
 :root[data-theme="light"] body::before {
   background-image:
-    linear-gradient(rgba(2, 6, 23, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(2, 6, 23, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(2, 6, 23, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.045) 1px, transparent 1px);
 }
 :root[data-theme="light"] body::after {
   display: none; /* CRT scanline multiply film muddies a white bg */
 }
-/* Headings + strong text go deep and heavy. */
-:root[data-theme="light"] h1,
+/* Section headings + strong text go deep and heavy. h1 (the glitch masthead) is
+   deliberately left alone. */
 :root[data-theme="light"] h2,
 :root[data-theme="light"] h3,
 :root[data-theme="light"] b,
 :root[data-theme="light"] strong {
-  color: #050914;
+  color: #04070f;
+  font-weight: 800;
 }
-/* Text ramp: invert the slate scale to dark-on-light, keeping the same visual
-   hierarchy (100 = strongest). */
+/* Text ramp: invert the slate scale to dark-on-light, pushed darker + heavier so
+   it reads boldly on white. (Same hierarchy — 100 = strongest.) */
 :root[data-theme="light"] .text-white,
 :root[data-theme="light"] .text-slate-100,
 :root[data-theme="light"] .text-slate-200 {
-  color: #0b1220;
+  color: #04070f;
+  font-weight: 700;
 }
 :root[data-theme="light"] .text-slate-300 {
-  color: #1c2637;
+  color: #0d1626;
+  font-weight: 650;
 }
 :root[data-theme="light"] .text-slate-400 {
-  color: #3a475e;
+  color: #263247;
+  font-weight: 600;
 }
 :root[data-theme="light"] .text-slate-500 {
-  color: #556072;
+  color: #3f4a5f;
+  font-weight: 600;
 }
 :root[data-theme="light"] .text-slate-600 {
-  color: #6b7688;
+  color: #566074;
+}
+/* Card / tile content sits on the type-coloured (often dark) fill, so its text
+   stays WHITE with its dark halo in every theme — override the ramp above. */
+:root[data-theme="light"] .card-text-legible,
+:root[data-theme="light"] .card-text-legible *,
+:root[data-theme="light"] .enamel-label {
+  color: #ffffff;
+}
+/* Lighten the neo-brutalist card/tile treatment so the enamel reads as a
+   light-theme surface (the type-hue fill itself is left untouched). */
+:root[data-theme="light"] .enamel {
+  border-color: rgba(2, 6, 23, 0.14);
+  box-shadow:
+    4px 4px 0 0 rgba(2, 6, 23, 0.16),
+    inset 0 2px 2px rgba(255, 255, 255, 0.3),
+    inset 0 -8px 14px rgba(2, 6, 23, 0.12);
+}
+:root[data-theme="light"] .brutal {
+  border-color: rgba(2, 6, 23, 0.16);
+  box-shadow: 5px 5px 0 0 rgba(2, 6, 23, 0.16);
+}
+/* Faint black overlays (chips, scrims) flip to faint dark-on-light. */
+:root[data-theme="light"] .bg-black\/30 {
+  background-color: rgba(2, 6, 23, 0.06);
+}
+:root[data-theme="light"] .bg-black\/40,
+:root[data-theme="light"] .bg-black\/55 {
+  background-color: rgba(2, 6, 23, 0.08);
+}
+/* Native selects + inputs on the light surface. */
+:root[data-theme="light"] select,
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea {
+  color: #0a0f1a;
+}
+/* The neo-brutalist hard black offset shadow reads as a heavy dark blob on
+   white — soften it to a light grey so active pills / toggles feel light. */
+:root[data-theme="light"] .shadow-brutal {
+  --tw-shadow: 4px 4px 0 0 rgba(2, 6, 23, 0.18);
+  box-shadow: 4px 4px 0 0 rgba(2, 6, 23, 0.18);
+}
+/* Disclosure header + panel bars that still carried the dark fill. */
+:root[data-theme="light"] .bg-gofest-bg\/30,
+:root[data-theme="light"] .bg-gofest-panel\/40,
+:root[data-theme="light"] .bg-gofest-bg\/50 {
+  background-color: rgba(15, 23, 42, 0.04);
 }
 /* Surfaces flip to white/very-light with subtle dark separators. */
 :root[data-theme="light"] .bg-gofest-bg,
 :root[data-theme="light"] .bg-gofest-panel,
-:root[data-theme="light"] .bg-gofest-panel\/60 {
+:root[data-theme="light"] .bg-gofest-panel\/80,
+:root[data-theme="light"] .bg-gofest-panel\/70,
+:root[data-theme="light"] .bg-gofest-panel\/60,
+:root[data-theme="light"] .bg-gofest-panel2,
+:root[data-theme="light"] .bg-gofest-panel2\/60 {
   background-color: #ffffff;
 }
 :root[data-theme="light"] .bg-gofest-bg\/40,
