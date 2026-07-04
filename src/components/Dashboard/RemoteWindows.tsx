@@ -6,6 +6,7 @@ import { bossIsLocal } from "@/domain/region";
 import { remoteWindowsForBoss, type RemoteWindow } from "@/domain/remoteWindows";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Sprite } from "@/components/ui/Sprite";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /** "Sat 9:00 PM" in the device's own timezone. */
 function fmt(utcMs: number): string {
@@ -58,7 +59,9 @@ export function RemoteWindows() {
 
   return (
     <div className="rounded-lg border border-sky-400/25 bg-sky-400/[0.04] px-2.5 py-2">
-      <h3 className="text-sm font-semibold text-sky-300">🕑 When to raid remotely</h3>
+      <h3 className="text-sm font-semibold text-sky-300">
+        <PixelIcon name="clock" size={13} /> When to raid remotely
+      </h3>
       <p className="mb-2 mt-1 text-[13px] text-slate-400">
         Event windows run on the <b>host region&apos;s</b> clock — a block in Japan happens during your{" "}
         {tz.includes("America") ? "night" : "off-hours"}. These are your region-locked targets&apos; windows in{" "}

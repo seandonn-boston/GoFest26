@@ -6,6 +6,8 @@ import { getBoss } from "@/data";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Sprite } from "@/components/ui/Sprite";
+import { PixelIcon } from "@/components/ui/PixelIcon";
+import { ItemIcon } from "@/components/ui/ItemIcon";
 
 const num = (n: number) => Math.round(n).toLocaleString();
 
@@ -81,13 +83,14 @@ export function AdventureEffects() {
           <p className="mt-1 text-[13px] leading-snug text-slate-400">{effect.description}</p>
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-slate-400">
             <span>
-              ⏱ <b className="text-slate-200">{effect.durationMinutes} min</b>/use
+              <PixelIcon name="clock" size={12} /> <b className="text-slate-200">{effect.durationMinutes} min</b>/use
             </span>
             <span>
-              ✦ <b className="text-sky-300">{num(effect.stardust)}</b> dust/use
+              <ItemIcon name="stardust" size={14} /> <b className="text-sky-300">{num(effect.stardust)}</b> dust/use
             </span>
             <span>
-              🍬 <b className="text-emerald-300">{effect.candy}</b> {effect.candyLabel} candy/use
+              <ItemIcon name="rareCandy" size={14} /> <b className="text-emerald-300">{effect.candy}</b> {effect.candyLabel}{" "}
+              candy/use
             </span>
           </div>
         </div>

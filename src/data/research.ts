@@ -3,7 +3,7 @@ import type { Currency } from "@/domain/types";
 /**
  * GO Fest 2026 research that yields currency relevant to raid planning.
  *
- * ⚠️ These amounts are transcribed from Serebii's listings for the IN-PERSON
+ * NOTE: these amounts are transcribed from Serebii's listings for the IN-PERSON
  * Chicago City Experience (the "Chicago Expert" Mewtwo research and the 8-step
  * Zeraora "A Thunderous Discovery"). This site targets the FREE GLOBAL event,
  * whose research has not been published yet — so treat the numbers below as

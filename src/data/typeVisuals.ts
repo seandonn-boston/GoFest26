@@ -22,28 +22,6 @@ export const TYPE_COLORS: Record<string, string> = {
   fairy: "#D685AD",
 };
 
-/** Emoji pictograph per type (no labels needed). */
-export const TYPE_ICONS: Record<string, string> = {
-  normal: "⭐",
-  fire: "🔥",
-  water: "💧",
-  electric: "⚡",
-  grass: "🍃",
-  ice: "❄️",
-  fighting: "🥊",
-  poison: "☠️",
-  ground: "⛰️",
-  flying: "🪶",
-  psychic: "🔮",
-  bug: "🐛",
-  rock: "🪨",
-  ghost: "👻",
-  dragon: "🐲",
-  dark: "🌙",
-  steel: "⚙️",
-  fairy: "✨",
-};
-
 // Glossy enamel layers blended *into* the color (not overlaid as a flat film):
 // a soft-light highlight (domed sheen) + a multiplied bottom shade.
 const ENAMEL_HILITE =
@@ -81,10 +59,6 @@ export function typeBackgroundStyle(types?: string[]): CSSProperties {
     backgroundImage: `${ENAMEL_HILITE}, ${ENAMEL_SHADE}`,
     backgroundBlendMode: "soft-light, multiply",
   };
-}
-
-export function typeIconList(types?: string[]): string[] {
-  return (types ?? []).map((t) => TYPE_ICONS[t.toLowerCase()] ?? "❔");
 }
 
 // A card's content panel: the Pokémon's type color under a dark scrim — so the

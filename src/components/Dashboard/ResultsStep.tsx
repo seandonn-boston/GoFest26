@@ -8,6 +8,7 @@ import { ExportGroup } from "@/components/ExportGroup";
 import { GoalProgress } from "./GoalProgress";
 import { ResultsPassHighlights } from "./ResultsPassHighlights";
 import { AdventureEffects } from "./AdventureEffects";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /**
  * Step 6 — Results. Pulls together everything between the priority screens and
@@ -57,7 +58,11 @@ export function ResultsStep({
       {/* Adventure Effects candy/dust planner — standalone, useful with or without
           a raid goal, so it sits outside the goals gate. */}
       <Disclosure
-        title={<span className="font-semibold text-slate-200">⚡ Adventure Effects planner</span>}
+        title={
+          <span className="font-semibold text-slate-200">
+            <PixelIcon name="bolt" size={12} /> Adventure Effects planner
+          </span>
+        }
         hint={<span className="text-[12px] text-slate-500">candy &amp; dust to run an effect</span>}
       >
         <AdventureEffects />

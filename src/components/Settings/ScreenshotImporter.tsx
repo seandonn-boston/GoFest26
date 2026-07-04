@@ -9,6 +9,7 @@ import { speciesKey, pokemonSearchName } from "@/lib/pokemonSearch";
 import { scanScreenshot, energyForBosses, fusionEnergyFromScan, type ScanResult } from "@/lib/screenshotScan";
 import { assetPath, GUIDE_IMAGES } from "@/lib/asset";
 import { ScanChips } from "@/components/ui/ScanChips";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { usePlannerStore, type ImportedShot } from "@/store/usePlannerStore";
@@ -236,7 +237,7 @@ export function ScreenshotImporter() {
           disabled={busy}
           className="flex items-center gap-1.5 rounded-sm border-2 border-black/40 bg-gofest-acid px-3 py-2 font-mono text-xs font-extrabold uppercase tracking-wider text-black shadow-brutal transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:shadow-none"
         >
-          📷 Upload screenshots
+          <PixelIcon name="camera" size={13} /> Upload screenshots
         </button>
         <button
           type="button"
@@ -261,8 +262,8 @@ export function ScreenshotImporter() {
       </div>
 
       <p className="text-[13px] text-amber-300">
-        <span aria-hidden>⚠</span> English (game language) screenshots only at this time — other languages aren&apos;t read
-        yet.
+        <PixelIcon name="warning" size={12} /> English (game language) screenshots only at this time — other languages
+        aren&apos;t read yet.
       </p>
 
       {showGuide ? (
@@ -292,8 +293,11 @@ export function ScreenshotImporter() {
         <div className="space-y-1.5">
           <ScreenshotGrid shots={imports} statusOf={statusOf} onDelete={del} />
           <p className="text-[12px] text-slate-500">
-            <span className="text-amber-300">⚠</span> unreadable · <span className="text-sky-300">!</span> not in this event
-            · <span className="text-rose-300">✕</span> duplicate (a newer one is used). Tap a tile to preview or delete it.
+            <span className="text-amber-300">
+              <PixelIcon name="warning" size={11} />
+            </span>{" "}
+            unreadable · <span className="text-sky-300">!</span> not in this event · <span className="text-rose-300">✕</span>{" "}
+            duplicate (a newer one is used). Tap a tile to preview or delete it.
           </p>
         </div>
       ) : null}
@@ -325,7 +329,8 @@ export function ScreenshotImporter() {
                       </div>
                       {!assignable && s.scan.detectedName ? (
                         <p className="mb-1.5 text-[13px] text-sky-300">
-                          ❗ {cap(s.scan.detectedName)} isn’t available for raids during this event — pick another below.
+                          <PixelIcon name="warning" size={12} /> {cap(s.scan.detectedName)} isn’t available for raids during
+                          this event — pick another below.
                         </p>
                       ) : null}
                       {superseded ? (
@@ -352,7 +357,7 @@ export function ScreenshotImporter() {
                   ) : (
                     <div>
                       <p className="text-[13px] text-amber-200 break-words">
-                        ⚠ {s.error ? s.error : unreadableMessage(s.scan, s.fileName)}
+                        <PixelIcon name="warning" size={12} /> {s.error ? s.error : unreadableMessage(s.scan, s.fileName)}
                       </p>
                       {!s.error && s.scan.looksLikePogo && s.scan.rawText ? (
                         <>

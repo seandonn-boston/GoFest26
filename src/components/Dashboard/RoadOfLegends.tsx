@@ -17,6 +17,7 @@ import { Sprite } from "@/components/ui/Sprite";
 import { BandBar } from "@/components/ui/BandBar";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { RaidCountersMegas } from "@/components/ui/CountersMegasRow";
+import { PixelIcon, type PixelIconName } from "@/components/ui/PixelIcon";
 import { useDragList } from "./useDragList";
 
 /** Featured boss ids per Road of Legends day (for the per-day target picker). */
@@ -143,7 +144,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
               <span className="whitespace-nowrap">
                 {m.energy ? (
                   <span aria-hidden className="mr-0.5 text-orange-300">
-                    ⚡
+                    <PixelIcon name="bolt" size={12} />
                   </span>
                 ) : null}
                 {m.name}
@@ -178,7 +179,7 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
                   <span className="truncate text-slate-200">
                     {m.energy ? (
                       <span aria-hidden className="mr-0.5 text-orange-300">
-                        ⚡
+                        <PixelIcon name="bolt" size={12} />
                       </span>
                     ) : null}
                     {m.name}
@@ -193,19 +194,24 @@ function RoadDaySelect({ dayId }: { dayId: string }) {
   );
 }
 
-// Per-resource chip badge for the day-picker, so each day's icons reflect the
-// raid bosses + rewards on offer: Fusion ⚡, Crowned 👑, Primal 🌋, plus a 🔷 for
-// the day's featured Mega raid (Mega Energy).
-const ENERGY_KIND_BADGE: Record<EnergyKind, { icon: string; title: string }> = {
-  fusion: { icon: "⚡", title: "Fusion energy raids this day" },
-  crowned: { icon: "👑", title: "Crowned energy raids this day" },
-  primal: { icon: "🌋", title: "Primal energy raids this day" },
+// Per-resource pixel badge for the day-picker, so each day's icons reflect the
+// raid bosses + rewards on offer: Fusion (bolt), Crowned (crown), Primal
+// (volcano), plus a gem for the day's featured Mega raid (Mega Energy).
+interface DayBadge {
+  icon: PixelIconName;
+  color: string;
+  title: string;
+}
+const ENERGY_KIND_BADGE: Record<EnergyKind, DayBadge> = {
+  fusion: { icon: "bolt", color: "text-orange-300", title: "Fusion energy raids this day" },
+  crowned: { icon: "crown", color: "text-amber-300", title: "Crowned energy raids this day" },
+  primal: { icon: "volcano", color: "text-rose-300", title: "Primal energy raids this day" },
 };
-const MEGA_BADGE = { icon: "🔷", title: "Featured Mega raid (Mega Energy) this day" };
+const MEGA_BADGE: DayBadge = { icon: "gem", color: "text-sky-300", title: "Featured Mega raid (Mega Energy) this day" };
 
 /** The distinct resource icons available on a Road of Legends day. */
-function dayBadges(dayId: string, bossIds: string[]): { icon: string; title: string }[] {
-  const out: { icon: string; title: string }[] = [];
+function dayBadges(dayId: string, bossIds: string[]): DayBadge[] {
+  const out: DayBadge[] = [];
   const seen = new Set<EnergyKind>();
   for (const { def } of energyGoalsForDay(dayId)) {
     if (!seen.has(def.kind)) {
@@ -245,7 +251,11 @@ function EnergySpeciesRow({ share }: { share: BlockSpeciesShare }) {
         className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-500"
         title="This raid banks Fusion/Primal Energy toward the goal — plus the base Pokémon's Candy"
       >
-        banks <span className="text-orange-300/90">⚡ energy</span> <span className="text-slate-600">+</span> candy
+        banks{" "}
+        <span className="text-orange-300/90">
+          <PixelIcon name="bolt" size={10} /> energy
+        </span>{" "}
+        <span className="text-slate-600">+</span> candy
       </span>
       <span
         className="w-9 shrink-0 text-right font-mono text-sm font-bold text-orange-400"
@@ -306,8 +316,8 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       <RoadDaySelect dayId={day.id} />
       {day.focus ? (
         <p className="mb-1 text-[12px] text-orange-400/90">
-          🎯 Targeting <b>{day.focus.blockName}</b> — the weekend block with the most raids that won&apos;t fit (
-          {day.focus.overflow} over), worked down its priority order.
+          <PixelIcon name="target" size={12} /> Targeting <b>{day.focus.blockName}</b> — the weekend block with the most
+          raids that won&apos;t fit ({day.focus.overflow} over), worked down its priority order.
         </p>
       ) : null}
       <BandBar height="h-2.5" bands={day.bands} fitted={day.fitted} capacityMax={day.capacity.max} />
@@ -327,8 +337,9 @@ function RoadDayCard({ day }: { day: RoadDayPlan }) {
       ) : null}
       {stillOpen.length > 0 ? (
         <p className="mt-1.5 text-[12px] leading-snug text-emerald-300/80">
-          ⏱ The Raid Hour can&apos;t finish these, but they&apos;re featured <b>all day</b> (≈6 AM–10 PM) — keep raiding{" "}
-          <span className="text-emerald-200">{stillOpen.join(", ")}</span> {day.label} to close the gap.
+          <PixelIcon name="clock" size={12} /> The Raid Hour can&apos;t finish these, but they&apos;re featured{" "}
+          <b>all day</b> (≈6 AM–10 PM) — keep raiding <span className="text-emerald-200">{stillOpen.join(", ")}</span>{" "}
+          {day.label} to close the gap.
         </p>
       ) : null}
     </div>
@@ -392,7 +403,7 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
           title="Order every day: fusion/primal energy first, then your candy targets by fewest raids needed. Drag to override any day."
           className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-orange-300/50 bg-orange-400/10 px-2.5 py-1 text-[12px] font-semibold text-orange-200 transition hover:bg-orange-400/20"
         >
-          ✨ Smart auto-prioritize
+          <PixelIcon name="sparkle" size={12} /> Smart auto-prioritize
         </button>
       ) : null}
       <p className="mb-2 text-[13px] text-slate-400">
@@ -407,22 +418,30 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
           disclosure to keep the interactive day picker up top. */}
       <div className="mb-2">
         <Disclosure
-          title={<span className="font-semibold text-orange-300">⚡ Fusion / Primal energy &amp; Origin move notes</span>}
+          title={
+            <span className="font-semibold text-orange-300">
+              <PixelIcon name="bolt" size={12} /> Fusion / Primal energy &amp; Origin move notes
+            </span>
+          }
           hint={<span className="text-slate-500">what to raid this week</span>}
         >
           <div className="space-y-1.5 text-[13px] leading-relaxed text-slate-300">
             <p>
-              <span className="font-semibold text-orange-300">⚡ Fusion / Primal energy:</span> raid week also brings the
-              special raids that drop it — <b>White / Black Kyurem</b>, <b>Dawn Wings / Dusk Mane Necrozma</b>,{" "}
-              <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>. Beat them to bank energy toward the
-              fusion / crowned / primal goals on each base Pokémon&apos;s card (Kyurem, Necrozma, Zacian, Zamazenta, Groudon,
-              Kyogre). Each energy comes from one specific raid on one day.
+              <span className="font-semibold text-orange-300">
+                <PixelIcon name="bolt" size={12} /> Fusion / Primal energy:
+              </span>{" "}
+              raid week also brings the special raids that drop it — <b>White / Black Kyurem</b>,{" "}
+              <b>Dawn Wings / Dusk Mane Necrozma</b>, <b>Crowned Zacian / Zamazenta</b>, and <b>Primal Groudon / Kyogre</b>.
+              Beat them to bank energy toward the fusion / crowned / primal goals on each base Pokémon&apos;s card (Kyurem,
+              Necrozma, Zacian, Zamazenta, Groudon, Kyogre). Each energy comes from one specific raid on one day.
             </p>
             <p>
-              <span className="font-semibold text-orange-300">🌌 Origin Dialga &amp; Palkia (Fri):</span> they can be caught
-              already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for the first time an{" "}
-              <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if you&apos;ve been wanting
-              it.
+              <span className="font-semibold text-orange-300">
+                <PixelIcon name="sparkle" size={12} /> Origin Dialga &amp; Palkia (Fri):
+              </span>{" "}
+              they can be caught already knowing their signature moves <b>Roar of Time</b> / <b>Spatial Rend</b> — and for
+              the first time an <b>Elite TM</b> can teach that move to an Origin Dialga / Palkia you already have, if
+              you&apos;ve been wanting it.
             </p>
           </div>
         </Disclosure>
@@ -454,8 +473,8 @@ export function RoadOfLegends({ road }: { road: RoadPlan }) {
                 {d.dateLabel} · {d.raidHourHours}h
               </span>
               {dayBadges(d.id, d.bossIds).map((b) => (
-                <span key={b.title} title={b.title}>
-                  {b.icon}
+                <span key={b.title} title={b.title} className={b.color}>
+                  <PixelIcon name={b.icon} size={12} />
                 </span>
               ))}
             </button>

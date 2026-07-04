@@ -1,14 +1,19 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import type { ImportedShot } from "@/store/usePlannerStore";
 import { useDialog } from "@/hooks/useDialog";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /** How an imported screenshot reads against the event roster. */
 export type ShotStatus = "viable" | "duplicate" | "unreadable" | "unavailable";
 
-const BADGE: Record<"unreadable" | "unavailable", { icon: string; cls: string; title: string }> = {
-  unreadable: { icon: "⚠", cls: "bg-amber-400 text-black", title: "Couldn't read this screenshot" },
+const BADGE: Record<"unreadable" | "unavailable", { icon: ReactNode; cls: string; title: string }> = {
+  unreadable: {
+    icon: <PixelIcon name="warning" size={11} />,
+    cls: "bg-amber-400 text-black",
+    title: "Couldn't read this screenshot",
+  },
   unavailable: { icon: "!", cls: "bg-sky-500 text-white", title: "Not available for raids at this event" },
 };
 
@@ -109,7 +114,7 @@ export function ScreenshotGrid({
             }}
             className="w-full max-w-md cursor-default rounded-sm border-2 border-black/40 bg-rose-500 px-4 py-2.5 font-mono text-xs font-extrabold uppercase tracking-wider text-white shadow-brutal transition active:translate-y-0.5 active:shadow-none"
           >
-            🗑 Delete screenshot
+            <PixelIcon name="trash" size={13} /> Delete screenshot
           </button>
         </div>
       ) : null}

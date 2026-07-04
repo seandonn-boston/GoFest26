@@ -8,6 +8,7 @@ import type { RoadPlan, WeekendBlockPlan } from "@/domain";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { Confetti } from "@/components/ui/Confetti";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 const coins = (n: number) => Math.round(n).toLocaleString();
 const range = (lo: number, hi: number) => (lo === hi ? coins(lo) : `${coins(lo)}–${coins(hi)}`);
@@ -97,8 +98,8 @@ export function CommittedCost({
 
         {covered ? (
           <p className="mt-2 text-[13px] text-emerald-300">
-            🎉 You already hold everything you need for every committed in-person raid — owned and free daily passes cover
-            them all.
+            <PixelIcon name="confetti" size={13} /> You already hold everything you need for every committed in-person raid —
+            owned and free daily passes cover them all.
           </p>
         ) : (
           <p className="mt-2 text-[13px] text-slate-300">

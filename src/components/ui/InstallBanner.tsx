@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppReady } from "@/store/useAppReady";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /** A captured Android `beforeinstallprompt` event (typed loosely — it's non-standard). */
 interface BipEvent extends Event {
@@ -91,8 +92,8 @@ export function InstallBanner() {
   return (
     <>
       <div className="flex items-center gap-2 border-b border-gofest-accent/30 bg-gofest-accent/10 px-3 py-2 text-[14px] text-slate-100">
-        <span aria-hidden className="text-base leading-none">
-          📲
+        <span aria-hidden className="text-gofest-accent">
+          <PixelIcon name="phone" size={18} />
         </span>
         <p className="min-w-0 flex-1 leading-tight">
           <b>Add to Home Screen</b> — launches full-screen and keeps your plan saved between sessions.

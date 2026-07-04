@@ -5,6 +5,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import type { StateBackup } from "@/store/stateBackup";
 import { downloadJsonBackup, readJsonBackup, readXlsxBackup } from "@/export/backupFile";
 import { buildShareUrl } from "@/lib/sharePlan";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /**
  * Save / restore the whole plan to a file, so a user who's lost their browser
@@ -81,16 +82,16 @@ export function BackupControls() {
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={copyShareLink} disabled={!hasState} className={btn}>
-          🔗 Copy share link
+          <PixelIcon name="link" size={12} /> Copy share link
         </button>
         <button type="button" onClick={() => downloadJsonBackup()} className={btn}>
-          ⬇ Save backup (.json)
+          <PixelIcon name="download" size={12} /> Save backup (.json)
         </button>
         <button type="button" onClick={() => jsonRef.current?.click()} className={btn}>
-          ⬆ Restore (.json)
+          <PixelIcon name="upload" size={12} /> Restore (.json)
         </button>
         <button type="button" onClick={() => xlsxRef.current?.click()} className={btn}>
-          ⬆ Import (.xlsx)
+          <PixelIcon name="upload" size={12} /> Import (.xlsx)
         </button>
       </div>
       <input

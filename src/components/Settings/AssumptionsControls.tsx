@@ -8,6 +8,7 @@ import { usePlannerStore } from "@/store/usePlannerStore";
 import { NumberInput } from "@/components/ui/NumberInput";
 import { Badge } from "@/components/ui/Badge";
 import { CalibrationPanel } from "@/components/ui/CalibrationPanel";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 // Assumed same-type Mega buddy levels (the opt-in Level-4 tier is per boss).
 const BUDDY_LEVELS: { level: number; label: string; hint: string }[] = [
@@ -215,7 +216,11 @@ export function AssumptionsControls() {
                       ))}
                     </div>
                   ) : null}
-                  {line.note ? <p className="mt-1 text-[13px] text-slate-500">💡 {line.note}</p> : null}
+                  {line.note ? (
+                    <p className="mt-1 text-[13px] text-slate-500">
+                      <PixelIcon name="bulb" size={12} /> {line.note}
+                    </p>
+                  ) : null}
                 </div>
               </label>
             );

@@ -11,26 +11,27 @@ import { LocationControls } from "./LocationControls";
 import { FeedbackForm } from "./FeedbackForm";
 import { BackupControls } from "./BackupControls";
 import { RendersControls } from "./RendersControls";
+import { PixelIcon, type PixelIconName } from "@/components/ui/PixelIcon";
 
 type Panel = "renders" | "assumptions" | "location" | "feedback" | "backup";
 
 interface DialItem {
   id: string;
   label: string;
-  icon: string;
-  /** Neon accent (hex) that tints this control's glass edge, glow, icon and
-   *  label bar via the `--accent` custom property. */
+  icon: PixelIconName;
+  /** Accent (hex) that tints this control's glass edge, icon and label bar via
+   *  the `--accent` custom property. */
   accent: string;
   onClick: () => void;
   badge?: boolean;
 }
 
-const TITLES: Record<Panel, string> = {
-  renders: "◐ Renders",
-  assumptions: "⚙ Assumptions",
-  location: "📍 Your location",
-  feedback: "✎ Feedback",
-  backup: "💾 Backup & restore",
+const TITLES: Record<Panel, { icon: PixelIconName; label: string }> = {
+  renders: { icon: "theme", label: "Renders" },
+  assumptions: { icon: "gear", label: "Assumptions" },
+  location: { icon: "pin", label: "Your location" },
+  feedback: { icon: "pencil", label: "Feedback" },
+  backup: { icon: "floppy", label: "Backup & restore" },
 };
 
 const miniFab = "glass-fab flex h-12 w-12 items-center justify-center rounded-full text-xl";
@@ -65,7 +66,7 @@ export function ActionDock() {
   const hardReset = async () => {
     if (
       !window.confirm(
-        "⚠ HARD RESET\n\nThis permanently erases EVERYTHING saved on this device — your entire plan, every setting, and all cached app data — then reloads the app fresh.\n\nThis cannot be undone. Continue?",
+        "HARD RESET\n\nThis permanently erases EVERYTHING saved on this device — your entire plan, every setting, and all cached app data — then reloads the app fresh.\n\nThis cannot be undone. Continue?",
       )
     ) {
       return;
@@ -117,29 +118,29 @@ export function ActionDock() {
     {
       id: "renders",
       label: "Renders",
-      icon: "◐",
+      icon: "theme",
       accent: "#8ba3c7",
       onClick: () => openPanel("renders"),
     },
     {
       id: "feedback",
       label: "Feedback",
-      icon: "◈",
+      icon: "pencil",
       accent: "#ff2bd6",
       onClick: () => openPanel("feedback"),
     },
-    { id: "backup", label: "Backup", icon: "⬢", accent: "#f4f1ea", onClick: () => openPanel("backup") },
+    { id: "backup", label: "Backup", icon: "floppy", accent: "#f4f1ea", onClick: () => openPanel("backup") },
     {
       id: "location",
       label: "Location",
-      icon: "⌖",
+      icon: "pin",
       accent: "#00f0ff",
       onClick: () => openPanel("location"),
     },
     {
       id: "assumptions",
       label: "Assumptions",
-      icon: "◆",
+      icon: "gear",
       accent: "#b026ff",
       onClick: () => openPanel("assumptions"),
       badge: customized,
@@ -183,7 +184,7 @@ export function ActionDock() {
                 className={`relative ${miniFab}`}
                 style={{ ["--accent" as string]: a.accent }}
               >
-                {a.icon}
+                <PixelIcon name={a.icon} size={20} />
                 {a.badge ? (
                   <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border border-white/40 bg-gofest-accent shadow-[0_0_8px_#ff2bd6]" />
                 ) : null}
@@ -295,7 +296,8 @@ export function ActionDock() {
                 id="action-dock-title"
                 className="font-mono text-sm font-extrabold uppercase tracking-widest text-gofest-acid"
               >
-                {TITLES[panel]}
+                <PixelIcon name={TITLES[panel].icon} size={14} className="mr-1.5" />
+                {TITLES[panel].label}
               </h2>
               <button
                 type="button"

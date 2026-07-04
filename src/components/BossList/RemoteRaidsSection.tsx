@@ -6,6 +6,7 @@ import { bossIsLocal, isScopeLocal, regionScopeLabel } from "@/domain/region";
 import { remoteWindowsForBoss, type RemoteWindow } from "@/domain/remoteWindows";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { PlusToggle } from "@/components/ui/PlusToggle";
+import { ItemIcon } from "@/components/ui/ItemIcon";
 import { useExpandable } from "@/hooks/useExpandable";
 import { BossSelectChip } from "./BossSelectChip";
 
@@ -74,7 +75,7 @@ export function RemoteRaidsSection() {
         className="flex w-full items-center justify-between gap-1.5 p-3 text-left"
       >
         <h3 className="text-sm font-semibold text-sky-300">
-          🕑 Remote raids · {targets.length} targets worth remoting from {region.label}
+          <ItemIcon name="remotePass" size={15} /> Remote raids · {targets.length} targets worth remoting from {region.label}
         </h3>
         <PlusToggle open={open} size={15} className="shrink-0 text-sky-300" />
       </button>

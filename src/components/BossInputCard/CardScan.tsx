@@ -6,6 +6,7 @@ import { ScanChips } from "@/components/ui/ScanChips";
 import { makeThumbnail } from "@/lib/thumbnail";
 import { uploadError, looksHeic, HEIC_HINT } from "@/lib/imageUpload";
 import { CopyOcrButton } from "@/components/ui/CopyOcrButton";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 
 const previewOcr = (t: string) => (t.length > 160 ? `${t.slice(0, 160)}…` : t);
 
@@ -87,12 +88,16 @@ export function CardScan({
           disabled={state === "scanning"}
           className="flex items-center gap-1.5 rounded-sm border border-gofest-accent2/50 bg-gofest-accent2/15 px-2.5 py-1 font-mono text-[13px] font-bold uppercase tracking-wider text-gofest-accent2 disabled:opacity-50"
         >
-          📷 Scan screenshot
+          <PixelIcon name="camera" size={13} /> Scan screenshot
         </button>
       </div>
 
       {state === "scanning" ? <p className="mt-1.5 text-[13px] text-slate-400">Scanning…</p> : null}
-      {state === "error" ? <p className="mt-1.5 text-[13px] text-rose-300 break-words">⚠ {error}</p> : null}
+      {state === "error" ? (
+        <p className="mt-1.5 text-[13px] text-rose-300 break-words">
+          <PixelIcon name="warning" size={12} /> {error}
+        </p>
+      ) : null}
       {state === "done" ? (
         result?.readAnything ? (
           <div className="mt-1.5">
