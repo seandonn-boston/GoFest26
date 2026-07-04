@@ -3,9 +3,11 @@
 import type { PlanSummary } from "@/domain/types";
 import type { RoadPlan, WeekendBlockPlan } from "@/domain";
 import { EstimateConfidence } from "@/components/ui/EstimateConfidence";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { ExportGroup } from "@/components/ExportGroup";
 import { GoalProgress } from "./GoalProgress";
 import { ResultsPassHighlights } from "./ResultsPassHighlights";
+import { AdventureEffects } from "./AdventureEffects";
 
 /**
  * Step 6 — Results. Pulls together everything between the priority screens and
@@ -51,6 +53,15 @@ export function ResultsStep({
           Pick targets and enter what you hold on the earlier steps to see your results.
         </p>
       )}
+
+      {/* Adventure Effects candy/dust planner — standalone, useful with or without
+          a raid goal, so it sits outside the goals gate. */}
+      <Disclosure
+        title={<span className="font-semibold text-slate-200">⚡ Adventure Effects planner</span>}
+        hint={<span className="text-[12px] text-slate-500">candy &amp; dust to run an effect</span>}
+      >
+        <AdventureEffects />
+      </Disclosure>
     </section>
   );
 }
