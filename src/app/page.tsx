@@ -25,7 +25,6 @@ import { CostStep } from "@/components/Dashboard/CostStep";
 import { RemotePrioritizer } from "@/components/Dashboard/RemoteStep";
 import { PlanSetup } from "@/components/Dashboard/PlanSetup";
 import { ActionDock } from "@/components/Settings/ActionDock";
-import { ThemeToggle } from "@/components/Settings/ThemeToggle";
 import { SubstituteLoader } from "@/components/loader/SubstituteLoader";
 import { TiltProvider } from "@/components/ui/TiltProvider";
 import { SpriteScaleProvider } from "@/components/ui/SpriteScaleProvider";
@@ -220,7 +219,6 @@ export default function Home() {
         </SpriteScaleProvider>
       </main>
       <ActionDock />
-      <ThemeToggle />
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { isDefaultSettings } from "@/domain/settings";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore } from "@/store/useUiStore";
@@ -49,6 +49,9 @@ export function ActionDock() {
     [setFabOpen],
   );
   const isRight = fabSide === "right";
+  const theme = useUiStore((s) => s.theme);
+  const toggleTheme = useUiStore((s) => s.toggleTheme);
+  const sun = theme === "sun";
   const [panel, setPanel] = useState<Panel | null>(null);
   const customized = !isDefaultSettings(usePlannerStore((s) => s.settings));
   const isMobile = useIsMobile();
@@ -56,6 +59,16 @@ export function ActionDock() {
   const tiltEnabled = useTiltStore((s) => s.enabled);
   const requestTilt = useTiltStore((s) => s.request);
   const setTiltEnabled = useTiltStore((s) => s.setEnabled);
+
+  // Mirror the chosen theme onto <html data-theme> — the sun/night control now
+  // lives in this menu, so the sync effect that ThemeToggle used to own moves
+  // here (ActionDock is always mounted). A pre-paint script in layout.tsx sets
+  // the same attribute before first paint, so there's no flash.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (sun) root.setAttribute("data-theme", "sun");
+    else root.removeAttribute("data-theme");
+  }, [sun]);
 
   const openPanel = (id: Panel) => {
     setPanel(id);
@@ -128,6 +141,15 @@ export function ActionDock() {
   }
   items.push(
     {
+      id: "theme",
+      label: sun ? "Theme: sun" : "Theme: night",
+      icon: sun ? "☀" : "☾",
+      accent: sun ? "#fbbf24" : "#8ba3c7",
+      // Toggle in place (no close) so the flip is visible and the label/glyph
+      // update live — tap again to switch back.
+      onClick: () => toggleTheme(),
+    },
+    {
       id: "feedback",
       label: "Feedback",
       icon: "◈",
@@ -164,7 +186,7 @@ export function ActionDock() {
           only its buttons re-enable pointer events. */}
       {panel === null ? (
         <div
-          className={`pointer-events-none fixed bottom-20 z-50 flex flex-col gap-3 ${
+          className={`pointer-events-none fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] z-50 flex flex-col gap-3 ${
             isRight ? "right-4 items-end" : "left-4 items-start"
           }`}
         >
@@ -272,7 +294,7 @@ export function ActionDock() {
           aria-label={isRight ? "Move controls to the left side" : "Move controls to the right side"}
           title={isRight ? "Switch to a left-handed layout" : "Switch to a right-handed layout"}
           style={{ ["--accent" as string]: "#c6ff00", opacity: 0.62 }}
-          className={`glass-fab pointer-events-auto fixed bottom-20 z-50 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
+          className={`glass-fab pointer-events-auto fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] z-50 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
             isRight ? "left-4" : "right-4"
           }`}
         >
