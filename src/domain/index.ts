@@ -45,8 +45,8 @@ export {
 export { energyRaidsNeeded, energyRemaining, defaultEnergyGoal } from "./fusionEnergy";
 export { computePassCoverage } from "./passCoverage";
 export type { PassCoverage, SpeciesPassNeed, SpeciesPassCoverage } from "./passCoverage";
-export { computeCommitment } from "./commitment";
-export type { Commitment } from "./commitment";
+export { computeCommitment, commitmentByBoss } from "./commitment";
+export type { Commitment, CommitmentByBoss } from "./commitment";
 
 /**
  * Top-level engine entry point: given the user's per-boss inputs, computes

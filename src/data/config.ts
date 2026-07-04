@@ -171,9 +171,21 @@ export const GAME_CONFIG = {
     // Premium Battle Pass ("green", in-person). 3-pack = 250 (≈83⅓/pass). A
     // limited-time box can carry ~99 passes for ~5,000 coins (≈50/pass).
     green: { bundlePasses: 3, bundleCoins: 250, bestBoxCoinsPerPass: 50 },
-    // Remote Raid Pass ("blue"). 3-pack = 525 (175/pass). Carry limit 3, so no
-    // big packs — boxes rarely beat the 3-pack, so the low rate matches it.
-    remote: { bundlePasses: 3, bundleCoins: 525, bestBoxCoinsPerPass: 175 },
+    // Remote Raid Pass ("blue"). 3-pack = 525 (175/pass); a single = 100 coins.
+    // A trainer holds at most 3, so remotes are always bought as you go — never
+    // covered by owned/free passes. Cost = as many 3-packs as fit, then singles
+    // for the 1–2 remainder (a single at 100 beats rounding up to a 525 pack).
+    // source: confirmed prices (3-pack 525; single 100).
+    remote: { bundlePasses: 3, bundleCoins: 525, singleCoins: 100, bestBoxCoinsPerPass: 175 },
+    // Ongoing free Orange (Raid) passes earned per day AFTER the event — used only
+    // to estimate how many days of daily grinding it'd take to clear the leftover
+    // raids for a full 100% run (assuming every boss stayed available forever). A
+    // blended estimate:
+    //   • 1.00/day — the daily Gym Photo-Disc free Raid Pass
+    //   • ~0.30/day — event bonuses (~2 passes × ~4.5 events/month ÷ 30)
+    //   • ~0.14/day — weekly Community Day / Wednesday raid hour / Campfire / task
+    // source: estimate — editable; drives only the "days to 100%" figure.
+    freeOrangePassesPerDay: 1.44,
     // Link Charges — usable only on Mega (150 LC) or Super Mega (200 LC) raids.
     // In person they can stand in for a Mega/Super-Mega pass; a REMOTE Super Mega
     // Raid needs a Remote Pass AND 200 LC (LC alone can't remote a Mega raid).

@@ -155,6 +155,32 @@ samp {
   animation: ticker 26s linear infinite;
 }
 
+/* Golden chromatic "0" — the plan is fully paid for. A slow shimmer sweeps a
+   metallic-gold gradient across the glyph so the zero glimmers without shouting. */
+@keyframes goldenGlimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.golden-zero {
+  background-image: linear-gradient(100deg, #b8860b 0%, #ffd700 25%, #fff6c8 50%, #ffd700 75%, #b8860b 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: goldenGlimmer 2.6s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.45));
+}
+@media (prefers-reduced-motion: reduce) {
+  .golden-zero {
+    animation: none;
+  }
+}
+
 /* Remove number-input spinners for a cleaner mobile look. */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {

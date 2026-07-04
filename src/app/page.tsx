@@ -406,7 +406,7 @@ function StepContent({
   return (
     <>
       {blocking ? <StepNudge missing={blocking} onJump={onJump} /> : null}
-      <CostStep summary={summary} />
+      <CostStep summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
     </>
   );
 }

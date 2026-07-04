@@ -68,7 +68,7 @@ describe("computePassCost", () => {
     expect(cost.superMegaInPersonRaids).toBe(8); // covered by free passes
     expect(cost.linkChargesNeeded).toBe(400); // 2 × 200 LC
     expect(cost.high.linkChargeCoins).toBe(200); // 2× 200-LC pack (100 ea)
-    expect(cost.high.remoteCoins).toBe(525); // ceil(2/3) × 525
+    expect(cost.high.remoteCoins).toBe(200); // 2 single Remote Passes (100 ea) < a 525 3-pack
     expect(cost.paidInPerson).toBe(0);
   });
 
@@ -93,5 +93,43 @@ describe("computePassCost", () => {
     const cost = computePassCost([input("xurkitree")], [result("xurkitree", 4)], DEFAULT_SETTINGS);
     expect(cost.totalRemote).toBe(4);
     expect(cost.inPersonRaids).toBe(0);
+  });
+
+  it("prices remotes as 3-packs plus singles for the remainder", () => {
+    // 4 remote raids → one 525 pack + one 100 single = 625 (not two 525 packs).
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+    const cost = computePassCost([input("zekrom")], [result("zekrom", 4)], settings, { zekrom: 4 });
+    expect(cost.totalRemote).toBe(4);
+    expect(cost.high.remoteCoins).toBe(625);
+    expect(cost.low.remoteCoins).toBe(625); // no bulk box for remotes
+  });
+
+  it("counts only the COMMITTED raids when a commitment map is passed", () => {
+    // 30 in-person required, but only 8 fit their windows → priced as 8, all of
+    // which the 18 free weekend passes cover → 0 coins.
+    const committed = { inPerson: { zekrom: 8 }, remote: {} };
+    const cost = computePassCost([input("zekrom")], [result("zekrom", 30)], DEFAULT_SETTINGS, {}, {}, committed);
+    expect(cost.inPersonRaids).toBe(8);
+    expect(cost.paidInPerson).toBe(0);
+    expect(cost.hasCost).toBe(false);
+  });
+
+  it("spends owned Premium passes on in-person raids after the free dailies", () => {
+    // 30 committed in-person − 18 free − 5 owned = 7 paid green.
+    const settings = { ...DEFAULT_SETTINGS, passesOwned: 5 };
+    const committed = { inPerson: { zekrom: 30 }, remote: {} };
+    const cost = computePassCost([input("zekrom")], [result("zekrom", 30)], settings, {}, {}, committed);
+    expect(cost.ownedInPersonPasses).toBe(5);
+    expect(cost.ownedPassesUsed).toBe(5);
+    expect(cost.paidInPerson).toBe(7);
+  });
+
+  it("golden zero: owned + free passes cover every committed in-person raid", () => {
+    // 20 committed in-person, 18 free + 5 owned = 23 ≥ 20 → nothing to buy.
+    const settings = { ...DEFAULT_SETTINGS, passesOwned: 5 };
+    const committed = { inPerson: { zekrom: 20 }, remote: {} };
+    const cost = computePassCost([input("zekrom")], [result("zekrom", 40)], settings, {}, {}, committed);
+    expect(cost.paidInPerson).toBe(0);
+    expect(cost.hasCost).toBe(false);
   });
 });
