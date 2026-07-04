@@ -57,17 +57,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Apply the saved theme before first paint so Light doesn't flash the
-            dark default. Mirrors RenderSettings; migrates old night/sun/pokecenter. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{var t=(JSON.parse(localStorage.getItem('gofest26-ui-v1')||'{}').state||{}).theme;t=(t==='light'||t==='sun')?'light':'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}",
-          }}
-        />
-      </head>
+    <html lang="en">
       <body className="text-slate-100 antialiased">
         <RegisterServiceWorker />
         {children}
