@@ -59,13 +59,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Apply the saved theme + density before first paint so a Light theme /
-            Compact layout doesn't flash the dark cozy default. Mirrors
-            RenderSettings; migrates the old night/sun values. */}
+        {/* Apply the saved theme before first paint so Light doesn't flash the
+            dark default. Mirrors RenderSettings; migrates old night/sun/pokecenter. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var s=(JSON.parse(localStorage.getItem('gofest26-ui-v1')||'{}').state)||{};var t=s.theme;if(t==='night')t='dark';if(t==='sun')t='light';if(t!=='dark'&&t!=='light'&&t!=='pokecenter')t='dark';var d=(s.density==='compact')?'compact':'cozy';var r=document.documentElement;r.setAttribute('data-theme',t);r.setAttribute('data-density',d);if(s.reduceMotion===true)r.classList.add('reduce-motion');}catch(e){}",
+              "try{var t=(JSON.parse(localStorage.getItem('gofest26-ui-v1')||'{}').state||{}).theme;t=(t==='light'||t==='sun')?'light':'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}",
           }}
         />
       </head>

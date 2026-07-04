@@ -181,109 +181,75 @@ samp {
   }
 }
 
-/* ── Glass + cyberpunk FAB surfaces ───────────────────────────────────────────
-   A heavy frosted-glass button whose neon edge/glow is driven by a single
-   `--accent` custom property (set per action), so the whole speed-dial reads as
-   one translucent system with individually-tinted controls. A faint CRT
-   scanline overlay + double neon rim give it the cyberpunk HUD edge.
+/* ── FAB glass surfaces ───────────────────────────────────────────────────────
+   The speed-dial buttons use the same plain "liquid glass" treatment the rest of
+   the app uses (see .liquid-glass) — a lightly-blurred refractive pane with a lit
+   top bevel and a soft drop shadow. No neon, scanlines or HUD rings. The per-
+   action `--accent` only tints the ICON glyph so the buttons stay distinguishable.
    Authored in the `components` layer so Tailwind position utilities (e.g. the
    switch-side ghost's `fixed right-4`) still override the default `relative`. */
 @layer components {
   .glass-fab {
-    --accent: #f4f1ea;
+    --accent: #eef2f7;
     position: relative;
-    isolation: isolate;
-    /* More opaque: a dark smoked-glass body faintly flooded with the accent. */
-    background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 20%, rgba(9, 9, 14, 0.86)), rgba(6, 6, 10, 0.8));
-    /* Blur harder. */
-    backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
-    -webkit-backdrop-filter: blur(26px) saturate(190%) brightness(1.06);
-    border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
     color: var(--accent);
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.05) 46%,
+      rgba(255, 255, 255, 0.12)
+    );
+    backdrop-filter: blur(10px) saturate(160%) brightness(1.06);
+    -webkit-backdrop-filter: blur(10px) saturate(160%) brightness(1.06);
+    border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
-      0 12px 30px rgba(0, 0, 0, 0.62),
-      0 0 22px color-mix(in srgb, var(--accent) 44%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 0 14px color-mix(in srgb, var(--accent) 20%, transparent);
-    text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.6),
+      inset 0 -12px 26px -18px rgba(255, 255, 255, 0.3),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+      0 8px 22px -10px rgba(0, 0, 0, 0.55);
     transition:
       transform 0.16s ease,
-      box-shadow 0.22s ease,
-      border-color 0.22s ease;
-  }
-  /* Top-light sheen + CRT scanlines, painted BELOW the glyph (::before). */
-  .glass-fab::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background:
-      radial-gradient(120% 75% at 50% -12%, rgba(255, 255, 255, 0.28), transparent 55%),
-      repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
-    opacity: 0.65;
-    pointer-events: none;
-  }
-  /* Sharp inner HUD ring in the accent colour. */
-  .glass-fab::after {
-    content: "";
-    position: absolute;
-    inset: 3px;
-    border-radius: inherit;
-    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-    opacity: 0.7;
-    pointer-events: none;
+      box-shadow 0.2s ease;
   }
   .glass-fab:hover {
-    border-color: var(--accent);
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
-      0 14px 34px rgba(0, 0, 0, 0.66),
-      0 0 32px color-mix(in srgb, var(--accent) 62%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      inset 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.65),
+      inset 0 -12px 26px -18px rgba(255, 255, 255, 0.35),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+      0 10px 26px -10px rgba(0, 0, 0, 0.6);
   }
   .glass-fab:active {
-    transform: scale(0.93);
+    transform: scale(0.95);
   }
-  /* The primary trigger — a heavier acid flood + glow. */
+  /* The primary trigger — a touch brighter glass so it reads as the main button. */
   .glass-fab-primary {
-    --accent: #c6ff00;
-    background: linear-gradient(150deg, rgba(198, 255, 0, 0.34), rgba(10, 14, 4, 0.82));
-    box-shadow:
-      0 0 0 1px rgba(198, 255, 0, 0.4),
-      0 12px 34px rgba(0, 0, 0, 0.66),
-      0 0 34px rgba(198, 255, 0, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.32),
-      inset 0 0 18px rgba(198, 255, 0, 0.22);
+    --accent: #d9ff5b;
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.24),
+      rgba(255, 255, 255, 0.08) 46%,
+      rgba(255, 255, 255, 0.16)
+    );
+    border-color: rgba(255, 255, 255, 0.3);
   }
-  .glass-fab-primary:hover {
-    box-shadow:
-      0 0 0 1px rgba(198, 255, 0, 0.55),
-      0 14px 38px rgba(0, 0, 0, 0.7),
-      0 0 46px rgba(198, 255, 0, 0.72),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      inset 0 0 24px rgba(198, 255, 0, 0.3);
-  }
-  /* Frosted label chip that trails each dial button — opaque smoked glass with a
-   neon left rail and a clipped cyber notch on its trailing corner. */
+  /* Frosted dark chip trailing each dial button — a plain tooltip-style pane. */
   .glass-label {
-    background: rgba(7, 7, 11, 0.82);
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    border: 1px solid color-mix(in srgb, var(--accent, #00f0ff) 40%, rgba(255, 255, 255, 0.12));
-    box-shadow:
-      inset 3px 0 0 var(--accent, #00f0ff),
-      0 0 12px color-mix(in srgb, var(--accent, #00f0ff) 24%, transparent),
-      0 4px 14px rgba(0, 0, 0, 0.45);
+    background: rgba(12, 12, 18, 0.72);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     color: #eef2f7;
-    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
   }
   @media (prefers-reduced-motion: reduce) {
     .glass-fab {
       transition: none;
     }
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-fab {
+    background-color: rgba(20, 20, 28, 0.9);
   }
 }
 
@@ -576,191 +542,6 @@ input[type="number"] {
 }
 
 /* ============================================================================
-   LIGHT theme (:root[data-theme="light"]) — a vivid bright-white flip of the
-   dark "CyberClassic" look: pure-white backdrop, heavy bold near-black text,
-   and the same neon key hues pushed DARKER (not re-hued) so they read on white.
-   Pokémon TYPE colours are never touched (they live in inline styles / their own
-   utilities and carry their own dark scrims). Attribute set pre-paint in
-   layout.tsx + synced by RenderSettings. ================================== */
-:root[data-theme="light"] {
-  color-scheme: light;
-  font-size: 104%; /* light theme reads a touch larger */
-}
-:root[data-theme="light"][data-density="compact"] {
-  font-size: 90%; /* light + compact compose explicitly (not multiplied) */
-}
-:root[data-theme="light"] body {
-  color: #0a0f1a;
-  font-weight: 600; /* heavy baseline — the light theme reads bold */
-  background:
-    radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.07), transparent 60%),
-    radial-gradient(60% 50% at 100% 0%, rgba(0, 176, 210, 0.07), transparent 55%),
-    radial-gradient(55% 45% at 50% 115%, rgba(124, 58, 237, 0.06), transparent 60%), #ffffff;
-}
-:root[data-theme="light"] body::before {
-  background-image:
-    linear-gradient(rgba(2, 6, 23, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(2, 6, 23, 0.045) 1px, transparent 1px);
-}
-:root[data-theme="light"] body::after {
-  display: none; /* CRT scanline multiply film muddies a white bg */
-}
-/* Section headings + strong text go deep and heavy. h1 (the glitch masthead) is
-   deliberately left alone. */
-:root[data-theme="light"] h2,
-:root[data-theme="light"] h3,
-:root[data-theme="light"] b,
-:root[data-theme="light"] strong {
-  color: #04070f;
-  font-weight: 800;
-}
-/* Text ramp: invert the slate scale to dark-on-light, pushed darker + heavier so
-   it reads boldly on white. (Same hierarchy — 100 = strongest.) */
-:root[data-theme="light"] .text-white,
-:root[data-theme="light"] .text-slate-100,
-:root[data-theme="light"] .text-slate-200 {
-  color: #04070f;
-  font-weight: 700;
-}
-:root[data-theme="light"] .text-slate-300 {
-  color: #0d1626;
-  font-weight: 650;
-}
-:root[data-theme="light"] .text-slate-400 {
-  color: #263247;
-  font-weight: 600;
-}
-:root[data-theme="light"] .text-slate-500 {
-  color: #3f4a5f;
-  font-weight: 600;
-}
-:root[data-theme="light"] .text-slate-600 {
-  color: #566074;
-}
-/* Card / tile content sits on the type-coloured (often dark) fill, so its text
-   stays WHITE with its dark halo in every theme — override the ramp above. */
-:root[data-theme="light"] .card-text-legible,
-:root[data-theme="light"] .card-text-legible *,
-:root[data-theme="light"] .enamel-label {
-  color: #ffffff;
-}
-/* Lighten the neo-brutalist card/tile treatment so the enamel reads as a
-   light-theme surface (the type-hue fill itself is left untouched). */
-:root[data-theme="light"] .enamel {
-  border-color: rgba(2, 6, 23, 0.14);
-  box-shadow:
-    4px 4px 0 0 rgba(2, 6, 23, 0.16),
-    inset 0 2px 2px rgba(255, 255, 255, 0.3),
-    inset 0 -8px 14px rgba(2, 6, 23, 0.12);
-}
-:root[data-theme="light"] .brutal {
-  border-color: rgba(2, 6, 23, 0.16);
-  box-shadow: 5px 5px 0 0 rgba(2, 6, 23, 0.16);
-}
-/* Faint black overlays (chips, scrims) flip to faint dark-on-light. */
-:root[data-theme="light"] .bg-black\/30 {
-  background-color: rgba(2, 6, 23, 0.06);
-}
-:root[data-theme="light"] .bg-black\/40,
-:root[data-theme="light"] .bg-black\/55 {
-  background-color: rgba(2, 6, 23, 0.08);
-}
-/* Native selects + inputs on the light surface. */
-:root[data-theme="light"] select,
-:root[data-theme="light"] input,
-:root[data-theme="light"] textarea {
-  color: #0a0f1a;
-}
-/* The neo-brutalist hard black offset shadow reads as a heavy dark blob on
-   white — soften it to a light grey so active pills / toggles feel light. */
-:root[data-theme="light"] .shadow-brutal {
-  --tw-shadow: 4px 4px 0 0 rgba(2, 6, 23, 0.18);
-  box-shadow: 4px 4px 0 0 rgba(2, 6, 23, 0.18);
-}
-/* Disclosure header + panel bars that still carried the dark fill. */
-:root[data-theme="light"] .bg-gofest-bg\/30,
-:root[data-theme="light"] .bg-gofest-panel\/40,
-:root[data-theme="light"] .bg-gofest-bg\/50 {
-  background-color: rgba(15, 23, 42, 0.04);
-}
-/* Surfaces flip to white/very-light with subtle dark separators. */
-:root[data-theme="light"] .bg-gofest-bg,
-:root[data-theme="light"] .bg-gofest-panel,
-:root[data-theme="light"] .bg-gofest-panel\/80,
-:root[data-theme="light"] .bg-gofest-panel\/70,
-:root[data-theme="light"] .bg-gofest-panel\/60,
-:root[data-theme="light"] .bg-gofest-panel2,
-:root[data-theme="light"] .bg-gofest-panel2\/60 {
-  background-color: #ffffff;
-}
-:root[data-theme="light"] .bg-gofest-bg\/40,
-:root[data-theme="light"] .bg-gofest-bg\/60,
-:root[data-theme="light"] .bg-gofest-bg\/30,
-:root[data-theme="light"] .bg-gofest-bg\/90 {
-  background-color: rgba(15, 23, 42, 0.035);
-}
-:root[data-theme="light"] .bg-white\/5,
-:root[data-theme="light"] .bg-white\/10,
-:root[data-theme="light"] .bg-white\/\[0\.02\],
-:root[data-theme="light"] .bg-white\/\[0\.06\] {
-  background-color: rgba(15, 23, 42, 0.05);
-}
-:root[data-theme="light"] .border-white\/5 {
-  border-color: rgba(2, 6, 23, 0.08);
-}
-:root[data-theme="light"] .border-white\/10 {
-  border-color: rgba(2, 6, 23, 0.12);
-}
-:root[data-theme="light"] .border-white\/15 {
-  border-color: rgba(2, 6, 23, 0.18);
-}
-:root[data-theme="light"] .divide-white\/\[0\.04\] > * + * {
-  border-color: rgba(2, 6, 23, 0.08);
-}
-/* Key neon hues: same colour, darker so they carry on white. */
-:root[data-theme="light"] .text-gofest-acid {
-  color: #5f8a00;
-}
-:root[data-theme="light"] .text-gofest-accent {
-  color: #c40aa3;
-}
-:root[data-theme="light"] .text-gofest-accent2 {
-  color: #0088a8;
-}
-:root[data-theme="light"] .text-gofest-mewtwo {
-  color: #7b1fd1;
-}
-:root[data-theme="light"] .text-amber-200,
-:root[data-theme="light"] .text-amber-300 {
-  color: #b45309;
-}
-:root[data-theme="light"] .text-emerald-300 {
-  color: #047857;
-}
-:root[data-theme="light"] .text-sky-300 {
-  color: #0369a1;
-}
-:root[data-theme="light"] .text-rose-300 {
-  color: #be123c;
-}
-/* The card sprite scrims assume white text; deepen their halo instead. */
-:root[data-theme="light"] .card-text-legible {
-  color: #ffffff;
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 1),
-    0 0 6px rgba(0, 0, 0, 0.85);
-}
-
-/* ============================================================================
-   COMPACT density (:root[data-density="compact"]) — shrink the whole rem scale
-   (all Tailwind spacing/text is rem) plus a sprite-scale var the Sprite reads.
-   ==========================================================================*/
-:root[data-density="compact"] {
-  font-size: 86.5%;
-  --sprite-scale: 0.82;
-}
-
-/* ============================================================================
    REDUCE MOTION (.reduce-motion on <html>) — user toggle OR OS setting. Nukes
    every CSS animation/transition (incl. inline transitions, via !important) so
    the glitch bursts, ticker, golden shimmer, switch-in, tilt, and the FAB /
@@ -786,4 +567,195 @@ input[type="number"] {
 .tilt-active .tilt-card {
   transition: none;
   transform: perspective(900px) rotateX(calc(var(--tilt-y, 0) * -7deg)) rotateY(calc(var(--tilt-x, 0) * 7deg));
+}
+
+/* ============================================================================
+   LIGHT theme (:root[data-theme="light"]) — a vivid bright-white flip of the
+   dark "CyberClassic" look: pure-white backdrop, heavy bold near-black text, and
+   the same key hues pushed DARKER (not re-hued) so they carry on white. Pokémon
+   TYPE colours and the card/tile species names + prefixes are never touched —
+   those stay light on their type-coloured cards. Every surface, border and text
+   utility used across the app is remapped so the whole UI flips, not just parts.
+   Attribute set pre-paint in layout.tsx + synced by RenderSettings. ==========*/
+:root[data-theme="light"] {
+  color-scheme: light;
+  font-size: 104%; /* a touch larger for a sunlit read */
+}
+:root[data-theme="light"] body {
+  color: #0a0f1a;
+  font-weight: 600; /* heavy baseline — the light theme reads bold */
+  background:
+    radial-gradient(70% 50% at 12% -5%, rgba(255, 43, 214, 0.07), transparent 60%),
+    radial-gradient(60% 50% at 100% 0%, rgba(0, 176, 210, 0.07), transparent 55%),
+    radial-gradient(55% 45% at 50% 115%, rgba(124, 58, 237, 0.06), transparent 60%), #ffffff;
+}
+:root[data-theme="light"] body::before {
+  background-image:
+    linear-gradient(rgba(2, 6, 23, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.045) 1px, transparent 1px);
+}
+:root[data-theme="light"] body::after {
+  display: none; /* CRT scanline multiply film muddies a white bg */
+}
+/* Section headings + strong text go deep and heavy. h1 (the glitch masthead) is
+   left alone. */
+:root[data-theme="light"] h2,
+:root[data-theme="light"] h3,
+:root[data-theme="light"] b,
+:root[data-theme="light"] strong {
+  color: #04070f;
+  font-weight: 800;
+}
+/* Text ramp: dark-on-light, pushed darker + heavier so it reads boldly. */
+:root[data-theme="light"] .text-white,
+:root[data-theme="light"] .text-slate-100,
+:root[data-theme="light"] .text-slate-200 {
+  color: #04070f;
+  font-weight: 700;
+}
+:root[data-theme="light"] .text-slate-300 {
+  color: #0d1626;
+  font-weight: 650;
+}
+:root[data-theme="light"] .text-slate-400 {
+  color: #263247;
+  font-weight: 600;
+}
+:root[data-theme="light"] .text-slate-500 {
+  color: #3f4a5f;
+  font-weight: 600;
+}
+:root[data-theme="light"] .text-slate-600 {
+  color: #566074;
+}
+/* Card / tile species names + prefixes sit on the type-coloured fill, so they
+   stay WHITE with their dark halo in every theme — override the ramp above. */
+:root[data-theme="light"] .card-text-legible,
+:root[data-theme="light"] .card-text-legible *,
+:root[data-theme="light"] .enamel-label {
+  color: #ffffff;
+}
+:root[data-theme="light"] .card-text-legible {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 1),
+    0 0 6px rgba(0, 0, 0, 0.85);
+}
+/* Lighten the neo-brutalist card/tile treatment (the type-hue fill is untouched). */
+:root[data-theme="light"] .enamel {
+  border-color: rgba(2, 6, 23, 0.14);
+  box-shadow:
+    4px 4px 0 0 rgba(2, 6, 23, 0.16),
+    inset 0 2px 2px rgba(255, 255, 255, 0.3),
+    inset 0 -8px 14px rgba(2, 6, 23, 0.12);
+}
+:root[data-theme="light"] .brutal {
+  border-color: rgba(2, 6, 23, 0.16);
+  box-shadow: 5px 5px 0 0 rgba(2, 6, 23, 0.16);
+}
+:root[data-theme="light"] .shadow-brutal {
+  --tw-shadow: 4px 4px 0 0 rgba(2, 6, 23, 0.18);
+  box-shadow: 4px 4px 0 0 rgba(2, 6, 23, 0.18);
+}
+/* Surfaces flip to white / very-light. */
+:root[data-theme="light"] .bg-gofest-bg,
+:root[data-theme="light"] .bg-gofest-panel,
+:root[data-theme="light"] .bg-gofest-panel\/90,
+:root[data-theme="light"] .bg-gofest-panel\/80,
+:root[data-theme="light"] .bg-gofest-panel\/70,
+:root[data-theme="light"] .bg-gofest-panel\/60,
+:root[data-theme="light"] .bg-gofest-panel2,
+:root[data-theme="light"] .bg-gofest-panel2\/60 {
+  background-color: #ffffff;
+}
+:root[data-theme="light"] .bg-gofest-bg\/90,
+:root[data-theme="light"] .bg-gofest-bg\/60,
+:root[data-theme="light"] .bg-gofest-bg\/50,
+:root[data-theme="light"] .bg-gofest-bg\/40,
+:root[data-theme="light"] .bg-gofest-bg\/30,
+:root[data-theme="light"] .bg-gofest-panel\/40 {
+  background-color: rgba(15, 23, 42, 0.04);
+}
+:root[data-theme="light"] .bg-white\/5,
+:root[data-theme="light"] .bg-white\/10,
+:root[data-theme="light"] .bg-white\/\[0\.02\],
+:root[data-theme="light"] .bg-white\/\[0\.06\] {
+  background-color: rgba(15, 23, 42, 0.05);
+}
+:root[data-theme="light"] .bg-black\/30 {
+  background-color: rgba(2, 6, 23, 0.06);
+}
+:root[data-theme="light"] .bg-black\/40,
+:root[data-theme="light"] .bg-black\/55 {
+  background-color: rgba(2, 6, 23, 0.08);
+}
+/* Borders + dividers. */
+:root[data-theme="light"] .border-white\/5 {
+  border-color: rgba(2, 6, 23, 0.08);
+}
+:root[data-theme="light"] .border-white\/10 {
+  border-color: rgba(2, 6, 23, 0.12);
+}
+:root[data-theme="light"] .border-white\/15 {
+  border-color: rgba(2, 6, 23, 0.18);
+}
+:root[data-theme="light"] .divide-white\/\[0\.04\] > * + * {
+  border-color: rgba(2, 6, 23, 0.08);
+}
+/* Key hues — same colour family, darker so they carry on white. */
+:root[data-theme="light"] .text-gofest-acid {
+  color: #5f8a00;
+}
+:root[data-theme="light"] .text-gofest-accent {
+  color: #c40aa3;
+}
+:root[data-theme="light"] .text-gofest-accent2 {
+  color: #0088a8;
+}
+:root[data-theme="light"] .text-gofest-mewtwo {
+  color: #7b1fd1;
+}
+:root[data-theme="light"] .text-amber-200,
+:root[data-theme="light"] .text-amber-300 {
+  color: #b45309;
+}
+:root[data-theme="light"] .text-emerald-300,
+:root[data-theme="light"] .text-emerald-400 {
+  color: #047857;
+}
+:root[data-theme="light"] .text-sky-300,
+:root[data-theme="light"] .text-sky-400 {
+  color: #0369a1;
+}
+:root[data-theme="light"] .text-rose-200,
+:root[data-theme="light"] .text-rose-300 {
+  color: #be123c;
+}
+:root[data-theme="light"] .text-orange-300,
+:root[data-theme="light"] .text-orange-400 {
+  color: #b8500b;
+}
+:root[data-theme="light"] .text-purple-300 {
+  color: #7b1fd1;
+}
+/* Native controls on the light surface. */
+:root[data-theme="light"] select,
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea {
+  color: #0a0f1a;
+}
+/* FAB glass in Light mode: the frosted panes are white-tinted (built for a dark
+   backdrop), so flip them to a subtle dark-tinted glass that reads on white. The
+   accent-tinted icon glyphs stay. */
+:root[data-theme="light"] .glass-fab {
+  background-image: linear-gradient(135deg, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0.06) 46%, rgba(15, 23, 42, 0.12));
+  border-color: rgba(2, 6, 23, 0.18);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.5),
+    inset 0 0 0 0.5px rgba(2, 6, 23, 0.06),
+    0 8px 22px -10px rgba(2, 6, 23, 0.35);
+}
+:root[data-theme="light"] .glass-fab-primary {
+  --accent: #4f7a00; /* darker acid so the ≡/✕ lines carry on light glass */
+  background-image: linear-gradient(135deg, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.08) 46%, rgba(15, 23, 42, 0.14));
+  border-color: rgba(2, 6, 23, 0.22);
 }

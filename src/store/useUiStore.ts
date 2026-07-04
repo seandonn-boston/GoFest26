@@ -10,19 +10,14 @@ export type StepId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
  *  continuous page with every step stacked. Persisted per-device. */
 export type Layout = "stepper" | "single";
 
-/** Visual theme. `dark` is the default neon "CyberClassic" look; `light` is a
- *  vivid bright-white theme with bold dark text (same hues, just brighter); and
- *  `pokecenter` is the red/white/ice-blue Pokémon Center skin. Type colours are
- *  never changed. Persisted per-device. */
-export type Theme = "dark" | "light" | "pokecenter";
-
 /** Which side the floating action button (speed-dial) lives on — a right-handed
  *  (default) or left-handed thumb reach. Persisted per-device. */
 export type FabSide = "left" | "right";
 
-/** Layout density: `cozy` (default) or `compact` (tighter spacing + smaller
- *  sprites throughout). Persisted per-device. */
-export type Density = "cozy" | "compact";
+/** Visual theme. `dark` is the default neon "CyberClassic" look; `light` is a
+ *  vivid bright-white theme with deep bold dark text (same colour families, just
+ *  brightened for a sunlit read). Card/tile species names stay light. Persisted. */
+export type Theme = "dark" | "light";
 
 interface UiState {
   /** The step currently shown. Persisted so a refresh returns you where you were. */
@@ -30,22 +25,13 @@ interface UiState {
   /** Stepper (one step at a time) vs. single-page (all steps stacked). */
   layout: Layout;
   setLayout: (layout: Layout) => void;
-  /** Visual theme: Dark (default) / Light / Poké Center. */
+  /** Visual theme: Dark (default) or Light. */
   theme: Theme;
   setTheme: (theme: Theme) => void;
   /** Which side the FAB speed-dial sits on (right = default/right-handed). */
   fabSide: FabSide;
   setFabSide: (side: FabSide) => void;
   toggleFabSide: () => void;
-  /** Layout density (cozy vs compact). */
-  density: Density;
-  setDensity: (density: Density) => void;
-  toggleDensity: () => void;
-  /** User-forced reduce-motion: kills glitching, tilt, the FAB/disclosure morph
-   *  animations, single-page and every other motion. OR'd with the OS setting. */
-  reduceMotion: boolean;
-  setReduceMotion: (on: boolean) => void;
-  toggleReduceMotion: () => void;
   /** Whether the FAB speed-dial is open — shared so the opposite corner can swap
    *  the theme toggle for the "switch side" button while it's open. Not persisted. */
   fabOpen: boolean;
@@ -93,12 +79,6 @@ export const useUiStore = create<UiState>()(
       fabSide: "right",
       setFabSide: (fabSide) => set({ fabSide }),
       toggleFabSide: () => set((s) => ({ fabSide: s.fabSide === "right" ? "left" : "right" })),
-      density: "cozy",
-      setDensity: (density) => set({ density }),
-      toggleDensity: () => set((s) => ({ density: s.density === "compact" ? "cozy" : "compact" })),
-      reduceMotion: false,
-      setReduceMotion: (reduceMotion) => set({ reduceMotion }),
-      toggleReduceMotion: () => set((s) => ({ reduceMotion: !s.reduceMotion })),
       fabOpen: false,
       setFabOpen: (fabOpen) => set({ fabOpen }),
       groupBySpecies: false,
@@ -117,24 +97,23 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: "gofest26-ui-v1",
-      version: 7, // v6: Results step → 7 steps; v7: theme dark/light/pokecenter + density/reduceMotion
+      version: 8, // v8: drop density/reduceMotion; keep Dark/Light theme only
       storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : noop)),
       // The expand/collapse-all broadcast and the transient FAB-open flag are never
       // persisted, so a reload returns to the mixed initial state / a closed dial.
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       partialize: ({ expandNonce, expandTarget, setExpandAll, fabOpen, setFabOpen, ...rest }) => rest as UiState,
       migrate: (persisted) => {
-        const s = (persisted ?? {}) as Partial<UiState>;
+        const s = (persisted ?? {}) as Partial<UiState> & Record<string, unknown>;
         if (typeof s.step === "number") s.step = clampStep(s.step);
         if (s.layout !== "single" && s.layout !== "stepper") s.layout = "stepper";
-        // v7: night → dark, sun → light; anything else → dark.
-        const t = s.theme as string | undefined;
-        if (t === "night") s.theme = "dark";
-        else if (t === "sun") s.theme = "light";
-        else if (t !== "dark" && t !== "light" && t !== "pokecenter") s.theme = "dark";
         if (s.fabSide !== "left" && s.fabSide !== "right") s.fabSide = "right";
-        if (s.density !== "cozy" && s.density !== "compact") s.density = "cozy";
-        if (typeof s.reduceMotion !== "boolean") s.reduceMotion = false;
+        // v8: drop Poké Center, Compact and the reduce-motion toggle. Keep the
+        // Dark/Light theme (migrating the older night/sun/pokecenter values).
+        const t = (s as Record<string, unknown>).theme;
+        s.theme = t === "light" || t === "sun" ? "light" : "dark";
+        delete (s as Record<string, unknown>).density;
+        delete (s as Record<string, unknown>).reduceMotion;
         return s as UiState;
       },
     },
