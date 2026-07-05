@@ -364,7 +364,10 @@ describe("remote raids (manual per-species allocation)", () => {
     expect(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}, { [MEWTWO_X_ID]: 5 }).remote).toBeUndefined();
   });
 
-  it("a remote allocation reduces that species' in-person block demand", () => {
+  it("a remote allocation never alters the in-person blocks (remote is additive)", () => {
+    // Regression: allocations used to subtract from block demand, so editing the
+    // Remote step reshuffled the GO Fest time blocks. Now blocks are identical
+    // with or without allocations; remote raids only build the separate pool.
     const { inputs, results } = buildFor([localSat.id]);
     const blockDemand = (plan: ReturnType<typeof computeBlockPlan>) =>
       plan.blocks.reduce(
@@ -374,7 +377,7 @@ describe("remote raids (manual per-species allocation)", () => {
     const before = blockDemand(computeBlockPlan(inputs, results, ROOMY, DEFAULT_SETTINGS, {}));
     const after = blockDemand(computeBlockPlan(inputs, results, ROOMY, REMOTE_ON, {}, { [localSat.id]: 5 }));
     expect(before).toBeGreaterThan(5);
-    expect(after).toBe(before - 5);
+    expect(after).toBe(before); // was `before - 5` under the old subtractive model
   });
 
   it("the remote pool's capacity is the time-based remote ceiling and reflects the allocations", () => {
@@ -438,6 +441,28 @@ describe("autoRemoteAllocations", () => {
       ROOMY_REMOTE,
     );
     expect(Object.keys(auto)).toHaveLength(0);
+  });
+
+  it("is stable: re-balancing from a plan that already has allocations changes nothing", () => {
+    // Regression: blocks used to shrink by the current allocation, so shortfalls
+    // measured from the live plan read as "met" and a re-balance unwound the
+    // budget (auto-balance appeared to do nothing). Blocks are now allocation-
+    // independent, so balancing is idempotent against the plan the UI shows.
+    const boss = SINGLE_BLOCK.find((b) => b.windows[0].day === "sat" && bossIsLocal(b, DEFAULT_SETTINGS.region))!;
+    const inputs = [{ ...makeDefaultInput(boss), quantity: 200 }];
+    const results = inputs.map((i) => computeBossResult(boss, i));
+    const settings = { ...DEFAULT_SETTINGS, useRemoteRaids: true };
+    const first = autoRemoteAllocations(
+      computeBlockPlan(inputs, results, ROOMY, settings, {}),
+      inputs,
+      results,
+      settings,
+      [],
+      ROOMY_REMOTE,
+    );
+    const planWithAlloc = computeBlockPlan(inputs, results, ROOMY, settings, {}, first);
+    const second = autoRemoteAllocations(planWithAlloc, inputs, results, settings, [], ROOMY_REMOTE);
+    expect(second).toEqual(first);
   });
 
   it("never assigns more than the remote time capacity", () => {

@@ -283,12 +283,11 @@ export function computeRoadPlan(
 
     // Base-species candy a Primal grinder can bank on its locked day. Decoupled RoL
     // doesn't otherwise track weekend demand, but a Primal raid still credits the
-    // weekend (headStart), so size the grind by the weekend goal net of remote.
-    const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
+    // weekend (headStart), so size the grind by the full weekend goal (remote
+    // allocations are additive coverage — they never shrink the in-person plan).
     const candyTargetOf = (bossId: string) => {
       const res = resultById.get(bossId);
-      const total = res ? sized(res.raids, rewardCase) : 0;
-      return Math.max(0, total - remoteFor(bossId));
+      return res ? sized(res.raids, rewardCase) : 0;
     };
 
     // Even-split a set of roster ids over a window's capacity (after that window's
@@ -399,16 +398,15 @@ export function computeRoadPlan(
 
   // Raids still wanted per selected, LOCAL species (region-locked targets can't
   // be raided in person during a weekday raid hour — they stay weekend/remote).
-  // Remote allocations are netted out (mirroring computeBlockPlan's blockTotal):
-  // raids the user assigned to remote passes don't need weekday raid-hour slots.
-  const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
+  // Remote allocations are NOT netted out: remote raids are additive coverage,
+  // so editing remote numbers never reshuffles the in-person weekday plan.
   const remaining = new Map<string, number>();
   for (const input of collapsed) {
     if (!input.selected) continue;
     const boss = getBoss(input.bossId);
     const res = resultById.get(input.bossId);
     if (!boss || !res || !bossIsLocal(boss, settings.region)) continue;
-    const n = sized(res.raids, rewardCase) - remoteFor(input.bossId);
+    const n = sized(res.raids, rewardCase);
     if (n > 0) remaining.set(input.bossId, n);
   }
 

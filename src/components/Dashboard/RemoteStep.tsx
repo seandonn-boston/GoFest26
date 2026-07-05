@@ -86,8 +86,8 @@ function RemoteSection({ remote }: { remote?: RemotePlan }) {
 }
 
 /**
- * Step 5 — Remote Prioritizer. Opt into remote raids and assign how many of each
- * species to do remotely; those raids drop out of the in-person weekend blocks.
+ * Step 5 — Remote raids. Opt in and assign how many of each target to do
+ * remotely; they stack on top of the in-person plan (blocks never change).
  */
 export function RemotePrioritizer({ plan }: { plan: WeekendBlockPlan }) {
   const anySelected = usePlannerStore((s) => Object.values(s.inputs).some((i) => i.selected));
@@ -99,9 +99,9 @@ export function RemotePrioritizer({ plan }: { plan: WeekendBlockPlan }) {
       <div>
         <h2 className="text-lg font-semibold">Remote raids</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Remote Raid Passes are unlimited this event. Assign how many of each species you&apos;ll do remotely —
-          region-locked targets first, then your priority — and they drop out of the in-person time blocks on the GO Fest
-          step.
+          Remote Raid Passes are unlimited this event. Assign how many of each target you&apos;ll do remotely — they add on
+          top of your in-person plan (the GO Fest time blocks don&apos;t change). Auto-balance covers region-locked targets
+          first, then fills each goal&apos;s remaining gap until your planned passes run out.
         </p>
       </div>
       <RemoteSection remote={remote} />

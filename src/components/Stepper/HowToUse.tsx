@@ -63,8 +63,8 @@ const GUIDE: GuideStep[] = [
     title: "Remote Prioritizer",
     body: (
       <>
-        Optional. Opt into <b>remote raids</b> and assign how many of each species you&apos;ll do remotely — region-locked
-        targets first, then your priority. Those raids drop out of the in-person time blocks.
+        Optional. Opt into <b>remote raids</b> and assign how many of each target you&apos;ll do remotely. They add on top of
+        your in-person plan — auto-balance covers region-locked targets first, then each goal&apos;s remaining gap.
       </>
     ),
   },

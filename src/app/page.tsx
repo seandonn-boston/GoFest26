@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { SORTED_BOSSES, MEWTWO_X_ID, MEWTWO_Y_ID, getBoss } from "@/data";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
-import { usePlannerResults, useBlockPlan } from "@/hooks/usePlannerResults";
+import { usePlannerResults, useBlockPlan, useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { useUiStore, STEP_COUNT, type StepId } from "@/store/useUiStore";
 import { isSecondaryForm } from "@/domain";
@@ -50,6 +50,11 @@ export default function Home() {
   const resetAll = usePlannerStore((s) => s.resetAll);
   const summary = usePlannerResults();
   const { weekend: blockPlan, road: roadPlan } = useBlockPlan(summary);
+  // Re-balance remote passes while in auto mode. Mounted HERE (not inside a
+  // step component) so tapping Auto-balance works on the Remote step too — in
+  // stepper layout only the active step's components exist, and this once lived
+  // only in the GO Fest step's dashboard, so the button did nothing elsewhere.
+  useRemoteAutoBalance(summary);
 
   // Progress signals for the step pills' completion ticks.
   const anyPlayDay = usePlannerStore((s) => Object.values(s.playDays).some(Boolean));

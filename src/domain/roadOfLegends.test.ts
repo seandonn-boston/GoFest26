@@ -583,9 +583,11 @@ describe("computeRoadPlan — pre-credit reconciliation and demand netting (revi
     expect(road.headStart.zekrom).toBe(6);
   });
 
-  it("nets remote allocations out of the weekday demand", () => {
-    // 30 Zekrom raids, 25 assigned to remote passes → only 5 need weekday slots.
-    const road = computeRoadPlan(
+  it("ignores remote allocations — the in-person weekday plan never shrinks", () => {
+    // Remote raids are ADDITIVE coverage: assigning 25 Zekrom to remote passes
+    // must not change the weekday plan (it once netted them out, so editing the
+    // Remote step reshuffled the in-person entries the user had already planned).
+    const withRemote = computeRoadPlan(
       [input("zekrom")],
       [result("zekrom", 30)],
       capacity,
@@ -594,7 +596,9 @@ describe("computeRoadPlan — pre-credit reconciliation and demand netting (revi
       {},
       { zekrom: 25 },
     );
-    expect(road.headStart.zekrom).toBe(5); // was 12 (full Monday) before the fix
+    const without = computeRoadPlan([input("zekrom")], [result("zekrom", 30)], capacity, safe, { mon: true });
+    expect(withRemote.headStart.zekrom).toBe(without.headStart.zekrom); // 12 — the full Monday
+    expect(withRemote.totalFitted).toBe(without.totalFitted);
   });
 
   it("ignores an energy goal left on after its boss was deselected", () => {

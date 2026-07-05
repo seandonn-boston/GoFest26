@@ -325,9 +325,9 @@ export function computeBlockPlan(
   // Multi-form species collapse to one shared-resource target (primary forme),
   // matching the collapsed results from computePlanSummary.
   inputs = collapseForms(inputs);
-  // Remote raids the user assigned to each species reduce that species' in-person
-  // (time-block) demand — only the non-remote remainder needs to fit a block.
-  const remoteFor = (id: string) => (settings.useRemoteRaids ? Math.max(0, Math.round(remoteAllocations[id] ?? 0)) : 0);
+  // NOTE: remote allocations do NOT reduce in-person block demand. Remote raids
+  // stack ON TOP of the in-person plan (they only build the remote pool below),
+  // so editing remote numbers never reshuffles the GO Fest time blocks.
   // Raids the player will knock out during the Road of Legends weekdays reduce
   // this species' remaining weekend (in-person) demand — a head start.
   const headFor = (id: string) => Math.max(0, Math.round(headStart[id] ?? 0));
@@ -356,9 +356,9 @@ export function computeBlockPlan(
     if (!boss || !res || !localOf(boss)) continue;
     const total = sized(res.raids, rewardCase);
     if (total <= 0) continue;
-    // What's left after the user does some of this species remotely and/or
-    // during the Road of Legends weekday raid hours.
-    const blockTotal = Math.max(0, total - remoteFor(boss.id) - headFor(boss.id));
+    // What's left after the Road of Legends weekday raid hours (remote raids are
+    // additive coverage — they never shrink the in-person plan).
+    const blockTotal = Math.max(0, total - headFor(boss.id));
     if (blockTotal <= 0) continue;
     const scale = blockTotal / total; // shrink the candy-luck range to the in-person portion
     // A shared-resource multi-form species (Dialga, Palkia, …) spreads its one
@@ -403,13 +403,11 @@ export function computeBlockPlan(
   const sharedLevel = xSel || ySel ? Math.max(levelXl, levelCandy) : 0;
   const fluidNeed = Math.max(0, sharedLevel - satEnergy - sunEnergy);
 
-  // Mewtwo remote raids first cover that form's day-locked energy, then spill into
-  // the shared flexible pool — reducing what Mewtwo needs from the time blocks.
-  const allocX = remoteFor(MEWTWO_X_ID);
-  const allocY = remoteFor(MEWTWO_Y_ID);
-  const satLocked = Math.max(0, satEnergy - allocX);
-  const sunLocked = Math.max(0, sunEnergy - allocY);
-  const fluid = Math.max(0, fluidNeed - Math.max(0, allocX - satEnergy) - Math.max(0, allocY - sunEnergy));
+  // Mewtwo remote raids are additive too — the blocks plan Mewtwo's full
+  // in-person demand and the remote pool covers whatever the blocks can't.
+  const satLocked = satEnergy;
+  const sunLocked = sunEnergy;
+  const fluid = fluidNeed;
 
   const ratioFor = (res: BossResult | undefined): Range => {
     const e = sized(res?.raids, rewardCase);
@@ -591,12 +589,13 @@ export function goalProgress(
 }
 
 /**
- * Auto-fill remote allocations the moment the user opts in: cover the goals that
- * can't be met in person — region-locked targets (their full goal) and any block
- * shortfalls — region-locked first, then by priority. Remote passes are unlimited
- * (GO Fest 2026), so the only ceiling is `remoteCapacity` (raids that fit in the
- * user's remote TIME). `plan` should be the current (remote-off) plan so its
- * shortfalls are accurate.
+ * Auto-fill remote allocations: spend the planned remote passes on the goals the
+ * in-person plan can't finish — region-locked targets first (their full goal;
+ * remote is their only path), then each remaining target's in-person shortfall —
+ * until every goal is reached or the passes run out. Since the in-person blocks
+ * never depend on remote allocations, `plan`'s shortfalls are exactly the gaps
+ * left to cover, and re-balancing is stable (no feedback loop). `remoteCapacity`
+ * is the user's planned remote pass count.
  */
 export function autoRemoteAllocations(
   plan: WeekendBlockPlan,

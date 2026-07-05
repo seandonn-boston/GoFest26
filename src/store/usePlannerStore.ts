@@ -418,6 +418,19 @@ export function blockMembersInOrder(memberIds: string[], order: string[]): strin
 }
 
 /**
+ * Selected bosses in roster (selection-screen) order, one row per shared-resource
+ * species. The Remote step lists targets exactly as the Pick screen does —
+ * priority plays no role in how that list reads.
+ */
+export function selectedInRosterOrder(inputs: Record<string, BossInput>): string[] {
+  return SORTED_BOSSES.filter((b) => {
+    if (!inputs[b.id]?.selected) return false;
+    const m = FORM_META.get(b.id);
+    return !m || m.primary; // collapse a multi-form species to its primary forme
+  }).map((b) => b.id);
+}
+
+/**
  * Selected bosses in a single global priority order — derived from the per-block
  * lists (chronological blocks, each block's ranking), then any unranked selected
  * bosses in roster order. Used by the event-wide remote pool + goal display.

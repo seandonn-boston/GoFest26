@@ -142,12 +142,13 @@ function sameAllocation(a: Record<string, number>, b: Record<string, number>): b
 }
 
 /**
- * Keeps remote allocations balanced by priority while in auto mode. Recomputes
- * from a *remote-off* block plan (so shortfalls are real, not already covered by
- * the current allocation) every time goals or priority change, and writes the
- * result back — so dragging the priority list re-flows the 60-pass budget to the
- * now-higher-priority targets. A single manual edit flips `remoteAuto` off and
- * this becomes a no-op until the user taps "Auto-balance" again.
+ * Keeps remote allocations balanced while in auto mode: region-locked targets
+ * first (remote is their only path), then each goal's remaining in-person
+ * shortfall, until the planned remote passes run out or every goal is reached.
+ * The in-person plan never depends on remote allocations (remote raids stack on
+ * top of it), so the shortfalls here are exactly the gaps the UI shows and
+ * re-balancing is stable. A single manual edit flips `remoteAuto` off and this
+ * becomes a no-op until the user taps "Auto-balance" again.
  */
 export function useRemoteAutoBalance(summary: PlanSummary): void {
   // Debounced: this effect runs computeRoadPlan + computeBlockPlan AND writes the
@@ -163,19 +164,19 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
   const roadCoupled = usePlannerStore((s) => s.roadCoupled);
   const roadSelected = usePlannerStore((s) => s.roadSelected);
   const roadEnergy = usePlannerStore((s) => s.roadEnergy);
+  const blockAllocations = usePlannerStore((s) => s.blockAllocations);
   const setRemoteAllocations = usePlannerStore((s) => s.setRemoteAllocations);
 
   useEffect(() => {
     if (!settings.useRemoteRaids || !remoteAuto) return;
     const inputList = Object.values(inputs);
-    // Remote raids are an event-wide pool, so they rank by a single priority
-    // derived from the per-block orders.
+    // When passes run short, region-locked targets come first and the rest rank
+    // by the global priority derived from the per-block orders.
     const globalOrder = globalPriorityFromBlocks(blockPriority);
     // The Road of Legends head start already covers some demand — net it out so
     // remote isn't assigned to raids the player will do on a weekday. The live
     // per-day drag orders and quick-catch flags must feed this road plan too, or
-    // the head start diverges from the one useBlockPlan shows (remote allocations
-    // stay {} on purpose: shortfalls are measured with remote off).
+    // the head start diverges from the one useBlockPlan shows.
     const road = computeRoadPlan(
       inputList,
       summary.results,
@@ -190,20 +191,21 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
       roadSelected,
       roadEnergy,
     );
-    // Shortfalls must be measured with remote OFF, otherwise goals already
-    // covered by the current allocation read as "met" and the budget unwinds.
-    const offPlan = computeBlockPlan(
+    // The same block plan the GO Fest step shows (blocks are remote-independent,
+    // so its shortfalls are exactly the gaps remote passes should cover).
+    const plan = computeBlockPlan(
       inputList,
       summary.results,
       summary.capacity,
-      { ...settings, useRemoteRaids: false },
+      settings,
       blockPriority,
       {},
-      {},
+      quickCatchBlocks,
       road.headStart,
+      blockAllocations,
     );
     const desired = autoRemoteAllocations(
-      offPlan,
+      plan,
       inputList,
       summary.results,
       settings,
@@ -223,6 +225,7 @@ export function useRemoteAutoBalance(summary: PlanSummary): void {
     roadCoupled,
     roadSelected,
     roadEnergy,
+    blockAllocations,
     summary,
     setRemoteAllocations,
   ]);
