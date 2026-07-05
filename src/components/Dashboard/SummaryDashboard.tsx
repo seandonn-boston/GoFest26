@@ -5,7 +5,6 @@ import type { PlanSummary, Range } from "@/domain/types";
 import type { WeekendBlockPlan } from "@/domain";
 import type { PlannerSettings } from "@/domain/settings";
 import { midpoint } from "@/lib/math";
-import { useRemoteAutoBalance } from "@/hooks/usePlannerResults";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { MathTooltip } from "@/components/ui/MathTooltip";
 import { PixelIcon } from "@/components/ui/PixelIcon";
@@ -30,8 +29,6 @@ function caseValue(range: Range, rc: RewardCase, favorHigh: boolean): number {
 }
 
 export function SummaryDashboard({ summary, blockPlan }: { summary: PlanSummary; blockPlan: WeekendBlockPlan }) {
-  // Re-balance remote passes by priority while in auto mode (no-op once manual).
-  useRemoteAutoBalance(summary);
   const rewardCase = usePlannerStore((s) => s.settings.rewardCase);
   const setSettings = usePlannerStore((s) => s.setSettings);
   const { capacity, remotePool } = summary;
