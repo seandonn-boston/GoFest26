@@ -44,7 +44,7 @@ export function ResultsStep({
           {/* How accurate are these numbers? — with the capacity breakdown at its top. */}
           <EstimateConfidence capacity={summary.capacity} remotePool={summary.remotePool} />
 
-          <ExportGroup summary={summary} />
+          <ExportGroup summary={summary} blockPlan={blockPlan} roadPlan={roadPlan} />
         </>
       ) : (
         <p className="text-sm text-slate-400">
