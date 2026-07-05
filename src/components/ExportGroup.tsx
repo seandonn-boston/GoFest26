@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PlanSummary } from "@/domain/types";
+import type { RoadPlan, WeekendBlockPlan } from "@/domain";
 import { exportPlanToXlsx } from "@/export/exportXlsx";
 import { downloadJsonBackup } from "@/export/backupFile";
 import { buildShareUrl } from "@/lib/sharePlan";
@@ -10,14 +11,26 @@ import { PixelIcon } from "@/components/ui/PixelIcon";
 
 /**
  * The three ways to take your plan with you, given equal visual weight: an Excel
- * workbook (the full chronological raid plan), a copyable share link (opens as a
- * copy of this plan on any device), and a JSON backup (re-importable). Sits at
- * the foot of the Results step. Each button owns its own busy / error / success
- * feedback so one failing never blocks the others.
+ * workbook (the chronological Week Plan tracker — built from the SAME computed
+ * plan the app displays), a copyable share link (opens as a copy of this plan on
+ * any device), and a JSON backup (re-importable). Sits at the foot of the
+ * Results step. Each button owns its own busy / error / success feedback so one
+ * failing never blocks the others.
  */
-export function ExportGroup({ summary }: { summary: PlanSummary }) {
+export function ExportGroup({
+  summary,
+  blockPlan,
+  roadPlan,
+}: {
+  summary: PlanSummary;
+  blockPlan: WeekendBlockPlan;
+  roadPlan: RoadPlan;
+}) {
   const inputs = usePlannerStore((s) => s.inputs);
-  const hasPlan = summary.schedule.raids.length > 0;
+  const settings = usePlannerStore((s) => s.settings);
+  const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
+  const playDays = usePlannerStore((s) => s.playDays);
+  const hasPlan = summary.totalRaids.max > 0;
   const [busy, setBusy] = useState<null | "xlsx" | "link" | "json">(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -27,7 +40,15 @@ export function ExportGroup({ summary }: { summary: PlanSummary }) {
     setMsg(null);
     setShareUrl(null);
     try {
-      await exportPlanToXlsx(summary, Object.values(inputs));
+      await exportPlanToXlsx({
+        summary,
+        inputs: Object.values(inputs),
+        weekend: blockPlan,
+        road: roadPlan,
+        settings,
+        remoteAllocations,
+        playDays,
+      });
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message : "Export failed." });
     } finally {
