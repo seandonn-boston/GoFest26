@@ -67,12 +67,14 @@ function rewardTail(
   calibration: Calibration,
   megaBuddyLevel: number,
   goPassDeluxe = false,
+  remoteOnly = false,
 ): { lines: ExplainLine[]; raids: Range } {
-  const bd = rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel, goPassDeluxe);
+  const bd = rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel, goPassDeluxe, remoteOnly);
   const reward = bd.range ?? { min: 0, max: 0 };
   const raids = reward.max > 0 ? raidsForCurrency(needed, reward) : { min: 0, max: 0 };
   const lines: ExplainLine[] = [];
 
+  const remoteTag = bd.remoteBase ? " (remote catch)" : "";
   if (bd.calibrated !== undefined) {
     lines.push({ tokens: [txt("per raid ="), out(`${fmt(bd.calibrated)}`), txt("(your logged value)")] });
   } else if (bd.xlBonus !== undefined && bd.xlBonus !== 0 && bd.base) {
@@ -80,7 +82,7 @@ function rewardTail(
     lines.push({
       tokens: [
         txt("per raid ="),
-        out(rangeStr(bd.base)),
+        out(rangeStr(bd.base) + remoteTag),
         txt(`+ ${bd.xlBonus} guaranteed buddy XL${passTail} =`),
         out(rangeStr(reward)),
       ],
@@ -120,6 +122,7 @@ export function explainCurrency(
   calibration: Calibration = {},
   megaBuddyLevel = 1,
   goPassDeluxe = false,
+  remoteOnly = false,
 ): CurrencyExplanation | null {
   const quantity = Math.max(1, Math.round(input.quantity ?? 1));
   const lines: ExplainLine[] = [];
@@ -159,7 +162,16 @@ export function explainCurrency(
     lines.push({
       tokens: [txt("−"), ed("current.xlCandy", held, { min: 0 }), txt("on hand ="), out(`${fmt(needed)} still needed`)],
     });
-    const { lines: tail, raids } = rewardTail(boss, currency, input, needed, calibration, megaBuddyLevel, goPassDeluxe);
+    const { lines: tail, raids } = rewardTail(
+      boss,
+      currency,
+      input,
+      needed,
+      calibration,
+      megaBuddyLevel,
+      goPassDeluxe,
+      remoteOnly,
+    );
     lines.push(...tail);
     return { currency, needed, raids, lines, note };
   }
@@ -196,7 +208,16 @@ export function explainCurrency(
     lines.push({
       tokens: [txt("−"), ed("current.megaEnergy", held, { min: 0 }), txt("on hand ="), out(`${fmt(needed)} still needed`)],
     });
-    const { lines: tail, raids } = rewardTail(boss, currency, input, needed, calibration, megaBuddyLevel, goPassDeluxe);
+    const { lines: tail, raids } = rewardTail(
+      boss,
+      currency,
+      input,
+      needed,
+      calibration,
+      megaBuddyLevel,
+      goPassDeluxe,
+      remoteOnly,
+    );
     lines.push(...tail);
     return { currency, needed, raids, lines, note };
   }
@@ -224,7 +245,16 @@ export function explainCurrency(
   lines.push({
     tokens: [txt("−"), ed("current.candy", held, { min: 0 }), txt("on hand ="), out(`${fmt(needed)} still needed`)],
   });
-  const { lines: tail, raids } = rewardTail(boss, currency, input, needed, calibration, megaBuddyLevel, goPassDeluxe);
+  const { lines: tail, raids } = rewardTail(
+    boss,
+    currency,
+    input,
+    needed,
+    calibration,
+    megaBuddyLevel,
+    goPassDeluxe,
+    remoteOnly,
+  );
   lines.push(...tail);
   return { currency, needed, raids, lines, note };
 }

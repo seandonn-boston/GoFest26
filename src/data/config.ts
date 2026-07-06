@@ -114,11 +114,18 @@ export const GAME_CONFIG = {
   // Rewards from *catching* the boss (skipped if you run from the encounter).
   // source: ~3 base candy, doubled to ~6 with a Pinap; transferring it = +1
   // candy. Legendary/Mythical catches are guaranteed 3 XL; an in-person Tier-5
-  // completion reliably adds the bonus (→ 5–6). Remote raids (the optional pool)
-  // only see the 3-XL floor, but they're supplementary so we plan for in person.
+  // completion reliably adds the bonus (→ 5–6). Region-locked bosses use the
+  // remote profile below; local bosses plan for in-person (their remote share
+  // is a small supplement).
   catch: {
     candy: { min: 3, max: 6 } as Range, // no berry → Pinap
     legendaryXl: { min: 5, max: 6 } as Range, // in-person Tier-5: guaranteed 3 + completion bonus
+    // Remote Tier-5 catches miss the in-person completion bonus — the guaranteed
+    // 3-XL floor plus occasional natural variance. Used for region-locked bosses
+    // (every raid they'll ever do is remote). source: field-verified Jul 2026 —
+    // 20 remote Xurkitree raids averaged 5.0 XL/catch WITH an L3 same-type buddy
+    // and GO Pass Deluxe (+1 each), implying a 3–4 base.
+    remoteLegendaryXl: { min: 3, max: 4 } as Range,
     megaXl: { min: 1, max: 3 } as Range, // 0–3 in game; min 1 keeps worst-case finite
     transferCandy: 1,
     // A matching Mega-Evolved buddy adds +1 Candy per catch (and a modest XL

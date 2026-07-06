@@ -71,6 +71,9 @@ export interface RewardBreakdown {
   candyBonus?: number;
   /** GO Pass Deluxe per-catch bonus folded into `range` (candy +3 / XL +1). */
   goPassBonus?: number;
+  /** xlCandy: `base` is the REMOTE catch profile (region-locked boss — no
+   *  in-person completion bonus, so the 3-XL floor + variance). */
+  remoteBase?: boolean;
 }
 
 export function rewardBreakdown(
@@ -80,6 +83,9 @@ export function rewardBreakdown(
   calibration: Calibration = {},
   megaBuddyLevel = 1,
   goPassDeluxe = false,
+  /** True when every raid of this boss is remote (region-locked for the user):
+   *  legendary XL drops to the remote profile — no in-person completion bonus. */
+  remoteOnly = false,
 ): RewardBreakdown {
   const c = GAME_CONFIG.catch;
   const megaBuddy = input.megaBuddy ?? true;
@@ -111,10 +117,14 @@ export function rewardBreakdown(
   if (calibrated) return { range: { min: calibrated, max: calibrated }, calibrated };
   const xlBonus = xlBuddyBonus(boss, input, megaBuddyLevel);
   const goPassBonus = passEligible ? GO_PASS.extraXlPerCatch : 0;
-  const base = boss.rewards.xlCandy;
+  // A region-locked boss is caught remotely every time, which forfeits the
+  // in-person Tier-5 completion bonus baked into the standard legendary profile
+  // — swap in the remote 3–4 base (Megas keep their own 1–3 profile).
+  const remoteXl = remoteOnly && boss.tier !== "mega";
+  const base = remoteXl ? c.remoteLegendaryXl : boss.rewards.xlCandy;
   const bump = xlBonus + goPassBonus;
   const range = bump === 0 ? base : { min: base.min + bump, max: base.max + bump };
-  return { range, base, xlBonus, goPassBonus: goPassBonus || undefined };
+  return { range, base, xlBonus, goPassBonus: goPassBonus || undefined, remoteBase: remoteXl || undefined };
 }
 
 function perRaidReward(
@@ -124,8 +134,9 @@ function perRaidReward(
   calibration: Calibration = {},
   megaBuddyLevel = 1,
   goPassDeluxe = false,
+  remoteOnly = false,
 ): Range | undefined {
-  return rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel, goPassDeluxe).range;
+  return rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel, goPassDeluxe, remoteOnly).range;
 }
 
 export function raidsForCurrency(needed: number, reward: Range): Range {
@@ -155,8 +166,17 @@ export function computeBossResult(
   calibration: Calibration = {},
   megaBuddyLevel = 1,
   goPassDeluxe = false,
+  remoteOnly = false,
 ): BossResult {
-  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input), calibration, megaBuddyLevel, goPassDeluxe);
+  return bossResultFromNeeds(
+    boss,
+    input,
+    computeNetNeed(boss, input),
+    calibration,
+    megaBuddyLevel,
+    goPassDeluxe,
+    remoteOnly,
+  );
 }
 
 /**
@@ -172,13 +192,14 @@ export function bossResultFromNeeds(
   calibration: Calibration = {},
   megaBuddyLevel = 1,
   goPassDeluxe = false,
+  remoteOnly = false,
 ): BossResult {
   const needs: Partial<Record<Currency, CurrencyNeed>> = {};
   const ranges: Partial<Record<Currency, Range>> = {};
 
   for (const c of CURRENCY_ORDER) {
     const needed = net[c];
-    const reward = perRaidReward(boss, c, input, calibration, megaBuddyLevel, goPassDeluxe);
+    const reward = perRaidReward(boss, c, input, calibration, megaBuddyLevel, goPassDeluxe, remoteOnly);
     if (needed === undefined || needed <= 0 || !reward || reward.max <= 0) continue;
 
     const range = raidsForCurrency(needed, reward);

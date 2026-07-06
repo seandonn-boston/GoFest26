@@ -5,6 +5,7 @@ import { collapseForms } from "./forms";
 import { computeBossResult } from "./raidsNeeded";
 import { computeMewtwoResults } from "./mewtwo";
 import { applyResearchCredits } from "./research";
+import { bossIsLocal } from "./region";
 import { GO_PASS_DELUXE_CREDITS } from "@/data/goPass";
 export { computeMewtwoResults, perMewtwoCopyNeeds } from "./mewtwo";
 export type { MewtwoCopyNeed } from "./mewtwo";
@@ -79,7 +80,10 @@ export function computePlanSummary(
     if (input.bossId === MEWTWO_X_ID || input.bossId === MEWTWO_Y_ID) continue;
     const boss = getBoss(input.bossId);
     if (!boss) continue;
-    results.push(computeBossResult(boss, input, calibration, megaBuddyLevel, goPassDeluxe));
+    // Region-locked bosses can only ever be raided remotely — their legendary
+    // XL uses the remote catch profile (no in-person completion bonus).
+    const remoteOnly = !bossIsLocal(boss, settings.region);
+    results.push(computeBossResult(boss, input, calibration, megaBuddyLevel, goPassDeluxe, remoteOnly));
   }
   results.push(...computeMewtwoResults(inputs, calibration, megaBuddyLevel, goPassDeluxe));
 

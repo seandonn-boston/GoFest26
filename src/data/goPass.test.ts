@@ -48,6 +48,25 @@ describe("GO Pass Deluxe in the plan math", () => {
     expect(on.needs.xlCandy?.raidsRange).toEqual(off.needs.xlCandy?.raidsRange);
   });
 
+  it("region-locked bosses use the REMOTE legendary-XL profile (field-verified)", () => {
+    // Field data (Jul 2026): 20 remote Xurkitree raids paid 100 XL — 5.0/catch —
+    // with an L3 same-type buddy AND GO Pass Deluxe. The in-person profile
+    // (5–6 base) modeled that setup at 7–8/catch, overestimating remote XL ~40%.
+    // Remote base is 3–4, so buddy (+1) + pass (+1) → 5–6, matching the field.
+    const xurkitree = getBoss("xurkitree")!; // region-locked from the default region
+    const input = makeDefaultInput(xurkitree);
+    const summary = computePlanSummary([input], passOn);
+    const xl = summary.results[0].needs.xlCandy!;
+    // 296 XL to L50 − 10 rank-track credit = 286 needed at 5–6/catch → 48–58 raids.
+    expect(xl.raidsRange).toEqual({ min: Math.ceil(286 / 6), max: Math.ceil(286 / 5) });
+
+    // A LOCAL five-star keeps the in-person profile: 7–8/catch with the pass.
+    const zekrom = getBoss("zekrom")!;
+    const zSummary = computePlanSummary([makeDefaultInput(zekrom)], passOn);
+    const zXl = zSummary.results[0].needs.xlCandy!;
+    expect(zXl.raidsRange).toEqual({ min: Math.ceil(zXl.needed / 8), max: Math.ceil(zXl.needed / 7) });
+  });
+
   it("computePlanSummary folds the rank-track credits only when the pass is on", () => {
     const boss = getBoss("zapdos")!;
     const input = makeDefaultInput(boss);

@@ -77,9 +77,9 @@ export const ESTIMATE_NOTES: EstimateNote[] = [
   },
   {
     label: "Legendary Candy XL per catch",
-    value: "5–6 (guaranteed 3 + in-person completion)",
+    value: "5–6 in-person · 3–4 remote (region-locked targets)",
     confidence: "community",
-    note: "Observed in-person Tier-5 rates; remote sees the 3-XL floor.",
+    note: "In-person adds the completion bonus. Remote profile field-verified Jul 2026: 20 remote raids averaged 5.0 XL with buddy + GO Pass (+1 each) → 3–4 base.",
   },
   {
     label: "Mega buddy XL boost",
