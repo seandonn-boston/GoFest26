@@ -38,12 +38,12 @@ export function StepNav({ steps, active, onSelect }: { steps: StepMeta[]; active
     <nav
       ref={navRef}
       aria-label="Planner steps"
-      // Pinned near the BOTTOM of the viewport at all times, so navigation is
+      // Pinned to the BOTTOM of the viewport at all times, so navigation is
       // always a thumb-reach away; scrolls sideways to keep the active step at
-      // the left. The sticky offset (16px + the safe-area inset) floats the bar
-      // slightly above the screen edge while stuck — the same breathing room it
-      // naturally has at the very end of the page — clear of the home indicator.
-      className="sticky bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30 -mx-4 mt-6 overflow-x-auto border-t border-white/5 bg-gofest-bg/90 px-4 py-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      // the left. The pills ride 16px (+ the safe-area inset) above the screen
+      // edge via bottom PADDING — not a sticky offset — so the bar's backdrop
+      // runs all the way down and no page content peeks through beneath it.
+      className="sticky bottom-0 z-30 -mx-4 mt-6 overflow-x-auto border-t border-white/5 bg-gofest-bg/90 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <ol className="flex min-w-max items-stretch gap-2">
         {steps.map((s) => {
