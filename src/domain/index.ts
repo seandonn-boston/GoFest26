@@ -4,6 +4,8 @@ import { computeCapacity } from "./capacity";
 import { collapseForms } from "./forms";
 import { computeBossResult } from "./raidsNeeded";
 import { computeMewtwoResults } from "./mewtwo";
+import { applyResearchCredits } from "./research";
+import { GO_PASS_DELUXE_CREDITS } from "@/data/goPass";
 export { computeMewtwoResults, perMewtwoCopyNeeds } from "./mewtwo";
 export type { MewtwoCopyNeed } from "./mewtwo";
 import { computeSchedule } from "./scheduler";
@@ -65,6 +67,10 @@ export function computePlanSummary(
 
   const calibration = settings.calibration ?? {};
   const megaBuddyLevel = settings.megaBuddyLevel ?? 1;
+  const goPassDeluxe = settings.goPassDeluxe ?? false;
+  // GO Pass Deluxe rank-track rewards land as on-hand currency (same pipeline
+  // as research credits) — only when the player says they'll buy the pass.
+  if (goPassDeluxe) inputs = applyResearchCredits(inputs, GO_PASS_DELUXE_CREDITS);
   const results: BossResult[] = [];
   for (const input of inputs) {
     if (!input.selected) continue;
@@ -73,9 +79,9 @@ export function computePlanSummary(
     if (input.bossId === MEWTWO_X_ID || input.bossId === MEWTWO_Y_ID) continue;
     const boss = getBoss(input.bossId);
     if (!boss) continue;
-    results.push(computeBossResult(boss, input, calibration, megaBuddyLevel));
+    results.push(computeBossResult(boss, input, calibration, megaBuddyLevel, goPassDeluxe));
   }
-  results.push(...computeMewtwoResults(inputs, calibration, megaBuddyLevel));
+  results.push(...computeMewtwoResults(inputs, calibration, megaBuddyLevel, goPassDeluxe));
 
   let totalRaids: Range = { ...ZERO_RANGE };
   for (const r of results) totalRaids = addRange(totalRaids, r.raids);

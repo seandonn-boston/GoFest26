@@ -146,6 +146,18 @@ export const GAME_CONFIG = {
     l4Types: ["Fighting", "Psychic", "Grass", "Poison", "Dark", "Flying", "Dragon", "Steel"],
   },
 
+  // GO Pass Deluxe: Road of Legends (the paid pass sold in-game for the event
+  // week). While active it grants, per CATCH from a five-star raid or higher:
+  // +3 Candy and +1 guaranteed Candy XL. source: confirmed — in-game pass
+  // Bonuses screen (Jul 2026 screenshots). `tiers` gates which raid tiers count
+  // as "five-star or higher": plain Mega Raids sit below Tier 5 in GO, so they
+  // are EXCLUDED — an assumption worth re-confirming in the field (estimate).
+  goPassDeluxe: {
+    extraCandyPerCatch: 3,
+    extraXlPerCatch: 1,
+    tiers: ["five-star", "regional", "super-mega"] as const,
+  },
+
   // Approximate cumulative Mega Energy to reach Mega Level 0..3 for a typical
   // (non-Mewtwo) Mega — covers the first evolution plus the level-ups. Real costs
   // vary per species; override a specific boss via its megaLevelEnergyTotals.

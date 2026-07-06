@@ -155,6 +155,7 @@ function sanitizeSettings(raw: unknown): PlannerSettings {
     passesOwned: nonNeg(s.passesOwned, d.passesOwned),
     linkChargesOwned: nonNeg(s.linkChargesOwned, d.linkChargesOwned),
     useLinkCharges: bool(s.useLinkCharges, d.useLinkCharges),
+    goPassDeluxe: bool(s.goPassDeluxe, d.goPassDeluxe),
     megaBuddyLevel: num(s.megaBuddyLevel, d.megaBuddyLevel),
     calibration,
   };
