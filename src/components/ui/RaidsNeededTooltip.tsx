@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { getBoss } from "@/data";
 import { usePlannerStore } from "@/store/usePlannerStore";
 import { computeBossResult, explainCurrency } from "@/domain";
+import { bossIsLocal } from "@/domain/region";
 import type { Currency } from "@/domain/types";
 import { MathTooltip } from "./MathTooltip";
 import { ExplainEquation } from "./ExplainEquation";
@@ -32,13 +33,16 @@ export function RaidsNeededTooltip({
   const calibration = usePlannerStore((s) => s.settings.calibration);
   const megaBuddyLevel = usePlannerStore((s) => s.settings.megaBuddyLevel);
   const goPassDeluxe = usePlannerStore((s) => s.settings.goPassDeluxe);
+  const region = usePlannerStore((s) => s.settings.region);
 
   const boss = getBoss(bossId);
   if (!boss || !input) return <>{children}</>;
 
-  const result = computeBossResult(boss, input, calibration, megaBuddyLevel, goPassDeluxe);
+  // Region-locked → every raid is remote → the remote legendary-XL profile.
+  const remoteOnly = !bossIsLocal(boss, region);
+  const result = computeBossResult(boss, input, calibration, megaBuddyLevel, goPassDeluxe, remoteOnly);
   const explanations = CURRENCY_ORDER.filter((c) => result.needs[c])
-    .map((c) => explainCurrency(boss, input, c, calibration, megaBuddyLevel, goPassDeluxe))
+    .map((c) => explainCurrency(boss, input, c, calibration, megaBuddyLevel, goPassDeluxe, remoteOnly))
     .filter((e): e is NonNullable<typeof e> => !!e);
   if (!explanations.length) return <>{children}</>;
 
