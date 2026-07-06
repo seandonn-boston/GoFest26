@@ -9,6 +9,13 @@ const CURRENCY_ORDER: Currency[] = ["megaEnergy", "xlCandy", "candy"];
 type Calibration = Partial<Record<CalibrationMetric, number>>;
 
 const XL_BONUS_BY_LEVEL = GAME_CONFIG.megaCatchBoost.xlBonusByLevel;
+const GO_PASS = GAME_CONFIG.goPassDeluxe;
+
+/** True when this boss's tier counts as "five-star or higher" for the GO Pass
+ *  Deluxe per-catch bonuses (plain Mega Raids sit below Tier 5 → excluded). */
+function goPassEligible(boss: RaidBoss): boolean {
+  return (GO_PASS.tiers as readonly string[]).includes(boss.tier);
+}
 const L4_TYPES: readonly string[] = GAME_CONFIG.megaCatchBoost.l4Types;
 
 /** True when the boss's typing includes one of the Level-4 (Super Max) Mega
@@ -62,6 +69,8 @@ export interface RewardBreakdown {
   xlBonus?: number;
   /** candy: transfer + mega-buddy candy added to `base`. */
   candyBonus?: number;
+  /** GO Pass Deluxe per-catch bonus folded into `range` (candy +3 / XL +1). */
+  goPassBonus?: number;
 }
 
 export function rewardBreakdown(
@@ -70,9 +79,11 @@ export function rewardBreakdown(
   input: BossInput,
   calibration: Calibration = {},
   megaBuddyLevel = 1,
+  goPassDeluxe = false,
 ): RewardBreakdown {
   const c = GAME_CONFIG.catch;
   const megaBuddy = input.megaBuddy ?? true;
+  const passEligible = goPassDeluxe && goPassEligible(boss);
 
   const metric = calibrationMetric(boss, currency);
   const cal = metric ? calibration[metric] : undefined;
@@ -85,17 +96,25 @@ export function rewardBreakdown(
 
   if (currency === "candy") {
     const candyBonus = c.transferCandy + (megaBuddy ? c.buddyBonusCandy : 0);
+    const goPassBonus = passEligible ? GO_PASS.extraCandyPerCatch : 0;
     const base = boss.rewards.candy;
-    return { range: { min: base.min + candyBonus, max: base.max + candyBonus }, base, candyBonus };
+    return {
+      range: { min: base.min + candyBonus + goPassBonus, max: base.max + candyBonus + goPassBonus },
+      base,
+      candyBonus,
+      goPassBonus: goPassBonus || undefined,
+    };
   }
   // xlCandy. A logged calibration value already reflects the player's own mega,
   // so it's used as-is; otherwise the same-type Mega buddy adds a guaranteed
   // whole Candy XL to the assumed range (0 = none) — a 1–3 catch floors to 2–4.
   if (calibrated) return { range: { min: calibrated, max: calibrated }, calibrated };
   const xlBonus = xlBuddyBonus(boss, input, megaBuddyLevel);
+  const goPassBonus = passEligible ? GO_PASS.extraXlPerCatch : 0;
   const base = boss.rewards.xlCandy;
-  const range = xlBonus === 0 ? base : { min: base.min + xlBonus, max: base.max + xlBonus };
-  return { range, base, xlBonus };
+  const bump = xlBonus + goPassBonus;
+  const range = bump === 0 ? base : { min: base.min + bump, max: base.max + bump };
+  return { range, base, xlBonus, goPassBonus: goPassBonus || undefined };
 }
 
 function perRaidReward(
@@ -104,8 +123,9 @@ function perRaidReward(
   input: BossInput,
   calibration: Calibration = {},
   megaBuddyLevel = 1,
+  goPassDeluxe = false,
 ): Range | undefined {
-  return rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel).range;
+  return rewardBreakdown(boss, currency, input, calibration, megaBuddyLevel, goPassDeluxe).range;
 }
 
 export function raidsForCurrency(needed: number, reward: Range): Range {
@@ -134,8 +154,9 @@ export function computeBossResult(
   input: BossInput,
   calibration: Calibration = {},
   megaBuddyLevel = 1,
+  goPassDeluxe = false,
 ): BossResult {
-  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input), calibration, megaBuddyLevel);
+  return bossResultFromNeeds(boss, input, computeNetNeed(boss, input), calibration, megaBuddyLevel, goPassDeluxe);
 }
 
 /**
@@ -150,13 +171,14 @@ export function bossResultFromNeeds(
   net: Partial<Record<Currency, number>>,
   calibration: Calibration = {},
   megaBuddyLevel = 1,
+  goPassDeluxe = false,
 ): BossResult {
   const needs: Partial<Record<Currency, CurrencyNeed>> = {};
   const ranges: Partial<Record<Currency, Range>> = {};
 
   for (const c of CURRENCY_ORDER) {
     const needed = net[c];
-    const reward = perRaidReward(boss, c, input, calibration, megaBuddyLevel);
+    const reward = perRaidReward(boss, c, input, calibration, megaBuddyLevel, goPassDeluxe);
     if (needed === undefined || needed <= 0 || !reward || reward.max <= 0) continue;
 
     const range = raidsForCurrency(needed, reward);

@@ -155,6 +155,13 @@ describe("sanitizeBackup", () => {
     expect(out.settings.region.continent).toBe(DEFAULT_REGION.continent);
   });
 
+  it("round-trips goPassDeluxe and coerces junk to the default (off)", () => {
+    const on = sanitizeBackup(backup({ settings: { ...DEFAULT_SETTINGS, goPassDeluxe: true } }));
+    expect(on.settings.goPassDeluxe).toBe(true);
+    const junk = sanitizeBackup(backup({ settings: { ...DEFAULT_SETTINGS, goPassDeluxe: "yes" as unknown as boolean } }));
+    expect(junk.settings.goPassDeluxe).toBe(false);
+  });
+
   it("rebuilds settings over defaults when settings is missing/non-object", () => {
     const out = sanitizeBackup(backup({ settings: undefined as unknown as StateBackup["settings"] }));
     expect(out.settings.lobbySize).toBe(DEFAULT_SETTINGS.lobbySize);

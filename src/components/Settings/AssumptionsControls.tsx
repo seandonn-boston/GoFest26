@@ -30,6 +30,7 @@ export function AssumptionsControls() {
   const setSettings = usePlannerStore((s) => s.setSettings);
   const resetSettings = usePlannerStore((s) => s.resetSettings);
   const research = usePlannerStore((s) => s.research);
+  const goPassDeluxe = usePlannerStore((s) => s.settings.goPassDeluxe);
   const setResearchEnabled = usePlannerStore((s) => s.setResearchEnabled);
   const isDefault = isDefaultSettings(settings);
 
@@ -226,6 +227,41 @@ export function AssumptionsControls() {
             );
           })}
         </div>
+      </div>
+
+      {/* GO Pass Deluxe — the paid event pass; everything below gates on buying it */}
+      <div>
+        <div className="mb-1.5 text-sm text-slate-300">GO Pass Deluxe: Road of Legends</div>
+        <label
+          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+            goPassDeluxe ? "border-gofest-accent2/60 bg-gofest-accent2/10" : "border-white/10 bg-white/5"
+          }`}
+        >
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-gofest-accent2"
+            checked={goPassDeluxe}
+            onChange={(e) => setSettings({ goPassDeluxe: e.target.checked })}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm font-semibold">I&apos;ll buy the Deluxe pass</span>
+              <Badge className="uppercase">paid</Badge>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Folds in the Deluxe-only bonuses: <span className="text-white">+1 guaranteed Candy XL</span> and{" "}
+              <span className="text-white">+3 Candy</span> on every catch from{" "}
+              <span className="text-white">5★-or-higher raids</span>, plus the rank-track rewards — +10 Candy XL for every
+              legendary on the track, +10 Candy each (Basic track, included with Deluxe), Mewtwo +40 Candy / +30 XL and
+              Gardevoir Mega Energy ×300. Assumes you complete the pass (rank 100).
+            </p>
+            <p className="mt-1 text-[13px] text-slate-500">
+              <PixelIcon name="bulb" size={12} /> Off = none of these count (the free pass doesn&apos;t grant them). Plain
+              Mega Raids sit below Tier 5, so their catches don&apos;t get the per-catch bonus. The pass&apos;s ~1,000 Link
+              Charges aren&apos;t auto-counted — add what you&apos;ll hold to &quot;what you have&quot; yourself.
+            </p>
+          </div>
+        </label>
       </div>
 
       {/* Luck calibration — moved in from the old "Advanced" panel so all the

@@ -61,6 +61,12 @@ export interface PlannerSettings {
    */
   megaBuddyLevel: number;
   /**
+   * True when the player will buy GO Pass Deluxe: Road of Legends. Folds in the
+   * pass's +3 Candy / +1 Candy XL per five-star-or-higher catch and its rank-
+   * track currency rewards (see data/goPass.ts). Off = no pass benefits.
+   */
+  goPassDeluxe: boolean;
+  /**
    * Observed per-raid yields the player has logged, as point estimates that
    * OVERRIDE the assumed reward ranges (tightening the plan to their real luck).
    * Empty = use the assumptions. Keyed by reward metric; absent = not calibrated.
@@ -88,6 +94,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   // L3 (Max) is the "standard" leveled mega — the realistic same-type buddy a
   // GO Fest raider runs, so the XL numbers bank the guaranteed +1 out of the box.
   megaBuddyLevel: 3,
+  goPassDeluxe: false,
   calibration: {},
 };
 
@@ -120,6 +127,7 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.megaBuddyLevel === DEFAULT_SETTINGS.megaBuddyLevel &&
     s.passesOwned === DEFAULT_SETTINGS.passesOwned &&
     s.linkChargesOwned === DEFAULT_SETTINGS.linkChargesOwned &&
-    s.useLinkCharges === DEFAULT_SETTINGS.useLinkCharges
+    s.useLinkCharges === DEFAULT_SETTINGS.useLinkCharges &&
+    s.goPassDeluxe === DEFAULT_SETTINGS.goPassDeluxe
   );
 }

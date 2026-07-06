@@ -93,7 +93,12 @@ const needsFor = (energy: number, xl: number, candy: number): Partial<Record<Cur
  * and split across both days when both forms are raided. Replaces the generic
  * per-boss computeBossResult for Mewtwo so XL is never double-counted.
  */
-export function computeMewtwoResults(inputs: BossInput[], calibration: Calibration = {}, megaBuddyLevel = 1): BossResult[] {
+export function computeMewtwoResults(
+  inputs: BossInput[],
+  calibration: Calibration = {},
+  megaBuddyLevel = 1,
+  goPassDeluxe = false,
+): BossResult[] {
   const xi = inputs.find((i) => i.bossId === MEWTWO_X_ID && i.selected);
   const yi = inputs.find((i) => i.bossId === MEWTWO_Y_ID && i.selected);
   if (!xi && !yi) return [];
@@ -127,12 +132,16 @@ export function computeMewtwoResults(inputs: BossInput[], calibration: Calibrati
     };
     const [xlX, xlY] = splitN(netXl);
     const [candyX, candyY] = splitN(netCandy);
-    out.push(bossResultFromNeeds(bossX, xi, needsFor(satEnergy, xlX, candyX), calibration, megaBuddyLevel));
-    out.push(bossResultFromNeeds(bossY, yi, needsFor(sunEnergy, xlY, candyY), calibration, megaBuddyLevel));
+    out.push(bossResultFromNeeds(bossX, xi, needsFor(satEnergy, xlX, candyX), calibration, megaBuddyLevel, goPassDeluxe));
+    out.push(bossResultFromNeeds(bossY, yi, needsFor(sunEnergy, xlY, candyY), calibration, megaBuddyLevel, goPassDeluxe));
   } else if (xi) {
-    out.push(bossResultFromNeeds(bossX, xi, needsFor(satEnergy, netXl, netCandy), calibration, megaBuddyLevel));
+    out.push(
+      bossResultFromNeeds(bossX, xi, needsFor(satEnergy, netXl, netCandy), calibration, megaBuddyLevel, goPassDeluxe),
+    );
   } else if (yi) {
-    out.push(bossResultFromNeeds(bossY, yi, needsFor(sunEnergy, netXl, netCandy), calibration, megaBuddyLevel));
+    out.push(
+      bossResultFromNeeds(bossY, yi, needsFor(sunEnergy, netXl, netCandy), calibration, megaBuddyLevel, goPassDeluxe),
+    );
   }
   return out;
 }

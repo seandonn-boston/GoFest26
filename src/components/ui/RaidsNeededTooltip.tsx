@@ -31,13 +31,14 @@ export function RaidsNeededTooltip({
   const input = usePlannerStore((s) => s.inputs[bossId]);
   const calibration = usePlannerStore((s) => s.settings.calibration);
   const megaBuddyLevel = usePlannerStore((s) => s.settings.megaBuddyLevel);
+  const goPassDeluxe = usePlannerStore((s) => s.settings.goPassDeluxe);
 
   const boss = getBoss(bossId);
   if (!boss || !input) return <>{children}</>;
 
-  const result = computeBossResult(boss, input, calibration, megaBuddyLevel);
+  const result = computeBossResult(boss, input, calibration, megaBuddyLevel, goPassDeluxe);
   const explanations = CURRENCY_ORDER.filter((c) => result.needs[c])
-    .map((c) => explainCurrency(boss, input, c, calibration, megaBuddyLevel))
+    .map((c) => explainCurrency(boss, input, c, calibration, megaBuddyLevel, goPassDeluxe))
     .filter((e): e is NonNullable<typeof e> => !!e);
   if (!explanations.length) return <>{children}</>;
 
