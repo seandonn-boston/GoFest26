@@ -30,6 +30,7 @@ export function ExportGroup({
   const settings = usePlannerStore((s) => s.settings);
   const remoteAllocations = usePlannerStore((s) => s.remoteAllocations);
   const playDays = usePlannerStore((s) => s.playDays);
+  const raidsDone = usePlannerStore((s) => s.raidsDone);
   const hasPlan = summary.totalRaids.max > 0;
   const [busy, setBusy] = useState<null | "xlsx" | "link" | "json">(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -48,6 +49,7 @@ export function ExportGroup({
         settings,
         remoteAllocations,
         playDays,
+        raidsDone,
       });
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message : "Export failed." });
