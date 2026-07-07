@@ -1,14 +1,14 @@
 import type ExcelJS from "exceljs";
 import { GAME_CONFIG } from "@/data/config";
 import { getBoss } from "@/data";
-import { energyGoalsFor } from "@/data/energyGoals";
 import { ESTIMATE_NOTES, CONFIDENCE_META } from "@/data/estimateConfidence";
-import { formatRange, hourLabel } from "@/lib/format";
+import { formatRange } from "@/lib/format";
+import { weekPlanLines } from "@/lib/weekPlan";
 import { bossIsLocal } from "@/domain/region";
 import { remoteWindowsForBoss } from "@/domain/remoteWindows";
 import { computeCommitment, commitmentByBoss, computePassCost } from "@/domain";
 import { sized } from "@/domain/blockPlan";
-import type { RoadPlan, WeekendBlockPlan, RoadDayPlan, BlockSpeciesShare } from "@/domain";
+import type { RoadPlan, WeekendBlockPlan } from "@/domain";
 import type { PlannerSettings } from "@/domain/settings";
 import type { BossInput, Currency, PlanSummary } from "@/domain/types";
 
@@ -26,12 +26,10 @@ export interface WorkbookContext {
   settings: PlannerSettings;
   remoteAllocations: Record<string, number>;
   playDays: Record<string, boolean>;
+  /** Raids already logged in the app's Results-step tracker — pre-fills the
+   *  Week Plan sheet's Done column so the export picks up mid-week. */
+  raidsDone: Record<string, number>;
 }
-
-const DAY_LABEL: Record<string, string> = {
-  sat: "Sat · Jul 11",
-  sun: "Sun · Jul 12",
-};
 
 const CURRENCY_LABEL: Record<Currency, string> = {
   candy: "Candy",
@@ -73,55 +71,16 @@ function fillRow(row: ExcelJS.Row, argb: string): void {
   });
 }
 
-/** "6–7 PM · 5★ hour" / "6–8 PM · 5★ marathon" / "7–8 PM · Mega & Primal hour". */
-function roadWindow(day: RoadDayPlan, share: BlockSpeciesShare): string {
-  const megaHour = "7–8 PM · Mega & Primal hour";
-  if (share.energyKey) {
-    const def = energyGoalsFor(share.bossId).find((d) => d.key === share.energyKey);
-    return def?.kind === "primal" ? megaHour : day.id === "mon" ? "6–8 PM · 5★ marathon" : "6–7 PM · 5★ hour";
-  }
-  const boss = getBoss(share.formeBossId ?? share.bossId);
-  if (boss?.tier === "mega" || boss?.tier === "super-mega") return megaHour;
-  return day.id === "mon" ? "6–8 PM · 5★ marathon" : "6–7 PM · 5★ hour";
-}
-
-/** What one raid of this row banks, e.g. "Fusion Energy + Candy" / "Candy + XL". */
-function banksLabel(share: BlockSpeciesShare): string {
-  if (share.energyKey) {
-    const def = energyGoalsFor(share.bossId).find((d) => d.key === share.energyKey);
-    const kind = def?.kind === "primal" ? "Primal" : def?.kind === "crowned" ? "Crowned" : "Fusion";
-    return `${kind} Energy + Candy`;
-  }
-  const boss = getBoss(share.formeBossId ?? share.bossId);
-  const currencies = boss?.rewardsCurrencies ?? ["candy", "xlCandy"];
-  return currencies.map((c) => CURRENCY_LABEL[c]).join(" + ");
-}
-
-function countersLabel(share: BlockSpeciesShare): string {
-  const boss = getBoss(share.formeBossId ?? share.bossId);
-  return (boss?.bestCounters ?? []).slice(0, 4).join(", ");
-}
-
-/** One Week Plan line before it becomes a worksheet row. */
-interface PlanLine {
-  day: string;
-  window: string;
-  boss: string;
-  target: number;
-  banks: string;
-  pass: string;
-  counters: string;
-  band: string; // row fill
-}
+/** Row fill per Week Plan group. */
+const GROUP_BAND: Record<string, string> = { road: C.road, sat: C.sat, sun: C.sun, remote: C.remote };
 
 /** Populates the workbook: Overview, Week Plan (tracker), Remote Windows, Goals,
  *  Cost and Assumptions — all derived from the same plan the app displays. */
 export function buildWorkbook(workbook: ExcelJS.Workbook, ctx: WorkbookContext): void {
-  const { summary, inputs, weekend, road, settings, remoteAllocations, playDays } = ctx;
+  const { summary, inputs, weekend, road, settings, remoteAllocations, playDays, raidsDone } = ctx;
   workbook.creator = "GO Fest 2026 Raid Planner";
   workbook.created = new Date();
 
-  const startLocal = GAME_CONFIG.event.hourStartLocal;
   const inputById = new Map(inputs.map((i) => [i.bossId, i]));
   const commitment = computeCommitment(weekend, road);
   const cost = computePassCost(
@@ -133,51 +92,9 @@ export function buildWorkbook(workbook: ExcelJS.Workbook, ctx: WorkbookContext):
     commitmentByBoss(weekend, road),
   );
 
-  // ---- Collect the chronological Week Plan lines (Mon → Sun → Remote). ----
-  const lines: PlanLine[] = [];
-  for (const day of road.days) {
-    for (const s of day.species) {
-      if (s.fitted <= 0) continue;
-      lines.push({
-        day: `${day.label} · ${day.dateLabel}`,
-        window: roadWindow(day, s),
-        boss: s.bossName,
-        target: s.fitted,
-        banks: banksLabel(s),
-        pass: "In-person",
-        counters: countersLabel(s),
-        band: C.road,
-      });
-    }
-  }
-  for (const block of weekend.blocks) {
-    for (const s of block.species) {
-      if (s.fitted <= 0) continue;
-      lines.push({
-        day: DAY_LABEL[block.day] ?? block.day,
-        window: `${block.name} · ${hourLabel(block.startHour, startLocal)}–${hourLabel(block.endHour, startLocal)}`,
-        boss: s.bossName,
-        target: s.fitted,
-        banks: banksLabel(s),
-        pass: "In-person",
-        counters: countersLabel(s),
-        band: block.day === "sat" ? C.sat : C.sun,
-      });
-    }
-  }
-  for (const s of weekend.remote?.species ?? []) {
-    if (s.fitted <= 0) continue;
-    lines.push({
-      day: "Any day",
-      window: "Remote — any time (Jul 6–12)",
-      boss: s.bossName,
-      target: s.fitted,
-      banks: banksLabel(s),
-      pass: "Remote",
-      counters: countersLabel(s),
-      band: C.remote,
-    });
-  }
+  // The chronological Week Plan lines (Mon → Sun → Remote) — the SAME builder
+  // the Results step's in-app tracker renders, keys and all.
+  const lines = weekPlanLines(road, weekend);
 
   // ---------------- Sheet 1: Overview ----------------
   const overview = workbook.addWorksheet("Overview");
@@ -207,7 +124,11 @@ export function buildWorkbook(workbook: ExcelJS.Workbook, ctx: WorkbookContext):
     ["Raids done so far (fills as you track)", { formula: `SUM('Week Plan'!E2:E${lastPlanRow})` }],
     ["Raids remaining", { formula: `${commitment.total}-SUM('Week Plan'!E2:E${lastPlanRow})` }],
     ["", ""],
-    ["How to use", "Fill the Done column on the Week Plan sheet as you raid — rows turn green when a line is finished."],
+    [
+      "How to use",
+      "Fill the Done column on the Week Plan sheet as you raid — rows turn green when a line is finished. " +
+        "Raids you already logged on the app's Results step arrive pre-filled.",
+    ],
   ];
   for (const [metric, value] of ovRows) overview.addRow({ metric, value });
   overview.getColumn(1).font = { bold: true };
@@ -229,18 +150,19 @@ export function buildWorkbook(workbook: ExcelJS.Workbook, ctx: WorkbookContext):
 
   lines.forEach((l, i) => {
     const rowIdx = i + 2;
+    const done = raidsDone[l.doneKey] ?? 0;
     const row = plan.addRow({
-      day: l.day,
+      day: l.dayLabel,
       window: l.window,
-      boss: l.boss,
+      boss: l.bossName,
       target: l.target,
-      done: "",
+      done: done > 0 ? done : "",
       left: { formula: `MAX(0,D${rowIdx}-N(E${rowIdx}))` },
       banks: l.banks,
       pass: l.pass,
       counters: l.counters,
     });
-    fillRow(row, l.band);
+    fillRow(row, GROUP_BAND[l.group] ?? C.white);
   });
   plan.views = [{ state: "frozen", ySplit: 1 }];
   plan.autoFilter = `A1:I${Math.max(2, lastPlanRow)}`;

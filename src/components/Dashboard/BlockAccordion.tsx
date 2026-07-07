@@ -12,7 +12,7 @@ import { RISK_BANDS, megaBoostsForBoss, topBlockMegas, megaBoostSpecies } from "
 import { sized } from "@/domain/blockPlan";
 import type { BlockPlan, BlockSpeciesShare, RiskBand, WeekendBlockPlan } from "@/domain";
 import { topCounters, topBlockCounters } from "@/domain/counters";
-import type { BossResult, EventDay } from "@/domain/types";
+import type { BossResult, EventDay, Range } from "@/domain/types";
 import { buildSearchString, buildMegaSearchString } from "@/lib/pokemonSearch";
 import { hourLabel } from "@/lib/format";
 import { usePlannerStore, blockMembersInOrder } from "@/store/usePlannerStore";
@@ -41,13 +41,15 @@ const speciesTerm = (name: string) =>
     .replace(/\s+[XY]$/, "")
     .trim();
 
-/** One species' target in a block: a drag grip, completed (editable) / best ·
- *  avg · worst raid counts, the boss's types + candy-boost megas, and its best
- *  counters, plus a per-block quick-catch toggle. */
+/** One species' target in a block: a drag grip, its plan numbers — planned in
+ *  this block (editable; typing pins an exact count) / needed in this block ·
+ *  species total for the whole week — the boss's types + candy-boost megas, and
+ *  its best counters, plus a per-block quick-catch toggle. Completed raids are
+ *  logged on the Results step's tracker, not here. */
 function TargetCard({
   share,
-  dkey,
   wildTypes,
+  totalRange,
   grip,
   gripRight,
   rowRef,
@@ -56,8 +58,10 @@ function TargetCard({
   allocation,
 }: {
   share: BlockSpeciesShare;
-  dkey: string;
   wildTypes: string[];
+  /** The species' whole-week raids range (from its BossResult) — the `t` in the
+   *  planned/needed·total readout. */
+  totalRange?: Range;
   grip?: ReactNode;
   /** A second grip on the right edge so the list is thumb-reachable either-handed. */
   gripRight?: ReactNode;
@@ -67,8 +71,6 @@ function TargetCard({
   /** Per-target time allocation pin (absent for Mewtwo, which levels on its own). */
   allocation?: { alloc: BlockAllocation | undefined; need: number; onChange: (a: BlockAllocation | null) => void };
 }) {
-  const done = usePlannerStore((s) => s.raidsDone[dkey] ?? 0);
-  const setRaidsDone = usePlannerStore((s) => s.setRaidsDone);
   const rewardCase = usePlannerStore((s) => s.settings.rewardCase);
   // For a multi-form species, show the forme available in THIS block (name/sprite/
   // counters); share.bossId stays the shared primary for result/progress linkage.
@@ -87,7 +89,17 @@ function TargetCard({
 
   // One number per the selected reward-luck case (optimistic = fewest raids).
   const need = sized(share.range, rewardCase);
+  const total = totalRange ? sized(totalRange, rewardCase) : 0;
   const goalPct = share.raids > 0 ? Math.round((share.fitted / share.raids) * 100) : 100;
+  // Planned raids (k): a fixed pin shows the pinned count the instant it's
+  // typed; otherwise the engine's fitted count for this block.
+  const pinned = allocation?.alloc?.mode === "fixed";
+  const planned = pinned ? (allocation?.alloc?.count ?? 0) : share.fitted;
+  const setPlanned = (raw: string) => {
+    if (!allocation) return;
+    const v = Math.max(0, Math.round(Number(raw.replace(/[^\d]/g, "")) || 0));
+    allocation.onChange({ mode: "fixed", count: v });
+  };
 
   return (
     <div
@@ -105,20 +117,33 @@ function TargetCard({
         </span>
 
         <div className="flex items-center gap-1 font-mono text-sm font-bold">
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={String(done)}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setRaidsDone(dkey, Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
-            aria-label={`Raids completed for ${share.bossName}`}
-            className="w-10 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center text-slate-100 outline-none focus:border-gofest-accent2"
-          />
+          {allocation ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={String(planned)}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setPlanned(e.target.value)}
+              aria-label={`Raids planned for ${share.bossName} in this block`}
+              title={
+                pinned
+                  ? "Raids planned here — pinned to this exact count (set the control below back to Priority to unpin)"
+                  : "Raids planned here (auto from priority & time) — type to pin an exact count"
+              }
+              className={`w-10 rounded-sm border bg-gofest-bg/60 px-1 py-0.5 text-center outline-none focus:border-gofest-accent2 ${
+                pinned ? "border-gofest-accent2/60 text-gofest-accent2" : "border-white/15 text-slate-100"
+              }`}
+            />
+          ) : (
+            <span className="w-10 text-center text-slate-100" title="Raids planned here (Mewtwo levels on its own)">
+              {share.fitted}
+            </span>
+          )}
           <span className="text-slate-500">/</span>
           <span className="text-gofest-accent2">
             {share.mewtwo ? (
-              <span title="Raids needed (selected reward case)">{need}</span>
+              <span title="Raids needed in this block (selected reward case)">{need}</span>
             ) : (
               <RaidsNeededTooltip
                 bossId={share.bossId}
@@ -128,18 +153,26 @@ function TargetCard({
               </RaidsNeededTooltip>
             )}
           </span>
+          {total > 0 ? (
+            <span
+              className="whitespace-nowrap text-[11px] font-semibold text-slate-500"
+              title="Total raids this Pokémon needs across the whole week — the same number everywhere in the app"
+            >
+              · {total} total
+            </span>
+          ) : null}
         </div>
 
         {share.remaining > 0 ? (
           <MathTooltip
-            label="Why this %"
+            label="Why the shortfall"
             hideIcon
             trigger={
               <span
                 className="shrink-0 cursor-help whitespace-nowrap text-[12px] text-rose-300"
                 title={`Only ${share.fitted} of ${share.raids} fit in time`}
               >
-                <PixelIcon name="warning" size={11} /> {share.fitted} fit · {goalPct}%
+                <PixelIcon name="warning" size={11} /> {share.remaining} short
               </span>
             }
           >
@@ -147,11 +180,9 @@ function TargetCard({
               <p>
                 You can fit <b className="text-slate-100">{share.fitted}</b> of the{" "}
                 <b className="text-slate-100">{share.raids}</b> raids needed into this block&apos;s time —{" "}
-                <b className="text-rose-300">{share.remaining} short</b>.
+                <b className="text-rose-300">{share.remaining} short</b> ({goalPct}% covered).
               </p>
-              <p className="text-slate-500">
-                {goalPct}% = fitted ÷ needed. Reprioritize, remote-raid, or trim the goal to close the gap.
-              </p>
+              <p className="text-slate-500">Reprioritize, remote-raid, or trim the goal to close the gap.</p>
             </div>
           </MathTooltip>
         ) : null}
@@ -229,7 +260,7 @@ function TargetCard({
 
 const ZERO_BANDS: Record<RiskBand, number> = { blue: 0, green: 0, yellow: 0, red: 0 };
 
-function BlockItem({ block }: { block: BlockPlan }) {
+function BlockItem({ block, totals }: { block: BlockPlan; totals: Map<string, Range> }) {
   const [open, setOpen] = useExpandable(false);
   const onToggle = () => setOpen((o) => !o);
   const start = GAME_CONFIG.event.hourStartLocal;
@@ -353,7 +384,8 @@ function BlockItem({ block }: { block: BlockPlan }) {
             </span>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <p className="text-[12px] text-slate-500">
-                Drag ⠿ to prioritise, or set each target&apos;s share of this block&apos;s time below.
+                Drag ⠿ to prioritise. Numbers read <b>planned here</b> / <b>needed here</b> · <b>week total</b> — type the
+                first to pin it, or set shares below. Log finished raids on the Results step.
               </p>
               {allocatableIds.length >= 2 ? (
                 <div className="flex shrink-0 items-center gap-1">
@@ -404,7 +436,7 @@ function BlockItem({ block }: { block: BlockPlan }) {
                 <TargetCard
                   key={id}
                   share={share}
-                  dkey={`${id}@${key}`}
+                  totalRange={totals.get(id)}
                   wildTypes={wildTypes}
                   grip={gripEl}
                   gripRight={
@@ -444,13 +476,17 @@ function BlockItem({ block }: { block: BlockPlan }) {
 
 /**
  * The weekend's habitat blocks as collapsible accordions. Each capacity bar is a
- * tap-to-expand header; the body lists one target card per species — completed
- * (editable) over best/average/worst counts. Bars fill to 100% in priority order,
- * reporting any shortfall rather than overflowing. Region-locked targets are
- * handled on the Remote step.
+ * tap-to-expand header; the body lists one target card per species with its
+ * planned-here (editable pin) / needed-here · week-total numbers. Bars fill to
+ * 100% in priority order, reporting any shortfall rather than overflowing.
+ * Region-locked targets are handled on the Remote step; completed raids are
+ * logged on the Results step's tracker.
  */
 export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; results: BossResult[] }) {
   const setGlobalPriority = usePlannerStore((s) => s.setGlobalPriority);
+  // Species week totals (the `t` in planned/needed·total) — one range per boss,
+  // the same result every other step sizes its numbers from.
+  const totals = useMemo(() => new Map(results.map((r) => [r.bossId, r.raids])), [results]);
   const byDay: { day: EventDay; blocks: BlockPlan[] }[] = [];
   for (const day of ["sat", "sun"] as EventDay[]) {
     const blocks = plan.blocks.filter((b) => b.day === day && b.demand > 0);
@@ -500,7 +536,7 @@ export function BlockAccordion({ plan, results }: { plan: WeekendBlockPlan; resu
             </div>
             <div className="space-y-2">
               {blocks.map((b) => (
-                <BlockItem key={blockKey(b)} block={b} />
+                <BlockItem key={blockKey(b)} block={b} totals={totals} />
               ))}
             </div>
           </div>

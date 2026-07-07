@@ -42,7 +42,7 @@ function makeContext(inputs: BossInput[], playDays: Record<string, boolean> = {}
     road.headStart,
     {},
   );
-  return { summary, inputs, weekend, road, settings, remoteAllocations, playDays };
+  return { summary, inputs, weekend, road, settings, remoteAllocations, playDays, raidsDone: {} };
 }
 
 describe("buildWorkbook", () => {
@@ -69,6 +69,8 @@ describe("buildWorkbook", () => {
     const r2 = plan.getRow(2);
     expect(Number(r2.getCell(4).value)).toBeGreaterThan(0);
     expect((r2.getCell(6).value as ExcelJS.CellFormulaValue).formula).toContain("MAX(0,D2-N(E2))");
+    // Nothing logged in-app yet → Done exports blank, not 0.
+    expect(r2.getCell(5).value ?? "").toBe("");
 
     // Monday's RoL rows precede the weekend rows (chronological order).
     const firstDay = String(plan.getRow(2).getCell(1).value);
@@ -93,6 +95,18 @@ describe("buildWorkbook", () => {
     expect(bytes.length).toBeGreaterThan(1000);
     expect(bytes[0]).toBe(0x50); // 'P'
     expect(bytes[1]).toBe(0x4b); // 'K'
+  });
+
+  it("pre-fills the Done column from raids logged in the app", () => {
+    const ctx = makeContext([selected("zekrom")], { mon: true });
+    // The in-app tracker keys Monday's Zekrom line as zekrom@mon.
+    ctx.raidsDone = { "zekrom@mon": 4 };
+    const workbook = new ExcelJS.Workbook();
+    buildWorkbook(workbook, ctx);
+    const plan = workbook.getWorksheet("Week Plan")!;
+    const r2 = plan.getRow(2);
+    expect(String(r2.getCell(3).value)).toContain("Zekrom");
+    expect(Number(r2.getCell(5).value)).toBe(4);
   });
 
   it("handles an empty plan without crashing (placeholder Week Plan row)", async () => {
