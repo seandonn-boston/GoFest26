@@ -6,7 +6,7 @@ import { computeBossResult } from "./raidsNeeded";
 import { computeMewtwoResults } from "./mewtwo";
 import { applyResearchCredits } from "./research";
 import { bossIsLocal } from "./region";
-import { GO_PASS_DELUXE_CREDITS } from "@/data/goPass";
+import { goPassCreditsAboveRank } from "@/data/goPass";
 export { computeMewtwoResults, perMewtwoCopyNeeds } from "./mewtwo";
 export type { MewtwoCopyNeed } from "./mewtwo";
 import { computeSchedule } from "./scheduler";
@@ -70,8 +70,10 @@ export function computePlanSummary(
   const megaBuddyLevel = settings.megaBuddyLevel ?? 1;
   const goPassDeluxe = settings.goPassDeluxe ?? false;
   // GO Pass Deluxe rank-track rewards land as on-hand currency (same pipeline
-  // as research credits) — only when the player says they'll buy the pass.
-  if (goPassDeluxe) inputs = applyResearchCredits(inputs, GO_PASS_DELUXE_CREDITS);
+  // as research credits) — only when the player says they'll buy the pass, and
+  // only the ranks ABOVE the one they've already reached (claimed rewards are
+  // already inside their typed-in counts).
+  if (goPassDeluxe) inputs = applyResearchCredits(inputs, goPassCreditsAboveRank(settings.goPassLevel ?? 0));
   const results: BossResult[] = [];
   for (const input of inputs) {
     if (!input.selected) continue;

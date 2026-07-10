@@ -156,6 +156,8 @@ function sanitizeSettings(raw: unknown): PlannerSettings {
     linkChargesOwned: nonNeg(s.linkChargesOwned, d.linkChargesOwned),
     useLinkCharges: bool(s.useLinkCharges, d.useLinkCharges),
     goPassDeluxe: bool(s.goPassDeluxe, d.goPassDeluxe),
+    // Claimed GO Pass rank — an integer clamped to the track's 0–100.
+    goPassLevel: Math.max(0, Math.min(100, Math.round(num(s.goPassLevel, d.goPassLevel)))),
     megaBuddyLevel: num(s.megaBuddyLevel, d.megaBuddyLevel),
     calibration,
   };

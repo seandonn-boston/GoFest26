@@ -67,6 +67,13 @@ export interface PlannerSettings {
    */
   goPassDeluxe: boolean;
   /**
+   * The GO Pass rank the player has ALREADY reached (0–100). Rank rewards at or
+   * below this are treated as claimed (already inside their typed-in on-hand
+   * counts); only ranks above it are credited as incoming. 0 = nothing claimed
+   * yet — the whole track counts. Only meaningful while goPassDeluxe is on.
+   */
+  goPassLevel: number;
+  /**
    * Observed per-raid yields the player has logged, as point estimates that
    * OVERRIDE the assumed reward ranges (tightening the plan to their real luck).
    * Empty = use the assumptions. Keyed by reward metric; absent = not calibrated.
@@ -95,6 +102,7 @@ export const DEFAULT_SETTINGS: PlannerSettings = {
   // GO Fest raider runs, so the XL numbers bank the guaranteed +1 out of the box.
   megaBuddyLevel: 3,
   goPassDeluxe: false,
+  goPassLevel: 0,
   calibration: {},
 };
 
@@ -128,6 +136,7 @@ export function isDefaultSettings(s: PlannerSettings): boolean {
     s.passesOwned === DEFAULT_SETTINGS.passesOwned &&
     s.linkChargesOwned === DEFAULT_SETTINGS.linkChargesOwned &&
     s.useLinkCharges === DEFAULT_SETTINGS.useLinkCharges &&
-    s.goPassDeluxe === DEFAULT_SETTINGS.goPassDeluxe
+    s.goPassDeluxe === DEFAULT_SETTINGS.goPassDeluxe &&
+    s.goPassLevel === DEFAULT_SETTINGS.goPassLevel
   );
 }
