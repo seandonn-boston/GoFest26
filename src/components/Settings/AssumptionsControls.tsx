@@ -262,6 +262,33 @@ export function AssumptionsControls() {
             </p>
           </div>
         </label>
+        {goPassDeluxe ? (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-gofest-accent2/30 bg-gofest-bg/40 px-3 py-2">
+            <label className="flex items-center gap-2 text-xs text-slate-300">
+              <span>Rank you&apos;ve reached</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={String(settings.goPassLevel)}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) =>
+                  setSettings({
+                    goPassLevel: Math.max(0, Math.min(100, Math.round(Number(e.target.value.replace(/[^\d]/g, "")) || 0))),
+                  })
+                }
+                aria-label="GO Pass rank you've already reached (0–100)"
+                className="w-12 rounded-sm border border-white/15 bg-gofest-bg/60 px-1 py-0.5 text-center font-mono text-sm font-bold text-slate-100 outline-none focus:border-gofest-accent2"
+              />
+              <span className="text-slate-500">/ 100</span>
+            </label>
+            <p className="min-w-[12rem] flex-1 text-[12px] leading-snug text-slate-500">
+              Rank rewards you&apos;ve already claimed are in your typed-in counts, so only the ranks{" "}
+              <b className="text-slate-300">above</b> this still count toward your goals — each rank pays +10 Candy/XL for a
+              specific legendary. Leave 0 if you haven&apos;t started the pass.
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {/* Luck calibration — moved in from the old "Advanced" panel so all the

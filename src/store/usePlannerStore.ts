@@ -1045,7 +1045,7 @@ export const usePlannerStore = create<PlannerState>()(
     }),
     {
       name: "gofest26-planner-v1",
-      version: 24, // +blockAllocations / roadAllocations (per-target time allocation pins)
+      version: 25, // +settings.goPassLevel (claimed GO Pass rank; backfilled to 0 by the settings merge)
       storage: createJSONStorage(makeSafeStorage),
       // Keep the heavy screenshot blobs OUT of the synchronous localStorage
       // plan-state — they persist to IndexedDB (see initScreenshotPersistence),

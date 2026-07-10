@@ -162,6 +162,15 @@ describe("sanitizeBackup", () => {
     expect(junk.settings.goPassDeluxe).toBe(false);
   });
 
+  it("round-trips goPassLevel, clamping to the 0–100 track and coercing junk to 0", () => {
+    const at42 = sanitizeBackup(backup({ settings: { ...DEFAULT_SETTINGS, goPassLevel: 42 } }));
+    expect(at42.settings.goPassLevel).toBe(42);
+    const over = sanitizeBackup(backup({ settings: { ...DEFAULT_SETTINGS, goPassLevel: 400 } }));
+    expect(over.settings.goPassLevel).toBe(100);
+    const junk = sanitizeBackup(backup({ settings: { ...DEFAULT_SETTINGS, goPassLevel: "ten" as unknown as number } }));
+    expect(junk.settings.goPassLevel).toBe(0);
+  });
+
   it("rebuilds settings over defaults when settings is missing/non-object", () => {
     const out = sanitizeBackup(backup({ settings: undefined as unknown as StateBackup["settings"] }));
     expect(out.settings.lobbySize).toBe(DEFAULT_SETTINGS.lobbySize);

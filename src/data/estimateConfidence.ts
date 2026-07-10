@@ -60,7 +60,7 @@ export const ESTIMATE_NOTES: EstimateNote[] = [
     label: "GO Pass Deluxe bonuses (when enabled)",
     value: "+3 Candy & +1 XL / 5★+ catch · rank track: +10 XL & +10 Candy per legendary",
     confidence: "verified",
-    note: "In-game pass screens (Jul 2026). Crediting assumes rank 100; treating plain Mega Raids as below Tier 5 is our assumption.",
+    note: "In-game pass screens (Jul 2026), rank-by-rank. Credits assume you finish the pass, minus ranks you've already claimed (set your rank in Assumptions); treating plain Mega Raids as below Tier 5 is our assumption.",
   },
   {
     label: "Free Raid Passes",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GO_PASS_DELUXE_CREDITS } from "./goPass";
+import { GO_PASS_DELUXE_CREDITS, goPassCreditsAboveRank } from "./goPass";
 import { getBoss } from "@/data";
 import { makeDefaultInput } from "@/domain/defaults";
 import { computePlanSummary, computeBossResult } from "@/domain";
@@ -23,6 +23,23 @@ describe("GO Pass Deluxe credits", () => {
     const zapdos = GO_PASS_DELUXE_CREDITS.filter((c) => c.bossId === "zapdos");
     expect(zapdos.find((c) => c.currency === "candy")?.amount).toBe(10);
     expect(zapdos.find((c) => c.currency === "xlCandy")?.amount).toBe(10);
+  });
+
+  it("filters credits by the claimed rank (only ranks above still count)", () => {
+    // Level 0 (default) = the whole track.
+    expect(goPassCreditsAboveRank(0)).toHaveLength(GO_PASS_DELUXE_CREDITS.length);
+    // At rank 13, Articuno (12) and Zapdos (13) are claimed; Moltres (14) isn't.
+    const at13 = goPassCreditsAboveRank(13);
+    expect(at13.some((c) => c.bossId === "articuno")).toBe(false);
+    expect(at13.some((c) => c.bossId === "zapdos")).toBe(false);
+    expect(at13.some((c) => c.bossId === "moltres")).toBe(true);
+    // Mewtwo's rewards land one rank at a time (Candy 90–93, XL 91–93): at rank
+    // 91 there are 20 Candy + 20 XL still incoming per mirrored form.
+    const at91 = goPassCreditsAboveRank(91).filter((c) => c.bossId === "mega-mewtwo-x");
+    expect(at91.filter((c) => c.currency === "candy").reduce((s, c) => s + c.amount, 0)).toBe(20);
+    expect(at91.filter((c) => c.currency === "xlCandy").reduce((s, c) => s + c.amount, 0)).toBe(20);
+    // Rank 100 = everything claimed, nothing left to credit.
+    expect(goPassCreditsAboveRank(100)).toHaveLength(0);
   });
 });
 
@@ -76,5 +93,16 @@ describe("GO Pass Deluxe in the plan math", () => {
     const onNeed = on.results[0].needs.xlCandy!.needed;
     // +10 XL credited on-hand → the XL still needed drops by exactly 10.
     expect(onNeed).toBe(offNeed - 10);
+  });
+
+  it("a claimed GO Pass rank stops crediting the ranks already passed", () => {
+    // Zapdos unlocks at rank 13. A player already at rank 13 has claimed it —
+    // it's in their typed-in counts — so no credit; at rank 12 it still counts.
+    const input = makeDefaultInput(getBoss("zapdos")!);
+    const base = computePlanSummary([input], DEFAULT_SETTINGS).results[0].needs.xlCandy!.needed;
+    const at13 = computePlanSummary([input], { ...passOn, goPassLevel: 13 }).results[0].needs.xlCandy!.needed;
+    const at12 = computePlanSummary([input], { ...passOn, goPassLevel: 12 }).results[0].needs.xlCandy!.needed;
+    expect(at13).toBe(base);
+    expect(at12).toBe(base - 10);
   });
 });
